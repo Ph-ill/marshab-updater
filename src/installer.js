@@ -1,9 +1,17 @@
 import { removePaths, writeManifestFile } from './file-transfer.js';
 
 export async function fetchJson(url){
-  const response = await fetch(url, { cache:'no-store' });
+  const isGithubAsset = url.startsWith('https://api.github.com/repos/') && url.includes('/releases/assets/');
+  const response = await fetch(url, {
+    cache:'no-store',
+    headers: isGithubAsset ? { Accept:'application/octet-stream' } : {},
+  });
   if(!response.ok) throw new Error(`${url} returned ${response.status}`);
-  return response.json();
+  try{
+    return await response.json();
+  }catch(err){
+    throw new Error(`could not read firmware release JSON from ${url}: ${err.message}`);
+  }
 }
 
 export async function fetchBytes(url){

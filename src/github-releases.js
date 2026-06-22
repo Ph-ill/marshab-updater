@@ -24,8 +24,9 @@ export async function loadGithubReleaseIndex(){
       tag: release.tag_name,
       date: (release.published_at || release.created_at || '').slice(0, 10),
       label: release.name || release.tag_name,
-      path: asset.browser_download_url,
+      path: asset.url,
       source: 'github-release',
+      assetName: asset.name,
       prerelease: !!release.prerelease,
     }));
   const stable = releases.find(release => !release.prerelease) || releases[0];
