@@ -1,0 +1,22 @@
+{
+  "category": "bed",
+  "classname": "val14_bed_o",
+  "default_dir": 0,
+  "description": "Recline into optimum health.",
+  "icon": "assets/furni/val14_bed_o_icon.png",
+  "logic": "furniture_basic",
+  "name": "Orange Form Recliner",
+  "price": 140,
+  "sprites": {
+    "0": "assets/furni/val14_bed_o_dir0.png",
+    "2": "assets/furni/val14_bed_o_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 1,
+  "ydim": 3,
+  "zdim": 1.6
+}
