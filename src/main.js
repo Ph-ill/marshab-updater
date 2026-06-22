@@ -116,7 +116,10 @@ async function loadManifest(){
 }
 function releaseLabel(release){
   const parts = [release.version];
-  if(release.label) parts.push(release.label);
+  const label = String(release.label || '').trim();
+  const normalizedVersion = String(release.version || '').replace(/^v/i, '');
+  const normalizedLabel = label.replace(/^v/i, '');
+  if(label && normalizedLabel !== normalizedVersion && !normalizedLabel.startsWith(`${normalizedVersion} `)) parts.push(label);
   if(release.date) parts.push(`(${release.date})`);
   return parts.join(' ');
 }
