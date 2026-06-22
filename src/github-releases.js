@@ -11,8 +11,8 @@ function findFirmwareAsset(release){
   return (release.assets || []).find(asset => asset.name === ASSET_NAME) || null;
 }
 
-function proxiedGithubApiUrl(url){
-  return String(url).replace('https://api.github.com/', '/github-api/');
+function rawFirmwareUrl(tagName){
+  return `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/firmware-assets/${tagName}/${ASSET_NAME}`;
 }
 
 export async function loadGithubReleaseIndex(){
@@ -28,7 +28,7 @@ export async function loadGithubReleaseIndex(){
       tag: release.tag_name,
       date: (release.published_at || release.created_at || '').slice(0, 10),
       label: release.name || release.tag_name,
-      path: proxiedGithubApiUrl(asset.url),
+      path: rawFirmwareUrl(release.tag_name),
       source: 'github-release',
       assetName: asset.name,
       prerelease: !!release.prerelease,
