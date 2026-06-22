@@ -71,8 +71,8 @@ export async function installRelease(device, releaseManifest, { onLog = () => {}
 
   onLog('verifying protected device data');
   await verifyProtectedData(device);
-  onLog('soft-resetting device');
+  onLog('hard-resetting device so WiFi/AP services restart cleanly');
   onBeforeReset();
-  await device.softReset();
+  await device.hardReset();
   return true;
 }
