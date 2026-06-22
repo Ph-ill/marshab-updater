@@ -62,6 +62,22 @@ export class MicroPythonSerial {
     }
   }
 
+  async openPort(port){
+    this.port = port;
+    if(!this.port.readable || !this.port.writable){
+      try{ await this.port.open({ baudRate: this.baudRate }); }catch(err){
+        if(!String(err.message || err).toLowerCase().includes('already open')) throw err;
+      }
+    }
+    this.reader = this.port.readable.getReader();
+    this.writer = this.port.writable.getWriter();
+    this.clearBuffer();
+    this.disconnectNotified = false;
+    this.reading = true;
+    this.readLoop();
+    return this;
+  }
+
   async reopenExisting({ attempts = 8, delayMs = 900 } = {}){
     if(!this.port) throw new Error('serial port is not available for reconnect');
     this.reading = false;
@@ -70,21 +86,16 @@ export class MicroPythonSerial {
     let lastError = null;
     for(let i = 0; i < attempts; i++){
       try{
-        if(!this.port.readable || !this.port.writable){
-          try{ await this.port.open({ baudRate: this.baudRate }); }catch(err){
-            if(!String(err.message || err).toLowerCase().includes('already open')) throw err;
-          }
-        }
-        this.reader = this.port.readable.getReader();
-        this.writer = this.port.writable.getWriter();
-        this.clearBuffer();
-        this.disconnectNotified = false;
-        this.reading = true;
-        this.readLoop();
-        return this;
+        return await this.openPort(this.port);
       }catch(err){
         lastError = err;
         await this.releaseStreams();
+        try{
+          const ports = await navigator.serial.getPorts();
+          if(ports.length) return await this.openPort(ports[0]);
+        }catch(portErr){
+          lastError = portErr;
+        }
         await delay(delayMs);
       }
     }
