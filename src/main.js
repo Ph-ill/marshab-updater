@@ -172,8 +172,6 @@ async function saveWifiConfig(){
   try{
     const next = validateWifiConfig({ ssid: els.wifiSsid.value, password: els.wifiPassword.value });
     const passwordText = next.password ? 'password protected' : 'open network';
-    const ok = confirm(`Save WiFi config and reset the Pico?\n\nSSID: ${next.ssid}\nMode: ${passwordText}`);
-    if(!ok){ log('WiFi config change cancelled'); return; }
     log(`writing WiFi config: ${next.ssid} (${passwordText})`);
     const config = await writeWifiConfig(state.device, state.deviceInfo?.config || {}, next);
     state.deviceInfo = { ...(state.deviceInfo || {}), config };
