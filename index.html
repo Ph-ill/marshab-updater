@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MarsHab Field Updater</title>
+  <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -49,6 +50,18 @@
       </section>
     </section>
 
+    <section class="panel progress-panel" aria-labelledby="progressTitle">
+      <div class="progress-head">
+        <h2 id="progressTitle">Update progress</h2>
+        <output id="progressPercent" for="progressFill">0%</output>
+      </div>
+      <div class="progress-track" role="progressbar" aria-label="Firmware update progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-sweep"></div>
+      </div>
+      <p class="progress-status" id="progressStatus">Standing by. Connect a device and select a release.</p>
+    </section>
+
     <section class="panel log-panel" aria-labelledby="logTitle">
       <h2 id="logTitle">Operations log</h2>
       <ol id="log" class="log" aria-live="polite"></ol>
@@ -60,7 +73,7 @@
     </section>
 
     <footer class="build-footer">
-      MarsHab updater web app v0.1.5 · raw GitHub payload fetch · 2026-06-22
+      MarsHab updater web app v0.1.6 · favicon + progress bar · 2026-06-22
     </footer>
   </main>
   <script type="module" src="./src/main.js"></script>
