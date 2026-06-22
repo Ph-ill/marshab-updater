@@ -35,6 +35,8 @@ const els = {
   progressPercent: document.getElementById('progressPercent'),
   progressStatus: document.getElementById('progressStatus'),
   log: document.getElementById('log'),
+  powerCycleModal: document.getElementById('powerCycleModal'),
+  powerCycleDoneBtn: document.getElementById('powerCycleDoneBtn'),
 };
 
 function stamp(){ return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }); }
@@ -102,6 +104,15 @@ function setProgress(percent, status, mode = ''){
 function resetProgress(status = 'Standing by. Connect a device and select a release.', visible = false){
   els.progressPanel.hidden = !visible;
   setProgress(0, status, '');
+}
+function showPowerCycleModal(){
+  els.powerCycleModal.hidden = false;
+  els.powerCycleDoneBtn.focus();
+  log('operator action required: unplug/replug Pico power before testing WiFi gateway');
+}
+function hidePowerCycleModal(){
+  els.powerCycleModal.hidden = true;
+  log('power-cycle notice acknowledged');
 }
 
 async function loadManifest(){
@@ -293,11 +304,9 @@ async function refreshDeviceInfoAfterInstall(){
     setStatus('connected', 'status-ok');
     els.connectBtn.textContent = 'Disconnect device';
     log('device reconnected; installed firmware value refreshed');
-    log('firmware install can leave the Pico W AP stack stale; if the gateway page does not load, unplug/replug Pico power now');
   }catch(err){
     setStatus('reconnect needed', 'status-warn');
     log(`automatic reconnect failed; click Disconnect then Connect to refresh installed version (${err.message})`);
-    log('power-cycle required if the MarsHab WiFi/gateway page does not load after this install');
   }finally{
     state.installResetInProgress = false;
   }
@@ -325,6 +334,7 @@ async function installVersion(version){
     });
     setProgress(100, `Install ${release.version} complete. AP restarted; power-cycle Pico if the gateway page does not load.`, 'complete');
     await refreshDeviceInfoAfterInstall();
+    showPowerCycleModal();
   }catch(err){
     state.installResetInProgress = false;
     setStatus('install failed', 'status-bad');
@@ -344,6 +354,11 @@ function initEvents(){
   els.installLatestBtn.addEventListener('click', () => { installVersion(state.manifest?.latest); });
   els.installSelectedBtn.addEventListener('click', () => { installVersion(state.selectedVersion); });
   els.saveWifiBtn.addEventListener('click', () => { saveWifiConfig(); });
+  els.powerCycleDoneBtn.addEventListener('click', () => { hidePowerCycleModal(); });
+  els.powerCycleModal.addEventListener('click', event => { if(event.target === els.powerCycleModal) hidePowerCycleModal(); });
+  document.addEventListener('keydown', event => {
+    if(event.key === 'Escape' && !els.powerCycleModal.hidden) hidePowerCycleModal();
+  });
 }
 async function main(){
   initMarsVideoLoop();
