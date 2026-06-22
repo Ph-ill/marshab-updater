@@ -62,12 +62,11 @@
       <h2 id="wifiTitle">Device WiFi</h2>
       <div class="field-grid">
         <label>Broadcast SSID<input id="wifiSsid" maxlength="32" placeholder="Connect a device first" disabled></label>
-        <label>Password<input id="wifiPassword" type="password" minlength="8" maxlength="63" placeholder="Blank = open network" disabled></label>
       </div>
       <div class="actions">
         <button id="saveWifiBtn" type="button" disabled>Save WiFi config</button>
       </div>
-      <p class="hint">Password support requires firmware 0.1.3 or newer. Blank password keeps the MarsHab network open.</p>
+      <p class="hint">MarsHab currently uses an open Pico W access point. Password mode is disabled pending hardware validation.</p>
     </section>
 
     <section class="panel progress-panel" id="progressPanel" aria-labelledby="progressTitle" hidden>
@@ -92,7 +91,7 @@
     </section>
 
     <footer class="build-footer">
-      MarsHab updater web app v0.1.12 · no WiFi alert dialog · 2026-06-22
+      MarsHab updater web app v0.1.13 · SSID-only WiFi recovery · 2026-06-22
     </footer>
   </main>
   <script type="module" src="./src/main.js"></script>
