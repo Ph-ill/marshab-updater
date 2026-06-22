@@ -1,0 +1,20 @@
+{
+  "category": "extras",
+  "classname": "pizza",
+  "default_dir": 0,
+  "description": "You dirty Habbo.",
+  "icon": "assets/furni/pizza_icon.png",
+  "logic": "furniture_basic",
+  "name": "Pizza Box",
+  "price": 40,
+  "sprites": {
+    "0": "assets/furni/pizza_dir0.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0
+  ],
+  "xdim": 1,
+  "ydim": 1,
+  "zdim": 1
+}

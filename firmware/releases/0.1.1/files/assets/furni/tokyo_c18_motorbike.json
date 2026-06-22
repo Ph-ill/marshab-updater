@@ -1,0 +1,26 @@
+{
+  "category": "other",
+  "classname": "tokyo_c18_motorbike",
+  "default_dir": 4,
+  "description": "tokyo_c18_motorbike desc",
+  "icon": "assets/furni/tokyo_c18_motorbike_icon.png",
+  "logic": "furniture_multistate",
+  "name": "Future Tokyo Bike",
+  "price": 180,
+  "sprites": {
+    "0": "assets/furni/tokyo_c18_motorbike_dir0.png",
+    "2": "assets/furni/tokyo_c18_motorbike_dir2.png",
+    "4": "assets/furni/tokyo_c18_motorbike_dir4.png",
+    "6": "assets/furni/tokyo_c18_motorbike_dir6.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2,
+    4,
+    6
+  ],
+  "xdim": 1,
+  "ydim": 3,
+  "zdim": 1.25
+}

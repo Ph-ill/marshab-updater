@@ -1,0 +1,7 @@
+services:
+  marshab-updater:
+    build: .
+    container_name: marshab-updater
+    restart: unless-stopped
+    ports:
+      - "8141:80"

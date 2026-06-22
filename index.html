@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarsHab Field Updater</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topline">
+      <div>
+        <p class="eyebrow">MARS HAB FIELD UPDATER</p>
+        <h1>USB firmware service</h1>
+      </div>
+      <div class="host">marshab.coolphill.com</div>
+    </header>
+
+    <section class="notice" id="supportNotice" hidden>
+      <strong>USB update unavailable in this browser.</strong>
+      Use desktop Chrome, Edge, Brave, or Chromium. Safari and Firefox do not expose WebSerial.
+    </section>
+
+    <section class="grid">
+      <section class="panel" aria-labelledby="deviceTitle">
+        <h2 id="deviceTitle">Device</h2>
+        <dl class="kv">
+          <div><dt>Status</dt><dd id="deviceStatus">disconnected</dd></div>
+          <div><dt>Transport</dt><dd>USB serial</dd></div>
+          <div><dt>Project</dt><dd id="deviceProject">—</dd></div>
+          <div><dt>Hab</dt><dd id="deviceHab">—</dd></div>
+          <div><dt>Installed</dt><dd id="installedVersion">—</dd></div>
+          <div><dt>Latest</dt><dd id="latestVersion">loading</dd></div>
+        </dl>
+        <button class="primary" id="connectBtn" type="button">Connect device</button>
+      </section>
+
+      <section class="panel" aria-labelledby="releaseTitle">
+        <h2 id="releaseTitle">Release</h2>
+        <dl class="kv">
+          <div><dt>Latest stable</dt><dd id="latestStable">—</dd></div>
+          <div><dt>Selected</dt><dd><select id="releaseSelect" aria-label="Firmware release"></select></dd></div>
+        </dl>
+        <div class="actions">
+          <button class="primary" id="installLatestBtn" type="button" disabled>Install latest</button>
+          <button id="installSelectedBtn" type="button" disabled>Install selected version</button>
+        </div>
+        <p class="hint">Updates preserve device config and saved hab data unless a release explicitly says otherwise.</p>
+      </section>
+    </section>
+
+    <section class="panel log-panel" aria-labelledby="logTitle">
+      <h2 id="logTitle">Operations log</h2>
+      <ol id="log" class="log" aria-live="polite"></ol>
+    </section>
+
+    <section class="panel compact" aria-labelledby="recoveryTitle">
+      <h2 id="recoveryTitle">Recovery</h2>
+      <p>If the device is not detected, reflash official Raspberry Pi Pico W MicroPython with BOOTSEL, reconnect normally, then return here and install the latest release.</p>
+    </section>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
