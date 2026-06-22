@@ -1,0 +1,22 @@
+{
+  "category": "bed",
+  "classname": "bed_polyfon_one_3",
+  "default_dir": 0,
+  "description": "Sleep tight.",
+  "icon": "assets/furni/bed_polyfon_one_3_icon.png",
+  "logic": "furniture_basic",
+  "name": "White Single Bed",
+  "price": 120,
+  "sprites": {
+    "0": "assets/furni/bed_polyfon_one_3_dir0.png",
+    "2": "assets/furni/bed_polyfon_one_3_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 1,
+  "ydim": 3,
+  "zdim": 1.73
+}

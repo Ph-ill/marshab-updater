@@ -1,0 +1,20 @@
+{
+  "category": "wall_decoration",
+  "classname": "sf_wall2",
+  "default_dir": 0,
+  "description": "Beeps and Lights.",
+  "icon": "assets/furni/sf_wall2_icon.png",
+  "logic": "furniture_multistate",
+  "name": "Spaceship Wall",
+  "price": 80,
+  "sprites": {
+    "0": "assets/furni/sf_wall2_dir0.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0
+  ],
+  "xdim": 1,
+  "ydim": 1,
+  "zdim": 3.41
+}

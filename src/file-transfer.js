@@ -32,6 +32,22 @@ export function parentDirs(path){
   return dirs;
 }
 
+function protectionCode(preserve){
+  return `
+PROTECTED = ${JSON.stringify(preserve || [])}
+def is_protected(path):
+    for keep in PROTECTED:
+        if not keep:
+            continue
+        if keep.endswith('/'):
+            if path == keep[:-1] or path.startswith(keep):
+                return True
+        elif path == keep or path.startswith(keep + '/'):
+            return True
+    return False
+`;
+}
+
 export async function ensureDirs(device, dirs){
   const unique = [...new Set(dirs.filter(Boolean))];
   if(!unique.length) return;
@@ -52,25 +68,111 @@ for d in ${JSON.stringify(unique)}:
   await device.exec(code, { timeoutMs: 10000 });
 }
 
+export async function snapshotProtectedData(device){
+  const code = `
+try:
+    import uos as os
+except ImportError:
+    import os
+try:
+    os.mkdir('data')
+except OSError:
+    pass
+try:
+    os.mkdir('data/.update_bak')
+except OSError:
+    pass
+def copy_file(src, dst):
+    try:
+        with open(src, 'rb') as r:
+            with open(dst, 'wb') as w:
+                while True:
+                    chunk = r.read(256)
+                    if not chunk:
+                        break
+                    w.write(chunk)
+        return True
+    except OSError:
+        return False
+for name in ('device.json','device.bak','save.json','save.bak','passport.json'):
+    copy_file('data/' + name, 'data/.update_bak/' + name)
+print('protected-snapshot-ok')
+`;
+  const { stdout } = await device.exec(code, { timeoutMs: 15000 });
+  if(!stdout.includes('protected-snapshot-ok')) throw new Error('protected data snapshot failed');
+}
+
+export async function verifyProtectedData(device){
+  const code = `
+try:
+    import uos as os
+except ImportError:
+    import os
+def exists(path):
+    try:
+        os.stat(path)
+        return True
+    except OSError:
+        return False
+def copy_file(src, dst):
+    with open(src, 'rb') as r:
+        with open(dst, 'wb') as w:
+            while True:
+                chunk = r.read(256)
+                if not chunk:
+                    break
+                w.write(chunk)
+for name in ('device.json','device.bak','save.json','save.bak','passport.json'):
+    bak = 'data/.update_bak/' + name
+    dst = 'data/' + name
+    if exists(bak) and not exists(dst):
+        copy_file(bak, dst)
+print('protected-verify-ok')
+`;
+  const { stdout } = await device.exec(code, { timeoutMs: 15000 });
+  if(!stdout.includes('protected-verify-ok')) throw new Error('protected data verify failed');
+}
+
 export async function removePaths(device, paths, preserve = []){
-  const keep = new Set(preserve);
-  const targets = paths.filter(path => path && !keep.has(path));
+  const targets = paths.filter(Boolean);
   if(!targets.length) return;
   const code = `
 try:
     import uos as os
 except ImportError:
     import os
-for p in ${JSON.stringify(targets)}:
+${protectionCode(preserve)}
+def rm(path):
+    if is_protected(path):
+        print('preserve', path)
+        return
     try:
-        os.remove(p)
+        st = os.stat(path)
     except OSError:
-        pass
+        return
+    mode = st[0]
+    if mode & 0x4000:
+        for name in os.listdir(path):
+            rm(path + '/' + name)
+        try:
+            os.rmdir(path)
+        except OSError:
+            pass
+    else:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+for p in ${JSON.stringify(targets)}:
+    rm(p)
 `;
-  await device.exec(code, { timeoutMs: 10000 });
+  await device.exec(code, { timeoutMs: 30000 });
 }
 
-export async function writeUtf8File(device, path, text, { onProgress = null } = {}){
+export async function writeUtf8File(device, path, text, { onProgress = null, preserve = [] } = {}){
+  if(preserve.some(keep => keep && (path === keep || path.startsWith(keep.endsWith('/') ? keep : keep + '/')))){
+    throw new Error(`${path} is protected`);
+  }
   await ensureDirs(device, parentDirs(path));
   await device.exec(`open(${pyString(path)}, 'w').close()`, { timeoutMs: 10000 });
   const chunks = splitString(text, TEXT_CHUNK);
@@ -84,7 +186,10 @@ with open(${pyString(path)}, 'a') as f:
   }
 }
 
-export async function writeBinaryFile(device, path, bytes, { onProgress = null } = {}){
+export async function writeBinaryFile(device, path, bytes, { onProgress = null, preserve = [] } = {}){
+  if(preserve.some(keep => keep && (path === keep || path.startsWith(keep.endsWith('/') ? keep : keep + '/')))){
+    throw new Error(`${path} is protected`);
+  }
   await ensureDirs(device, parentDirs(path));
   await device.exec(`open(${pyString(path)}, 'wb').close()`, { timeoutMs: 10000 });
   const chunks = splitBytes(bytes, BINARY_CHUNK);
@@ -124,12 +229,12 @@ export async function verifySize(device, path, expectedSize){
   return true;
 }
 
-export async function writeManifestFile(device, file, bytes, { onProgress = null } = {}){
+export async function writeManifestFile(device, file, bytes, { onProgress = null, preserve = [] } = {}){
   if(file.encoding === 'utf8'){
     const text = new TextDecoder().decode(bytes);
-    await writeUtf8File(device, file.path, text, { onProgress });
+    await writeUtf8File(device, file.path, text, { onProgress, preserve });
   }else{
-    await writeBinaryFile(device, file.path, bytes, { onProgress });
+    await writeBinaryFile(device, file.path, bytes, { onProgress, preserve });
   }
   await verifySize(device, file.path, file.size);
 }

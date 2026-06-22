@@ -1,4 +1,4 @@
-import { removePaths, writeManifestFile } from './file-transfer.js';
+import { removePaths, snapshotProtectedData, verifyProtectedData, writeManifestFile } from './file-transfer.js';
 
 export async function fetchJson(url){
   const isGithubAsset = (url.startsWith('https://api.github.com/repos/') || url.startsWith('/github-api/repos/')) && url.includes('/releases/assets/');
@@ -48,8 +48,10 @@ function orderedFiles(files){
 }
 
 export async function installRelease(device, releaseManifest, { onLog = () => {}, onProgress = () => {} } = {}){
-  const preserve = releaseManifest.preserve || [];
+  const preserve = [...new Set([...(releaseManifest.preserve || []), 'data/'])];
   onLog(`installing ${releaseManifest.project || 'firmware'} ${releaseManifest.version}`);
+  onLog('snapshotting protected device data');
+  await snapshotProtectedData(device);
   if(releaseManifest.delete?.length){
     onLog(`removing ${releaseManifest.delete.length} obsolete path(s)`);
     await removePaths(device, releaseManifest.delete, preserve);
@@ -62,10 +64,13 @@ export async function installRelease(device, releaseManifest, { onLog = () => {}
     const bytes = file.data ? decodeBase64Bytes(file.data) : await fetchBytes(file.url);
     if(bytes.length !== file.size) throw new Error(`${file.path} download size mismatch`);
     await writeManifestFile(device, file, bytes, {
+      preserve,
       onProgress: progress => onProgress({ file, fileIndex: i + 1, fileTotal: files.length, ...progress }),
     });
   }
 
+  onLog('verifying protected device data');
+  await verifyProtectedData(device);
   onLog('soft-resetting device');
   await device.softReset();
   return true;
