@@ -1,0 +1,186 @@
+{
+  "schema": 1,
+  "project": "MarsHab",
+  "version": "0.2.1",
+  "date": "2026-06-22",
+  "label": "Captive portal gateway prompts",
+  "device": "raspberry-pi-pico-w",
+  "runtime": "micropython",
+  "entrypoint": "main.py",
+  "preserve": [
+    "data/",
+    "data/device.json",
+    "data/device.bak",
+    "data/save.json",
+    "data/save.bak",
+    "data/passport.json",
+    "config.json",
+    "save.json",
+    "ledger.json"
+  ],
+  "delete": [
+    "assets",
+    "gift.mjs",
+    "hab.py",
+    "secrets.py",
+    "version.json",
+    "www",
+    "content",
+    "config.py",
+    "state.py",
+    "sim.py",
+    "server.py",
+    "content.py",
+    "multiplayer.py",
+    "validate_content.py"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "url": "/firmware/releases/0.2.1/files/README.md",
+      "sha256": "31f5ae979484110ecd4e465170fced76babd6022424a2541ae465b0412a14d0d",
+      "size": 1720,
+      "encoding": "utf8"
+    },
+    {
+      "path": "config.py",
+      "url": "/firmware/releases/0.2.1/files/config.py",
+      "sha256": "c1ff7e4e1653f74aa1885d6742ff5e0129ea990937ff52ca123ec499bfb59298",
+      "size": 335,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/actions.json",
+      "url": "/firmware/releases/0.2.1/files/content/actions.json",
+      "sha256": "5ed0650bd1992858866b8d6f48c682fe3fa3438be95d2975af5484d169825201",
+      "size": 1125,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/archive.json",
+      "url": "/firmware/releases/0.2.1/files/content/archive.json",
+      "sha256": "3b4d2b8004cf39f9b5388017ba7c1e3c1f44bbae48a38b838d97be7fcb7742e3",
+      "size": 74,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/away.json",
+      "url": "/firmware/releases/0.2.1/files/content/away.json",
+      "sha256": "1f1e77392be6adbe67d87b04c9b28c0d52b01e700351ae77b8ba81645393f542",
+      "size": 111,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/beats.json",
+      "url": "/firmware/releases/0.2.1/files/content/beats.json",
+      "sha256": "915003b15c84031ad83b3bab5924c8dcde66e46d43052103d5004e86be524afa",
+      "size": 257,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/content_manifest.json",
+      "url": "/firmware/releases/0.2.1/files/content/content_manifest.json",
+      "sha256": "efeb843f43898eea2b7793cf0caede52c6a83673ed0a554c128aebc5700d7cfa",
+      "size": 4521,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/ending.json",
+      "url": "/firmware/releases/0.2.1/files/content/ending.json",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/events.json",
+      "url": "/firmware/releases/0.2.1/files/content/events.json",
+      "sha256": "8d604881d1d3cd3b5c4cf8edf1e6ffb693766f95f85b815068746a9351d2b2e8",
+      "size": 417,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/letters.json",
+      "url": "/firmware/releases/0.2.1/files/content/letters.json",
+      "sha256": "dddf4dcad2ae3116a7dd968a2d40461e2943cf766136bdc62b8350f13f28c965",
+      "size": 76,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/ui.json",
+      "url": "/firmware/releases/0.2.1/files/content/ui.json",
+      "sha256": "0a4a4b27fd37d5166b816d573597eb1d98fe951fba3869f6db2584c33de2c3d4",
+      "size": 34,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content.py",
+      "url": "/firmware/releases/0.2.1/files/content.py",
+      "sha256": "7595793b0ec5df75b2890a961b40cfb6079cd81a532f5e6b4ff79578f0cf3ddc",
+      "size": 1067,
+      "encoding": "utf8"
+    },
+    {
+      "path": "main.py",
+      "url": "/firmware/releases/0.2.1/files/main.py",
+      "sha256": "94789a94e56bffc3cdc33fdb80ddafe545db4a638385b6f555f86a46939588a3",
+      "size": 2011,
+      "encoding": "utf8"
+    },
+    {
+      "path": "multiplayer.py",
+      "url": "/firmware/releases/0.2.1/files/multiplayer.py",
+      "sha256": "86bfcf07bb050a4884e518fc83611ba608b3dc6f9c01761fc9e314d9f00de90d",
+      "size": 1588,
+      "encoding": "utf8"
+    },
+    {
+      "path": "server.py",
+      "url": "/firmware/releases/0.2.1/files/server.py",
+      "sha256": "9a93f8f4b246c118f48676e14db5274868c841fa1a6f6f829cc84c99cf48f5ed",
+      "size": 6194,
+      "encoding": "utf8"
+    },
+    {
+      "path": "sim.py",
+      "url": "/firmware/releases/0.2.1/files/sim.py",
+      "sha256": "3a7a9f2f35f5c99eb480156698ffe69dcd4001a907737d137eddc2c7ccd1cb7b",
+      "size": 6466,
+      "encoding": "utf8"
+    },
+    {
+      "path": "state.py",
+      "url": "/firmware/releases/0.2.1/files/state.py",
+      "sha256": "1e25c41cb6291276ce1958bcb3c6e9e029905b924523d13ba13e06f817edfbb3",
+      "size": 2896,
+      "encoding": "utf8"
+    },
+    {
+      "path": "validate_content.py",
+      "url": "/firmware/releases/0.2.1/files/validate_content.py",
+      "sha256": "5e2972377cd46b51468e4109b7b953255cef8b1afbffb313801f54ae479dfbc0",
+      "size": 559,
+      "encoding": "utf8"
+    },
+    {
+      "path": "www/app.js",
+      "url": "/firmware/releases/0.2.1/files/www/app.js",
+      "sha256": "f91a3542472d2b7ebd693326323e613c03b95553344f42dc303322735bcd9973",
+      "size": 3481,
+      "encoding": "utf8"
+    },
+    {
+      "path": "www/index.html",
+      "url": "/firmware/releases/0.2.1/files/www/index.html",
+      "sha256": "91b298c89a5569f5170ef861f09fb5389ad413f1fc363db57eca1f0a5cf81f95",
+      "size": 421,
+      "encoding": "utf8"
+    },
+    {
+      "path": "www/style.css",
+      "url": "/firmware/releases/0.2.1/files/www/style.css",
+      "sha256": "d5ce968d22719702e3bb7fdb4eb106abeeb1d201bcf0478d0d29a3a3ebbe25c8",
+      "size": 1773,
+      "encoding": "utf8"
+    }
+  ]
+}

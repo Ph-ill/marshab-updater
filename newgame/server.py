@@ -16,14 +16,29 @@ def mime(path):
     if path.endswith('.css'): return 'text/css; charset=utf-8'
     if path.endswith('.json'): return 'application/json'
     return 'text/plain; charset=utf-8'
-async def send(w,status,ctype,body):
+async def send(w,status,ctype,body,extra=''):
     if isinstance(body,str): body=body.encode()
-    head='HTTP/1.0 %d OK\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'%(status,ctype,len(body))
+    reason={200:'OK',204:'No Content',302:'Found',404:'Not Found',500:'Error'}.get(status,'OK')
+    head='HTTP/1.0 %d %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\nConnection: close\r\n%s\r\n'%(status,reason,ctype,len(body),extra)
     w.write(head.encode()+body); await w.drain()
+def portal_body(path):
+    return '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=http://%s/"><title>Mars Hab Gateway</title></head><body><p>Mars Hab gateway: <a href="http://%s/">open colony control</a></p></body></html>'%(AP_IP,AP_IP)
+async def send_portal(w,path):
+    loc='Location: http://%s/\r\n'%AP_IP
+    # Captive portal detectors expect their connectivity probes to fail or redirect.
+    # Use absolute Location because clients probe arbitrary hostnames that DNS maps here.
+    if path in ('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html'):
+        await send(w,302,'text/html; charset=utf-8',portal_body(path),loc)
+    elif path in ('/hotspot-detect.html','/library/test/success.html'):
+        await send(w,200,'text/html; charset=utf-8',portal_body(path))
+    elif path in ('/ncsi.txt','/connecttest.txt'):
+        await send(w,200,'text/html; charset=utf-8',portal_body(path))
+    else:
+        await send(w,302,'text/html; charset=utf-8',portal_body(path),loc)
 def file_bytes(path):
     with open(path,'rb') as f: return f.read()
 async def read_req(r):
-    line=await r.readline();
+    line=await r.readline()
     if not line: return None
     method,path,_=line.decode().split(' ',2); length=0
     while True:
@@ -34,7 +49,7 @@ async def read_req(r):
     body=await r.read(length) if length else b''
     return method,path.split('?',1)[0],body
 def full_snapshot(extra=None):
-    d=sim.snapshot(CTX['state'],CTX['device']);
+    d=sim.snapshot(CTX['state'],CTX['device'])
     if extra: d.update(extra)
     return d
 def parse_body(body):
@@ -66,13 +81,13 @@ async def api(path,method,body):
             if k in data: dev[k]=data[k]
         save_device(dev); return {'ok':True,'device':dev}
     return {'ok':False,'error':'not_found'}
-PORTAL=('/generate_204','/gen_204','/hotspot-detect.html','/ncsi.txt','/connecttest.txt','/redirect')
+PORTAL=('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html','/hotspot-detect.html','/library/test/success.html','/ncsi.txt','/connecttest.txt','/redirect')
 async def handle(r,w):
     try:
         req=await read_req(r)
         if not req: return
         method,path,body=req
-        if path in PORTAL: await send(w,302,'text/plain','')
+        if path in PORTAL: await send_portal(w,path)
         elif path.startswith('/api/'):
             await send(w,200,'application/json',js(await api(path,method,body)))
         else:
