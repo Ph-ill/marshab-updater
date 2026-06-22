@@ -156,8 +156,8 @@ function renderDeviceInfo(info){
   setText(els.installedVersion, summary.version);
   setText(els.deviceProject, summary.project);
   setText(els.deviceHab, summary.hab);
-  els.wifiSsid.value = info.config?.ssid || '';
-  els.wifiPassword.value = info.config?.password || '';
+  els.wifiSsid.value = info.deviceIdentity?.ap_ssid || info.config?.ssid || '';
+  els.wifiPassword.value = info.deviceIdentity?.ap_password || info.config?.password || '';
 
   if(state.manifest?.latest && summary.version === state.manifest.latest) log(`device is current: ${summary.version}`);
   else if(summary.version === 'unknown') log('device version is unknown; install latest when ready');

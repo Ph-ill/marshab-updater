@@ -9,6 +9,21 @@ except OSError:
 `;
 }
 
+function configVersionSnippet(){
+  return `
+import json
+try:
+    import config
+    print(json.dumps({
+        'project': 'MarsHab',
+        'version': getattr(config, 'FIRMWARE_VERSION', 'unknown'),
+        'runtime': 'micropython'
+    }))
+except Exception:
+    print('null')
+`;
+}
+
 export async function readJsonFile(device, path){
   const { stdout } = await device.exec(jsonReadSnippet(path), { timeoutMs: 8000 });
   const text = stdout.trim();
@@ -22,16 +37,24 @@ export async function readJsonFile(device, path){
   }
 }
 
+async function readConfigVersion(device){
+  const { stdout } = await device.exec(configVersionSnippet(), { timeoutMs: 8000 });
+  const text = stdout.trim();
+  if(!text || text === 'null') return null;
+  return JSON.parse(text);
+}
+
 export async function readDeviceInfo(device){
-  const version = await readJsonFile(device, 'version.json');
+  const version = await readJsonFile(device, 'version.json') || await readConfigVersion(device);
   const config = await readJsonFile(device, 'config.json');
-  return { version, config };
+  const deviceIdentity = await readJsonFile(device, 'data/device.json');
+  return { version, config, deviceIdentity };
 }
 
 export function summarizeDeviceInfo(info){
   const version = info.version?.version || 'unknown';
   const project = info.version?.project || 'unknown';
   const runtime = info.version?.runtime || 'micropython';
-  const hab = info.config?.ssid || info.config?.habId || 'unknown';
+  const hab = info.deviceIdentity?.ap_ssid || info.deviceIdentity?.hab_name || info.config?.ssid || info.config?.habId || 'unknown';
   return { version, project, runtime, hab };
 }
