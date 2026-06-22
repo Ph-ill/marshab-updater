@@ -36,10 +36,11 @@ h2{font-size:13px;margin:0 0 12px;color:var(--amber);text-transform:uppercase;le
 .kv{display:grid;gap:5px;margin:0 0 14px}
 .kv div{display:grid;grid-template-columns:130px 1fr;gap:12px;border-bottom:1px dotted var(--line-dim);padding:2px 0}
 dt{color:var(--muted);text-transform:uppercase;font-size:12px} dd{margin:0;color:var(--text);min-width:0}
-button,select{font:inherit;color:var(--text);background:#140f0c;border:1px solid var(--line);padding:8px 10px;border-radius:0;text-transform:uppercase;letter-spacing:.05em}
+button,select,input{font:inherit;color:var(--text);background:#140f0c;border:1px solid var(--line);padding:8px 10px;border-radius:0;letter-spacing:.05em}button,select{text-transform:uppercase}
 button{cursor:pointer} button:disabled{opacity:.45;cursor:not-allowed}.primary{border-color:var(--cyan);color:var(--cyan)}
-button:not(:disabled):hover,select:hover{background:#211711}.actions{display:flex;gap:8px;flex-wrap:wrap}select{width:100%;text-transform:none;color:var(--text)}
+button:not(:disabled):hover,select:hover,input:not(:disabled):hover{background:#211711}.actions{display:flex;gap:8px;flex-wrap:wrap}select{width:100%;text-transform:none;color:var(--text)}
 .hint{margin:12px 0 0;color:var(--muted);font-size:12px}.compact p{margin:0;color:var(--muted)}
+.wifi-panel{margin-bottom:14px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.field-grid label{display:grid;gap:5px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.field-grid input{width:100%;text-transform:none;color:var(--text)}.field-grid input:disabled{opacity:.55}
 .progress-panel{margin-bottom:14px;position:relative;overflow:hidden;border-color:#8b5d32;background:linear-gradient(180deg,#241810,#18110d)}
 .progress-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.progress-head h2{flex:1;margin-bottom:10px}.progress-head output{color:var(--amber);font-weight:700;letter-spacing:.12em;text-shadow:0 0 8px rgba(255,180,84,.26)}
 .progress-track{height:24px;position:relative;overflow:hidden;background:linear-gradient(180deg,#0b0806,#150f0b);border:1px solid #8b5d32;box-shadow:0 0 0 1px rgba(0,0,0,.75) inset,0 2px 0 rgba(255,180,84,.08) inset}

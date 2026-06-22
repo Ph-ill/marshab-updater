@@ -2,6 +2,7 @@ import { MicroPythonSerial } from './webserial-micropython.js';
 import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
 import { loadGithubReleaseIndex } from './github-releases.js';
+import { validateWifiConfig, writeWifiConfig } from './config-editor.js';
 
 const state = {
   manifest: null,
@@ -22,6 +23,9 @@ const els = {
   connectBtn: document.getElementById('connectBtn'),
   installLatestBtn: document.getElementById('installLatestBtn'),
   installSelectedBtn: document.getElementById('installSelectedBtn'),
+  wifiSsid: document.getElementById('wifiSsid'),
+  wifiPassword: document.getElementById('wifiPassword'),
+  saveWifiBtn: document.getElementById('saveWifiBtn'),
   progressPanel: document.getElementById('progressPanel'),
   progressTrack: document.querySelector('.progress-track'),
   progressFill: document.getElementById('progressFill'),
@@ -80,6 +84,9 @@ function setBusy(busy){
   const hasRelease = !!(state.manifest?.releases?.length);
   els.installLatestBtn.disabled = busy || !hasRelease || !state.device;
   els.installSelectedBtn.disabled = busy || !hasRelease || !state.device;
+  els.wifiSsid.disabled = busy || !state.device;
+  els.wifiPassword.disabled = busy || !state.device;
+  els.saveWifiBtn.disabled = busy || !state.device;
 }
 function renderManifest(manifest){
   state.manifest = manifest;
@@ -104,6 +111,8 @@ function renderDeviceInfo(info){
   setText(els.installedVersion, summary.version);
   setText(els.deviceProject, summary.project);
   setText(els.deviceHab, summary.hab);
+  els.wifiSsid.value = info.config?.ssid || '';
+  els.wifiPassword.value = info.config?.password || '';
   if(state.manifest?.latest && summary.version === state.manifest.latest) log(`device is current: ${summary.version}`);
   else if(summary.version === 'unknown') log('device version is unknown; install latest when ready');
   else if(state.manifest?.latest) log(`update available: installed ${summary.version}, latest ${state.manifest.latest}`);
@@ -112,6 +121,32 @@ function clearDeviceUi(){
   setText(els.installedVersion, '—');
   setText(els.deviceProject, '—');
   setText(els.deviceHab, '—');
+  els.wifiSsid.value = '';
+  els.wifiPassword.value = '';
+}
+
+async function saveWifiConfig(){
+  if(!state.device){ log('connect a device first'); return; }
+  setBusy(true);
+  try{
+    const next = validateWifiConfig({ ssid: els.wifiSsid.value, password: els.wifiPassword.value });
+    const passwordText = next.password ? 'password protected' : 'open network';
+    const ok = confirm(`Save WiFi config and reset the Pico?\n\nSSID: ${next.ssid}\nMode: ${passwordText}`);
+    if(!ok){ log('WiFi config change cancelled'); return; }
+    log(`writing WiFi config: ${next.ssid} (${passwordText})`);
+    const config = await writeWifiConfig(state.device, state.deviceInfo?.config || {}, next);
+    state.deviceInfo = { ...(state.deviceInfo || {}), config };
+    renderDeviceInfo(state.deviceInfo);
+    log('WiFi config saved; resetting device');
+    await state.device.softReset();
+    setStatus('reconnect needed', 'status-warn');
+    log('after reset, join the new WiFi network name and reconnect USB if needed');
+  }catch(err){
+    setStatus('config failed', 'status-bad');
+    log(`WiFi config failed: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
 }
 function initBrowserSupport(){
   if(!supportsWebSerial()){
@@ -216,6 +251,7 @@ function initEvents(){
   els.connectBtn.addEventListener('click', () => { connectDevice(); });
   els.installLatestBtn.addEventListener('click', () => { installVersion(state.manifest?.latest); });
   els.installSelectedBtn.addEventListener('click', () => { installVersion(state.selectedVersion); });
+  els.saveWifiBtn.addEventListener('click', () => { saveWifiConfig(); });
 }
 async function main(){
   initBrowserSupport();
