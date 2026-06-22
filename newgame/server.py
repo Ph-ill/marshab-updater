@@ -29,7 +29,7 @@ async def send_portal(w,path):
     # Use absolute Location because clients probe arbitrary hostnames that DNS maps here.
     if path in ('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html'):
         await send(w,302,'text/html; charset=utf-8',portal_body(path),loc)
-    elif path in ('/hotspot-detect.html','/library/test/success.html'):
+    elif path in ('/hotspot-detect.html','/library/test/success.html','/success.txt'):
         await send(w,200,'text/html; charset=utf-8',portal_body(path))
     elif path in ('/ncsi.txt','/connecttest.txt'):
         await send(w,200,'text/html; charset=utf-8',portal_body(path))
@@ -81,7 +81,7 @@ async def api(path,method,body):
             if k in data: dev[k]=data[k]
         save_device(dev); return {'ok':True,'device':dev}
     return {'ok':False,'error':'not_found'}
-PORTAL=('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html','/hotspot-detect.html','/library/test/success.html','/ncsi.txt','/connecttest.txt','/redirect')
+PORTAL=('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html','/hotspot-detect.html','/library/test/success.html','/ncsi.txt','/connecttest.txt','/success.txt','/redirect')
 async def handle(r,w):
     try:
         req=await read_req(r)
@@ -104,13 +104,25 @@ async def handle(r,w):
 async def http_server():
     srv=await asyncio.start_server(handle,'0.0.0.0',HTTP_PORT); print('http',HTTP_PORT)
     while True: await asyncio.sleep(3600)
+def dns_response(data):
+    if len(data) < 12:
+        return None
+    end = 12
+    # Walk the QNAME to the end of the first question.
+    while end < len(data) and data[end] != 0:
+        end += data[end] + 1
+    if end + 5 > len(data):
+        return None
+    question = data[12:end + 5]
+    ip = bytes(int(x) for x in AP_IP.split('.'))
+    return (data[:2] + b'\x81\x80' + b'\x00\x01' + b'\x00\x01' +
+            b'\x00\x00\x00\x00' + question +
+            b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04' + ip)
 async def dns_server():
     sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); sock.setblocking(False); sock.bind(('0.0.0.0',DNS_PORT)); print('dns',DNS_PORT)
     while True:
         try:
             data,addr=sock.recvfrom(512)
-            if len(data)>12:
-                resp=data[:2]+b'\x81\x80'+data[4:6]+data[4:6]+b'\x00\x00\x00\x00'+data[12:]
-                resp+=b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'+bytes(int(x) for x in AP_IP.split('.'))
-                sock.sendto(resp,addr)
+            resp=dns_response(data)
+            if resp: sock.sendto(resp,addr)
         except OSError: await asyncio.sleep_ms(20)
