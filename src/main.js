@@ -37,7 +37,7 @@ const els = {
   log: document.getElementById('log'),
 };
 
-function stamp(){ return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+function stamp(){ return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }); }
 function log(message){
   const li = document.createElement('li');
   const time = document.createElement('time');
@@ -119,7 +119,12 @@ function releaseLabel(release){
   const label = String(release.label || '').trim();
   const normalizedVersion = String(release.version || '').replace(/^v/i, '');
   const normalizedLabel = label.replace(/^v/i, '');
-  if(label && normalizedLabel !== normalizedVersion && !normalizedLabel.startsWith(`${normalizedVersion} `)) parts.push(label);
+  if(label){
+    const strippedLabel = normalizedLabel.startsWith(`${normalizedVersion} `)
+      ? label.slice(label.toLowerCase().indexOf(normalizedVersion.toLowerCase()) + normalizedVersion.length).trim()
+      : label;
+    if(strippedLabel && strippedLabel !== release.version) parts.push(strippedLabel);
+  }
   if(release.date) parts.push(`(${release.date})`);
   return parts.join(' ');
 }
