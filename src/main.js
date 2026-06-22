@@ -22,6 +22,7 @@ const els = {
   connectBtn: document.getElementById('connectBtn'),
   installLatestBtn: document.getElementById('installLatestBtn'),
   installSelectedBtn: document.getElementById('installSelectedBtn'),
+  progressPanel: document.getElementById('progressPanel'),
   progressTrack: document.querySelector('.progress-track'),
   progressFill: document.getElementById('progressFill'),
   progressPercent: document.getElementById('progressPercent'),
@@ -52,7 +53,8 @@ function setProgress(percent, status, mode = ''){
   els.progressTrack.classList.toggle('failed', mode === 'failed');
   if(status) els.progressStatus.textContent = status;
 }
-function resetProgress(status = 'Standing by. Connect a device and select a release.'){
+function resetProgress(status = 'Standing by. Connect a device and select a release.', visible = false){
+  els.progressPanel.hidden = !visible;
   setProgress(0, status, '');
 }
 
@@ -181,7 +183,7 @@ async function installVersion(version){
   if(!state.device){ log('connect a device first'); return; }
   setBusy(true);
   setStatus('installing', 'status-warn');
-  resetProgress(`Preparing ${version} install.`);
+  resetProgress(`Preparing ${version} install.`, true);
   try{
     const release = await loadReleaseManifest(state.manifest, version);
     if(version !== state.manifest.latest){
