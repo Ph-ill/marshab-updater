@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "project": "MarsHab",
+  "version": "0.1.5",
+  "device": "raspberry-pi-pico-w",
+  "runtime": "micropython",
+  "label": "WiFi password support",
+  "builtAt": "2026-06-22T20:42:47.412021Z"
+}
