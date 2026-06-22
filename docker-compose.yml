@@ -5,3 +5,9 @@ services:
     restart: unless-stopped
     ports:
       - "${MARSHAB_HOST_PORT:-8080}:80"
+    networks:
+      - Shared
+
+networks:
+  Shared:
+    external: true
