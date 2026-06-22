@@ -26,7 +26,6 @@ const els = {
   installSelectedBtn: document.getElementById('installSelectedBtn'),
   wifiPanel: document.getElementById('wifiPanel'),
   wifiSsid: document.getElementById('wifiSsid'),
-  wifiPassword: document.getElementById('wifiPassword'),
   saveWifiBtn: document.getElementById('saveWifiBtn'),
   progressPanel: document.getElementById('progressPanel'),
   progressTrack: document.querySelector('.progress-track'),
@@ -126,7 +125,6 @@ function setBusy(busy){
   els.installLatestBtn.disabled = busy || !hasRelease || !state.device;
   els.installSelectedBtn.disabled = busy || !hasRelease || !state.device;
   els.wifiSsid.disabled = busy || !state.device;
-  els.wifiPassword.disabled = busy || !state.device;
   els.saveWifiBtn.disabled = busy || !state.device;
 }
 function renderManifest(manifest){
@@ -153,7 +151,7 @@ function renderDeviceInfo(info){
   setText(els.deviceProject, summary.project);
   setText(els.deviceHab, summary.hab);
   els.wifiSsid.value = info.config?.ssid || '';
-  els.wifiPassword.value = info.config?.password || '';
+
   if(state.manifest?.latest && summary.version === state.manifest.latest) log(`device is current: ${summary.version}`);
   else if(summary.version === 'unknown') log('device version is unknown; install latest when ready');
   else if(state.manifest?.latest) log(`update available: installed ${summary.version}, latest ${state.manifest.latest}`);
@@ -163,16 +161,15 @@ function clearDeviceUi(){
   setText(els.deviceProject, '—');
   setText(els.deviceHab, '—');
   els.wifiSsid.value = '';
-  els.wifiPassword.value = '';
+
 }
 
 async function saveWifiConfig(){
   if(!state.device){ log('connect a device first'); return; }
   setBusy(true);
   try{
-    const next = validateWifiConfig({ ssid: els.wifiSsid.value, password: els.wifiPassword.value });
-    const passwordText = next.password ? 'password protected' : 'open network';
-    log(`writing WiFi config: ${next.ssid} (${passwordText})`);
+    const next = validateWifiConfig({ ssid: els.wifiSsid.value });
+    log(`writing WiFi config: ${next.ssid} (open network)`);
     const config = await writeWifiConfig(state.device, state.deviceInfo?.config || {}, next);
     state.deviceInfo = { ...(state.deviceInfo || {}), config };
     renderDeviceInfo(state.deviceInfo);

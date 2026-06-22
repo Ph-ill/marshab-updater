@@ -1,0 +1,20 @@
+{
+  "category": "extras",
+  "classname": "drinks",
+  "default_dir": 0,
+  "description": "Are you a slob too?",
+  "icon": "assets/furni/drinks_icon.png",
+  "logic": "furniture_basic",
+  "name": "Empty Cans",
+  "price": 30,
+  "sprites": {
+    "0": "assets/furni/drinks_dir0.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0
+  ],
+  "xdim": 1,
+  "ydim": 1,
+  "zdim": 1
+}

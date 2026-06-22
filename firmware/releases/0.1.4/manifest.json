@@ -1,0 +1,368 @@
+{
+  "schema": 1,
+  "project": "MarsHab",
+  "version": "0.1.4",
+  "date": "2026-06-22",
+  "label": "SSID-only open AP recovery",
+  "device": "raspberry-pi-pico-w",
+  "runtime": "micropython",
+  "entrypoint": "main.py",
+  "preserve": [
+    "config.json",
+    "save.json",
+    "ledger.json"
+  ],
+  "delete": [],
+  "files": [
+    {
+      "path": "assets/background.avif",
+      "url": "/firmware/releases/0.1.4/files/assets/background.avif",
+      "sha256": "efdeee8d07d281ebf4f7e91c79efd7066fb17d8817140b7e8499638af829d58f",
+      "size": 108978,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/favicon.ico",
+      "url": "/firmware/releases/0.1.4/files/assets/favicon.ico",
+      "sha256": "510516ce1f1d264b1c50b86eae934f73254d64f4303fcc1096af347bd54e1cd3",
+      "size": 666,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/bed_budget_4.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/bed_budget_4.json",
+      "sha256": "89b32d0e9839d05f14f405b57dacde3d99a07ac380e4ed802fcc8cd1aebe6aeb",
+      "size": 438,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/bed_budget_4_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/bed_budget_4_dir0.png",
+      "sha256": "87f9290794c2b28fef4ed00b20b5cf9458903179f3746c0ef8e779ccfbba94b7",
+      "size": 2073,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/bed_budget_4_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/bed_budget_4_dir2.png",
+      "sha256": "cea25d4837ad0ac22bec84361787c1bfa46aab346162019e4664d0ecf295f45b",
+      "size": 2040,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/bed_polyfon_one_3.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/bed_polyfon_one_3.json",
+      "sha256": "49f30bb9338cb136cdee3a45fade9ee05a987500de52cc660436c780ebda4c58",
+      "size": 459,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/bed_polyfon_one_3_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/bed_polyfon_one_3_dir0.png",
+      "sha256": "b56296d5a5bb1829a3f98b6d6c746c0c8f4f0eb0cf8d8a11a8d27d6969734326",
+      "size": 1213,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/bed_polyfon_one_3_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/bed_polyfon_one_3_dir2.png",
+      "sha256": "869ba110ac6e62886f04133c444361a021f584c3e12d680919767b32eb609b63",
+      "size": 1271,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/drinks.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/drinks.json",
+      "sha256": "c40aab6f2cffb5fcb5d804e478249b6355963aac5db70214f6510870f24294d2",
+      "size": 367,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/drinks_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/drinks_dir0.png",
+      "sha256": "b8480cc832e4c1812b164173e7c95fb7bec5809a2f7dc77f2357e16bb9dd20ae",
+      "size": 607,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/nft_h26_bigtv.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/nft_h26_bigtv.json",
+      "sha256": "59103ff261836c379c42e204a1f4b9698d34d44232c497a2d122550477eec296",
+      "size": 432,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/nft_h26_bigtv_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/nft_h26_bigtv_dir2.png",
+      "sha256": "22af95a7b6d32374bd2543b8714370382fc41e9e56eff293207150127385c753",
+      "size": 1883,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/nft_sf_pod.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/nft_sf_pod.json",
+      "sha256": "8213ecd04c12c1fef8b142219ad65fd846bf7516fc5d3f4cf83d9792c8d08732",
+      "size": 398,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/nft_sf_pod_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/nft_sf_pod_dir0.png",
+      "sha256": "67b05f6356e4d43aad39df643f8e8bde913344d143e1682bd2a1d9f058c4bc77",
+      "size": 2661,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/nft_sf_pod_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/nft_sf_pod_dir2.png",
+      "sha256": "54529bd3f501f35875f8d769f187f3bf6a0b9e268060b8bbf1171869dc8cebe0",
+      "size": 2688,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/pizza.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/pizza.json",
+      "sha256": "6ffddc1e3b97ae3fc67dcb3144ec3d5a90878883011564e094f297fe9f89d295",
+      "size": 360,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/pizza_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/pizza_dir0.png",
+      "sha256": "586419d5f661c3d2449320d7816ddf3de646d857d57d46d2849de7c67558edce",
+      "size": 516,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/scifi_c17_airlock.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/scifi_c17_airlock.json",
+      "sha256": "cee7ce4e2fb5f3104e96299fb5252a0ddef5f62740bff913f4dc19f87e8404f6",
+      "size": 479,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/scifi_c17_airlock_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/scifi_c17_airlock_dir0.png",
+      "sha256": "4d5de1687e7a0ce19e954844de6f7484e94722eb74ece52b4ed59a58e9e5daee",
+      "size": 4974,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/scifi_c17_airlock_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/scifi_c17_airlock_dir2.png",
+      "sha256": "4d5de1687e7a0ce19e954844de6f7484e94722eb74ece52b4ed59a58e9e5daee",
+      "size": 4974,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/sf_pod_dark.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/sf_pod_dark.json",
+      "sha256": "4e20cc0ebd94dc4d114ffaf22e77f639d92ffec450cc617164fdfbe94aaeeaec",
+      "size": 483,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/sf_pod_dark_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/sf_pod_dark_dir0.png",
+      "sha256": "fa50cfc2ca410386df502547d9be27798c5bac359a529be46cf33608f3277b45",
+      "size": 2539,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/sf_pod_dark_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/sf_pod_dark_dir2.png",
+      "sha256": "f37b0e5a03009c1340a815ef138239fa69c7730bc221a814c354028d9114f1c9",
+      "size": 2494,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/sf_wall2.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/sf_wall2.json",
+      "sha256": "3db05af0282e743b9bb7d6979a304cb29ed45c2368aa4e716e870aeb9ec39087",
+      "size": 392,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/sf_wall2_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/sf_wall2_dir0.png",
+      "sha256": "59bee98005510929eb1960bea15a59c62621cf02daa8f55884fbdb78f795b052",
+      "size": 10566,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/space_c23_alienmechanic.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/space_c23_alienmechanic.json",
+      "sha256": "d52c2cae8bb4487f884ea193244790043007086eef542d4dcf27376800431370",
+      "size": 496,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/space_c23_alienmechanic_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/space_c23_alienmechanic_dir0.png",
+      "sha256": "dcfb7d707ef560b7da85a9c834b7e1e881e96985663a4bbd78156b47b9eee46e",
+      "size": 5507,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/space_c23_alienmechanic_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/space_c23_alienmechanic_dir2.png",
+      "sha256": "2a7e738092358b147d019ece1f03adc39cfc5f4091c5f0889aeb5b62078b2c1b",
+      "size": 5540,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/stellar_c23_spacechair.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/stellar_c23_spacechair.json",
+      "sha256": "8c3900f4e8a98a94dbe316c0054669cd3ad3a8963ffbab7b439f5107d369ce39",
+      "size": 624,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/stellar_c23_spacechair_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/stellar_c23_spacechair_dir0.png",
+      "sha256": "ce04d3a7050862a4dc3433f4a7953b58f1e5104cbec1c1c111c8fc61f5532940",
+      "size": 2334,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/stellar_c23_spacechair_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/stellar_c23_spacechair_dir2.png",
+      "sha256": "a664aac229f32517fa91fb158aef3157c89e05af5ae50ab86d36726ea39e0e5e",
+      "size": 4092,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/tokyo_c18_motorbike.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/tokyo_c18_motorbike.json",
+      "sha256": "dfd3c7c49730989597eef6bd2b8b0041d0963de46a62802adcd14481fbaf0f4f",
+      "size": 609,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/tokyo_c18_motorbike_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/tokyo_c18_motorbike_dir0.png",
+      "sha256": "fdf2999e76dd7a417d513173c0bc26b4b956d0cd3b4350a0980075741fc12fe3",
+      "size": 4746,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/tokyo_c18_motorbike_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/tokyo_c18_motorbike_dir2.png",
+      "sha256": "92e206fef107b59a87826f87ab06123b9613dd4789856c5a3b30de42cdca9d68",
+      "size": 5629,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/val14_bed_b.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_b.json",
+      "sha256": "38a8c90c1974e986cf3d3c7fd2db8802e35167f9ff4ff94bfde1a2d822dc2d91",
+      "size": 452,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/val14_bed_b_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_b_dir0.png",
+      "sha256": "66026915cd7c39c33358ef807bf7b7f9ef38c6bed3be1834b62bf8e6af3df817",
+      "size": 2325,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/val14_bed_b_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_b_dir2.png",
+      "sha256": "273f0a895cb99764f53944a344e17423487c698e77aa4c186526acc5584b40a2",
+      "size": 2291,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/val14_bed_g.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_g.json",
+      "sha256": "18260160ee26c0dcb8fae1715e120c7c7ad7e090195bb02ee29d1d39932cbf2d",
+      "size": 453,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/val14_bed_g_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_g_dir0.png",
+      "sha256": "c5b1654f745e83a57d8689cbd1fd9468c6bfd4831ea3465764faaf76d07d48eb",
+      "size": 2304,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/val14_bed_g_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_g_dir2.png",
+      "sha256": "8c35b0372182abfa1cce8685c988cc944fbd0908c28c0ff5c7a98325172f5a9d",
+      "size": 2339,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/val14_bed_o.json",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_o.json",
+      "sha256": "1686e0d0a8d4eff049f01a3110cd191844fcf92d83c22f07ebd677564bb57380",
+      "size": 454,
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/furni/val14_bed_o_dir0.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_o_dir0.png",
+      "sha256": "7c38dd120b18f08ce7a49d485f32a44182df8eb9715de61ea44d1275363080a8",
+      "size": 2283,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/furni/val14_bed_o_dir2.png",
+      "url": "/firmware/releases/0.1.4/files/assets/furni/val14_bed_o_dir2.png",
+      "sha256": "2f46e18ebb662005450dba2c22c4e92fb98b43d53c03083ba7d9dd5351b13ea5",
+      "size": 2274,
+      "encoding": "binary"
+    },
+    {
+      "path": "assets/spr_bgscale.png",
+      "url": "/firmware/releases/0.1.4/files/assets/spr_bgscale.png",
+      "sha256": "d739612ac8ceb6817fd4a24f6d9d538bd88d7e5d447a4a4c224946faa1d08a01",
+      "size": 4851,
+      "encoding": "binary"
+    },
+    {
+      "path": "gift.mjs",
+      "url": "/firmware/releases/0.1.4/files/gift.mjs",
+      "sha256": "d44306402745992ca7446924b3d136c8ccdbe9b65fb4e4fa39ab4242761eccb3",
+      "size": 4544,
+      "encoding": "utf8"
+    },
+    {
+      "path": "hab.py",
+      "url": "/firmware/releases/0.1.4/files/hab.py",
+      "sha256": "e9c4887cc30977c96c593495e9f5ed154388e51fe9cf076496dbba6210a2836b",
+      "size": 14774,
+      "encoding": "utf8"
+    },
+    {
+      "path": "index.html",
+      "url": "/firmware/releases/0.1.4/files/index.html",
+      "sha256": "42f0a6d889d8e6402477af81f4ccc072d822325d8fc31d27bad1cfb07101245a",
+      "size": 106435,
+      "encoding": "utf8"
+    },
+    {
+      "path": "main.py",
+      "url": "/firmware/releases/0.1.4/files/main.py",
+      "sha256": "f2613c8b26f3936ee48e4fba0ef308a3adebc3a1538bb066bd08dd6c17a6a4c6",
+      "size": 9194,
+      "encoding": "utf8"
+    },
+    {
+      "path": "secrets.py",
+      "url": "/firmware/releases/0.1.4/files/secrets.py",
+      "sha256": "74c45293d5db1e92c30932d25bfe9b2334ce471af306419a78aba16186daad98",
+      "size": 419,
+      "encoding": "utf8"
+    },
+    {
+      "path": "version.json",
+      "url": "/firmware/releases/0.1.4/files/version.json",
+      "sha256": "b3d33d483325ace378fbe6a99d2a6d43a14e3ef5486dc24ae697ffd23a1660de",
+      "size": 211,
+      "encoding": "utf8"
+    }
+  ]
+}
