@@ -1,0 +1,26 @@
+{
+  "category": "chair",
+  "classname": "stellar_c23_spacechair",
+  "default_dir": 0,
+  "description": "stellar_c23_spacechair desc",
+  "icon": "assets/furni/stellar_c23_spacechair_icon.png",
+  "logic": "furniture_multistate",
+  "name": "Cosmic Chair",
+  "price": 100,
+  "sprites": {
+    "0": "assets/furni/stellar_c23_spacechair_dir0.png",
+    "2": "assets/furni/stellar_c23_spacechair_dir2.png",
+    "4": "assets/furni/stellar_c23_spacechair_dir4.png",
+    "6": "assets/furni/stellar_c23_spacechair_dir6.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2,
+    4,
+    6
+  ],
+  "xdim": 1,
+  "ydim": 1,
+  "zdim": 1.9
+}
