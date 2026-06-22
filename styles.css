@@ -44,4 +44,5 @@ button:not(:disabled):hover,select:hover{background:#211711}.actions{display:fle
 .log li{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:5px 8px;border-bottom:1px solid rgba(122,85,48,.22)}
 .log time{color:var(--cyan)}.log span{color:var(--text)}
 .status-ok{color:var(--ok)}.status-warn{color:var(--amber)}.status-bad{color:var(--bad)}
+.build-footer{border-top:1px solid var(--line-dim);color:var(--muted);font-size:12px;letter-spacing:.08em;margin-top:18px;padding:14px 0 4px;text-transform:uppercase;}
 @media(max-width:760px){.topline{align-items:flex-start;flex-direction:column}.host{text-align:left}.grid{grid-template-columns:1fr}.kv div{grid-template-columns:110px 1fr}}
