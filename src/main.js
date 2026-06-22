@@ -48,6 +48,38 @@ function log(message){
 function setText(el, value){ el.textContent = value == null || value === '' ? '—' : String(value); }
 function setStatus(text, className){ els.deviceStatus.textContent = text; els.deviceStatus.className = className || ''; }
 function supportsWebSerial(){ return 'serial' in navigator; }
+function initMarsVideoLoop(){
+  const a = document.getElementById('marsBgA');
+  const b = document.getElementById('marsBgB');
+  if(!a || !b) return;
+  let front = a;
+  let back = b;
+  let fading = false;
+  const fadeSeconds = 2.2;
+  const swap = async () => {
+    if(fading || !front.duration || front.duration < fadeSeconds + 1) return;
+    fading = true;
+    try{
+      back.currentTime = 0;
+      await back.play();
+    }catch(_err){}
+    back.classList.add('active');
+    front.classList.remove('active');
+    setTimeout(() => {
+      try{ front.pause(); front.currentTime = 0; }catch(_err){}
+      [front, back] = [back, front];
+      fading = false;
+    }, fadeSeconds * 1000);
+  };
+  for(const video of [a, b]){
+    video.loop = false;
+    video.addEventListener('timeupdate', () => {
+      if(video === front && video.duration - video.currentTime <= fadeSeconds) swap();
+    });
+    video.addEventListener('ended', () => { if(video === front) swap(); });
+  }
+  a.play().catch(() => {});
+}
 function setProgress(percent, status, mode = ''){
   const value = Math.max(0, Math.min(100, Math.round(percent || 0)));
   els.progressFill.style.width = `${value}%`;
@@ -254,6 +286,7 @@ function initEvents(){
   els.saveWifiBtn.addEventListener('click', () => { saveWifiConfig(); });
 }
 async function main(){
+  initMarsVideoLoop();
   initBrowserSupport();
   initEvents();
   try{ renderManifest(await loadManifest()); }

@@ -24,6 +24,7 @@ body{
   font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
   letter-spacing:.01em;
 }
+.video-bg{position:fixed;inset:0;z-index:-2;overflow:hidden;background:#120d0a}.mars-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;filter:saturate(.82) contrast(1.08) brightness(.48) sepia(.18);transform:scale(1.025);transition:opacity 1.8s ease-in-out}.mars-bg.active{opacity:1}.video-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,rgba(255,180,84,.10),transparent 42%),linear-gradient(180deg,rgba(18,13,10,.30),rgba(18,13,10,.78));z-index:1}.crt-overlay{position:absolute;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,220,170,.045) 0 1px,rgba(0,0,0,.12) 1px 3px,transparent 3px 5px),repeating-linear-gradient(90deg,rgba(255,80,40,.025) 0 1px,rgba(80,220,210,.018) 1px 2px,transparent 2px 4px);mix-blend-mode:soft-light;opacity:.62}.crt-overlay::after{content:"";position:absolute;inset:-8%;background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.38) 100%);animation:crtBreath 7s ease-in-out infinite}@keyframes crtBreath{0%,100%{opacity:.58}50%{opacity:.76}}
 .shell{width:min(1040px,calc(100vw - 28px));margin:0 auto;padding:28px 0 44px}
 .topline{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}
 .eyebrow{margin:0 0 4px;color:var(--amber);font-weight:700;letter-spacing:.16em;text-transform:uppercase}

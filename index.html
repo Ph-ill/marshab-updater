@@ -8,6 +8,11 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <div class="video-bg" aria-hidden="true">
+    <video id="marsBgA" class="mars-bg active" src="./mars.mp4" autoplay muted playsinline preload="auto"></video>
+    <video id="marsBgB" class="mars-bg" src="./mars.mp4" muted playsinline preload="auto"></video>
+    <div class="crt-overlay"></div>
+  </div>
   <main class="shell">
     <header class="topline">
       <div>
@@ -84,7 +89,7 @@
     </section>
 
     <footer class="build-footer">
-      MarsHab updater web app v0.1.8 · WiFi config editor · 2026-06-22
+      MarsHab updater web app v0.1.9 · Mars video CRT background · 2026-06-22
     </footer>
   </main>
   <script type="module" src="./src/main.js"></script>
