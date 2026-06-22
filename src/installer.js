@@ -12,6 +12,13 @@ export async function fetchBytes(url){
   return new Uint8Array(await response.arrayBuffer());
 }
 
+export function decodeBase64Bytes(data){
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 export function findRelease(indexManifest, version){
   return (indexManifest.releases || []).find(release => release.version === version) || null;
 }
@@ -44,7 +51,7 @@ export async function installRelease(device, releaseManifest, { onLog = () => {}
   for(let i = 0; i < files.length; i++){
     const file = files[i];
     onLog(`writing ${file.path} (${i + 1}/${files.length})`);
-    const bytes = await fetchBytes(file.url);
+    const bytes = file.data ? decodeBase64Bytes(file.data) : await fetchBytes(file.url);
     if(bytes.length !== file.size) throw new Error(`${file.path} download size mismatch`);
     await writeManifestFile(device, file, bytes, {
       onProgress: progress => onProgress({ file, fileIndex: i + 1, fileTotal: files.length, ...progress }),

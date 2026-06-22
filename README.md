@@ -44,14 +44,29 @@ python3 -m http.server 8140
 
 ## Firmware releases
 
-Top-level index:
+The updater UI pulls available firmware versions directly from GitHub Releases for this repository:
 
 ```text
-firmware/manifest.json
+https://api.github.com/repos/Ph-ill/marshab-updater/releases
 ```
 
-Current release:
+Each GitHub Release should have one asset named:
 
 ```text
-firmware/releases/0.1.1/manifest.json
+firmware-release.json
+```
+
+That asset is a generic firmware manifest with file bytes embedded as base64. The updater still keeps `firmware/manifest.json` as a bundled fallback, but normal operation uses GitHub Releases.
+
+To pack the current bundled release into a GitHub Release asset:
+
+```bash
+python3 tools/make_release_asset.py \
+  firmware/releases/0.1.1/manifest.json \
+  firmware/releases/0.1.1/files \
+  dist/firmware-release.json
+
+gh release create v0.1.1 dist/firmware-release.json \
+  --title "v0.1.1" \
+  --notes "Firmware payload attached as firmware-release.json."
 ```

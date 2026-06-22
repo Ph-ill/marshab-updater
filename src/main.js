@@ -1,6 +1,7 @@
 import { MicroPythonSerial } from './webserial-micropython.js';
 import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
+import { loadGithubReleaseIndex } from './github-releases.js';
 
 const state = {
   manifest: null,
@@ -40,9 +41,14 @@ function setStatus(text, className){ els.deviceStatus.textContent = text; els.de
 function supportsWebSerial(){ return 'serial' in navigator; }
 
 async function loadManifest(){
-  const response = await fetch('./firmware/manifest.json', { cache:'no-store' });
-  if(!response.ok) throw new Error(`manifest ${response.status}`);
-  return response.json();
+  try{
+    return await loadGithubReleaseIndex();
+  }catch(err){
+    log(`GitHub release index unavailable, trying bundled fallback: ${err.message}`);
+    const response = await fetch('./firmware/manifest.json', { cache:'no-store' });
+    if(!response.ok) throw new Error(`manifest ${response.status}`);
+    return response.json();
+  }
 }
 function releaseLabel(release){
   const parts = [release.version];
