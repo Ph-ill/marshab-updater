@@ -1,7 +1,7 @@
 import { removePaths, writeManifestFile } from './file-transfer.js';
 
 export async function fetchJson(url){
-  const isGithubAsset = url.startsWith('https://api.github.com/repos/') && url.includes('/releases/assets/');
+  const isGithubAsset = (url.startsWith('https://api.github.com/repos/') || url.startsWith('/github-api/repos/')) && url.includes('/releases/assets/');
   const response = await fetch(url, {
     cache:'no-store',
     headers: isGithubAsset ? { Accept:'application/octet-stream' } : {},
