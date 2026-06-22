@@ -119,7 +119,11 @@ def dns_response(data):
             b'\x00\x00\x00\x00' + question +
             b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04' + ip)
 async def dns_server():
-    sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); sock.setblocking(False); sock.bind(('0.0.0.0',DNS_PORT)); print('dns',DNS_PORT)
+    try:
+        sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); sock.setblocking(False); sock.bind(('0.0.0.0',DNS_PORT)); print('dns',DNS_PORT)
+    except Exception as e:
+        print('dns disabled', e)
+        while True: await asyncio.sleep(3600)
     while True:
         try:
             data,addr=sock.recvfrom(512)

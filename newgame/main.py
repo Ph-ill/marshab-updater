@@ -33,10 +33,21 @@ async def persist_loop():
         await asyncio.sleep_ms(PERSIST_INTERVAL_MS)
         if ctx.get('dirty'):
             save_save(ctx['state']); ctx['dirty']=False; print('save persisted')
+async def task_guard(name, coro):
+    try:
+        await coro
+    except Exception as e:
+        print(name, 'stopped', e)
 async def main():
     ctx['device']=load_device(); ctx['state']=load_save(); start_ap(ctx['device'])
     server.set_context(ctx)
-    await asyncio.gather(server.http_server(), server.dns_server(), sim_loop(), persist_loop())
+    # Keep HTTP alive even if optional captive-DNS setup fails.
+    asyncio.create_task(task_guard('http', server.http_server()))
+    asyncio.create_task(task_guard('dns', server.dns_server()))
+    asyncio.create_task(task_guard('sim', sim_loop()))
+    asyncio.create_task(task_guard('persist', persist_loop()))
+    while True:
+        await asyncio.sleep(3600)
 try: asyncio.run(main())
 finally:
     try: asyncio.new_event_loop()
