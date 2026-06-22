@@ -151,6 +151,16 @@ export class MicroPythonSerial {
     await this.write(CTRL_D);
     await delay(1500);
   }
+
+  async hardReset(){
+    this.clearBuffer();
+    try{
+      await this.exec('import machine\nmachine.reset()', { timeoutMs: 1200 });
+    }catch(_err){
+      // machine.reset() tears down the VM/USB link before raw REPL can return.
+    }
+    await delay(2500);
+  }
 }
 
 function parseRawExec(raw){

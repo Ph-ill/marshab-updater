@@ -173,8 +173,8 @@ async function saveWifiConfig(){
     const config = await writeWifiConfig(state.device, state.deviceInfo?.config || {}, next);
     state.deviceInfo = { ...(state.deviceInfo || {}), config };
     renderDeviceInfo(state.deviceInfo);
-    log('WiFi config saved; resetting device');
-    await state.device.softReset();
+    log('WiFi config saved; hard-resetting device so the AP restarts');
+    await state.device.hardReset();
     setStatus('reconnect needed', 'status-warn');
     log('after reset, join the new WiFi network name and reconnect USB if needed');
   }catch(err){
