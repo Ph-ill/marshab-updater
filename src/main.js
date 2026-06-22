@@ -22,6 +22,10 @@ const els = {
   connectBtn: document.getElementById('connectBtn'),
   installLatestBtn: document.getElementById('installLatestBtn'),
   installSelectedBtn: document.getElementById('installSelectedBtn'),
+  progressTrack: document.querySelector('.progress-track'),
+  progressFill: document.getElementById('progressFill'),
+  progressPercent: document.getElementById('progressPercent'),
+  progressStatus: document.getElementById('progressStatus'),
   log: document.getElementById('log'),
 };
 
@@ -39,6 +43,18 @@ function log(message){
 function setText(el, value){ el.textContent = value == null || value === '' ? '—' : String(value); }
 function setStatus(text, className){ els.deviceStatus.textContent = text; els.deviceStatus.className = className || ''; }
 function supportsWebSerial(){ return 'serial' in navigator; }
+function setProgress(percent, status, mode = ''){
+  const value = Math.max(0, Math.min(100, Math.round(percent || 0)));
+  els.progressFill.style.width = `${value}%`;
+  els.progressPercent.textContent = `${value}%`;
+  els.progressTrack.setAttribute('aria-valuenow', String(value));
+  els.progressTrack.classList.toggle('complete', mode === 'complete');
+  els.progressTrack.classList.toggle('failed', mode === 'failed');
+  if(status) els.progressStatus.textContent = status;
+}
+function resetProgress(status = 'Standing by. Connect a device and select a release.'){
+  setProgress(0, status, '');
+}
 
 async function loadManifest(){
   try{
@@ -113,6 +129,7 @@ async function connectDevice(){
     state.deviceInfo = null;
     setStatus('disconnected', 'status-warn');
     clearDeviceUi();
+    resetProgress();
     els.connectBtn.textContent = 'Connect device';
     setBusy(false);
     log('device disconnected');
@@ -164,6 +181,7 @@ async function installVersion(version){
   if(!state.device){ log('connect a device first'); return; }
   setBusy(true);
   setStatus('installing', 'status-warn');
+  resetProgress(`Preparing ${version} install.`);
   try{
     const release = await loadReleaseManifest(state.manifest, version);
     if(version !== state.manifest.latest){
@@ -172,11 +190,17 @@ async function installVersion(version){
     }
     await installRelease(state.device, release, {
       onLog: log,
-      onProgress: ({ file, done, total }) => { if(done === total) log(`verified ${file.path}`); },
+      onProgress: ({ file, fileIndex, fileTotal, done, total }) => {
+        const percent = ((fileIndex - 1) + (done / Math.max(1, total))) / Math.max(1, fileTotal) * 100;
+        setProgress(percent, `Writing ${file.path} · chunk ${done}/${total}`);
+        if(done === total) log(`verified ${file.path}`);
+      },
     });
+    setProgress(100, `Install ${release.version} complete. Resetting device.`, 'complete');
     await refreshDeviceInfoAfterInstall();
   }catch(err){
     setStatus('install failed', 'status-bad');
+    setProgress(100, `Install failed: ${err.message}`, 'failed');
     log(`install failed: ${err.message}`);
   }finally{
     setBusy(false);
