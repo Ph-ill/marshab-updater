@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "project": "MarsHab",
+  "version": "0.1.6",
+  "device": "raspberry-pi-pico-w",
+  "runtime": "micropython",
+  "label": "WiFi open-mode password clearing",
+  "builtAt": "2026-06-22T20:52:44.679806Z"
+}

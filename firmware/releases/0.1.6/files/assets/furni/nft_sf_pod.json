@@ -1,0 +1,22 @@
+{
+  "category": "bed",
+  "classname": "nft_sf_pod",
+  "default_dir": 0,
+  "description": "",
+  "icon": "assets/furni/nft_sf_pod_icon.png",
+  "logic": "",
+  "name": "Cryogenic Bed",
+  "price": 180,
+  "sprites": {
+    "0": "assets/furni/nft_sf_pod_dir0.png",
+    "2": "assets/furni/nft_sf_pod_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 1,
+  "ydim": 3,
+  "zdim": 0
+}

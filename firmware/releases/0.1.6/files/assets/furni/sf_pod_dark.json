@@ -1,0 +1,22 @@
+{
+  "category": "bed",
+  "classname": "sf_pod_dark",
+  "default_dir": 0,
+  "description": "Limited Edition Rare. Fall into the black hole of sleep.",
+  "icon": "assets/furni/sf_pod_dark_icon.png",
+  "logic": "furniture_multistate",
+  "name": "Black Scifi Pod",
+  "price": 180,
+  "sprites": {
+    "0": "assets/furni/sf_pod_dark_dir0.png",
+    "2": "assets/furni/sf_pod_dark_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 1,
+  "ydim": 3,
+  "zdim": 1.36
+}

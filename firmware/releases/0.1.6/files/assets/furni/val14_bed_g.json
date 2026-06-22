@@ -1,0 +1,22 @@
+{
+  "category": "bed",
+  "classname": "val14_bed_g",
+  "default_dir": 0,
+  "description": "Recline into optimum health.",
+  "icon": "assets/furni/val14_bed_g_icon.png",
+  "logic": "furniture_basic",
+  "name": "Green Form Recliner",
+  "price": 140,
+  "sprites": {
+    "0": "assets/furni/val14_bed_g_dir0.png",
+    "2": "assets/furni/val14_bed_g_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 1,
+  "ydim": 3,
+  "zdim": 1.6
+}

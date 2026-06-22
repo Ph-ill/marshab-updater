@@ -20,7 +20,8 @@ function validatePassword(password){
 }
 
 export function validateWifiConfig({ ssid, password }){
-  return { ssid: validateSsid(ssid), password: validatePassword(password) };
+  const cleanPassword = validatePassword(password);
+  return { ssid: validateSsid(ssid), password: cleanPassword, security: cleanPassword ? 'wpa2' : 'open' };
 }
 
 export async function writeWifiConfig(device, currentConfig, nextFields){
