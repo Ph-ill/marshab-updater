@@ -71,8 +71,8 @@ export async function installRelease(device, releaseManifest, { onLog = () => {}
 
   onLog('verifying protected device data');
   await verifyProtectedData(device);
-  onLog('hard-resetting device so WiFi/AP services restart cleanly');
+  onLog('shutting down AP and hard-resetting device');
   onBeforeReset();
-  await device.hardReset();
+  await device.firmwareInstallReset();
   return true;
 }

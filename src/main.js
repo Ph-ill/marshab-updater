@@ -293,11 +293,11 @@ async function refreshDeviceInfoAfterInstall(){
     setStatus('connected', 'status-ok');
     els.connectBtn.textContent = 'Disconnect device';
     log('device reconnected; installed firmware value refreshed');
-    log('if the WiFi gateway page does not appear on your phone, unplug/replug Pico power once');
+    log('firmware install can leave the Pico W AP stack stale; if the gateway page does not load, unplug/replug Pico power now');
   }catch(err){
     setStatus('reconnect needed', 'status-warn');
     log(`automatic reconnect failed; click Disconnect then Connect to refresh installed version (${err.message})`);
-    log('if the MarsHab WiFi/gateway page is not visible, unplug/replug Pico power once');
+    log('power-cycle required if the MarsHab WiFi/gateway page does not load after this install');
   }finally{
     state.installResetInProgress = false;
   }
@@ -323,7 +323,7 @@ async function installVersion(version){
         if(done === total) log(`verified ${file.path}`);
       },
     });
-    setProgress(100, `Install ${release.version} complete. Restarting device/AP. Power-cycle Pico if WiFi gateway does not appear.`, 'complete');
+    setProgress(100, `Install ${release.version} complete. AP restarted; power-cycle Pico if the gateway page does not load.`, 'complete');
     await refreshDeviceInfoAfterInstall();
   }catch(err){
     state.installResetInProgress = false;
