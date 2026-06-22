@@ -168,6 +168,19 @@ function clearDeviceUi(){
 
 }
 
+function markDeviceDisconnected(reason = 'device disconnected'){
+  if(!state.device && els.connectBtn.textContent === 'Connect device') return;
+  state.device = null;
+  state.deviceInfo = null;
+  setStatus('disconnected', 'status-warn');
+  clearDeviceUi();
+  setWifiPanelVisible(false);
+  resetProgress();
+  els.connectBtn.textContent = 'Connect device';
+  setBusy(false);
+  log(reason);
+}
+
 async function saveWifiConfig(){
   if(!state.device){ log('connect a device first'); return; }
   setBusy(true);
@@ -180,8 +193,7 @@ async function saveWifiConfig(){
     renderDeviceInfo(state.deviceInfo);
     log('WiFi config saved; hard-resetting device so the AP restarts');
     await state.device.hardReset();
-    setStatus('reconnect needed', 'status-warn');
-    log('after reset, join the new WiFi network name and reconnect USB if needed');
+    markDeviceDisconnected('device reset; reconnect USB after joining the new WiFi network');
   }catch(err){
     setStatus('config failed', 'status-bad');
     log(`WiFi config failed: ${err.message}`);
@@ -203,21 +215,13 @@ function initBrowserSupport(){
 async function connectDevice(){
   if(state.device){
     await state.device.disconnect();
-    state.device = null;
-    state.deviceInfo = null;
-    setStatus('disconnected', 'status-warn');
-    clearDeviceUi();
-    setWifiPanelVisible(false);
-    resetProgress();
-    els.connectBtn.textContent = 'Connect device';
-    setBusy(false);
-    log('device disconnected');
+    markDeviceDisconnected('device disconnected');
     return;
   }
   els.connectBtn.disabled = true;
   setStatus('connecting', 'status-warn');
   try{
-    const device = new MicroPythonSerial();
+    const device = new MicroPythonSerial({ onDisconnect: markDeviceDisconnected });
     log('opening browser serial chooser');
     await device.connect();
     log('serial port open; entering MicroPython raw REPL');

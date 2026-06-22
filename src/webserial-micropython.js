@@ -8,9 +8,10 @@ function delay(ms){
 }
 
 export class MicroPythonSerial {
-  constructor({ baudRate = 115200, onData = null } = {}){
+  constructor({ baudRate = 115200, onData = null, onDisconnect = null } = {}){
     this.baudRate = baudRate;
     this.onData = onData;
+    this.onDisconnect = onDisconnect;
     this.port = null;
     this.reader = null;
     this.writer = null;
@@ -19,6 +20,7 @@ export class MicroPythonSerial {
     this.buffer = '';
     this.waiters = [];
     this.reading = false;
+    this.disconnectNotified = false;
   }
 
   get connected(){
@@ -32,6 +34,7 @@ export class MicroPythonSerial {
     this.reader = this.port.readable.getReader();
     this.writer = this.port.writable.getWriter();
     this.reading = true;
+    this.disconnectNotified = false;
     this.readLoop();
     return this;
   }
@@ -55,11 +58,20 @@ export class MicroPythonSerial {
     }
   }
 
+  notifyDisconnect(reason = 'serial disconnected'){
+    if(this.disconnectNotified) return;
+    this.disconnectNotified = true;
+    if(this.onDisconnect) this.onDisconnect(reason);
+  }
+
   async readLoop(){
     while(this.reading && this.reader){
       try{
         const { value, done } = await this.reader.read();
-        if(done) break;
+        if(done){
+          if(this.reading) this.notifyDisconnect('serial link closed');
+          break;
+        }
         if(value){
           const text = this.decoder.decode(value, { stream:true });
           this.buffer += text;
@@ -67,7 +79,10 @@ export class MicroPythonSerial {
           this.checkWaiters();
         }
       }catch(err){
-        if(this.reading) this.resolveWaiters(err);
+        if(this.reading){
+          this.resolveWaiters(err);
+          this.notifyDisconnect(err.message || 'serial link lost');
+        }
         break;
       }
     }
