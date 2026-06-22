@@ -9,6 +9,7 @@ const state = {
   selectedVersion: null,
   device: null,
   deviceInfo: null,
+  installResetInProgress: false,
 };
 
 const els = {
@@ -169,6 +170,10 @@ function clearDeviceUi(){
 }
 
 function markDeviceDisconnected(reason = 'device disconnected'){
+  if(state.installResetInProgress){
+    log(`${reason}; waiting for Pico to return`);
+    return;
+  }
   if(!state.device && els.connectBtn.textContent === 'Connect device') return;
   state.device = null;
   state.deviceInfo = null;
@@ -246,17 +251,27 @@ async function connectDevice(){
   }
 }
 async function refreshDeviceInfoAfterInstall(){
+  const device = state.device;
   log('waiting for device reset');
-  await new Promise(resolve => setTimeout(resolve, 1800));
+  state.installResetInProgress = true;
+  await new Promise(resolve => setTimeout(resolve, 2200));
   try{
-    await state.device.enterRawRepl();
-    state.deviceInfo = await readDeviceInfo(state.device);
+    log('reconnecting to Pico serial after reset');
+    await device.reopenExisting({ attempts: 12, delayMs: 900 });
+    await device.enterRawRepl();
+    const probe = await device.exec("print('ok')", { timeoutMs: 5000 });
+    if(!probe.stdout.includes('ok')) throw new Error('MicroPython probe did not return ok after reset');
+    state.device = device;
+    state.deviceInfo = await readDeviceInfo(device);
     renderDeviceInfo(state.deviceInfo);
     setStatus('connected', 'status-ok');
-    log('device version check complete');
+    els.connectBtn.textContent = 'Disconnect device';
+    log('device reconnected; installed firmware value refreshed');
   }catch(err){
     setStatus('reconnect needed', 'status-warn');
-    log(`reset complete; click Disconnect then Connect if version did not refresh (${err.message})`);
+    log(`automatic reconnect failed; click Disconnect then Connect to refresh installed version (${err.message})`);
+  }finally{
+    state.installResetInProgress = false;
   }
 }
 async function installVersion(version){
@@ -273,6 +288,7 @@ async function installVersion(version){
     }
     await installRelease(state.device, release, {
       onLog: log,
+      onBeforeReset: () => { state.installResetInProgress = true; },
       onProgress: ({ file, fileIndex, fileTotal, done, total }) => {
         const percent = ((fileIndex - 1) + (done / Math.max(1, total))) / Math.max(1, fileTotal) * 100;
         setProgress(percent, `Writing ${file.path} · chunk ${done}/${total}`);
@@ -282,6 +298,7 @@ async function installVersion(version){
     setProgress(100, `Install ${release.version} complete. Resetting device.`, 'complete');
     await refreshDeviceInfoAfterInstall();
   }catch(err){
+    state.installResetInProgress = false;
     setStatus('install failed', 'status-bad');
     setProgress(100, `Install failed: ${err.message}`, 'failed');
     log(`install failed: ${err.message}`);

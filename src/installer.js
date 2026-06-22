@@ -47,7 +47,7 @@ function orderedFiles(files){
   return copy;
 }
 
-export async function installRelease(device, releaseManifest, { onLog = () => {}, onProgress = () => {} } = {}){
+export async function installRelease(device, releaseManifest, { onLog = () => {}, onProgress = () => {}, onBeforeReset = () => {} } = {}){
   const preserve = [...new Set([...(releaseManifest.preserve || []), 'data/'])];
   onLog(`installing ${releaseManifest.project || 'firmware'} ${releaseManifest.version}`);
   onLog('snapshotting protected device data');
@@ -72,6 +72,7 @@ export async function installRelease(device, releaseManifest, { onLog = () => {}
   onLog('verifying protected device data');
   await verifyProtectedData(device);
   onLog('soft-resetting device');
+  onBeforeReset();
   await device.softReset();
   return true;
 }
