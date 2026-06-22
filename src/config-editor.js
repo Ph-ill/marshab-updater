@@ -11,8 +11,16 @@ function validateSsid(ssid){
   return clean;
 }
 
-export function validateWifiConfig({ ssid }){
-  return { ssid: validateSsid(ssid), password: '' };
+function validatePassword(password){
+  const clean = String(password || '');
+  if(!clean) return '';
+  if(clean.length < 8 || clean.length > 63) throw new Error('WiFi password must be blank or 8–63 characters');
+  if(/[\x00-\x1f\x7f]/.test(clean)) throw new Error('WiFi password cannot contain control characters');
+  return clean;
+}
+
+export function validateWifiConfig({ ssid, password }){
+  return { ssid: validateSsid(ssid), password: validatePassword(password) };
 }
 
 export async function writeWifiConfig(device, currentConfig, nextFields){

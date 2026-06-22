@@ -1,0 +1,22 @@
+{
+  "category": "other",
+  "classname": "nft_h26_bigtv",
+  "default_dir": 4,
+  "description": "nft_h26_bigtv desc",
+  "icon": "assets/furni/nft_h26_bigtv_icon.png",
+  "logic": "",
+  "name": "Non-Portable TV",
+  "price": 140,
+  "sprites": {
+    "2": "assets/furni/nft_h26_bigtv_dir2.png",
+    "4": "assets/furni/nft_h26_bigtv_dir4.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    2,
+    4
+  ],
+  "xdim": 2,
+  "ydim": 1,
+  "zdim": 0
+}

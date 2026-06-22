@@ -1,0 +1,22 @@
+{
+  "category": "other",
+  "classname": "space_c23_alienmechanic",
+  "default_dir": 2,
+  "description": "space_c23_alienmechanic desc",
+  "icon": "assets/furni/space_c23_alienmechanic_icon.png",
+  "logic": "furniture_multistate",
+  "name": "Sea Alien",
+  "price": 150,
+  "sprites": {
+    "0": "assets/furni/space_c23_alienmechanic_dir0.png",
+    "2": "assets/furni/space_c23_alienmechanic_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 2,
+  "ydim": 2,
+  "zdim": 1
+}
