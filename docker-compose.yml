@@ -5,3 +5,9 @@ services:
     restart: unless-stopped
     ports:
       - "8141:80"
+    networks:
+      - Shared
+
+networks:
+  Shared:
+    external: true
