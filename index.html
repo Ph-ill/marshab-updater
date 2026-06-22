@@ -92,9 +92,28 @@
     </section>
 
     <footer class="build-footer">
-      MarsHab updater web app v0.1.26 · AP shutdown before install reset · 2026-06-22
+      MarsHab updater web app v0.1.27 · power-cycle modal after install · 2026-06-22
     </footer>
   </main>
+
+  <div class="modal-backdrop" id="powerCycleModal" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="powerCycleTitle" aria-describedby="powerCycleBody">
+      <p class="eyebrow">PICO W POWER RESET REQUIRED</p>
+      <h2 id="powerCycleTitle">Restart the device power</h2>
+      <div id="powerCycleBody" class="modal-body">
+        <p>The firmware files were written successfully, but the Pico W WiFi gateway may not come back correctly until the board fully loses power.</p>
+        <ol>
+          <li>Unplug Pico power / USB.</li>
+          <li>Wait two seconds.</li>
+          <li>Plug it back in.</li>
+          <li>Reconnect to the MarsHab WiFi network. The gateway page should appear automatically, or open <strong>http://192.168.4.1</strong>.</li>
+        </ol>
+      </div>
+      <div class="actions modal-actions">
+        <button class="primary" id="powerCycleDoneBtn" type="button">I power-cycled the Pico</button>
+      </div>
+    </section>
+  </div>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

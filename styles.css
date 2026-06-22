@@ -53,5 +53,6 @@ button:not(:disabled):hover,select:hover,input:not(:disabled):hover{background:#
 .log li{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:5px 8px;border-bottom:1px solid rgba(122,85,48,.22)}
 .log time{color:var(--cyan)}.log span{color:var(--text)}
 .status-ok{color:var(--ok)}.status-warn{color:var(--amber)}.status-bad{color:var(--bad)}
+.modal-backdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:18px;background:rgba(5,3,2,.78);backdrop-filter:blur(3px)}.modal-backdrop[hidden]{display:none}.modal{width:min(560px,100%);background:linear-gradient(180deg,#2a1b11,#16100c);border:1px solid var(--amber);box-shadow:0 0 0 1px rgba(0,0,0,.8) inset,0 0 34px rgba(255,180,84,.18);padding:18px}.modal h2{font-size:16px;margin-top:0}.modal-body{color:var(--text)}.modal-body p{margin:0 0 10px}.modal-body ol{margin:0 0 0 20px;padding:0}.modal-body li{margin:7px 0}.modal-body strong{color:var(--cyan);font-weight:700}.modal-actions{margin-top:16px}.modal-actions button{width:100%}
 .build-footer{border-top:1px solid var(--line-dim);color:var(--muted);font-size:12px;letter-spacing:.08em;margin-top:18px;padding:14px 0 4px;text-transform:uppercase;}
 @media(max-width:760px){.topline{align-items:flex-start;flex-direction:column}.host{text-align:left}.grid{grid-template-columns:1fr}.kv div{grid-template-columns:110px 1fr}}
