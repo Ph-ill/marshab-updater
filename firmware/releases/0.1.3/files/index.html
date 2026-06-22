@@ -1,0 +1,2285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+<title>MarsHab</title>
+<!--
+  MarsHab — SEED. A working isometric room with a walkable avatar, depth-sorted
+  rendering, BFS pathfinding, and a built-in MockServer fulfilling the ARCHITECTURE
+  server contract. Placeholder VECTOR art (no spritesheet yet) so it runs today.
+
+  RUN IT (module import needs http, not file://):
+      cd src && python3 -m http.server 8000   # then open http://localhost:8000/
+
+  This is a starting point. Search "AGENT:" for the extension points. Keep everything
+  offline and inline per docs/ARCHITECTURE.md. The build step later inlines gift.mjs
+  and minifies this into the single served file.
+-->
+<style>
+  :root{
+    /* Mars hab ops palette — regolith + amber CRT + cyan highlight */
+    --space:#0c0a09; --regolith:#3a2a22; --regolith-2:#4a342a;
+    --dust:#c08457; --amber:#ffb054; --amber-dim:#9c6a36;
+    --cyan:#5fd2d6; --ink:#f2e4d4; --muted:#9b8676; --line:#1c1512;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--space);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink);}
+  .bg{position:fixed;inset:0;width:100vw;height:100vh;background-image:url('assets/background.avif');
+    background-size:cover;background-position:center;image-rendering:pixelated;image-rendering:crisp-edges;}
+  #stage{position:fixed;inset:0;display:block;touch-action:none;background:transparent;}
+  /* CRT scanlines + vignette, pure CSS (no asset cost) */
+  #crt{position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.10) 2px 3px);
+    box-shadow:inset 0 0 220px rgba(0,0,0,.65);mix-blend-mode:multiply;}
+  .hud{position:fixed;left:0;right:0;z-index:40;pointer-events:none;
+    display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px;}
+  .hud.bottom{bottom:0;top:auto;align-items:flex-end;}
+  .panel{pointer-events:auto;background:rgba(20,14,10,.82);border:1px solid var(--line);
+    border-radius:8px;padding:8px 12px;font-size:13px;letter-spacing:.5px;
+    box-shadow:0 6px 22px rgba(0,0,0,.5);backdrop-filter:blur(2px);}
+  .title{color:var(--amber);text-transform:uppercase;font-weight:700;}
+  .sub{color:var(--muted);font-size:11px;}
+  .credits{position:relative;transition:border-color .18s, box-shadow .18s, transform .18s;}
+  .credits b{color:var(--cyan);}
+  .credits.spend{border-color:#ff8a5f;box-shadow:0 0 0 1px rgba(255,138,95,.35) inset,0 0 18px rgba(255,138,95,.24);transform:scale(1.06);}
+  .credits.gain{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(95,210,214,.35) inset,0 0 18px rgba(95,210,214,.24);transform:scale(1.06);}
+  #creditPulse{position:fixed;right:20px;top:58px;z-index:61;padding:6px 10px;border-radius:8px;background:rgba(10,8,6,.94);border:1px solid rgba(255,138,95,.45);color:#ff8a5f;font-weight:700;font-size:13px;letter-spacing:1px;opacity:0;transform:translateY(8px);transition:opacity .2s, transform .45s;pointer-events:none;}
+  #creditPulse.show{opacity:1;transform:translateY(-8px);}
+  #creditPulse.anchor{transform:translate(-50%,8px);}
+  #creditPulse.anchor.show{transform:translate(-50%,-8px);}
+  #creditPulse.gain{border-color:rgba(95,210,214,.55);color:var(--cyan);}
+  .btn{pointer-events:auto;cursor:pointer;background:var(--regolith);
+    border:1px solid var(--amber-dim);color:var(--ink);border-radius:8px;
+    padding:9px 14px;font:inherit;font-size:12px;letter-spacing:1px;text-transform:uppercase;}
+  .btn:active{transform:translateY(1px);}
+  .row{display:flex;gap:8px;}
+  #toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(8px);
+    z-index:60;background:rgba(10,8,6,.92);border:1px solid var(--amber-dim);
+    color:var(--amber);padding:8px 14px;border-radius:8px;font-size:12px;letter-spacing:1px;
+    opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .modal{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
+    padding:18px;background:rgba(4,3,2,.62);backdrop-filter:blur(4px);}
+  .modal.open{display:flex;}
+  .modal-card{width:min(560px,100%);max-height:min(78vh,720px);overflow:hidden;
+    display:flex;flex-direction:column;background:rgba(20,14,10,.96);
+    border:1px solid var(--amber-dim);border-radius:14px;
+    box-shadow:0 18px 60px rgba(0,0,0,.55);padding:14px;}
+  .modal-head,.shop-item{display:flex;gap:12px;align-items:center;justify-content:space-between;}
+  .modal-head{margin-bottom:10px;position:relative;z-index:1;flex:0 0 auto;
+    background:rgba(20,14,10,.96);padding-bottom:8px;border-bottom:1px solid rgba(255,176,84,.12);}
+  .shop-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;padding-top:2px;}
+  .shop-item{padding:10px 12px;border:1px solid rgba(255,176,84,.12);border-radius:10px;
+    background:rgba(58,42,34,.35);align-items:flex-start;}
+  .shop-meta{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .shop-name{font-weight:700;color:var(--ink);}
+  .shop-tags{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px;}
+  .shop-price{color:var(--cyan);font-weight:700;white-space:nowrap;}
+  .shop-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+  .count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;
+    padding:0 6px;border-radius:999px;background:rgba(95,210,214,.14);color:var(--cyan);font-size:11px;font-weight:700;}
+  .modal-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .look-panel{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid rgba(255,176,84,.12);
+    border-radius:10px;background:rgba(58,42,34,.28);margin-bottom:10px;}
+  .look-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+  .look-swatch{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.15);box-shadow:0 0 0 1px rgba(0,0,0,.3) inset;}
+  .char-thumb{width:28px;height:50px;image-rendering:pixelated;image-rendering:crisp-edges;
+    background:rgba(12,10,9,.6);border:1px solid rgba(255,176,84,.18);border-radius:4px;}
+  .char-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;
+    border:1px solid rgba(255,176,84,.12);border-radius:10px;background:rgba(58,42,34,.35);}
+  .char-card .char-thumb{width:56px;height:100px;}
+  .char-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;}
+  .game-track{position:relative;height:24px;border-radius:999px;overflow:hidden;background:rgba(12,10,9,.92);border:1px solid rgba(255,176,84,.18);}
+  .game-zone,.game-marker{position:absolute;top:3px;bottom:3px;border-radius:999px;}
+  .game-zone{background:rgba(95,210,214,.22);border:1px solid rgba(95,210,214,.6);}
+  .game-marker{width:10px;background:var(--amber);box-shadow:0 0 12px rgba(255,176,84,.35);}
+  .form-stack{display:flex;flex-direction:column;gap:10px;}
+  .field-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.9px;}
+  .field-input{width:100%;background:rgba(12,10,9,.92);border:1px solid rgba(255,176,84,.2);color:var(--ink);
+    border-radius:8px;padding:11px 12px;font:inherit;font-size:16px;letter-spacing:2px;}
+  .field-input::placeholder{color:rgba(155,134,118,.8);letter-spacing:1px;}
+  .auth-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .auth-note{min-height:16px;color:var(--amber);font-size:11px;letter-spacing:.8px;}
+  .btn.secondary{background:transparent;border-color:rgba(255,176,84,.24);}
+  .btn.active{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 0 1px rgba(95,210,214,.22) inset,0 0 14px rgba(95,210,214,.16);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .build-tools{position:fixed;right:16px;bottom:74px;z-index:45;display:none;gap:8px;align-items:center;
+    padding:8px;border:1px solid rgba(95,210,214,.28);border-radius:12px;background:rgba(10,8,6,.86);box-shadow:0 10px 28px rgba(0,0,0,.45);}
+  .build-tools.open{display:flex;}
+  .tool-btn{width:42px;height:42px;padding:0;font-size:22px;line-height:1;display:inline-flex;align-items:center;justify-content:center;}
+  .placement-confirm{position:fixed;z-index:48;display:none;gap:8px;align-items:center;transform:translate(-50%,-100%);pointer-events:auto;}
+  .placement-confirm.open{display:flex;}
+  .place-confirm-btn{width:42px;height:42px;padding:0;border:3px solid #17120e;border-radius:0;color:#17120e;
+    font:900 24px/1 ui-monospace,"SF Mono",Menlo,Consolas,monospace;box-shadow:0 0 0 2px rgba(255,244,212,.55) inset,0 5px 0 rgba(0,0,0,.45);image-rendering:pixelated;touch-action:manipulation;}
+  .place-confirm-btn.ok{background:#46d468;}
+  .place-confirm-btn.cancel{background:#e24b3f;}
+  .place-confirm-btn:disabled{filter:grayscale(.6);opacity:.48;}
+  .furni-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;overflow:auto;min-height:0;padding:2px;}
+  .furni-card{position:relative;min-height:112px;border:1px solid rgba(255,176,84,.14);border-radius:12px;background:rgba(58,42,34,.34);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;}
+  .furni-card:hover,.furni-card:focus{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(95,210,214,.18) inset;outline:none;}
+  .furni-thumb{height:56px;max-width:76px;display:flex;align-items:center;justify-content:center;}
+  .furni-thumb img{max-height:56px;max-width:76px;image-rendering:pixelated;image-rendering:crisp-edges;}
+  .furni-swatch{width:42px;height:34px;border-radius:8px;border:1px solid rgba(255,176,84,.2);box-shadow:inset 0 -10px 0 rgba(0,0,0,.24);}
+  .furni-card-name{position:absolute;left:6px;right:6px;bottom:28px;padding:4px 5px;border-radius:7px;background:rgba(8,6,5,.88);color:var(--ink);font-size:10px;text-align:center;opacity:0;transform:translateY(2px);transition:.14s;pointer-events:none;}
+  .furni-card:hover .furni-card-name,.furni-card:focus .furni-card-name{opacity:1;transform:translateY(0);}
+  .furni-card-price{position:absolute;left:6px;right:6px;bottom:6px;color:var(--cyan);font-size:10px;text-align:center;font-weight:700;}
+  .sort-bar{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin:0 0 10px;}
+  .sort-select{background:rgba(12,10,9,.92);border:1px solid rgba(255,176,84,.24);color:var(--ink);border-radius:8px;padding:7px 9px;font:inherit;font-size:11px;text-transform:uppercase;}
+  .presence{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+  .presence-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;
+    border:1px solid rgba(255,176,84,.14);background:rgba(12,10,9,.55);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+  .presence-dot{width:7px;height:7px;border-radius:999px;background:var(--amber-dim);box-shadow:0 0 10px rgba(255,176,84,.18);}
+  .presence-chip.live .presence-dot{background:var(--cyan);box-shadow:0 0 12px rgba(95,210,214,.35);}
+  .presence-chip.warn .presence-dot{background:#ff8a5f;box-shadow:0 0 12px rgba(255,138,95,.32);}
+</style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <canvas id="stage"></canvas>
+  <div id="crt"></div>
+
+  <div class="hud">
+    <div class="panel">
+      <div class="title" id="habName">MARS HAB</div>
+      <div class="sub" id="habSub">module · sol 0</div>
+      <div class="presence" id="presenceBar">
+        <div class="presence-chip" id="presenceLink"><span class="presence-dot"></span><span id="presenceLinkText">link idle</span></div>
+        <div class="presence-chip live" id="presenceRoom"><span class="presence-dot"></span><span id="presenceRoomText">room 0/4</span></div>
+        <div class="presence-chip" id="presenceRole"><span class="presence-dot"></span><span id="presenceRoleText">guest shell</span></div>
+      </div>
+    </div>
+    <div class="panel credits">CR <b id="credits">0</b></div>
+  </div>
+  <div class="hud bottom">
+    <div class="sub panel" id="statusHint" style="font-size:11px">tap a tile to walk</div>
+    <div class="row">
+      <button class="btn" id="btnGame">Play</button>
+      <button class="btn" id="btnShop">Shop</button>
+      <button class="btn" id="btnBuild">Build</button>
+      <button class="btn" id="btnCharacter">Character</button>
+    </div>
+  </div>
+  <div class="modal" id="authModal" aria-hidden="true">
+    <div class="modal-card" style="width:min(420px,100%)">
+      <div class="modal-head">
+        <div>
+          <div class="title">Hab Link</div>
+          <div class="sub" id="authHabLine">Connect to this hab</div>
+        </div>
+      </div>
+      <div class="form-stack">
+        <div class="sub">Owner login pulls the same hab save from any device. Guests can walk the room but cannot edit the hab.</div>
+        <div class="look-panel" id="guestSetupPanel">
+          <div class="look-row">
+            <div>
+              <div class="title" style="font-size:12px">Guest shell</div>
+              <div class="sub" id="guestSetupHint">Throwaway passport for visitors without a home hab</div>
+            </div>
+          </div>
+          <label>
+            <div class="field-label">Guest callsign</div>
+            <input class="field-input" id="guestNameInput" maxlength="18" placeholder="Guest-ACE">
+          </label>
+          <div class="look-row">
+            <div class="shop-meta">
+              <div class="shop-name">Character</div>
+
+            </div>
+            <div class="shop-actions">
+              <canvas class="char-thumb" id="guestCharPreview" width="28" height="50"></canvas>
+              <button class="btn secondary" id="btnGuestCharPrev">Prev</button>
+              <button class="btn secondary" id="btnGuestCharNext">Next</button>
+            </div>
+          </div>
+        </div>
+        <label>
+          <div class="field-label">Owner PIN</div>
+          <input class="field-input" id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" placeholder="0000">
+        </label>
+        <div class="auth-actions" id="authActions">
+          <button class="btn" id="btnOwnerLogin">Enter as owner</button>
+          <button class="btn secondary" id="btnGuestLogin">Continue as guest</button>
+          <button class="btn" id="btnSetupOwner" style="display:none">Claim Hab & Setup PIN</button>
+        </div>
+        <div class="auth-note" id="authNote"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="shopModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="title">Outpost Exchange</div>
+          <div class="sub">Owner shop · furniture and hab basics</div>
+        </div>
+        <button class="btn secondary" id="btnCloseShop">Close</button>
+      </div>
+      <div class="shop-list" id="shopList"></div>
+    </div>
+  </div>
+  <div class="modal" id="buildModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="title">Hab Builder</div>
+          <div class="sub">Select furniture from inventory, then tap a tile</div>
+        </div>
+        <button class="btn secondary" id="btnCloseBuild">Close</button>
+      </div>
+      <div class="shop-list" id="buildList"></div>
+    </div>
+  </div>
+  <div class="modal" id="gameModal" aria-hidden="true">
+    <div class="modal-card" style="width:min(460px,100%)">
+      <div class="modal-head">
+        <div>
+          <div class="title">Solar Array Align</div>
+          <div class="sub">Tap start, then lock in while the cursor crosses the cyan band</div>
+        </div>
+        <button class="btn secondary" id="btnCloseGame">Close</button>
+      </div>
+      <div class="look-panel">
+        <div class="shop-meta">
+          <div class="shop-name" id="gameLabel">Ready for a new calibration run</div>
+          <div class="shop-tags" id="gameHint">Best hits pay more credits. Rewards are tiny and replayable.</div>
+        </div>
+        <div class="game-track"><div class="game-zone" id="gameZone"></div><div class="game-marker" id="gameMarker"></div></div>
+        <div class="look-row" style="justify-content:flex-start">
+          <div class="shop-tags" id="gameScore">target idle · reward bands +18 / +12 / +7 / +4</div>
+        </div>
+        <div class="shop-actions">
+          <button class="btn secondary" id="btnGameStart">Start Run</button>
+          <button class="btn" id="btnGameLock">Lock In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="characterModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="title">Character Locker</div>
+          <div class="sub">Pick the character visitors will see when you travel</div>
+        </div>
+        <button class="btn secondary" id="btnCloseCharacter">Close</button>
+      </div>
+      <div class="shop-list" id="characterList"></div>
+    </div>
+  </div>
+  <div id="toast"></div>
+  <div id="creditPulse"></div>
+  <div class="build-tools" id="buildTools" aria-hidden="true">
+    <button class="btn tool-btn" id="btnBuildAdd" title="Place furniture">+</button>
+    <button class="btn tool-btn secondary" id="btnBuildRemove" title="Remove furniture">−</button>
+    <button class="btn tool-btn secondary" id="btnBuildMove" title="Move furniture">⇄</button>
+    <button class="btn tool-btn secondary" id="btnBuildRotate" title="Rotate furniture">↻</button>
+    <button class="btn tool-btn secondary" id="btnBuildExit" title="Exit build mode">×</button>
+  </div>
+  <div class="placement-confirm" id="placementConfirm" aria-hidden="true">
+    <button class="place-confirm-btn ok" id="btnConfirmPlacement" title="Place furniture" aria-label="Place furniture">✓</button>
+    <button class="place-confirm-btn cancel" id="btnCancelPlacement" title="Cancel placement" aria-label="Cancel placement">×</button>
+  </div>
+
+<script type="module">
+import { buyGift, deliverGift, applyDeliveryToPassport, reconcile, mintPassport, makeNonce }
+  from './gift.mjs';   // AGENT: wire these in for the gift UI (Milestone 6). Loaded now so it's ready.
+
+// ============================================================================
+// CONFIG + MOCK
+// ============================================================================
+const SERVER_BASE = new URLSearchParams(location.search).get('server') || location.origin;
+const USE_MOCK = false;   // Pico firmware serves the real same-origin hab API.
+window._SIMULATE_VISITOR = false; // Set to true to spawn a mock ghost walking around
+
+const HAB_ID   = 'hab_demo';
+
+// AGENT: this catalog is the SHARED, baked-in item table (see docs/DATA_SCHEMAS.md).
+// Expand it; every hab must ship the identical catalog so carried gifts render anywhere.
+const CATALOG = { v:1, items:{
+  stellar_c23_spacechair: { kind:'furniture', name:'Cosmic Chair', price:100, footprint:[1,1], frame:'stellar_c23_spacechair', color:'#4b6f94', sprites:{0:'assets/furni/stellar_c23_spacechair_dir0.png',2:'assets/furni/stellar_c23_spacechair_dir2.png'}, validDirs:[0,2,4,6], defaultDir:2 }, 
+  sf_wall2:          { kind:'furniture', name:'Scifi Wall Panel',   price:80,  footprint:[1,1], frame:'sf_wall2', color:'#d8d8d0', wallOnly:true, wallOffset:[0.10,0.05], sprites:{0:'assets/furni/sf_wall2_dir0.png'}, validDirs:[0], defaultDir:0 },
+  nft_h26_bigtv:     { kind:'furniture', name:'Non-Portable TV',    price:140, footprint:[1,1], frame:'nft_h26_bigtv', color:'#2f3438', sprites:{2:'assets/furni/nft_h26_bigtv_dir2.png'}, validDirs:[2,4], defaultDir:4 },
+  tokyo_c18_motorbike: { kind:'furniture', name:'Future Tokyo Bike', price:180, footprint:[2,1], frame:'tokyo_c18_motorbike', color:'#48505a', renderOffset:[0.36,0.30], sprites:{0:'assets/furni/tokyo_c18_motorbike_dir0.png',2:'assets/furni/tokyo_c18_motorbike_dir2.png'}, validDirs:[0,2,4,6], defaultDir:4 },
+  nft_sf_pod: { kind:'furniture', name:'Cryogenic Bed', price:180, footprint:[2,1], frame:'nft_sf_pod', color:'#9fb9c9', renderScale:1.5, sprites:{0:'assets/furni/nft_sf_pod_dir0.png',2:'assets/furni/nft_sf_pod_dir2.png'}, validDirs:[0,2], defaultDir:0 },
+  val14_bed_b: { kind:'furniture', name:'Blue Form Recliner', price:140, footprint:[2,1], frame:'val14_bed_b', color:'#4f74a8', sprites:{0:'assets/furni/val14_bed_b_dir0.png',2:'assets/furni/val14_bed_b_dir2.png'}, validDirs:[0,2], defaultDir:0 },
+  val14_bed_o: { kind:'furniture', name:'Orange Form Recliner', price:140, footprint:[2,1], frame:'val14_bed_o', color:'#c76b33', sprites:{0:'assets/furni/val14_bed_o_dir0.png',2:'assets/furni/val14_bed_o_dir2.png'}, validDirs:[0,2], defaultDir:0 },
+  val14_bed_g: { kind:'furniture', name:'Green Form Recliner', price:140, footprint:[2,1], frame:'val14_bed_g', color:'#5f8f58', sprites:{0:'assets/furni/val14_bed_g_dir0.png',2:'assets/furni/val14_bed_g_dir2.png'}, validDirs:[0,2], defaultDir:0 },
+  sf_pod_dark: { kind:'furniture', name:'Black Scifi Pod', price:180, footprint:[2,1], frame:'sf_pod_dark', color:'#25282d', renderScale:1.5, sprites:{0:'assets/furni/sf_pod_dark_dir0.png',2:'assets/furni/sf_pod_dark_dir2.png'}, validDirs:[0,2], defaultDir:0 },
+  bed_polyfon_one_3: { kind:'furniture', name:'White Single Bed', price:120, footprint:[2,1], frame:'bed_polyfon_one_3', color:'#d8d8d0', renderScale:1.2, sprites:{0:'assets/furni/bed_polyfon_one_3_dir0.png',2:'assets/furni/bed_polyfon_one_3_dir2.png'}, validDirs:[0,2], defaultDir:0 },
+  bed_budget_4: { kind:'furniture', name:'White Double Bed', price:220, footprint:[2,2], frame:'bed_budget_4', color:'#d8d8d0', sprites:{0:'assets/furni/bed_budget_4_dir0.png',2:'assets/furni/bed_budget_4_dir2.png'}, validDirs:[0,2], defaultDir:0 },
+  pizza: { kind:'furniture', name:'Pizza Box', price:40, footprint:[1,1], frame:'pizza', color:'#c78a42', renderScale:1.5, sprites:{0:'assets/furni/pizza_dir0.png'}, validDirs:[0], defaultDir:0 },
+  drinks: { kind:'furniture', name:'Empty Cans', price:30, footprint:[1,1], frame:'drinks', color:'#8c9296', renderScale:1.5, sprites:{0:'assets/furni/drinks_dir0.png'}, validDirs:[0], defaultDir:0 },
+  space_c23_alienmechanic: { kind:'furniture', name:'Sea Alien', price:150, footprint:[1,1], frame:'space_c23_alienmechanic', color:'#5ea6a0', sprites:{0:'assets/furni/space_c23_alienmechanic_dir0.png',2:'assets/furni/space_c23_alienmechanic_dir2.png'}, validDirs:[0,2], defaultDir:2 },
+  scifi_c17_airlock: { kind:'furniture', name:'Spacecraft Door', price:180, footprint:[3,1], frame:'scifi_c17_airlock', color:'#9ea6ad', wallOnly:true, wallSpan:3, wallSpanScale:1.8, wallOffset:[0,0.12], sprites:{0:'assets/furni/scifi_c17_airlock_dir0.png',2:'assets/furni/scifi_c17_airlock_dir2.png'}, validDirs:[0,2], defaultDir:2 },
+  plant_earth:      { kind:'furniture', name:'Earth Plant',       price:150, footprint:[1,1], frame:'plant_earth', color:'#3f7d4f', giftOnly:true, hidden:true },
+  fig_rover:        { kind:'furniture', name:'Rover Figurine',    price:90,  footprint:[1,1], frame:'fig_rover', color:'#8f6d4f', giftOnly:true, hidden:true },
+
+}};
+const furniImages = new Map();
+function furniSpriteInfo(item, rot=0){
+  if(!item?.sprites) return { path:'', flipX:false };
+  const dirs = item.validDirs || Object.keys(item.sprites).map(Number);
+  const dir = dirs.includes(rot) ? rot : (item.defaultDir ?? dirs[0] ?? 0);
+  const map = item.sprites;
+  if(dir === 4){
+    if(map['0']) return { path: map['0'], flipX:true };
+    if(map['2']) return { path: map['2'], flipX:true };
+  }
+  if(dir === 6){
+    if(map['2']) return { path: map['2'], flipX:true };
+    if(map['0']) return { path: map['0'], flipX:true };
+  }
+  const key = String(dir);
+  if(map[key]) return { path: map[key], flipX:false };
+  if(map[String(item.defaultDir ?? 0)]) return furniSpriteInfo({ ...item, defaultDir:0 }, 0);
+  const first = dirs.find(d => map[String(d)]);
+  return { path:first !== undefined ? map[String(first)] : '', flipX:false };
+}
+function furniSpritePath(item, rot=0){ return furniSpriteInfo(item, rot).path; }
+function getFurniImage(path){
+  if(!path) return null;
+  let img = furniImages.get(path);
+  if(!img){
+    img = new Image();
+    img.onload = ()=>{};
+    img.src = path;
+    furniImages.set(path, img);
+  }
+  return img.complete && img.naturalWidth ? img : null;
+}
+function drawFurniSprite(item, gx, gy, rot=0, alpha=1){
+  const spriteInfo = furniSpriteInfo(item, rot);
+  const sprite = getFurniImage(spriteInfo.path);
+  if(!sprite) return false;
+  let {x,y} = gridToScreen(gx,gy);
+  const scale = (TILE_W / BASE_TILE_W) * 0.6 * (item.renderScale || 1);
+  const w = sprite.naturalWidth * scale;
+  const h = sprite.naturalHeight * scale;
+  const fp = itemFootprint(item, rot);
+  if(item.sprites && (fp[0] > 1 || fp[1] > 1)){
+    // Visual QA showed multi-tile Habbo sprites sitting up/right from their
+    // selected floor footprint. Pull imported multi-tile art back down/left so
+    // the cyan selection tiles sit under the sprite's contact area.
+    x -= TILE_W * 0.34;
+    y += TILE_H * 0.58;
+  }
+  if(item.renderOffset){
+    x += TILE_W * item.renderOffset[0];
+    y += TILE_H * item.renderOffset[1];
+  }
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha *= alpha;
+  const dx = Math.round(x - w/2);
+  const dy = Math.round(y + TILE_H - h - TILE_H*0.18);
+  if(spriteInfo.flipX){
+    ctx.translate(dx + Math.round(w), 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(sprite, 0, dy, Math.round(w), Math.round(h));
+  } else {
+    ctx.drawImage(sprite, dx, dy, Math.round(w), Math.round(h));
+  }
+  ctx.restore();
+  return true;
+}
+function drawWallPanelFallback(entry, alpha=1){
+  const item = CATALOG.items[entry.itemId];
+  if(!item) return false;
+  const idx = Number(entry.index || 0);
+  const base = entry.wall === 'left' ? gridToScreen(0, idx) : gridToScreen(idx, 0);
+  const wallDrop = TILE_H * 2.7;
+  const h = wallDrop * 1.25;
+  const w = Math.max(10, TILE_W * 0.6);
+  const x = entry.wall === 'left' ? base.x - TILE_W*0.26 : base.x + TILE_W*0.26;
+  const y = base.y - h * 0.78;
+  ctx.save();
+  clipWallSide(entry.wall);
+  ctx.globalAlpha *= alpha;
+  ctx.fillStyle = item.color || '#d8d8d0';
+  ctx.fillRect(Math.round(x - w/2), Math.round(y), Math.round(w), Math.round(h));
+  ctx.fillStyle = 'rgba(20,24,28,.65)';
+  ctx.fillRect(Math.round(x - w/2 + 3), Math.round(y + 4), Math.round(w - 6), Math.round(h - 8));
+  ctx.strokeStyle = 'rgba(95,210,214,.55)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(Math.round(x - w/2 + 5), Math.round(y + 7), Math.round(w - 10), Math.round(h - 14));
+  ctx.restore();
+  return true;
+}
+function clipWallSide(wall){
+  const corner = gridToScreen(0, 0);
+  ctx.beginPath();
+  if(wall === 'right') ctx.rect(corner.x, 0, W - corner.x, H);
+  else ctx.rect(0, 0, corner.x, H);
+  ctx.clip();
+}
+function drawWallSprite(entry, alpha=1){
+  const item = CATALOG.items[entry.itemId];
+  const sprite = getFurniImage(furniSpritePath(item, entry.rot || 0));
+  if(!item) return false;
+  if(!sprite) return drawWallPanelFallback(entry, alpha);
+  const idx = Number(entry.index || 0);
+  const span = Math.max(1, Number(item.wallSpan || 1));
+  const start = entry.wall === 'left' ? gridToScreen(0, idx) : gridToScreen(idx, 0);
+  const end = entry.wall === 'left' ? gridToScreen(0, idx + span) : gridToScreen(idx + span, 0);
+  const wallDrop = TILE_H * 2.7;
+  const h = wallDrop * (item.wallSpan ? 1.0 : 1.25) * (item.renderScale || 1);
+  let scale = h / sprite.naturalHeight;
+  if(item.wallSpan){
+    const spanWidth = Math.hypot(end.x - start.x, end.y - start.y) + TILE_W * 0.9;
+    scale = Math.min(scale, spanWidth / sprite.naturalWidth);
+  }
+  if(item.wallSpanScale) scale *= item.wallSpanScale;
+  const w = sprite.naturalWidth * scale;
+  const drawH = sprite.naturalHeight * scale;
+  const wallOffset = item.wallOffset || [0,0];
+  const wallSideX = entry.wall === 'right' ? -0.09 : 0.10;
+  const x = (start.x + end.x) / 2 + TILE_W * (wallSideX + wallOffset[0]);
+  // The right wall's projected strip sits on the far edge of the top row. Using the
+  // same centerline anchor as the left wall makes sprites look half a tile too high
+  // there, even though left-wall panels line up. Drop right-wall sprites to the wall
+  // foot so both sides cover the full wall height consistently.
+  const wallSideDrop = entry.wall === 'right' ? TILE_H * 0.21 : 0;
+  const y = ((start.y + end.y) / 2) - drawH * 0.94 + wallSideDrop + TILE_H * wallOffset[1];
+  ctx.save();
+  if(!item.wallSpan) clipWallSide(entry.wall);
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha *= alpha;
+  if(entry.wall === 'right'){
+    ctx.translate(Math.round(x), 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(sprite, Math.round(-w/2), Math.round(y), Math.round(w), Math.round(drawH));
+  } else {
+    ctx.drawImage(sprite, Math.round(x - w/2), Math.round(y), Math.round(w), Math.round(drawH));
+  }
+  ctx.restore();
+  return true;
+}
+// AGENT: character sprite sheet — self-contained character walk cycles only.
+// assets/spr_bgscale.png is a trimmed 64x240 sheet: 3 characters × 4 directions × 4 walk frames, cell 16x20 with headroom.
+const CHAR_SHEET_SRC = 'assets/spr_bgscale.png';
+const CHAR_CELL_W = 16, CHAR_CELL_H = 20, CHAR_WALK_FRAMES = 4, CHAR_DRAW_SCALE = 2.15;
+// Direction rows inside each character block: NE=0, SE=1, SW=2, NW=3.
+const CHARACTERS = {
+  astronaut: { row:0 },
+  robot:     { row:4 },
+  frog:      { row:8 },
+};
+const DEFAULT_CHARACTER = 'astronaut';
+function list_characters(){ return Object.keys(CHARACTERS); }
+function normalizeCharacter(id){ return CHARACTERS[id] ? id : DEFAULT_CHARACTER; }
+function get_frame(character_id, direction, walkFrame=0){
+  const ch = CHARACTERS[normalizeCharacter(character_id)];
+  const dir = ((Number(direction) % 4) + 4) % 4;
+  const col = ((Number(walkFrame) || 0) % CHAR_WALK_FRAMES + CHAR_WALK_FRAMES) % CHAR_WALK_FRAMES;
+  return { sx: col * CHAR_CELL_W, sy: (ch.row + dir) * CHAR_CELL_H, w: CHAR_CELL_W, h: CHAR_CELL_H };
+}
+// Movement delta -> direction index (NE=0, SE=1, SW=2, NW=3).
+function facingFromDelta(dx, dy){
+  const north = dy <= 0, east = dx >= 0;
+  if(east) return north ? 0 : 1;
+  return north ? 3 : 2;
+}
+const charSheetImg = new Image();
+let charSheetReady = false;
+charSheetImg.onload = ()=>{
+  charSheetReady = true;
+  renderCharacterCanvases();
+};
+charSheetImg.src = CHAR_SHEET_SRC;
+function renderCharacterCanvases(){
+  const guestPreview = document.getElementById('guestCharPreview');
+  if(guestPreview){
+    const passport = guestPassport();
+    drawCharThumb(guestPreview, passport.look?.character);
+  }
+  for(const canvas of document.querySelectorAll('[data-char-thumb]')) drawCharThumb(canvas, canvas.dataset.charThumb);
+}
+function drawCharThumb(canvas, characterId, direction=1){
+  if(!canvas) return;
+  const ctx2 = canvas.getContext('2d');
+  ctx2.clearRect(0,0,canvas.width,canvas.height);
+  if(!charSheetReady){ charSheetImg.addEventListener('load', ()=>drawCharThumb(canvas, characterId, direction), { once:true }); return; }
+  const frame = get_frame(characterId, direction, 0);
+  ctx2.imageSmoothingEnabled = false;
+  const scale = Math.min(canvas.width / frame.w, canvas.height / frame.h);
+  const w = Math.round(frame.w * scale), h = Math.round(frame.h * scale);
+  ctx2.drawImage(charSheetImg, frame.sx, frame.sy, frame.w, frame.h, Math.round((canvas.width-w)/2), Math.round((canvas.height-h)/2), w, h);
+}
+
+// ============================================================================
+// ISO MATH  (2:1 diamond tiles)
+// ============================================================================
+const BASE_TILE_W = 64, BASE_TILE_H = 32;
+let TILE_W = BASE_TILE_W, TILE_H = BASE_TILE_H;
+let originX = 0, originY = 0;     // screen px of grid cell (0,0), recomputed on resize
+function gridToScreen(gx, gy){
+  return { x: originX + (gx - gy) * (TILE_W/2), y: originY + (gx + gy) * (TILE_H/2) };
+}
+function screenToGrid(sx, sy){
+  const a = (sx - originX) / (TILE_W/2);
+  const b = (sy - originY) / (TILE_H/2);
+  return { x: Math.floor((a + b) / 2), y: Math.floor((b - a) / 2) };
+}
+
+// ============================================================================
+// PATHFINDING  (BFS on the small room grid — uniform cost, plenty for ~8x8)
+// ============================================================================
+function bfs(start, goal, size, blocked){
+  const key = (x,y)=>x+','+y;
+  const inB = (x,y)=>x>=0&&y>=0&&x<size[0]&&y<size[1];
+  if(!inB(goal.x,goal.y) || blocked.has(key(goal.x,goal.y))) return null;
+  const q=[start], came={[key(start.x,start.y)]:null}, dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(q.length){
+    const c=q.shift();
+    if(c.x===goal.x && c.y===goal.y){
+      const path=[]; let k=key(c.x,c.y);
+      while(k){ const [x,y]=k.split(',').map(Number); path.unshift({x,y}); k=came[k]; }
+      return path;
+    }
+    for(const [dx,dy] of dirs){
+      const nx=c.x+dx, ny=c.y+dy, nk=key(nx,ny);
+      if(inB(nx,ny) && !(nk in came) && !blocked.has(nk)){ came[nk]=key(c.x,c.y); q.push({x:nx,y:ny}); }
+    }
+  }
+  return null;
+}
+
+// ============================================================================
+// MOCK SERVER  (implements the ARCHITECTURE contract in-browser, localStorage-backed)
+// AGENT: keep this behavior-compatible with the real Pico endpoints.
+// ============================================================================
+const MockServer = (() => {
+  const LS = 'marshab.save.' + HAB_ID;
+  function load(){
+    try { const s = JSON.parse(localStorage.getItem(LS)); if(s) return s; } catch{}
+    return { v:1, habId:HAB_ID, passportId:'ppt_demo',
+      owner:{ name:'Crew', look:{character:'astronaut'} }, credits:320,
+      room:{ size:[8,8], placed:[] },
+      inventory:[], carriedGift:null,
+      giftsReceived:[], deliveredReceipts:[] };
+  }
+  const LEDGER_LS = 'marshab.giftLedger.' + HAB_ID;
+  const loadLedger = ()=>{
+    try { return JSON.parse(localStorage.getItem(LEDGER_LS)) || {}; }
+    catch { return {}; }
+  };
+  let save = load();
+  let ledger = loadLedger();
+  let visitorPassport = null;
+  window.__mockGhost = window.__mockGhost || { hidden:!window._SIMULATE_VISITOR };
+  // a wandering "ghost" visitor so multiplayer rendering is testable with no hardware
+  const ghost = { playerId:'ghost', name:'Ghost', look:{character:'robot'}, cell:{x:1,y:6}, facing:1, _t:0 };
+  function stepGhost(){
+    ghost._t++;
+    if(ghost._t%90===0){
+      const next = { x:1+(Math.random()*6|0), y:1+(Math.random()*6|0) };
+      ghost.facing = facingFromDelta(next.x - ghost.cell.x, next.y - ghost.cell.y);
+      ghost.cell = next;
+    }
+  }
+  setInterval(stepGhost, 200);
+
+  const me = { playerId:'you', name:save.owner.name, look:save.owner.look, cell:{x:4,y:4}, facing:0 };
+  const wait = (v)=>new Promise(r=>setTimeout(()=>r(v), 8));
+  const role = ()=>window._token === 'owner-token' ? 'owner' : (window._token ? 'visitor' : null);
+  const syncOwnerAvatar = ()=>{ me.name = save.owner.name; me.look = save.owner.look; };
+  syncOwnerAvatar();
+
+  return {
+    async call(path, body){
+      switch(path){
+        case '/api/hello':
+          return wait({ habId:HAB_ID, ownerName:save.owner.name, protocol:1, hasOwner:!!save.ownerPin });
+        case '/api/login':
+          return wait(body.pin === (save.ownerPin || '0000') ? { token:'owner-token', role:'owner' } : { error:'bad_pin' });
+        case '/api/setup':
+          if(save.ownerPin) return wait({ error:'already_claimed' });
+          if(!body.pin || String(body.pin).length < 4) return wait({ error:'invalid_pin' });
+          save.ownerPin = body.pin;
+          save.owner.name = body.name || 'Crew';
+          save.owner.look = body.look || { character:DEFAULT_CHARACTER };
+          localStorage.setItem(LS, JSON.stringify(save));
+          return wait({ token:'owner-token', role:'owner', save });
+        case '/api/passport': {
+          const passport = body?.passport || guestPassport();
+          visitorPassport = passport;
+          me.name = passport.name || 'Guest';
+          me.look = passport.look || { character:DEFAULT_CHARACTER };
+          return wait({ token:'visitor-token', role:'visitor', playerId:'you' });
+        }
+        case '/api/state': {
+          const youRole = role() || 'visitor';
+          if(youRole==='owner') syncOwnerAvatar();
+          return wait({
+            room:{ layout:save.room.placed, meta:{ habId:HAB_ID, ownerName:save.owner.name }, size:save.room.size },
+            players:[ me, ...(window.__mockGhost?.hidden ? [] : [ghost]) ],
+            gifts:(save.giftsReceived||[]).map(g=>({ id:g.uid, cell:g.cell, fromName:g.fromName, itemId:g.itemId })),
+            you: youRole==='owner' ? { playerId:'you', role:'owner', credits:save.credits } : { playerId:'you', role:'visitor' },
+          });
+        }
+        case '/api/move':
+          me.cell = body.cell; me.facing = body.facing; return wait({ ok:true });
+        case '/api/save':
+          if(role()!=='owner') return wait({ error:'forbidden' });
+          if(body && body.save){
+            const next = { ...body.save };
+            if(typeof next.credits === 'number' && typeof save.credits === 'number' && next.credits > save.credits + 25) next.credits = save.credits + 25;
+            save = next;
+            localStorage.setItem(LS, JSON.stringify(save));
+            syncOwnerAvatar();
+          }
+          return wait({ ok:true, save });
+        case '/api/gift/deliver': {
+          if(role()!=='visitor') return wait({ error:'forbidden' });
+          const passport = visitorPassport || guestPassport();
+          const cell = body?.cell;
+          if(!Array.isArray(cell) || cell.length!==2) return wait({ error:'bad_cell' });
+          const res = deliverGift(save, ledger, passport, cell, Date.now(), { hostHabId:HAB_ID });
+          if(res.error) return wait({ error:res.error });
+          save = res.hostSave;
+          ledger = res.deliveryLedger;
+          localStorage.setItem(LS, JSON.stringify(save));
+          localStorage.setItem(LEDGER_LS, JSON.stringify(ledger));
+          return wait({ receipt:res.receipt, duplicate:!!res.duplicate });
+        }
+        default: return wait({ error:'unknown_endpoint' });
+      }
+    },
+    _save(){ return save; },
+  };
+})();
+
+async function api(path, body){
+  if(USE_MOCK) return MockServer.call(path, body);
+  const url = SERVER_BASE ? (SERVER_BASE.replace(/\/$/, '') + path) : path;
+  const res = await fetch(url, { method: body?'POST':'GET',
+    headers:{'Content-Type':'application/json', 'Authorization':'Bearer '+(window._token||'')},
+    body: body?JSON.stringify(body):undefined });
+  return res.json();
+}
+function authRole(){
+  return window._token === 'owner-token' ? 'owner' : (window._token ? 'visitor' : null);
+}
+function guestPassportKey(){
+  return 'marshab.guestPassport';
+}
+function guestSeedName(nonce){
+  return 'Guest-' + nonce.slice(0,3).toUpperCase();
+}
+function normalizeGuestPassport(passport={}){
+  const nonce = String(passport.passportId || makeNonce('guest')).replace(/^guest_/, '').slice(0,8) || makeNonce('guest').slice(-6);
+  const character = normalizeCharacter(passport?.look?.character);
+  const rawName = String(passport?.name || guestSeedName(nonce)).trim().replace(/\s+/g, ' ').slice(0,18);
+  return {
+    v:1,
+    passportId:passport?.passportId || ('guest_' + nonce),
+    name:rawName || guestSeedName(nonce),
+    look:{ character },
+    carriedGift:passport?.carriedGift || null,
+    pendingReceipts:[...(passport?.pendingReceipts || [])],
+    issuedBy:passport?.issuedBy || 'guest_local',
+    issuedTs:passport?.issuedTs || Date.now()
+  };
+}
+function guestPassport(){
+  const key = guestPassportKey();
+  try {
+    const cached = JSON.parse(localStorage.getItem(key));
+    if(cached?.passportId){
+      const normalized = normalizeGuestPassport(cached);
+      localStorage.setItem(key, JSON.stringify(normalized));
+      return normalized;
+    }
+  } catch{}
+  const passport = normalizeGuestPassport({ passportId:'guest_' + Math.random().toString(36).slice(2,8) });
+  localStorage.setItem(key, JSON.stringify(passport));
+  return passport;
+}
+function ownerPassportKey(){
+  return 'marshab.passport.' + HAB_ID;
+}
+function writeStoredPassport(key, passport){
+  localStorage.setItem(key, JSON.stringify(passport));
+  giftDebug.activePassportKey = key;
+  renderStatusHint();
+}
+function readOwnerPassport(){
+  try { return JSON.parse(localStorage.getItem(ownerPassportKey())); }
+  catch { return null; }
+}
+function passportStorageKey(passport){
+  const ownerPassport = readOwnerPassport();
+  return ownerPassport?.passportId && ownerPassport.passportId === passport?.passportId
+    ? ownerPassportKey()
+    : guestPassportKey();
+}
+function currentTravelPassport(){
+  return readActiveTravelPassport() || passportForTravel();
+}
+function buildHintText(){
+  if(!buildOpen) return null;
+  if(buildMode.tool==='place' && buildMode.itemId){
+    const item = CATALOG.items[buildMode.itemId];
+    return `build: place ${item?.name || buildMode.itemId} · tap ${item?.wallOnly ? 'back wall edge' : 'tile'}`;
+  }
+  if(buildMode.tool==='place') return 'build: choose furniture with +';
+  if(buildMode.tool==='pickup') return 'build: remove mode · tap furniture';
+  if(buildMode.tool==='move') return 'build: move mode · tap furniture';
+  if(buildMode.tool==='rotate') return 'build: rotate mode · tap furniture';
+  return 'build mode · + add · − remove · ⇄ move · ↻ rotate · × exit';
+}
+function travelHint(){
+  const passport = currentTravelPassport();
+  const carried = passport?.carriedGift;
+  if(currentRole==='visitor' && carried){
+    const item = CATALOG.items[carried.itemId];
+    return `carrying ${item?.name || carried.itemId} for ${carried.forName || 'someone'} · tap empty tile to place`;
+  }
+  if(passport?.pendingReceipts?.length){
+    const receipt = passport.pendingReceipts[0];
+    const item = CATALOG.items[receipt.itemId];
+    return `delivery logged for ${item?.name || receipt.itemId} · return home as owner to reconcile`;
+  }
+  if(currentRole==='owner' && ownerSave?.carriedGift){
+    const carriedItem = CATALOG.items[ownerSave.carriedGift.itemId];
+    return `courier slot loaded: ${carriedItem?.name || ownerSave.carriedGift.itemId} for ${ownerSave.carriedGift.forName || 'someone'}`;
+  }
+  return 'tap a tile to walk';
+}
+function renderStatusHint(){
+  const el = document.getElementById('statusHint');
+  if(el) el.textContent = buildHintText() || travelHint();
+}
+function normalizeOwnerSave(save){
+  const stablePassportId = save?.passportId || makeNonce('ppt');
+  return {
+    v:1,
+    inventory:[], carriedGift:null, giftsReceived:[], deliveredReceipts:[],
+    ...save,
+    passportId: stablePassportId,
+    owner:{ name:'Crew', look:{ character:DEFAULT_CHARACTER }, ...(save?.owner || {}), look:{ character:normalizeCharacter(save?.owner?.look?.character) } },
+    room:{ size:[8,8], placed:[], ...(save?.room || {}), placed:[...(save?.room?.placed || [])] },
+    inventory:[...(save?.inventory || [])],
+    giftsReceived:[...(save?.giftsReceived || [])],
+    deliveredReceipts:[...(save?.deliveredReceipts || [])],
+  };
+}
+function refreshOwnerPassport(){
+  if(!ownerSave) return null;
+  const passport = mintPassport(ownerSave, HAB_ID, Date.now(), { passportId: ownerSave.passportId });
+  writeStoredPassport(ownerPassportKey(), passport);
+  renderStatusHint();
+  return passport;
+}
+function passportForTravel(){
+  const cached = readOwnerPassport();
+  if(cached?.passportId) return cached;
+  return guestPassport();
+}
+function readActiveTravelPassport(){
+  if(!giftDebug.activePassportKey) return null;
+  try { return JSON.parse(localStorage.getItem(giftDebug.activePassportKey)); }
+  catch { return null; }
+}
+function setOwnerControls(enabled){
+  for(const id of ['btnGame','btnShop','btnBuild','btnCharacter']) document.getElementById(id).disabled = !enabled;
+}
+function setAuthNote(msg=''){
+  document.getElementById('authNote').textContent = msg;
+}
+function updateGuestPassport(mutator){
+  const key = guestPassportKey();
+  const next = normalizeGuestPassport(mutator(guestPassport()) || guestPassport());
+  localStorage.setItem(key, JSON.stringify(next));
+  renderGuestSetup();
+  renderStatusHint();
+  return next;
+}
+function renderGuestSetup(){
+  const passport = guestPassport();
+  const ownerPassport = readOwnerPassport();
+  const lockedToOwner = !!ownerPassport?.passportId;
+  const panel = document.getElementById('guestSetupPanel');
+  const nameInput = document.getElementById('guestNameInput');
+  const hint = document.getElementById('guestSetupHint');
+  const character = normalizeCharacter(passport.look?.character);
+  if(panel) panel.style.opacity = lockedToOwner ? '0.72' : '1';
+  if(nameInput){
+    nameInput.value = passport.name || '';
+    nameInput.disabled = lockedToOwner;
+  }
+  if(hint) hint.textContent = lockedToOwner
+    ? 'Home passport detected · visitor entry will carry your owner identity'
+    : 'Throwaway passport for visitors without a home hab';
+  drawCharThumb(document.getElementById('guestCharPreview'), character);
+  for(const id of ['btnGuestCharPrev','btnGuestCharNext']){
+    const btn = document.getElementById(id);
+    if(btn) btn.disabled = lockedToOwner;
+  }
+}
+function renderAuthMode(){
+  const isSetup = !habHasOwner;
+  document.getElementById('authHabLine').textContent = isSetup ? 'Unclaimed Hab module' : (window.__helloOwner || 'Crew') + "'s Hab · " + (window.__helloId || HAB_ID);
+  document.getElementById('btnOwnerLogin').style.display = isSetup ? 'none' : '';
+  document.getElementById('btnGuestLogin').style.display = isSetup ? 'none' : '';
+  document.getElementById('btnSetupOwner').style.display = isSetup ? '' : 'none';
+  document.getElementById('pinInput').placeholder = isSetup ? 'Set new PIN' : '0000';
+  document.querySelector('#pinInput').previousElementSibling.textContent = isSetup ? 'Setup PIN' : 'Owner PIN';
+  if(isSetup){
+    const panel = document.getElementById('guestSetupPanel');
+    const hint = document.getElementById('guestSetupHint');
+    const label = panel.querySelector('.title');
+    if(panel) panel.style.opacity = '1';
+    if(hint) hint.textContent = 'Configure the owner avatar for this hab';
+    if(label) label.textContent = 'Owner identity';
+    for(const id of ['btnGuestCharPrev','btnGuestCharNext','guestNameInput']){
+      const el = document.getElementById(id);
+      if(el) el.disabled = false;
+    }
+  } else {
+    renderGuestSetup();
+  }
+}
+function openAuth(){
+  document.getElementById('authModal').classList.add('open');
+  document.getElementById('authModal').setAttribute('aria-hidden','false');
+  renderAuthMode();
+  document.getElementById('pinInput').focus();
+}
+function closeAuth(){
+  document.getElementById('authModal').classList.remove('open');
+  document.getElementById('authModal').setAttribute('aria-hidden','true');
+}
+
+// ============================================================================
+// CLIENT STATE + RENDER
+// ============================================================================
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+let DPR = 1, W = 0, H = 0;
+let world = { room:{ size:[8,8], layout:[] }, players:[], gifts:[], you:{credits:0} };
+let ownerSave = null;
+let currentRole = null;
+let booted = false;
+let shopOpen = false;
+let shopSort = 'name';
+let buildOpen = false;
+let gameOpen = false;
+let characterOpen = false;
+let buildMode = { active:false, tool:null, itemId:null, rot:0 };
+let pendingPlacement = null;
+let hoverCell = null;
+let hoverWall = null;
+let audioCtx = null;
+const audioDebug = { unlocked:false, last:'none', count:0 };
+window.__audioDebug = audioDebug;
+const giftDebug = { activePassportKey:null, lastReceipt:null, lastError:'', lastDuplicate:false };
+window.__giftDebug = giftDebug;
+let liveState = { connected:false, pollMs:0, roomCount:0, role:'visitor', lastToast:'', lastPresenceEvent:'', hydrated:false };
+let habHasOwner = true;
+window.__liveState = liveState;
+
+
+const me = { playerId:null, cell:{x:4,y:4}, px:0, py:0, path:[], targetCell:null, facing:0, speed:6 /*cells/sec*/ };
+const others = new Map();   // playerId -> { cell, px, py, tx, ty, facing, name, look, movingUntil }
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width = W*DPR; canvas.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+
+  const [sx,sy] = world.room.size;
+  const portrait = H > W;
+  const availW = W - (portrait ? 28 : 120);
+  const availH = H - (portrait ? 220 : 150);
+  const baseFloorW = (sx + sy) * (BASE_TILE_W / 2);
+  const baseFloorH = (sx + sy - 1) * (BASE_TILE_H / 2) + BASE_TILE_H;
+  const scale = Math.max(0.68, Math.min(1, availW / baseFloorW, availH / baseFloorH));
+  TILE_W = Math.round(BASE_TILE_W * scale);
+  TILE_H = Math.round(BASE_TILE_H * scale);
+
+  const wallDrop = TILE_H * 2.7;
+  const roomHeight = wallDrop + ((sx + sy - 1) * (TILE_H / 2) + TILE_H);
+  const topInset = portrait ? 122 : 108;
+  const bottomInset = portrait ? 96 : 54;
+  const safeHeight = Math.max(80, H - topInset - bottomInset);
+
+  originX = W / 2;
+  originY = topInset + wallDrop + Math.max(0, (safeHeight - roomHeight) / 2) + H * 0.05;
+
+  const selfPos = gridToScreen(me.cell.x, me.cell.y);
+  me.px = selfPos.x; me.py = selfPos.y + TILE_H/2;
+  for(const [,o] of others){
+    const p = gridToScreen(o.cell.x, o.cell.y);
+    o.px = p.x; o.py = p.y + TILE_H/2;
+    o.tx = o.px; o.ty = o.py;
+  }
+  updatePlacementConfirm();
+}
+window.addEventListener('resize', resize);
+
+function itemFootprint(item, rot=0){
+  const fp = item?.footprint || [1,1];
+  if(fp[0] === fp[1]) return fp;
+  const dirs = item?.validDirs || [];
+  if(dirs.length && !dirs.includes(rot)) rot = item.defaultDir ?? dirs[0] ?? 0;
+  // Imported Habbo sprites use cardinal dirs where 0/4 run along the opposite
+  // tile axis from MarsHab's old vector placeholders. Derive this once from
+  // explicit sprite directions so 2-tile floor selection follows the art.
+  if(item?.sprites) return (rot === 0 || rot === 4) ? [fp[1], fp[0]] : fp;
+  return rot === 2 || rot === 6 || rot % 2 ? [fp[1], fp[0]] : fp;
+}
+function placementDirs(item){
+  if(item?.validDirs?.length){
+    // Do not parity-dedupe explicit sprite dirs: four real PNG paths must rotate
+    // through all four views even when their footprint remains 1x1.
+    return item.sprites ? [...item.validDirs] : [...new Set(item.validDirs.map(d => d % 2))];
+  }
+  const fp = item?.footprint || [1,1];
+  return fp[0] !== fp[1] ? [0,1] : [0];
+}
+function cellsForPlacement(item, cell, rot=0){
+  if(item?.wallOnly) return [];
+  const [w,h] = itemFootprint(item, rot);
+  const cells = [];
+  for(let dx=0; dx<w; dx++) for(let dy=0; dy<h; dy++) cells.push([cell[0]+dx, cell[1]+dy]);
+  return cells;
+}
+function wallForCell(cell){
+  const [sx,sy] = world.room.size;
+  if(!cell) return null;
+  const [x,y] = cell;
+  if(x<0 || y<0 || x>=sx || y>=sy) return null;
+  if(y===0) return { wall:'right', index:x, cell:[x,0] };
+  if(x===0) return { wall:'left', index:y, cell:[0,y] };
+  return null;
+}
+function wallForScreenPoint(sx, sy){
+  const [rx,ry] = world.room.size;
+  for(let i=rx-1; i>=0; i--){
+    const wall = { wall:'right', index:i, cell:[i,0] };
+    if(pointInPoly({x:sx,y:sy}, wallStripPoly(wall))) return wall;
+  }
+  for(let i=ry-1; i>=0; i--){
+    const wall = { wall:'left', index:i, cell:[0,i] };
+    if(pointInPoly({x:sx,y:sy}, wallStripPoly(wall))) return wall;
+  }
+  return null;
+}
+function pointInPoly(p, poly){
+  let inside = false;
+  for(let i=0,j=poly.length-1; i<poly.length; j=i++){
+    const a = poly[i], b = poly[j];
+    if(((a.y>p.y)!==(b.y>p.y)) && (p.x < (b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)) inside = !inside;
+  }
+  return inside;
+}
+function wallKey(entry){
+  return `${entry.wall}:${entry.index}`;
+}
+function wallSlots(entry, item=CATALOG.items[entry.itemId]){
+  const span = Math.max(1, Number(item?.wallSpan || 1));
+  const slots = [];
+  for(let i=0; i<span; i++) slots.push({ wall:entry.wall, index:Number(entry.index || 0)+i });
+  return slots;
+}
+function placedCells(entry){
+  const item = CATALOG.items[entry.itemId];
+  return cellsForPlacement(item, entry.cell, entry.rot||0);
+}
+function placementDepth(entry){
+  const item = CATALOG.items[entry.itemId];
+  const cells = placedCells(entry);
+  if(!cells.length) return (entry.cell?.[0] || 0) + (entry.cell?.[1] || 0);
+  // Draw large furniture according to its front-most occupied tile, not just
+  // its anchor, so avatars on tiles behind it no longer pop in front.
+  return Math.max(...cells.map(([x,y]) => x + y));
+}
+function occupiedMap(ignoreUid=null){
+  const map = new Map();
+  for(const it of world.room.layout){
+    if(CATALOG.items[it.itemId]?.wallOnly) continue;
+    for(const [x,y] of placedCells(it)){
+      const key = x+','+y;
+      if(ignoreUid && it.uid===ignoreUid) continue;
+      map.set(key, it);
+    }
+  }
+  return map;
+}
+function findPlacedAt(cell, wall=null){
+  const floor = cell ? (occupiedMap().get(cell[0]+','+cell[1]) || null) : null;
+  if(floor) return floor;
+  wall = wall || wallForCell(cell);
+  if(!wall) return null;
+  return world.room.layout.find(it => CATALOG.items[it.itemId]?.wallOnly && wallSlots(it).some(slot => slot.wall===wall.wall && slot.index===wall.index)) || null;
+}
+function canPlaceWall(itemId, wall, ignoreUid=null){
+  if(!wall) return false;
+  const item = CATALOG.items[itemId];
+  const [sx,sy] = world.room.size;
+  const limit = wall.wall === 'right' ? sx : sy;
+  const slots = wallSlots(wall, item);
+  if(slots.some(slot => slot.index < 0 || slot.index >= limit)) return false;
+  return !(world.room.layout || []).some(it => it.uid!==ignoreUid && CATALOG.items[it.itemId]?.wallOnly && wallSlots(it).some(a => slots.some(b => a.wall===b.wall && a.index===b.index)));
+}
+function canPlaceItem(itemId, cell, rot=0, ignoreUid=null, wallOverride=null){
+  const item = CATALOG.items[itemId];
+  if(!item) return false;
+  if(item.wallOnly){
+    return canPlaceWall(itemId, wallOverride || wallForCell(cell), ignoreUid);
+  }
+  const [sx,sy] = world.room.size;
+  const taken = occupiedMap(ignoreUid);
+  for(const [x,y] of cellsForPlacement(item, cell, rot)){
+    if(x<0 || y<0 || x>=sx || y>=sy) return false;
+    if(taken.has(x+','+y)) return false;
+  }
+  return true;
+}
+function blockedSet(){
+  return new Set(occupiedMap().keys());
+}
+function inventoryCounts(){
+  const counts = new Map();
+  for(const itemId of (ownerSave?.inventory || [])) counts.set(itemId, (counts.get(itemId)||0)+1);
+  return [...counts.entries()];
+}
+function byKind(kind){
+  return Object.entries(CATALOG.items).filter(([,item]) => item.kind===kind && !item.hidden);
+}
+function syncCredits(){
+  const credits = ownerSave?.credits ?? world.you.credits ?? 0;
+  world.you.credits = credits;
+  document.getElementById('credits').textContent = credits;
+}
+function flashCredits(delta, reason='', anchor=null){
+  if(!delta) return;
+  syncCredits();
+  const panel = document.querySelector('.credits');
+  const pulse = document.getElementById('creditPulse');
+  const gain = delta > 0;
+  const cls = gain ? 'gain' : 'spend';
+  if(panel){
+    panel.classList.remove('gain','spend');
+    void panel.offsetWidth;
+    panel.classList.add(cls);
+    clearTimeout(panel._creditFlash);
+    panel._creditFlash = setTimeout(()=>panel.classList.remove(cls), 620);
+  }
+  if(pulse){
+    pulse.textContent = `${gain ? '+' : '−'}${Math.abs(delta)} CR${reason ? ' · ' + reason : ''}`;
+    pulse.classList.toggle('gain', gain);
+    const target = anchor?.getBoundingClientRect ? anchor.getBoundingClientRect() : anchor;
+    if(target && target.width){
+      const r = target;
+      pulse.style.left = Math.round(r.left + r.width/2) + 'px';
+      pulse.style.right = 'auto';
+      pulse.style.top = Math.max(12, Math.round(r.top - 8)) + 'px';
+      pulse.classList.add('anchor');
+    } else {
+      pulse.style.left = '';
+      pulse.style.right = '';
+      pulse.style.top = '';
+      pulse.classList.remove('anchor');
+    }
+    pulse.classList.remove('show');
+    void pulse.offsetWidth;
+    pulse.classList.add('show');
+    clearTimeout(pulse._creditFlash);
+    pulse._creditFlash = setTimeout(()=>pulse.classList.remove('show'), 1150);
+  }
+}
+function renderPresence(){
+  const link = document.getElementById('presenceLink');
+  const room = document.getElementById('presenceRoom');
+  const role = document.getElementById('presenceRole');
+  document.getElementById('presenceLinkText').textContent = liveState.connected
+    ? `link live · ${Math.max(8, Math.round(liveState.pollMs||0))} ms`
+    : 'link waiting';
+  document.getElementById('presenceRoomText').textContent = `room ${liveState.roomCount}/4`;
+  document.getElementById('presenceRoleText').textContent = liveState.role==='owner'
+    ? 'owner shell'
+    : (liveState.role==='visitor' ? 'visitor shell' : 'link idle');
+  link.className = 'presence-chip ' + (liveState.connected ? 'live' : 'warn');
+  room.className = 'presence-chip ' + (liveState.roomCount > 1 ? 'live' : '');
+  role.className = 'presence-chip ' + (liveState.role==='owner' ? 'live' : '');
+}
+function announcePresence(seen, currentIds){
+  if(!currentRole) return;
+  const joined = [];
+  const left = [];
+  for(const id of currentIds) if(!seen.has(id)) joined.push(id);
+  for(const id of seen) if(!currentIds.has(id)) left.push(id);
+  if(!liveState.hydrated){
+    liveState.hydrated = true;
+    return;
+  }
+  if(joined.length){
+    const name = others.get(joined[0])?.name || 'VISITOR';
+    liveState.lastPresenceEvent = `join:${joined[0]}`;
+    toast(name.toUpperCase() + ' DOCKED');
+    chirp('ui');
+    return;
+  }
+  if(left.length){
+    liveState.lastPresenceEvent = `left:${left[0]}`;
+    toast('VISITOR DEPARTED');
+    return;
+  }
+}
+function setRole(role){
+  currentRole = role;
+  liveState.role = role || 'guest';
+  liveState.hydrated = false;
+  liveState.lastPresenceEvent = '';
+  setOwnerControls(role==='owner');
+  if(role!=='owner'){
+    ownerSave = null;
+    world.you = { ...(world.you||{}), role:'visitor', credits:0 };
+    closeShop();
+    closeBuild();
+    closeGame();
+    closeCharacterPicker();
+    resetBuildMode();
+  }
+  syncCredits();
+  renderPresence();
+  renderStatusHint();
+}
+function applyOwnerSave(save){
+  ownerSave = normalizeOwnerSave(save);
+  world.room.layout = ownerSave.room?.placed || [];
+  world.room.size = ownerSave.room?.size || world.room.size;
+  refreshOwnerPassport();
+  syncCredits();
+  renderStatusHint();
+  if(shopOpen) renderShop();
+  if(buildOpen) renderBuild();
+  if(characterOpen) renderCharacterPicker();
+}
+async function loadOwnerSave(){
+  const res = await api('/api/save');
+  if(res?.save){ applyOwnerSave(res.save); return true; }
+  return false;
+}
+async function reconcileOwnerPassport(passportOverride=null){
+  if(!ownerSave) return false;
+  const cached = passportOverride || readOwnerPassport();
+  if(!cached?.pendingReceipts?.length) return false;
+  const rec = reconcile(ownerSave, cached);
+  ownerSave = rec.homeSave;
+  writeStoredPassport(ownerPassportKey(), rec.passport);
+  await persistOwnerSave();
+  chirp('gift');
+  toast('GIFT LOG RECONCILED');
+  return true;
+}
+async function enterOwner(pin){
+  if(!habHasOwner){ return await setupOwner(pin); }
+  const res = await api('/api/login', { pin });
+  if(!res?.token){ setAuthNote('PIN REJECTED'); chirp('bad'); return false; }
+  const cachedPassport = readOwnerPassport();
+  window._token = res.token;
+  me.playerId = res.playerId || 'you';
+  setRole('owner');
+  const loaded = await loadOwnerSave();
+  if(!loaded){ setAuthNote('SAVE LOAD FAILED'); chirp('bad'); return false; }
+  await reconcileOwnerPassport(cachedPassport);
+  closeAuth();
+  chirp('auth');
+  toast('OWNER LINKED');
+  return true;
+}
+async function setupOwner(pin){
+  if(!pin || pin.length < 4){ setAuthNote('PIN MUST BE 4+ DIGITS'); chirp('bad'); return false; }
+  const gp = guestPassport();
+  const res = await api('/api/setup', { pin, name: gp.name, look: gp.look });
+  if(!res?.token){ setAuthNote('SETUP FAILED'); chirp('bad'); return false; }
+  window._token = res.token;
+  me.playerId = res.playerId || 'you';
+  habHasOwner = true;
+  setRole('owner');
+  if(res.save){
+    applyOwnerSave(res.save);
+    await persistOwnerSave();
+  } else {
+    // offline fallback
+    await loadOwnerSave();
+  }
+  closeAuth();
+  chirp('auth');
+  toast('HAB CLAIMED');
+  return true;
+}
+async function enterGuest(){
+  if(!readOwnerPassport()?.passportId){
+    const typedName = document.getElementById('guestNameInput')?.value || '';
+    updateGuestPassport(passport=>({
+      ...passport,
+      name: typedName.trim().replace(/\s+/g, ' ').slice(0,18) || passport.name
+    }));
+  }
+  const passport = passportForTravel();
+  giftDebug.activePassportKey = passportStorageKey(passport);
+  const res = await api('/api/passport', { passport });
+  if(!res?.token){ setAuthNote('GUEST ENTRY FAILED'); return false; }
+  window._token = res.token;
+  me.playerId = res.playerId || me.playerId || 'you';
+  setRole('visitor');
+  closeAuth();
+  chirp('ui');
+  toast(passport?.carriedGift ? 'CARRYING GIFT · TAP TILE TO PLACE' : 'GUEST MODE');
+  return true;
+}
+async function deliverCarriedGiftAt(cell){
+  const passport = readActiveTravelPassport() || passportForTravel();
+  const carried = passport?.carriedGift;
+  if(currentRole!=='visitor' || !carried) return false;
+  const item = CATALOG.items[carried.itemId];
+  const target = `${cell[0]},${cell[1]}`;
+  if(blockedSet().has(target)){
+    toast('DELIVERY TILE BLOCKED');
+    chirp('bad');
+    return true;
+  }
+  const ok = window.confirm(`Place ${item?.name || carried.itemId} for ${carried.forName || 'someone'} here?`);
+  if(!ok) return true;
+  const res = await api('/api/gift/deliver', { itemId:carried.itemId, cell });
+  if(!res?.receipt){
+    giftDebug.lastError = res?.error || 'deliver_failed';
+    const msg = {
+      no_carried_gift:'NO CARRIED GIFT',
+      bad_cell:'BAD DELIVERY TILE',
+      forbidden:'VISITOR ONLY',
+    }[res?.error] || 'DELIVERY FAILED';
+    toast(msg);
+    chirp('bad');
+    return true;
+  }
+  const nextPassport = applyDeliveryToPassport(passport, res.receipt);
+  writeStoredPassport(giftDebug.activePassportKey || passportStorageKey(passport), nextPassport);
+  giftDebug.lastReceipt = res.receipt;
+  giftDebug.lastDuplicate = !!res.duplicate;
+  giftDebug.lastError = '';
+  chirp(res.duplicate ? 'ui' : 'gift');
+  toast((res.duplicate ? 'REISSUED' : 'DELIVERED') + ' ' + (item?.name || carried.itemId).toUpperCase());
+  return true;
+}
+async function persistOwnerSave(){
+  const res = await api('/api/save', { save: ownerSave });
+  if(res?.save) applyOwnerSave(res.save);
+}
+async function addTestCredits(){
+  if(currentRole!=='owner' || !ownerSave){ toast('OWNER ONLY'); return; }
+  for(let i=0; i<4; i++){
+    ownerSave = { ...ownerSave, credits:(ownerSave.credits || 0) + 25 };
+    await persistOwnerSave();
+  }
+  flashCredits(100, 'test credits');
+  renderShop();
+  chirp('reward');
+}
+function ensureAudio(){
+  if(!audioCtx){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return null;
+    audioCtx = new Ctx();
+  }
+  if(audioCtx.state==='suspended') audioCtx.resume().catch(()=>{});
+  audioDebug.unlocked = audioCtx.state !== 'closed';
+  return audioCtx;
+}
+function chirp(type='ui'){
+  const ctx = ensureAudio();
+  audioDebug.last = type;
+  audioDebug.count += 1;
+  if(!ctx) return;
+  const now = ctx.currentTime;
+  const spec = {
+    ui:[640,0.035,'triangle',0.14,820],
+    auth:[520,0.09,'sine',0.17,820],
+    start:[410,0.07,'square',0.15,650],
+    reward:[780,0.16,'triangle',0.2,1160],
+    gift:[560,0.18,'sine',0.18,1020],
+    place:[690,0.055,'triangle',0.16,940],
+    pickup:[360,0.06,'square',0.15,260],
+    rotate:[480,0.045,'triangle',0.15,720],
+    bad:[220,0.06,'sawtooth',0.14,170]
+  }[type] || [640,0.035,'triangle',0.14,820];
+  const [freq,dur,wave,gain,peak] = spec;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = wave;
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(peak, 90), now + dur);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(gain, now + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  osc.connect(g).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + dur + 0.02);
+}
+let miniGame = { running:false, raf:null, target:0.14, width:0.14, marker:0, startTs:0, lastReward:0, best:0, lastBand:'idle', cooldownUntil:0 };
+function stopMiniGame(){
+  miniGame.running = false;
+  if(miniGame.raf) cancelAnimationFrame(miniGame.raf);
+  miniGame.raf = 0;
+}
+function miniGameBand(err){
+  if(err < 0.025) return { reward:18, name:'perfect', hint:'Dead-center lock. Full credit band.' };
+  if(err < 0.07) return { reward:12, name:'steady', hint:'Good lock. Nearly centered.' };
+  if(err < 0.14) return { reward:7, name:'rough', hint:'Array aligned, but it drifted a little.' };
+  return { reward:4, name:'barely', hint:'Weak alignment, but the array still came online.' };
+}
+function renderMiniGame(){
+  const zone = document.getElementById('gameZone');
+  const marker = document.getElementById('gameMarker');
+  const lock = document.getElementById('btnGameLock');
+  const start = document.getElementById('btnGameStart');
+  const score = document.getElementById('gameScore');
+  if(!zone || !marker) return;
+  zone.style.left = (miniGame.target * 100).toFixed(1) + '%';
+  zone.style.width = (miniGame.width * 100).toFixed(1) + '%';
+  marker.style.left = `calc(${(miniGame.marker * 100).toFixed(1)}% - 5px)`;
+  lock.disabled = !miniGame.running;
+  start.disabled = miniGame.running || performance.now() < miniGame.cooldownUntil;
+  if(score){
+    const cooldown = Math.max(0, miniGame.cooldownUntil - performance.now());
+    score.textContent = cooldown > 0
+      ? `cooldown ${Math.ceil(cooldown/100)/10}s · best +${miniGame.best} · last ${miniGame.lastBand}`
+      : `best +${miniGame.best} · last ${miniGame.lastBand} · reward bands +18 / +12 / +7 / +4`;
+  }
+  if(!miniGame.running && performance.now() < miniGame.cooldownUntil) requestAnimationFrame(renderMiniGame);
+}
+function tickMiniGame(){
+  if(!miniGame.running) return;
+  const elapsed = performance.now() - miniGame.startTs;
+  miniGame.marker = (Math.sin(elapsed * 0.0062) + 1) / 2;
+  renderMiniGame();
+  miniGame.raf = requestAnimationFrame(tickMiniGame);
+}
+function openGame(){
+  if(currentRole!=='owner'){ toast('OWNER ONLY'); return; }
+  gameOpen = true;
+  closeShop();
+  closeBuild();
+  closeCharacterPicker();
+  document.getElementById('gameModal').classList.add('open');
+  document.getElementById('gameModal').setAttribute('aria-hidden','false');
+  document.getElementById('gameLabel').textContent = 'Ready for a new calibration run';
+  renderMiniGame();
+}
+function closeGame(){
+  gameOpen = false;
+  stopMiniGame();
+  document.getElementById('gameModal').classList.remove('open');
+  document.getElementById('gameModal').setAttribute('aria-hidden','true');
+}
+function startMiniGame(){
+  if(performance.now() < miniGame.cooldownUntil) return;
+  miniGame.target = 0.14 + Math.random() * 0.54;
+  miniGame.width = 0.14;
+  miniGame.marker = 0;
+  miniGame.startTs = performance.now();
+  miniGame.lastReward = 0;
+  miniGame.running = true;
+  miniGame.lastBand = 'live';
+  chirp('start');
+  document.getElementById('gameLabel').textContent = 'Calibrating... lock in on the cyan band';
+  document.getElementById('gameHint').textContent = 'Perfect +18 · steady +12 · rough +7 · barely +4';
+  renderMiniGame();
+  tickMiniGame();
+}
+async function lockMiniGame(){
+  if(!miniGame.running || !ownerSave) return;
+  stopMiniGame();
+  const zoneMid = miniGame.target + miniGame.width/2;
+  const err = Math.abs(miniGame.marker - zoneMid);
+  const result = miniGameBand(err);
+  ownerSave = { ...ownerSave, credits: ownerSave.credits + result.reward };
+  await persistOwnerSave();
+  miniGame.lastReward = result.reward;
+  miniGame.best = Math.max(miniGame.best, result.reward);
+  miniGame.lastBand = result.name;
+  miniGame.cooldownUntil = performance.now() + 900;
+  flashCredits(result.reward, 'calibration');
+  chirp(result.reward >= 12 ? 'reward' : 'ui');
+  document.getElementById('gameLabel').textContent = `Alignment ${result.name} · +${result.reward} CR`;
+  document.getElementById('gameHint').textContent = result.hint;
+  renderMiniGame();
+  toast('CALIBRATED +' + result.reward + ' CR');
+}
+function openShop(){
+  if(currentRole!=='owner'){ toast('OWNER ONLY'); return; }
+  shopOpen = true;
+  closeBuild();
+  closeGame();
+  closeCharacterPicker();
+  document.getElementById('shopModal').classList.add('open');
+  document.getElementById('shopModal').setAttribute('aria-hidden','false');
+  renderShop();
+}
+function closeShop(){
+  shopOpen = false;
+  const modal = document.getElementById('shopModal');
+  if(modal){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+  }
+}
+function resetBuildMode(){
+  clearPendingPlacement();
+  buildMode = { active:buildOpen, tool:null, itemId:null, rot:0 };
+  updateBuildChrome();
+}
+function updateBuildChrome(){
+  const tools = document.getElementById('buildTools');
+  const buildBtn = document.getElementById('btnBuild');
+  if(tools){
+    tools.classList.toggle('open', !!buildOpen);
+    tools.setAttribute('aria-hidden', buildOpen ? 'false' : 'true');
+  }
+  if(buildBtn) buildBtn.classList.toggle('active', !!buildOpen);
+  const active = (id, on)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', !!on); };
+  active('btnBuildAdd', buildMode.tool==='place');
+  active('btnBuildRemove', buildMode.tool==='pickup');
+  active('btnBuildMove', buildMode.tool==='move');
+  active('btnBuildRotate', buildMode.tool==='rotate');
+  renderStatusHint();
+}
+function toggleBuild(){
+  if(buildOpen) closeBuild();
+  else openBuild();
+}
+function openBuild(){
+  if(currentRole!=='owner'){ toast('OWNER ONLY'); return; }
+  buildOpen = true;
+  closeShop();
+  closeGame();
+  closeCharacterPicker();
+  resetBuildMode();
+  toast('BUILD MODE');
+}
+function openBuildCatalog(){
+  if(!buildOpen) openBuild();
+  buildMode = { active:true, tool:'place', itemId:null, rot:0 };
+  updateBuildChrome();
+  document.getElementById('buildModal').classList.add('open');
+  document.getElementById('buildModal').setAttribute('aria-hidden','false');
+  renderBuild();
+}
+function closeBuildModal(){
+  const modal = document.getElementById('buildModal');
+  if(modal){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+  }
+}
+function closeBuild(){
+  buildOpen = false;
+  clearPendingPlacement();
+  buildMode = { active:false, tool:null, itemId:null, rot:0 };
+  closeBuildModal();
+  updateBuildChrome();
+}
+function openCharacterPicker(){
+  if(currentRole!=='owner'){ toast('OWNER ONLY'); return; }
+  characterOpen = true;
+  closeShop();
+  closeBuild();
+  closeGame();
+  document.getElementById('characterModal').classList.add('open');
+  document.getElementById('characterModal').setAttribute('aria-hidden','false');
+  renderCharacterPicker();
+}
+function closeCharacterPicker(){
+  characterOpen = false;
+  const modal = document.getElementById('characterModal');
+  if(modal){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+  }
+}
+function beginPlacement(itemId, rot=0){
+  clearPendingPlacement();
+  buildMode = { active:true, tool:'place', itemId, rot };
+  closeBuildModal();
+  updateBuildChrome();
+  const item = CATALOG.items[itemId];
+  toast(`TAP ${item?.wallOnly ? 'A BACK WALL EDGE' : 'A TILE'} FOR ${item.name.toUpperCase()}`);
+}
+function beginPickup(){
+  if(!buildOpen) openBuild();
+  clearPendingPlacement();
+  buildMode = { active:true, tool:'pickup', itemId:null, rot:0 };
+  closeBuildModal();
+  updateBuildChrome();
+  toast('TAP FURNITURE TO REMOVE');
+}
+function beginMove(){
+  if(!buildOpen) openBuild();
+  clearPendingPlacement();
+  buildMode = { active:true, tool:'move', itemId:null, rot:0 };
+  closeBuildModal();
+  updateBuildChrome();
+  toast('TAP FURNITURE TO MOVE');
+}
+function beginRotate(){
+  if(!buildOpen) openBuild();
+  clearPendingPlacement();
+  buildMode = { active:true, tool:'rotate', itemId:null, rot:0 };
+  closeBuildModal();
+  updateBuildChrome();
+  toast('TAP FURNITURE TO ROTATE');
+}
+function shopTag(itemId, item){
+  if(item.giftOnly) return 'gift-only';
+  return (item.footprint || [1,1]).join('×') + ' footprint';
+}
+function shopSectionSubcopy(kind, carried, credits){
+  return carried ? `credits ${credits} · gift slot occupied until home reconcile` : `credits ${credits} · gift furniture can now be bought for someone else`;
+}
+async function purchaseGift(itemId, sourceEl=null){
+  const item = CATALOG.items[itemId];
+  if(!item || !ownerSave) return;
+  const forName = (window.prompt(`Gift ${item.name} for who?`, ownerSave.carriedGift?.forName || '') || '').trim();
+  if(!forName){ toast('RECIPIENT REQUIRED'); chirp('bad'); return; }
+  const beforeCredits = ownerSave.credits || 0;
+  const res = buyGift(ownerSave, CATALOG, itemId, { forName });
+  if(res.error){
+    const msg = {
+      not_gift_only:'NOT A GIFT ITEM',
+      already_carrying:'GIFT SLOT OCCUPIED',
+      insufficient_credits:'NOT ENOUGH CREDITS',
+      unknown_item:'ITEM NOT FOUND'
+    }[res.error] || 'GIFT BUY FAILED';
+    toast(msg); chirp('bad'); return;
+  }
+  ownerSave = normalizeOwnerSave(res.homeSave);
+  await persistOwnerSave();
+  flashCredits(ownerSave.credits - beforeCredits, item.name, sourceEl);
+  renderShop();
+  chirp('ui');
+  toast(`CARRYING ${item.name.toUpperCase()} FOR ${forName.toUpperCase()}`);
+}
+async function purchaseItem(itemId, sourceEl=null){
+  const item = CATALOG.items[itemId];
+  if(!item || !ownerSave) return;
+  if(item.giftOnly){ toast('GIFT ONLY'); return; }
+  if(ownerSave.credits < item.price){ toast('NOT ENOUGH CREDITS'); return; }
+
+  const beforeCredits = ownerSave.credits;
+  ownerSave = { ...ownerSave, credits: ownerSave.credits - item.price };
+  if(item.kind==='furniture') ownerSave.inventory = [...(ownerSave.inventory || []), itemId];
+  await persistOwnerSave();
+  flashCredits(ownerSave.credits - beforeCredits, item.name, sourceEl);
+  renderShop();
+  chirp('ui');
+  toast('PURCHASED ' + item.name.toUpperCase());
+}
+function catalogThumb(item){
+  const fallback = `<span class="furni-swatch" style="background:${item.color || '#777'}"></span>`;
+  const info = furniSpriteInfo(item, item.defaultDir || 0);
+  return info.path ? `<img src="${info.path}" alt="" ${info.flipX ? 'style="transform:scaleX(-1)"' : ''} onerror="this.remove(); this.nextElementSibling.style.display='block';"><span class="furni-swatch" style="display:none;background:${item.color || '#777'}"></span>` : fallback;
+}
+function catalogCard(itemId, item, action, disabled=false, count=0){
+  const countHtml = count ? `<span class="count-badge">×${count}</span>` : '';
+  return `<button class="furni-card" data-${action}="${itemId}" ${disabled?'disabled':''}><div class="furni-thumb">${catalogThumb(item)}</div>${countHtml}<div class="furni-card-name">${item.name}</div><div class="furni-card-price">CR ${item.price}</div></button>`;
+}
+function sortedItems(entries){
+  const rows = [...entries];
+  rows.sort((a,b)=> shopSort==='price' ? (a[1].price-b[1].price) || a[1].name.localeCompare(b[1].name) : a[1].name.localeCompare(b[1].name) || (a[1].price-b[1].price));
+  return rows;
+}
+function renderShop(){
+  const list = document.getElementById('shopList');
+  const credits = ownerSave?.credits ?? 0;
+  const carried = ownerSave?.carriedGift || null;
+  const furnitureOwned = new Map(inventoryCounts());
+  const sections = ['furniture'];
+  list.classList.remove('furni-grid');
+  list.innerHTML = `<div class="sort-bar"><span class="sub">sort</span><select class="sort-select" id="shopSort"><option value="name" ${shopSort==='name'?'selected':''}>Name</option><option value="price" ${shopSort==='price'?'selected':''}>Price</option></select></div>` + (carried ? `<div class="panel"><div class="title" style="font-size:12px">Courier slot</div><div class="sub" style="margin:4px 0 10px">Carrying ${CATALOG.items[carried.itemId]?.name || carried.itemId} for ${carried.forName || 'someone'} · nonce ${carried.giftNonce}</div></div>` : `<div class="panel"><div class="sub">Courier slot empty. Gift-only items can now be bought for someone and carried in your passport.</div></div>`) + sections.map((kind) => {
+    const items = sortedItems(byKind(kind)).map(([itemId,item]) => {
+      const disabled = item.giftOnly ? (!!carried || credits < item.price) : (credits < item.price);
+      const owned = furnitureOwned.get(itemId) || 0;
+      return catalogCard(itemId, item, 'buy', disabled, owned);
+    }).join('');
+    return `<div class="panel"><div class="title" style="font-size:12px">${kind}</div><div class="sub" style="margin:4px 0 10px">${shopSectionSubcopy(kind, carried, credits)}</div><div class="furni-grid">${items}</div></div>`;
+  }).join('');
+  const sort = document.getElementById('shopSort');
+  if(sort) sort.onchange = ()=>{ shopSort = sort.value; renderShop(); };
+  for(const btn of list.querySelectorAll('[data-buy]')) btn.onclick = ()=>{
+    const itemId = btn.dataset.buy;
+    const item = CATALOG.items[itemId];
+    const anchor = btn.getBoundingClientRect();
+    return item?.giftOnly ? purchaseGift(itemId, anchor) : purchaseItem(itemId, anchor);
+  };
+}
+function renderBuild(){
+  const list = document.getElementById('buildList');
+  const rows = inventoryCounts().map(([itemId,count]) => {
+    const item = CATALOG.items[itemId];
+    return item ? catalogCard(itemId, item, 'place', false, count) : '';
+  }).join('');
+  list.classList.toggle('furni-grid', !!rows);
+  list.innerHTML = rows || `<div class="panel"><div class="sub">No unplaced furniture yet. Buy furniture in SHOP first.</div></div>`;
+  for(const btn of list.querySelectorAll('[data-place]')) btn.onclick = ()=>beginPlacement(btn.dataset.place, CATALOG.items[btn.dataset.place]?.defaultDir || 0);
+}
+function currentCharacter(){
+  return normalizeCharacter(ownerSave?.owner?.look?.character);
+}
+async function setCharacter(characterId){
+  if(!ownerSave) return;
+  const character = normalizeCharacter(characterId);
+  if(character === currentCharacter()) return;
+  ownerSave = { ...ownerSave, owner:{ ...(ownerSave.owner || {}), look:{ character } } };
+  await persistOwnerSave();
+  renderCharacterPicker();
+  chirp('ui');
+  toast('CHARACTER SET');
+}
+function renderCharacterPicker(){
+  const list = document.getElementById('characterList');
+  const current = currentCharacter();
+  list.innerHTML = `<div class="char-grid">` + list_characters().map(characterId => {
+    const selected = characterId === current;
+    return `<div class="char-card"><canvas class="char-thumb" data-char-thumb="${characterId}" width="56" height="100"></canvas><button class="btn ${selected?'secondary':''}" data-select-char="${characterId}" ${selected?'disabled':''}>${selected?'Selected':'Select'}</button></div>`;
+  }).join('') + `</div>`;
+  for(const canvas of list.querySelectorAll('[data-char-thumb]')) drawCharThumb(canvas, canvas.dataset.charThumb);
+  for(const btn of list.querySelectorAll('[data-select-char]')) btn.onclick = ()=>setCharacter(btn.dataset.selectChar);
+}
+function clearPendingPlacement(){
+  pendingPlacement = null;
+  updatePlacementConfirm();
+}
+function placementTargetFromInput(cell, wall){
+  if(!buildMode.itemId) return null;
+  const item = CATALOG.items[buildMode.itemId];
+  if(!item) return null;
+  if(item.wallOnly){
+    if(!wall) return null;
+    return { itemId:buildMode.itemId, rot:buildMode.rot, cell:wall.cell, wall };
+  }
+  if(!cell) return null;
+  return { itemId:buildMode.itemId, rot:buildMode.rot, cell, wall:null };
+}
+function pendingPlacementOk(target=pendingPlacement){
+  if(!target) return false;
+  return canPlaceItem(target.itemId, target.cell, target.rot, null, target.wall);
+}
+function pendingPlacementControlPoint(target=pendingPlacement){
+  if(!target) return null;
+  const item = CATALOG.items[target.itemId];
+  if(item?.wallOnly && target.wall){
+    const poly = wallStripPoly(target.wall);
+    return { x:(poly[2].x + poly[3].x) / 2, y:Math.min(poly[2].y, poly[3].y) - 8 };
+  }
+  const [x,y] = target.cell;
+  const p = gridToScreen(x,y);
+  return { x:p.x, y:p.y - TILE_H * 0.55 };
+}
+function updatePlacementConfirm(){
+  const box = document.getElementById('placementConfirm');
+  if(!box) return;
+  const active = !!(buildOpen && buildMode.tool==='place' && buildMode.itemId && pendingPlacement);
+  box.classList.toggle('open', active);
+  box.setAttribute('aria-hidden', active ? 'false' : 'true');
+  if(!active) return;
+  const p = pendingPlacementControlPoint();
+  if(p){
+    box.style.left = Math.round(p.x) + 'px';
+    box.style.top = Math.round(p.y) + 'px';
+  }
+  const okBtn = document.getElementById('btnConfirmPlacement');
+  if(okBtn) okBtn.disabled = !pendingPlacementOk();
+}
+function setPendingPlacement(cell, wall){
+  const target = placementTargetFromInput(cell, wall);
+  if(!target){ toast('TAP A VALID ' + (CATALOG.items[buildMode.itemId]?.wallOnly ? 'WALL EDGE' : 'TILE')); chirp('bad'); return; }
+  pendingPlacement = target;
+  updatePlacementConfirm();
+  const ok = pendingPlacementOk();
+  toast(ok ? 'PREVIEW READY · TAP ✓ TO PLACE' : 'CANNOT PLACE THERE');
+  if(!ok) chirp('bad');
+}
+async function confirmPendingPlacement(){
+  if(!pendingPlacement) return;
+  const target = pendingPlacement;
+  if(!pendingPlacementOk(target)){ toast('CANNOT PLACE THERE'); chirp('bad'); updatePlacementConfirm(); return; }
+  pendingPlacement = null;
+  await placeSelectedAt(target.cell, target.wall);
+  updatePlacementConfirm();
+}
+function cancelPendingPlacement(){
+  if(!pendingPlacement) return;
+  const itemName = CATALOG.items[pendingPlacement.itemId]?.name || 'item';
+  clearPendingPlacement();
+  chirp('ui');
+  toast(itemName.toUpperCase() + ' RETURNED TO INVENTORY');
+}
+async function placeSelectedAt(cell, wallOverride=null){
+  const itemId = buildMode.itemId;
+  if(!itemId || !ownerSave) return false;
+  if(!canPlaceItem(itemId, cell, buildMode.rot, null, wallOverride)){ toast('CANNOT PLACE THERE'); chirp('bad'); return false; }
+  const idx = (ownerSave.inventory || []).indexOf(itemId);
+  if(idx < 0){ resetBuildMode(); toast('ITEM NOT IN INVENTORY'); return false; }
+  ownerSave.inventory = ownerSave.inventory.slice();
+  ownerSave.inventory.splice(idx, 1);
+  ownerSave.room = ownerSave.room || { size:world.room.size, placed:[] };
+  const item = CATALOG.items[itemId];
+  const wall = item?.wallOnly ? wallOverride : null;
+  const entry = { uid:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), itemId, cell: cell || wall?.cell, rot:buildMode.rot };
+  if(wall){ entry.wall = wall.wall; entry.index = wall.index; entry.cell = wall.cell; }
+  ownerSave.room.placed = [...(ownerSave.room.placed || []), entry];
+  world.room.layout = ownerSave.room.placed;
+  await persistOwnerSave();
+  const remaining = (ownerSave.inventory || []).filter(id => id===itemId).length;
+  buildMode = { active:buildOpen, tool:'place', itemId:remaining ? itemId : null, rot:remaining ? buildMode.rot : 0 };
+  updateBuildChrome();
+  chirp('place');
+  toast('PLACED ' + CATALOG.items[itemId].name.toUpperCase() + (remaining ? ` · ${remaining} LEFT` : ''));
+  return true;
+}
+async function pickupPlaced(entry){
+  if(!entry || !ownerSave) return;
+  ownerSave.room = ownerSave.room || { size:world.room.size, placed:[] };
+  ownerSave.room.placed = (ownerSave.room.placed || []).filter(it => it.uid !== entry.uid);
+  world.room.layout = ownerSave.room.placed;
+  ownerSave.inventory = [...(ownerSave.inventory || []), entry.itemId];
+  await persistOwnerSave();
+  buildMode = { active:buildOpen, tool:'pickup', itemId:null, rot:0 };
+  updateBuildChrome();
+  chirp('pickup');
+  toast('REMOVED ' + CATALOG.items[entry.itemId].name.toUpperCase());
+}
+async function movePlaced(entry){
+  if(!entry || !ownerSave) return;
+  const item = CATALOG.items[entry.itemId];
+  ownerSave.room = ownerSave.room || { size:world.room.size, placed:[] };
+  ownerSave.room.placed = (ownerSave.room.placed || []).filter(it => it.uid !== entry.uid);
+  world.room.layout = ownerSave.room.placed;
+  ownerSave.inventory = [...(ownerSave.inventory || []), entry.itemId];
+  await persistOwnerSave();
+  clearPendingPlacement();
+  buildMode = { active:buildOpen, tool:'place', itemId:entry.itemId, rot:Number(entry.rot ?? item?.defaultDir ?? 0) };
+  closeBuildModal();
+  updateBuildChrome();
+  chirp('pickup');
+  toast('MOVING ' + (item?.name || entry.itemId).toUpperCase() + ' · TAP NEW SPOT');
+}
+async function rotatePlaced(entry){
+  if(!entry || !ownerSave) return;
+  const item = CATALOG.items[entry.itemId];
+  const dirs = placementDirs(item);
+  const current = Number(entry.rot ?? item?.defaultDir ?? dirs[0] ?? 0);
+  const idx = dirs.indexOf(current);
+  const next = dirs[((idx < 0 ? -1 : idx) + 1) % dirs.length];
+  if(!canPlaceItem(entry.itemId, entry.cell, next, entry.uid, item?.wallOnly ? entry : null)){ toast('ROTATION BLOCKED'); chirp('bad'); return; }
+  ownerSave.room = ownerSave.room || { size:world.room.size, placed:[] };
+  ownerSave.room.placed = (ownerSave.room.placed || []).map(it => it.uid===entry.uid ? { ...it, rot:next } : it);
+  world.room.layout = ownerSave.room.placed;
+  await persistOwnerSave();
+  chirp('rotate');
+  toast('ROTATED ' + (item?.name || entry.itemId).toUpperCase());
+}
+
+// ---- drawing primitives (placeholder vector art; AGENT: replace with spritesheet) ----
+function drawRoomBackdrop(size){
+  // Mars terrain is provided by the CSS background image. Keep the canvas backdrop
+  // empty so no abstract/geometric shapes sit behind the hab shell.
+}
+function drawRoomShell(size){
+  const [sx,sy] = size;
+  const top = gridToScreen(0,0);
+  const left = gridToScreen(0,sy-1);
+  const right = gridToScreen(sx-1,0);
+  const wallDrop = TILE_H * 2.7;
+  const seamDrop = wallDrop / 3;
+
+  ctx.fillStyle = '#c7c7c1';
+  ctx.beginPath();
+  ctx.moveTo(top.x, top.y);
+  ctx.lineTo(right.x + TILE_W/2, right.y + TILE_H/2);
+  ctx.lineTo(right.x + TILE_W/2, right.y + TILE_H/2 - wallDrop);
+  ctx.lineTo(top.x, top.y - wallDrop);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#b4b4ad';
+  ctx.beginPath();
+  ctx.moveTo(top.x, top.y);
+  ctx.lineTo(left.x - TILE_W/2, left.y + TILE_H/2);
+  ctx.lineTo(left.x - TILE_W/2, left.y + TILE_H/2 - wallDrop);
+  ctx.lineTo(top.x, top.y - wallDrop);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = '#9b9b96';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(top.x, top.y - wallDrop);
+  ctx.lineTo(right.x + TILE_W/2, right.y + TILE_H/2 - wallDrop);
+  ctx.moveTo(top.x, top.y - wallDrop);
+  ctx.lineTo(left.x - TILE_W/2, left.y + TILE_H/2 - wallDrop);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#8f8f89';
+  ctx.beginPath();
+  ctx.moveTo(top.x, top.y - seamDrop);
+  ctx.lineTo(right.x + TILE_W/2, right.y + TILE_H/2 - seamDrop);
+  ctx.moveTo(top.x, top.y - seamDrop);
+  ctx.lineTo(left.x - TILE_W/2, left.y + TILE_H/2 - seamDrop);
+  ctx.stroke();
+}
+function drawTileDiamond(x,y,fill,stroke='#9b9b96'){
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x+TILE_W/2, y+TILE_H/2);
+  ctx.lineTo(x, y+TILE_H); ctx.lineTo(x-TILE_W/2, y+TILE_H/2); ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = stroke; ctx.stroke();
+}
+function drawTile(gx,gy){
+  const {x,y} = gridToScreen(gx,gy);
+  const tone = (gx+gy)%2 ? '#b8b8b2' : '#d0d0ca';
+  drawTileDiamond(x, y, tone);
+}
+function drawCube(gx,gy,color,label,rot=0,itemId=null){
+  const item = itemId ? CATALOG.items[itemId] : null;
+  if(drawFurniSprite(item, gx, gy, rot, 1)) return;
+  if(itemId){
+    for(const [cx,cy] of cellsForPlacement(item, [gx,gy], rot)){
+      const p = gridToScreen(cx,cy);
+      drawTileDiamond(p.x, p.y, shade(color,-8), 'rgba(255,176,84,.12)');
+    }
+  }
+  const {x,y} = gridToScreen(gx,gy);
+  const h = Math.max(18, Math.round(TILE_H * 1.6));
+  // top
+  ctx.beginPath(); ctx.moveTo(x,y-h); ctx.lineTo(x+TILE_W/2,y-h+TILE_H/2);
+  ctx.lineTo(x,y-h+TILE_H); ctx.lineTo(x-TILE_W/2,y-h+TILE_H/2); ctx.closePath();
+  ctx.fillStyle = color; ctx.fill();
+  // left/right faces
+  ctx.fillStyle = shade(color,-22); ctx.beginPath();
+  ctx.moveTo(x-TILE_W/2,y-h+TILE_H/2); ctx.lineTo(x,y-h+TILE_H); ctx.lineTo(x,y+TILE_H); ctx.lineTo(x-TILE_W/2,y+TILE_H/2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shade(color,-38); ctx.beginPath();
+  ctx.moveTo(x+TILE_W/2,y-h+TILE_H/2); ctx.lineTo(x,y-h+TILE_H); ctx.lineTo(x,y+TILE_H); ctx.lineTo(x+TILE_W/2,y+TILE_H/2); ctx.closePath(); ctx.fill();
+  if(label){ ctx.fillStyle='rgba(0,0,0,.5)'; ctx.font='9px ui-monospace'; ctx.textAlign='center'; ctx.fillText(label,x,y-h+TILE_H/2+3); }
+}
+function drawAvatar(px,py,facing,tint,name,look={},moving=false){
+  const scale = TILE_W / BASE_TILE_W;
+  const character = normalizeCharacter(look.character);
+  const t = performance.now();
+  const bounce = moving ? Math.sin(t*0.02) * 1.2 : 0;
+  ctx.save(); ctx.translate(px,py-bounce); ctx.scale(scale, scale);
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,0,12,6,0,0,7); ctx.fill();
+  if(charSheetReady){
+    const walkFrame = moving ? Math.floor(t / 90) % CHAR_WALK_FRAMES : 0;
+    const frame = get_frame(character, facing, walkFrame);
+    const dw = Math.round(frame.w * CHAR_DRAW_SCALE);
+    const dh = Math.round(frame.h * CHAR_DRAW_SCALE);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(charSheetImg, frame.sx, frame.sy, frame.w, frame.h,
+      Math.round(-dw/2), Math.round(-dh), dw, dh);
+  }
+  if(name){ ctx.fillStyle='#f2e4d4'; ctx.font='10px ui-monospace';
+    ctx.textAlign='center'; ctx.fillText(name,0,-CHAR_CELL_H*CHAR_DRAW_SCALE-4); }
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function shade(hex,amt){ const n=parseInt(hex.slice(1,7),16);
+  let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); }
+
+function drawPathPreview(){
+  if(me.targetCell){
+    const {x,y} = gridToScreen(me.targetCell.x, me.targetCell.y);
+    ctx.strokeStyle = 'rgba(95,210,214,.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y+3); ctx.lineTo(x+TILE_W/2-4, y+TILE_H/2);
+    ctx.lineTo(x, y+TILE_H-3); ctx.lineTo(x-TILE_W/2+4, y+TILE_H/2); ctx.closePath();
+    ctx.stroke();
+  }
+  if(!me.path.length) return;
+  ctx.fillStyle = 'rgba(95,210,214,.7)';
+  for(const step of me.path){
+    const p = gridToScreen(step.x, step.y);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y + TILE_H/2, Math.max(2, TILE_W*0.05), 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+function drawWallStrip(wall, fill, stroke){
+  if(!wall) return;
+  const [a,b,c,d] = wallStripPoly(wall);
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.lineTo(c.x, c.y);
+  ctx.lineTo(d.x, d.y);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = stroke;
+  ctx.stroke();
+}
+function wallStripPoly(wall){
+  const wallDrop = TILE_H * 2.7;
+  const idx = wall.index;
+  const a = wall.wall === 'right' ? gridToScreen(idx, 0) : gridToScreen(0, idx);
+  const b = wall.wall === 'right' ? gridToScreen(idx+1, 0) : gridToScreen(0, idx+1);
+  return [a, b, {x:b.x, y:b.y-wallDrop}, {x:a.x, y:a.y-wallDrop}];
+}
+function drawBuildPreview(){
+  if(buildMode.tool==='place' && buildMode.itemId){
+    const item = CATALOG.items[buildMode.itemId];
+    const pending = pendingPlacement?.itemId === buildMode.itemId ? pendingPlacement : null;
+    const hover = pending?.cell || hoverCell || [me.cell.x, me.cell.y];
+    const wallHover = item?.wallOnly ? (pending?.wall || hoverWall) : null;
+    const ok = pending ? pendingPlacementOk(pending) : canPlaceItem(buildMode.itemId, hover, buildMode.rot, null, wallHover);
+    const fill = ok ? 'rgba(95,210,214,.26)' : 'rgba(217,83,63,.28)';
+    const stroke = ok ? 'rgba(95,210,214,.85)' : 'rgba(255,120,92,.85)';
+    if(item?.wallOnly){
+      const wall = wallHover;
+      if(wall){
+        for(const slot of wallSlots(wall, item)) drawWallStrip(slot, fill, stroke);
+        drawWallSprite({ itemId:buildMode.itemId, rot:buildMode.rot, ...wall }, ok ? 0.62 : 0.34);
+      }
+      updatePlacementConfirm();
+      return;
+    }
+    for(const [cx,cy] of cellsForPlacement(item, hover, buildMode.rot)){
+      const p = gridToScreen(cx,cy);
+      drawTileDiamond(p.x, p.y, fill, stroke);
+    }
+    drawFurniSprite(item, hover[0], hover[1], buildMode.rot, ok ? 0.55 : 0.32);
+    updatePlacementConfirm();
+  } else if(buildMode.tool==='pickup' || buildMode.tool==='move' || buildMode.tool==='rotate'){
+    const focus = hoverCell || [me.cell.x, me.cell.y];
+    const entry = findPlacedAt(focus, hoverWall);
+    if(!entry) return;
+    const moveMode = buildMode.tool==='move';
+    const fill = buildMode.tool==='rotate' || moveMode ? 'rgba(95,210,214,.18)' : 'rgba(255,120,92,.18)';
+    const stroke = buildMode.tool==='rotate' || moveMode ? 'rgba(95,210,214,.8)' : 'rgba(255,120,92,.8)';
+    if(CATALOG.items[entry.itemId]?.wallOnly){
+      for(const slot of wallSlots(entry)) drawWallStrip(slot, fill, stroke);
+      return;
+    }
+    for(const [cx,cy] of placedCells(entry)){
+      const p = gridToScreen(cx,cy);
+      drawTileDiamond(p.x, p.y, fill, stroke);
+    }
+  }
+}
+function drawGiftPlaced(g){
+  const item = CATALOG.items[g.itemId];
+  drawCube(g.cell[0], g.cell[1], item?.color || '#3f7d4f', '♥');
+  const p = gridToScreen(g.cell[0], g.cell[1]);
+  const label = g.fromName ? `from ${g.fromName}` : 'gift';
+  ctx.fillStyle = 'rgba(8,6,5,.78)';
+  roundRect(p.x - 30, p.y + TILE_H + 2, 60, 14, 5);
+  ctx.fill();
+  ctx.fillStyle = '#f2e4d4';
+  ctx.font = '9px ui-monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, p.x, p.y + TILE_H + 12);
+}
+
+// ---- render: painter's algorithm by depth = gx+gy ----
+function render(){
+  ctx.clearRect(0,0,W,H);
+  const [sx,sy] = world.room.size;
+  drawRoomBackdrop(world.room.size);
+  drawRoomShell(world.room.size);
+  for(let d=0; d<=sx+sy; d++)                         // floor first, back-to-front
+    for(let gx=0; gx<sx; gx++){ const gy=d-gx; if(gy>=0&&gy<sy) drawTile(gx,gy); }
+  const wallItems = world.room.layout.filter(it => CATALOG.items[it.itemId]?.wallOnly);
+  wallItems.sort((a,b) => Number(a.index||0) - Number(b.index||0));
+  for(const it of wallItems) drawWallSprite(it, 1);
+  drawPathPreview();
+
+  // collect entities (furniture + players + gifts) and depth-sort
+  const ents = [];
+  for(const it of world.room.layout){ const c=CATALOG.items[it.itemId];
+    if(c?.wallOnly) continue;
+    ents.push({ depth:placementDepth(it), z:0.35, draw:()=>drawCube(it.cell[0],it.cell[1], c?c.color:'#777', c?c.name[0]:'?', it.rot||0, it.itemId) }); }
+  for(const g of world.gifts)
+    ents.push({ depth:g.cell[0]+g.cell[1], z:1, draw:()=>drawGiftPlaced(g) });
+  // me
+  ents.push({ depth:me.py, z:1, draw:()=>drawAvatar(me.px,me.py,me.facing,'#d98b3f', 'you', (currentRole==='owner' ? (ownerSave?.owner?.look || me.look || {character:DEFAULT_CHARACTER}) : (me.look || {character:DEFAULT_CHARACTER})), !!me.path.length) });
+  // others
+  for(const [,o] of others){ ents.push({ depth:o.py, z:1,
+    draw:()=>drawAvatar(o.px,o.py,o.facing,'#6f8fb5', o.name, o.look || {}, performance.now() < (o.movingUntil||0)) }); }
+
+  ents.sort((a,b)=> (a.depth-b.depth) || (a.z-b.z));
+  for(const e of ents) e.draw();
+  drawBuildPreview();
+}
+
+// ---- movement integration ----
+let lastT = 0;
+function faceToward(from, to){
+  return facingFromDelta(to.x - from.x, to.y - from.y);
+}
+function tick(t){
+  const dt = Math.min(0.05, (t-lastT)/1000 || 0); lastT = t;
+
+  // advance me along path
+  const target = me.path[0];
+  const tp = target ? gridToScreen(target.x, target.y) : gridToScreen(me.cell.x, me.cell.y);
+  const goalX = tp.x, goalY = tp.y + TILE_H/2;     // stand at tile center-ish
+  const dx = goalX-me.px, dy = goalY-me.py, dist = Math.hypot(dx,dy);
+  const stepPx = me.speed * (TILE_W/2) * dt;        // cells/sec → px/sec (approx)
+  if(target) me.facing = faceToward(me.cell, target);
+  if(dist > 0.5){
+    const eased = Math.min(stepPx, Math.max(dist * 0.28, stepPx * 0.72));
+    me.px += dx/dist*Math.min(eased,dist); me.py += dy/dist*Math.min(eased,dist);
+  } else if(target){
+    me.px = goalX; me.py = goalY;
+    me.cell = { x:target.x, y:target.y }; me.path.shift();
+    if(!me.path.length) me.targetCell = null;
+    api('/api/move', { cell:me.cell, facing:me.facing });   // sparse server update
+  }
+
+  // interpolate others toward their reported cell
+  for(const [,o] of others){
+    const p = gridToScreen(o.cell.x,o.cell.y);
+    o.tx = p.x; o.ty = p.y+TILE_H/2;
+    const dx = o.tx-o.px, dy = o.ty-o.py;
+    const dist = Math.hypot(dx,dy);
+    const step = Math.max(18, TILE_W*3.4) * dt;
+    if(dist > 0.35){
+      const eased = Math.min(dist, Math.max(step, dist*0.32));
+      o.px += dx/dist * eased;
+      o.py += dy/dist * eased;
+    } else {
+      o.px = o.tx; o.py = o.ty;
+    }
+  }
+
+  render();
+  requestAnimationFrame(tick);
+}
+
+// ---- input: tap a tile to walk ----
+function eventPoint(e){
+  const r = canvas.getBoundingClientRect();
+  return { x:e.clientX-r.left, y:e.clientY-r.top };
+}
+function eventToCell(e){
+  const p = eventPoint(e);
+  const g = screenToGrid(p.x, p.y);
+  const [sx,sy] = world.room.size;
+  return (g.x<0||g.y<0||g.x>=sx||g.y>=sy) ? null : [g.x,g.y];
+}
+function eventToWall(e){
+  const p = eventPoint(e);
+  return wallForScreenPoint(p.x, p.y);
+}
+canvas.addEventListener('pointermove', (e)=>{
+  const item = buildMode.itemId ? CATALOG.items[buildMode.itemId] : null;
+  hoverWall = (item?.wallOnly || buildMode.tool==='pickup' || buildMode.tool==='move' || buildMode.tool==='rotate') ? eventToWall(e) : null;
+  hoverCell = eventToCell(e);
+});
+canvas.addEventListener('pointerleave', ()=>{ hoverCell = null; hoverWall = null; });
+canvas.addEventListener('pointerdown', async (e)=>{
+  const item = buildMode.itemId ? CATALOG.items[buildMode.itemId] : null;
+  const wall = (item?.wallOnly || buildMode.tool==='pickup' || buildMode.tool==='move' || buildMode.tool==='rotate') ? eventToWall(e) : null;
+  const cell = eventToCell(e);
+  if(!cell && !wall) return;
+  if(buildMode.tool==='place' && buildMode.itemId){
+    setPendingPlacement(cell, wall);
+    return;
+  }
+  if(buildMode.tool==='pickup'){
+    const entry = findPlacedAt(cell, eventToWall(e));
+    if(entry) await pickupPlaced(entry);
+    else toast('NOTHING TO REMOVE');
+    return;
+  }
+  if(buildMode.tool==='move'){
+    const entry = findPlacedAt(cell, eventToWall(e));
+    if(entry) await movePlaced(entry);
+    else toast('NOTHING TO MOVE');
+    return;
+  }
+  if(buildMode.tool==='rotate'){
+    const entry = findPlacedAt(cell, eventToWall(e));
+    if(entry) await rotatePlaced(entry);
+    else toast('NOTHING TO ROTATE');
+    return;
+  }
+  if(!cell) return;
+  if(await deliverCarriedGiftAt(cell)) return;
+  const blocked = blockedSet();
+  const anchor = me.path[0] || me.cell;
+  const g = { x:cell[0], y:cell[1] };
+  const path = bfs(anchor, g, world.room.size, blocked);
+  if(path && path.length>1){
+    me.targetCell = { x:g.x, y:g.y };
+    me.path = (anchor.x===me.cell.x && anchor.y===me.cell.y) ? path.slice(1) : [anchor, ...path.slice(1)];
+  } else if(g.x!==me.cell.x || g.y!==me.cell.y){
+    toast('PATH BLOCKED');
+  }
+});
+
+// ---- HUD ----
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1600); }
+document.getElementById('btnGame').onclick = ()=>openGame();
+document.getElementById('btnShop').onclick = ()=>openShop();
+document.getElementById('btnBuild').onclick = ()=>toggleBuild();
+document.getElementById('btnCharacter').onclick = ()=>openCharacterPicker();
+document.getElementById('btnCloseGame').onclick = ()=>closeGame();
+document.getElementById('btnCloseShop').onclick = ()=>closeShop();
+document.getElementById('btnCloseBuild').onclick = ()=>closeBuildModal();
+document.getElementById('btnCloseCharacter').onclick = ()=>closeCharacterPicker();
+document.getElementById('btnBuildAdd').onclick = ()=>openBuildCatalog();
+document.getElementById('btnBuildRemove').onclick = ()=>beginPickup();
+document.getElementById('btnBuildMove').onclick = ()=>beginMove();
+document.getElementById('btnBuildRotate').onclick = ()=>beginRotate();
+document.getElementById('btnBuildExit').onclick = ()=>closeBuild();
+document.getElementById('placementConfirm').addEventListener('pointerdown', e=>e.stopPropagation());
+document.getElementById('btnConfirmPlacement').onclick = ()=>confirmPendingPlacement();
+document.getElementById('btnCancelPlacement').onclick = ()=>cancelPendingPlacement();
+document.getElementById('btnGameStart').onclick = ()=>startMiniGame();
+document.getElementById('btnGameLock').onclick = ()=>lockMiniGame();
+document.getElementById('btnOwnerLogin').onclick = async ()=>{
+  setAuthNote('');
+  const btn = document.getElementById('btnOwnerLogin');
+  btn.disabled = true;
+  try { await enterOwner(document.getElementById('pinInput').value.trim()); }
+  finally { btn.disabled = false; }
+};
+document.getElementById('btnSetupOwner').onclick = async ()=>{
+  setAuthNote('');
+  const btn = document.getElementById('btnSetupOwner');
+  btn.disabled = true;
+  try { await enterOwner(document.getElementById('pinInput').value.trim()); }
+  finally { btn.disabled = false; }
+};
+document.getElementById('btnGuestLogin').onclick = async ()=>{
+  setAuthNote('');
+  const btn = document.getElementById('btnGuestLogin');
+  btn.disabled = true;
+  try { await enterGuest(); }
+  finally { btn.disabled = false; }
+};
+document.getElementById('btnGuestCharPrev').onclick = ()=>updateGuestPassport(passport=>{
+  const ids = list_characters();
+  const idx = ids.indexOf(normalizeCharacter(passport.look?.character));
+  return { ...passport, look:{ character:ids[(idx<=0 ? ids.length : idx)-1] } };
+});
+document.getElementById('btnGuestCharNext').onclick = ()=>updateGuestPassport(passport=>{
+  const ids = list_characters();
+  const idx = ids.indexOf(normalizeCharacter(passport.look?.character));
+  return { ...passport, look:{ character:ids[(idx+1)%ids.length] } };
+});
+document.getElementById('guestNameInput').addEventListener('change', ()=>updateGuestPassport(passport=>({
+  ...passport,
+  name: document.getElementById('guestNameInput').value.trim().replace(/\s+/g, ' ').slice(0,18) || passport.name
+})));
+document.getElementById('guestNameInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') document.getElementById('btnGuestLogin').click();
+});
+document.getElementById('pinInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') document.getElementById('btnOwnerLogin').click();
+});
+document.querySelector('.credits').onclick = addTestCredits;
+document.getElementById('gameModal').addEventListener('pointerdown', (e)=>{
+  if(e.target.id==='gameModal') closeGame();
+});
+document.getElementById('shopModal').addEventListener('pointerdown', (e)=>{
+  if(e.target.id==='shopModal') closeShop();
+});
+document.getElementById('buildModal').addEventListener('pointerdown', (e)=>{
+  if(e.target.id==='buildModal') closeBuildModal();
+});
+document.getElementById('characterModal').addEventListener('pointerdown', (e)=>{
+  if(e.target.id==='characterModal') closeCharacterPicker();
+});
+
+// ---- polling loop (the multiplayer heartbeat; ~4 Hz) ----
+async function poll(){
+  const started = performance.now();
+  try{
+    const st = await api('/api/state');
+    liveState.connected = true;
+    liveState.pollMs = performance.now() - started;
+    if(st && st.room){
+      world.room.layout = st.room.layout || ownerSave?.room?.placed || [];
+      world.room.size   = st.room.size || ownerSave?.room?.size || world.room.size;
+      world.gifts       = st.gifts || [];
+      world.you         = st.you || world.you;
+      if(st.you?.playerId) me.playerId = st.you.playerId;
+      if(st.you?.role && st.you.role!==currentRole) setRole(st.you.role);
+      liveState.roomCount = Math.min(4, (st.players||[]).length || 0);
+      syncCredits();
+      document.getElementById('habName').textContent = (st.room.meta?.ownerName || 'Crew') + "'s Hab";
+      // sync other players (exclude me)
+      const seen = new Set(others.keys());
+      const currentIds = new Set();
+      for(const p of (st.players||[])){
+        if(p.playerId===me.playerId) continue;
+        currentIds.add(p.playerId);
+        let o = others.get(p.playerId);
+        if(!o){ const s=gridToScreen(p.cell.x,p.cell.y); o={ ...p, px:s.x, py:s.y+TILE_H/2, tx:s.x, ty:s.y+TILE_H/2, movingUntil:0 }; others.set(p.playerId,o); }
+        else {
+          if((p.cell?.x !== o.cell?.x) || (p.cell?.y !== o.cell?.y)){
+            o.facing = faceToward(o.cell, p.cell);
+            o.movingUntil = performance.now() + 380;
+          }
+          o.cell=p.cell; o.facing=p.facing ?? o.facing; o.name=p.name; o.look=p.look;
+        }
+      }
+      for(const id of [...others.keys()]) if(!currentIds.has(id)) others.delete(id);
+      announcePresence(seen, currentIds);
+      renderPresence();
+    }
+  }catch(err){
+    liveState.connected = false;
+    liveState.pollMs = 0;
+    if(liveState.lastToast!=='link-lost'){
+      liveState.lastToast = 'link-lost';
+      toast('LINK LOST');
+    }
+    renderPresence();
+  }
+  if(liveState.connected) liveState.lastToast = '';
+  setTimeout(poll, 250);
+}
+
+// ---- boot ----
+async function boot(){
+  setOwnerControls(false);
+  renderPresence();
+  renderStatusHint();
+  const hello = await api('/api/hello');
+  habHasOwner = !!hello.hasOwner;
+  window.__helloOwner = hello.ownerName;
+  window.__helloId = hello.habId;
+  document.getElementById('habSub').textContent = 'module · ' + (hello.habId || HAB_ID);
+  document.getElementById('authHabLine').textContent = habHasOwner ? ((hello.ownerName || 'Crew') + "'s Hab · " + (hello.habId || HAB_ID)) : 'Unclaimed Hab module';
+  resize();
+  const s = gridToScreen(me.cell.x, me.cell.y); me.px=s.x; me.py=s.y+TILE_H/2;
+  if(!booted){
+    booted = true;
+    poll();
+    requestAnimationFrame(tick);
+  }
+  openAuth();
+}
+boot();
+</script>
+</body>
+</html>

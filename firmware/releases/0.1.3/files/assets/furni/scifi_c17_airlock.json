@@ -1,0 +1,22 @@
+{
+  "category": "other",
+  "classname": "scifi_c17_airlock",
+  "default_dir": 2,
+  "description": "Keeps alien lifeforms out.",
+  "icon": "assets/furni/scifi_c17_airlock_icon.png",
+  "logic": "furniture_multistate",
+  "name": "Spacecraft Door",
+  "price": 180,
+  "sprites": {
+    "0": "assets/furni/scifi_c17_airlock_dir0.png",
+    "2": "assets/furni/scifi_c17_airlock_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 4,
+  "ydim": 1,
+  "zdim": 0.65
+}
