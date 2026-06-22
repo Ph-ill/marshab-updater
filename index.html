@@ -38,7 +38,10 @@
           <div><dt>Installed</dt><dd id="installedVersion">—</dd></div>
           <div><dt>Latest</dt><dd id="latestVersion">loading</dd></div>
         </dl>
-        <button class="primary" id="connectBtn" type="button">Connect device</button>
+        <div class="device-actions">
+          <button class="primary" id="connectBtn" type="button">Connect device</button>
+          <button id="wifiSettingsBtn" type="button" aria-expanded="false" aria-controls="wifiPanel">WIFI SETTINGS</button>
+        </div>
       </section>
 
       <section class="panel" aria-labelledby="releaseTitle">
@@ -55,7 +58,7 @@
       </section>
     </section>
 
-    <section class="panel wifi-panel" aria-labelledby="wifiTitle">
+    <section class="panel wifi-panel" id="wifiPanel" aria-labelledby="wifiTitle" hidden>
       <h2 id="wifiTitle">Device WiFi</h2>
       <div class="field-grid">
         <label>Broadcast SSID<input id="wifiSsid" maxlength="32" placeholder="Connect a device first" disabled></label>
@@ -89,7 +92,7 @@
     </section>
 
     <footer class="build-footer">
-      MarsHab updater web app v0.1.10 · compressed CRT video · 2026-06-22
+      MarsHab updater web app v0.1.11 · WiFi settings drawer · 2026-06-22
     </footer>
   </main>
   <script type="module" src="./src/main.js"></script>

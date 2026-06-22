@@ -21,8 +21,10 @@ const els = {
   latestStable: document.getElementById('latestStable'),
   releaseSelect: document.getElementById('releaseSelect'),
   connectBtn: document.getElementById('connectBtn'),
+  wifiSettingsBtn: document.getElementById('wifiSettingsBtn'),
   installLatestBtn: document.getElementById('installLatestBtn'),
   installSelectedBtn: document.getElementById('installSelectedBtn'),
+  wifiPanel: document.getElementById('wifiPanel'),
   wifiSsid: document.getElementById('wifiSsid'),
   wifiPassword: document.getElementById('wifiPassword'),
   saveWifiBtn: document.getElementById('saveWifiBtn'),
@@ -48,6 +50,13 @@ function log(message){
 function setText(el, value){ el.textContent = value == null || value === '' ? '—' : String(value); }
 function setStatus(text, className){ els.deviceStatus.textContent = text; els.deviceStatus.className = className || ''; }
 function supportsWebSerial(){ return 'serial' in navigator; }
+function setWifiPanelVisible(visible){
+  els.wifiPanel.hidden = !visible;
+  els.wifiSettingsBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
+}
+function toggleWifiPanel(){
+  setWifiPanelVisible(els.wifiSettingsBtn.getAttribute('aria-expanded') !== 'true');
+}
 function initMarsVideoLoop(){
   const a = document.getElementById('marsBgA');
   const b = document.getElementById('marsBgB');
@@ -198,6 +207,7 @@ async function connectDevice(){
     state.deviceInfo = null;
     setStatus('disconnected', 'status-warn');
     clearDeviceUi();
+    setWifiPanelVisible(false);
     resetProgress();
     els.connectBtn.textContent = 'Connect device';
     setBusy(false);
@@ -281,6 +291,7 @@ function initEvents(){
     log(`selected release ${state.selectedVersion || 'none'}`);
   });
   els.connectBtn.addEventListener('click', () => { connectDevice(); });
+  els.wifiSettingsBtn.addEventListener('click', () => { toggleWifiPanel(); });
   els.installLatestBtn.addEventListener('click', () => { installVersion(state.manifest?.latest); });
   els.installSelectedBtn.addEventListener('click', () => { installVersion(state.selectedVersion); });
   els.saveWifiBtn.addEventListener('click', () => { saveWifiConfig(); });
