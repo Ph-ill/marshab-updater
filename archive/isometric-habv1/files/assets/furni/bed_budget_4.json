@@ -1,0 +1,22 @@
+{
+  "category": "bed",
+  "classname": "bed_budget_4",
+  "default_dir": 0,
+  "description": "Stretch out.",
+  "icon": "assets/furni/bed_budget_4_icon.png",
+  "logic": "furniture_basic",
+  "name": "White Double Bed",
+  "price": 220,
+  "sprites": {
+    "0": "assets/furni/bed_budget_4_dir0.png",
+    "2": "assets/furni/bed_budget_4_dir2.png"
+  },
+  "states": [],
+  "valid_dirs": [
+    0,
+    2
+  ],
+  "xdim": 2,
+  "ydim": 3,
+  "zdim": 1.9
+}

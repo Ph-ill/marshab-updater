@@ -1,0 +1,158 @@
+{
+  "evt_boot": {
+    "type": "events",
+    "context": "First boot line; the automation intelligence wakes in a fragile Mars hab.",
+    "max_chars": 120,
+    "trigger_summary": "fresh save"
+  },
+  "evt_vent_co2": {
+    "type": "events",
+    "context": "Manual life-support action succeeds.",
+    "max_chars": 120,
+    "trigger_summary": "action vent_co2"
+  },
+  "evt_reroute_power": {
+    "type": "events",
+    "context": "Power reroute action succeeds.",
+    "max_chars": 120,
+    "trigger_summary": "action reroute_power"
+  },
+  "evt_collect_ice": {
+    "type": "events",
+    "context": "Surface ice collection action succeeds.",
+    "max_chars": 120,
+    "trigger_summary": "action collect_ice"
+  },
+  "evt_sift_regolith": {
+    "type": "events",
+    "context": "Regolith salvage action succeeds.",
+    "max_chars": 120,
+    "trigger_summary": "action sift_regolith"
+  },
+  "evt_grow_rations": {
+    "type": "events",
+    "context": "Greenhouse/ration action succeeds.",
+    "max_chars": 120,
+    "trigger_summary": "action grow_rations"
+  },
+  "evt_decode_signal": {
+    "type": "events",
+    "context": "Mystery signal decoding action fires.",
+    "max_chars": 140,
+    "trigger_summary": "action decode_signal"
+  },
+  "evt_atmo_processor": {
+    "type": "events",
+    "context": "Terraforming processor pulse.",
+    "max_chars": 140,
+    "trigger_summary": "action run_atmo_processor"
+  },
+  "away_power_hum": {
+    "type": "away",
+    "context": "While-away report fragment about systems running unattended.",
+    "max_chars": 110,
+    "trigger_summary": "sync elapsed > 1h"
+  },
+  "away_dust_on_panels": {
+    "type": "away",
+    "context": "While-away report fragment about dust and maintenance.",
+    "max_chars": 110,
+    "trigger_summary": "sync elapsed > 1h"
+  },
+  "arc_boot_01": {
+    "type": "archive",
+    "context": "Initial archive/codex entry explaining the player is the colony automation intelligence.",
+    "max_chars": 900,
+    "trigger_summary": "unlocked at start"
+  },
+  "beat_surface_stub": {
+    "type": "beats",
+    "context": "Surface tab stub before real exploration writing arrives.",
+    "max_chars": 300,
+    "trigger_summary": "surface tab unlocked"
+  },
+  "beat_act2_open": {
+    "type": "beats",
+    "context": "Act 2 transition: survival becomes settlement.",
+    "max_chars": 500,
+    "trigger_summary": "population/greenhouse milestone"
+  },
+  "beat_act3_open": {
+    "type": "beats",
+    "context": "Act 3 transition: expansion and trade network.",
+    "max_chars": 500,
+    "trigger_summary": "fab shop built"
+  },
+  "beat_act4_open": {
+    "type": "beats",
+    "context": "Act 4 transition: terraforming begins.",
+    "max_chars": 500,
+    "trigger_summary": "atmo processor built"
+  },
+  "beat_act5_open": {
+    "type": "beats",
+    "context": "Act 5 transition: payoff and reveal.",
+    "max_chars": 600,
+    "trigger_summary": "atmosphere threshold"
+  },
+  "ltr_botanist_01": {
+    "type": "letters",
+    "context": "Early colonist letter from botanist.",
+    "max_chars": 700,
+    "trigger_summary": "future greenhouse unlock"
+  },
+  "ui_tab_hab": {
+    "type": "ui",
+    "context": "Hab tab label.",
+    "max_chars": 20,
+    "trigger_summary": "always"
+  },
+  "act_vent_co2": {
+    "type": "actions",
+    "context": "Action label/flavor/result for vent CO2.",
+    "max_chars": 90,
+    "trigger_summary": "available at start"
+  },
+  "vent_co2": {
+    "type": "actions",
+    "context": "Action text for vent_co2",
+    "max_chars": 80,
+    "trigger_summary": "when action unlocked"
+  },
+  "reroute_power": {
+    "type": "actions",
+    "context": "Action text for reroute_power",
+    "max_chars": 80,
+    "trigger_summary": "when action unlocked"
+  },
+  "collect_ice": {
+    "type": "actions",
+    "context": "Action text for collect_ice",
+    "max_chars": 80,
+    "trigger_summary": "when action unlocked"
+  },
+  "sift_regolith": {
+    "type": "actions",
+    "context": "Action text for sift_regolith",
+    "max_chars": 80,
+    "trigger_summary": "when action unlocked"
+  },
+  "grow_rations": {
+    "type": "actions",
+    "context": "Action text for grow_rations",
+    "max_chars": 80,
+    "trigger_summary": "when action unlocked"
+  },
+  "decode_signal": {
+    "type": "actions",
+    "context": "Action text for decode_signal",
+    "max_chars": 80,
+    "trigger_summary": "when action unlocked"
+  },
+  "run_atmo_processor": {
+    "type": "actions",
+    "context": "Action text for run_atmo_processor",
+    "max_chars": 80,
+    "trigger_summary": "when action unlocked"
+  }
+}
