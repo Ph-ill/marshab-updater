@@ -1,6 +1,6 @@
 const OWNER = 'Ph-ill';
 const REPO = 'marshab-updater';
-const RELEASES_API = `https://api.github.com/repos/${OWNER}/${REPO}/releases`;
+const RELEASES_API = `/github-api/repos/${OWNER}/${REPO}/releases`;
 const ASSET_NAME = 'firmware-release.json';
 
 function cleanVersion(tagName){
@@ -9,6 +9,10 @@ function cleanVersion(tagName){
 
 function findFirmwareAsset(release){
   return (release.assets || []).find(asset => asset.name === ASSET_NAME) || null;
+}
+
+function proxiedGithubApiUrl(url){
+  return String(url).replace('https://api.github.com/', '/github-api/');
 }
 
 export async function loadGithubReleaseIndex(){
@@ -24,7 +28,7 @@ export async function loadGithubReleaseIndex(){
       tag: release.tag_name,
       date: (release.published_at || release.created_at || '').slice(0, 10),
       label: release.name || release.tag_name,
-      path: asset.url,
+      path: proxiedGithubApiUrl(asset.url),
       source: 'github-release',
       assetName: asset.name,
       prerelease: !!release.prerelease,
