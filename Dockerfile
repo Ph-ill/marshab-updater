@@ -1,5 +1,5 @@
 FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY index.html styles.css favicon.ico /usr/share/nginx/html/
+COPY index.html styles.css favicon.ico mars.mp4 /usr/share/nginx/html/
 COPY src /usr/share/nginx/html/src
 COPY firmware /usr/share/nginx/html/firmware
