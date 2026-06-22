@@ -196,21 +196,39 @@ function markDeviceDisconnected(reason = 'device disconnected'){
 
 async function saveWifiConfig(){
   if(!state.device){ log('connect a device first'); return; }
+  const device = state.device;
   setBusy(true);
   try{
     const next = validateWifiConfig({ ssid: els.wifiSsid.value, password: els.wifiPassword.value });
     const mode = next.password ? 'password protected' : 'open network';
     log(`writing WiFi config: ${next.ssid} (${mode})`);
-    const config = await writeWifiConfig(state.device, state.deviceInfo?.config || {}, next);
-    state.deviceInfo = { ...(state.deviceInfo || {}), config };
+    const written = await writeWifiConfig(device, state.deviceInfo?.config || {}, next, state.deviceInfo?.deviceIdentity || null);
+    state.deviceInfo = { ...(state.deviceInfo || {}), ...written };
     renderDeviceInfo(state.deviceInfo);
     log('WiFi config saved; hard-resetting device so the AP restarts');
-    await state.device.hardReset();
-    markDeviceDisconnected('device reset; reconnect USB after joining the new WiFi network');
+    state.installResetInProgress = true;
+    await device.hardReset();
+    log('attempting USB reconnect after WiFi reset');
+    await device.reopenExisting({ attempts: 8, delayMs: 900 });
+    await device.enterRawRepl();
+    const probe = await device.exec("print('ok')", { timeoutMs: 5000 });
+    if(!probe.stdout.includes('ok')) throw new Error('MicroPython probe did not return ok after WiFi reset');
+    state.device = device;
+    state.deviceInfo = await readDeviceInfo(device);
+    renderDeviceInfo(state.deviceInfo);
+    setStatus('connected', 'status-ok');
+    els.connectBtn.textContent = 'Disconnect device';
+    log('device reconnected; WiFi settings refreshed');
   }catch(err){
-    setStatus('config failed', 'status-bad');
-    log(`WiFi config failed: ${err.message}`);
+    if(state.installResetInProgress){
+      setStatus('reconnect needed', 'status-warn');
+      log(`WiFi saved, but automatic USB reconnect failed; click Disconnect then Connect to refresh (${err.message})`);
+    }else{
+      setStatus('config failed', 'status-bad');
+      log(`WiFi config failed: ${err.message}`);
+    }
   }finally{
+    state.installResetInProgress = false;
     setBusy(false);
   }
 }

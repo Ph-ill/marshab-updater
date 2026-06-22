@@ -24,33 +24,50 @@ export function validateWifiConfig({ ssid, password }){
   return { ssid: validateSsid(ssid), password: cleanPassword, security: cleanPassword ? 'wpa2' : 'open' };
 }
 
-export async function writeWifiConfig(device, currentConfig, nextFields){
-  const next = { ...(currentConfig || {}), ...validateWifiConfig(nextFields) };
-  const data = JSON.stringify(next, null, 2);
+export async function writeWifiConfig(device, currentConfig, nextFields, currentDeviceIdentity = null){
+  const validated = validateWifiConfig(nextFields);
+  const legacyConfig = { ...(currentConfig || {}), ...validated };
+  const identityConfig = currentDeviceIdentity
+    ? { ...currentDeviceIdentity, ap_ssid: validated.ssid, ap_password: validated.password, wifi_security: validated.security }
+    : null;
+  const legacyData = JSON.stringify(legacyConfig, null, 2);
+  const identityData = identityConfig ? JSON.stringify(identityConfig, null, 2) : '';
   const code = `
 try:
     import uos as os
 except ImportError:
     import os
 import json
-payload = ${pyString(data)}
-json.loads(payload)
-with open('config.tmp', 'w') as f:
-    f.write(payload)
-with open('config.tmp', 'r') as f:
-    json.loads(f.read())
-try:
-    os.remove('config.json.bak')
-except OSError:
-    pass
-try:
-    os.rename('config.json', 'config.json.bak')
-except OSError:
-    pass
-os.rename('config.tmp', 'config.json')
+legacy_payload = ${pyString(legacyData)}
+identity_payload = ${pyString(identityData)}
+def atomic_write(path, bak, payload):
+    tmp = path + '.tmp'
+    json.loads(payload)
+    parent = path.rsplit('/', 1)[0] if '/' in path else ''
+    if parent:
+        try:
+            os.mkdir(parent)
+        except OSError:
+            pass
+    with open(tmp, 'w') as f:
+        f.write(payload)
+    with open(tmp, 'r') as f:
+        json.loads(f.read())
+    try:
+        os.remove(bak)
+    except OSError:
+        pass
+    try:
+        os.rename(path, bak)
+    except OSError:
+        pass
+    os.rename(tmp, path)
+atomic_write('config.json', 'config.json.bak', legacy_payload)
+if identity_payload:
+    atomic_write('data/device.json', 'data/device.bak', identity_payload)
 print('config-ok')
 `;
-  const { stdout } = await device.exec(code, { timeoutMs: 10000 });
+  const { stdout } = await device.exec(code, { timeoutMs: 12000 });
   if(!stdout.includes('config-ok')) throw new Error('device did not confirm config write');
-  return next;
+  return { config: legacyConfig, deviceIdentity: identityConfig };
 }
