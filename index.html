@@ -50,14 +50,13 @@
       </section>
     </section>
 
-    <section class="panel progress-panel" aria-labelledby="progressTitle">
+    <section class="panel progress-panel" id="progressPanel" aria-labelledby="progressTitle" hidden>
       <div class="progress-head">
         <h2 id="progressTitle">Update progress</h2>
         <output id="progressPercent" for="progressFill">0%</output>
       </div>
       <div class="progress-track" role="progressbar" aria-label="Firmware update progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="progress-fill" id="progressFill"></div>
-        <div class="progress-sweep"></div>
       </div>
       <p class="progress-status" id="progressStatus">Standing by. Connect a device and select a release.</p>
     </section>
@@ -73,7 +72,7 @@
     </section>
 
     <footer class="build-footer">
-      MarsHab updater web app v0.1.6 · favicon + progress bar · 2026-06-22
+      MarsHab updater web app v0.1.7 · segmented update meter · 2026-06-22
     </footer>
   </main>
   <script type="module" src="./src/main.js"></script>
