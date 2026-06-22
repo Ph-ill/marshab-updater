@@ -220,6 +220,30 @@ export class MicroPythonSerial {
     }
     await delay(2500);
   }
+
+  async firmwareInstallReset(){
+    this.clearBuffer();
+    try{
+      await this.exec(`
+try:
+    import network
+    ap = network.WLAN(network.AP_IF)
+    ap.active(False)
+except Exception as e:
+    print('ap-shutdown-warning', e)
+try:
+    import time
+    time.sleep_ms(700)
+except Exception:
+    pass
+import machine
+machine.reset()
+`, { timeoutMs: 1800 });
+    }catch(_err){
+      // machine.reset() tears down the VM/USB link before raw REPL can return.
+    }
+    await delay(3000);
+  }
 }
 
 function parseRawExec(raw){
