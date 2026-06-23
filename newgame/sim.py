@@ -1,4 +1,5 @@
 import time, gc
+from config import FIRMWARE_VERSION
 import content_schema as schema
 MAX_RATE_SEC=60*60*24*30
 RES_ORDER=('o2','power','water','food','regolith','population','ice','rare_metals','polymer','alloy','atmosphere','temperature','biomass')
@@ -14,14 +15,20 @@ ACTIONS={
  'print_spares':{'label':'print spares','cooldown_ms':75000,'effect':{'alloy':1,'polymer':1},'cost':{'power':12,'regolith':20}},
  'seed_bioreactor':{'label':'seed bioreactor','cooldown_ms':150000,'effect':{'biomass':0.005},'cost':{'water':8,'food':5,'power':15}},
  'stabilize_dome':{'label':'stabilize dome','cooldown_ms':120000,'effect':{'temperature':0.01},'cost':{'power':18,'alloy':1}},
- 'open_airlock':{'label':'open airlock','cooldown_ms':300000,'effect':{},'cost':{'atmosphere':1}}
+ 'open_airlock':{'label':'open airlock','cooldown_ms':300000,'effect':{},'cost':{}}
 }
 MODULES={
- 'solar_array':{'label':'solar array','cost':{'regolith':80},'rates':{'power':0.025},'caps':{'power':50},'unlock':['grow_rations'],'beat':'beat_first_solar_array'},
- 'ice_well':{'label':'ice well','cost':{'regolith':120,'power':40},'rates':{'water':0.018},'caps':{'water':60},'beat':'beat_first_ice_well'},
- 'greenhouse':{'label':'greenhouse','cost':{'water':60,'power':70,'regolith':140},'rates':{'food':0.014,'o2':0.01},'caps':{'food':80,'population':4},'beat':'beat_first_greenhouse'},
- 'fab_shop':{'label':'fabricator shop','cost':{'regolith':240,'power':160},'rates':{'polymer':0.004,'alloy':0.003},'unlock':['decode_signal','survey_crater','print_spares','stabilize_dome'],'beat':'beat_first_fab_shop'},
- 'atmo_processor':{'label':'atmosphere processor','cost':{'alloy':40,'polymer':35,'power':250},'rates':{'atmosphere':0.00000025},'unlock':['run_atmo_processor','seed_bioreactor'],'beat':'beat_first_atmo_processor'}
+ 'solar_array':{'label':'solar array','desc':'Unfold scavenged panels; power becomes a margin instead of a prayer.','act':1,'max':6,'cost':{'regolith':80},'rates':{'power':0.025},'caps':{'power':50},'unlock':['grow_rations'],'beat':'beat_first_solar_array'},
+ 'ice_well':{'label':'ice well','desc':'Tap a shaded lens and let the hab stop drinking from emergency bags.','act':1,'max':4,'cost':{'regolith':120,'power':40},'rates':{'water':0.018},'caps':{'water':60},'beat':'beat_first_ice_well'},
+ 'greenhouse':{'label':'greenhouse','desc':'Trays, lamps, and patient hands. Food and oxygen become renewable.','act':1,'max':5,'cost':{'water':60,'power':70,'regolith':140},'rates':{'food':0.014,'o2':0.01},'caps':{'food':80,'population':4},'beat':'beat_first_greenhouse'},
+ 'fab_shop':{'label':'fabricator shop','desc':'Dust goes in. Emergency parts, polymer, and alloy come out.','act':2,'max':4,'requires':['solar_array','ice_well'],'cost':{'regolith':240,'power':160},'rates':{'polymer':0.004,'alloy':0.003},'unlock':['decode_signal','survey_crater','print_spares','stabilize_dome'],'beat':'beat_first_fab_shop'},
+ 'relay_array':{'label':'relay array','desc':'Listen deeper into the buried signal and trade codes.','act':2,'max':3,'requires':['fab_shop'],'cost':{'alloy':6,'polymer':8,'power':140},'rates':{'power':-0.004},'unlock':['decode_signal'],'beat':'beat_first_trade'},
+ 'survey_garage':{'label':'survey garage','desc':'Pressurized rover bay for crater work and rare-metal finds.','act':2,'max':3,'requires':['fab_shop'],'cost':{'alloy':10,'polymer':6,'power':180},'rates':{'rare_metals':0.002},'unlock':['survey_crater'],'beat':'beat_first_crater_survey'},
+ 'dome_segment':{'label':'dome segment','desc':'A larger pressure envelope for workers, children, and risk.','act':3,'max':4,'requires':['survey_garage'],'cost':{'alloy':20,'polymer':18,'rare_metals':8,'power':240},'rates':{'o2':-0.004,'food':-0.002},'caps':{'population':2,'o2':70,'food':50},'beat':'beat_first_dome_stable'},
+ 'atmo_processor':{'label':'atmosphere processor','desc':'A slow machine for a long promise: more air outside the walls.','act':3,'max':5,'requires':['dome_segment'],'cost':{'alloy':40,'polymer':35,'power':250},'rates':{'atmosphere':0.00000025},'unlock':['run_atmo_processor','seed_bioreactor'],'beat':'beat_first_atmo_processor'},
+ 'bioreactor':{'label':'bioreactor','desc':'Microbes rehearse a living Mars in sealed glass.','act':4,'max':4,'requires':['atmo_processor'],'cost':{'water':120,'food':80,'polymer':50,'power':300},'rates':{'biomass':0.000002,'temperature':0.000001},'unlock':['seed_bioreactor'],'beat':'beat_first_bioreactor'},
+ 'thermal_mirror':{'label':'thermal mirror','desc':'A bright wound in orbit nudges mean temperature upward.','act':4,'max':3,'requires':['atmo_processor'],'cost':{'rare_metals':35,'alloy':60,'power':420},'rates':{'temperature':0.000003},'beat':'beat_temperature_rise'},
+ 'airlock_protocol':{'label':'airlock protocol','desc':'Final checks for controlled exposure under the new sky.','act':5,'max':1,'requires':['bioreactor','thermal_mirror'],'cost':{'atmosphere':1,'temperature':1,'biomass':0.05},'unlock':['open_airlock'],'beat':'beat_act5_choice'}
 }
 MILESTONES=[
  {'act':2,'cond':lambda s:s['resources'].get('population',0)>=8 or s['modules'].get('greenhouse',0)>0,'beat':'beat_act2_open','tab':'colony'},
@@ -94,8 +101,16 @@ def rates(s,device=None):
                 if r[k]>0: r[k]*=1.1
     return r
 
+def goal(s):
+    act=s.get('act',1)
+    if act==1: return 'Stabilize survival: build solar, ice, and greenhouse capacity.'
+    if act==2: return 'Open industry: build the fabricator, relay, and survey garage.'
+    if act==3: return 'Expand beyond the hab: raise dome capacity and begin atmosphere work.'
+    if act==4: return 'Transform the planet: grow atmosphere, temperature, and biomass.'
+    return 'Payoff: complete the airlock protocol and read the ending sequence.'
+
 def snapshot(s,device=None):
-    return {'version':'0.2.4','device':device or {},'act':s.get('act',1),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
+    return {'version':FIRMWARE_VERSION,'device':device or {},'act':s.get('act',1),'goal':goal(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
 
 def clamp_res(s):
     caps=s.setdefault('caps',{})
@@ -123,7 +138,18 @@ def apply_effect(s,effect):
     for k,v in effect.items(): s['resources'][k]=s['resources'].get(k,0)+v
     clamp_res(s)
 def available_actions(s): return [a for a in s.get('unlocked_actions',[]) if a in ACTIONS]
-def available_modules(s): return {k:v for k,v in MODULES.items() if k not in s.get('modules',{}) or s['modules'].get(k,0)<99}
+def module_visible(s,mid,m):
+    if s.get('act',1)+1 < m.get('act',1): return False
+    req=m.get('requires',[])
+    return all(s.get('modules',{}).get(r,0)>0 for r in req) or s.get('act',1)>=m.get('act',1)
+def module_buildable(s,mid,m):
+    return s.get('act',1)>=m.get('act',1) and all(s.get('modules',{}).get(r,0)>0 for r in m.get('requires',[])) and s.get('modules',{}).get(mid,0)<m.get('max',99)
+def available_modules(s):
+    out={}
+    for k,v in MODULES.items():
+        if module_visible(s,k,v):
+            d=dict(v); d['owned']=s.get('modules',{}).get(k,0); d['buildable']=module_buildable(s,k,v); out[k]=d
+    return out
 
 def action(s,aid,now=None):
     now=now or now_ms(); a=ACTIONS.get(aid)
@@ -140,6 +166,7 @@ def action(s,aid,now=None):
 def build(s,mid):
     m=MODULES.get(mid)
     if not m: return {'ok':False,'error':'unknown module'}
+    if not module_buildable(s,mid,m): return {'ok':False,'error':'locked'}
     if not check_cost(s,m.get('cost',{})): return {'ok':False,'error':'insufficient'}
     pay(s,m.get('cost',{})); first=s.setdefault('modules',{}).get(mid,0)==0; s['modules'][mid]=s['modules'].get(mid,0)+1
     for k,v in m.get('caps',{}).items(): s.setdefault('caps',{})[k]=s['caps'].get(k,100)+v
