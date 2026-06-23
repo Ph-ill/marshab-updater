@@ -62,12 +62,22 @@ def validate():
     if end != list(range(1,len(end)+1)): bad.append('bad_ending_seq')
     return {'ok':not (missing or no_manifest or dead or bad),'missing':missing,'extra':extra,'no_manifest':no_manifest,'dead_manifest':dead,'bad':bad}
 
+def _has_stub(v):
+    if isinstance(v,str): return '[STUB' in v
+    if isinstance(v,dict):
+        for x in v.values():
+            if _has_stub(x): return True
+    if isinstance(v,(list,tuple)):
+        for x in v:
+            if _has_stub(x): return True
+    return False
+
 def stub_report():
     found=[]; counts={}
     for t in TYPE_FILE:
         d=load_type(t); c=0
         for cid,v in d.items():
-            if '[STUB' in json.dumps(v):
+            if _has_stub(v):
                 c+=1
                 if len(found)<20: found.append(cid)
         counts[t]=c

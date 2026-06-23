@@ -1,4 +1,4 @@
-const S={state:null,tab:'hab',content:{},lastSync:0};
+const S={state:null,tab:'hab',content:{},lastSync:0,diag:null};
 const $=q=>document.querySelector(q);
 const log=m=>{let li=document.createElement('li');li.textContent=m;$('#log').prepend(li)};
 async function api(p,o={}){let r=await fetch(p,{method:o.body?'POST':(o.method||'GET'),headers:{'Content-Type':'application/json'},body:o.body&&JSON.stringify(o.body)});return r.json()}
@@ -37,7 +37,7 @@ function render(){
   if(S.tab==='surface')html+='<div class=card><h2>Surface</h2><p>'+txt('events','evt_weather_dust_storm_minor')+'</p></div>';
   if(S.tab==='comms')html+='<div class=card><h2>'+txt('ui','ui_tab_trade')+'</h2><button id=pkg>'+txt('ui','ui_button_copy_code')+'</button><p id=code class=code></p><textarea id=redeem placeholder="paste code"></textarea><button id=redeemBtn>'+txt('ui','ui_button_redeem_code')+'</button><button id=tend>'+txt('ui','ui_button_tend')+'</button></div>';
   if(S.tab==='archive')html+='<div class=card><h2>'+txt('ui','ui_header_archive')+'</h2>'+s.archive.map(id=>`<p>${txt('archive',id).replace(/\n/g,'<br>')}</p>`).join('')+'</div>';
-  if(S.tab==='diag')html+='<div class=card><h2>Diagnostics</h2><button id=diagRefresh>Refresh diagnostics</button><pre id=diagOut>tap refresh</pre></div>';
+  if(S.tab==='diag')html+='<div class=card><h2>Diagnostics</h2><button id=diagRefresh>Refresh diagnostics</button><pre id=diagOut>'+(S.diag?JSON.stringify(S.diag,null,2):'loading diagnostics...')+'</pre></div>';
   $('#screen').innerHTML=html;
 }
 async function sync(){
@@ -52,13 +52,13 @@ async function sync(){
 }
 document.body.onclick=async e=>{
   let b=e.target.closest('button');if(!b)return;
-  if(b.dataset.tab){S.tab=b.dataset.tab;render()}
+  if(b.dataset.tab){S.tab=b.dataset.tab;render(); if(S.tab==='diag'&&!S.diag){S.diag=await api('/api/diagnostics');render()}}
   if(b.dataset.act){S.state=await api('/api/action',{body:{action_id:b.dataset.act}});if(S.state.result&&S.state.result.event)log(txt('actions',S.state.result.event));render()}
   if(b.dataset.build){S.state=await api('/api/action',{body:{action_id:'build',module_id:b.dataset.build}});if(S.state.result&&S.state.result.beats)(S.state.result.beats||[]).forEach(id=>log(txt('beats',id)));render()}
   if(b.id==='pkg'){let r=await api('/api/trade/package');$('#code').textContent=r.code}
   if(b.id==='redeemBtn'){S.state=await api('/api/trade/redeem',{body:{code:$('#redeem').value}});render()}
   if(b.id==='tend'){S.state=await api('/api/tend',{body:{visitor:'guest'}});render()}
-  if(b.id==='diagRefresh'){let d=await api('/api/diagnostics');$('#diagOut').textContent=JSON.stringify(d,null,2)}
+  if(b.id==='diagRefresh'){S.diag=await api('/api/diagnostics');render()}
 };
 setInterval(async()=>{if(!S.state)return;S.state=await api('/api/state');render()},2000);
 sync();
