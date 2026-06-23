@@ -197,6 +197,16 @@ def build(s,mid):
     check_milestones(s,beats); unlock_narrative(s,beats)
     return {'ok':True,'beats':beats}
 
+def new_game_plus(s):
+    if not s.get('complete'): return {'ok':False,'error':'ending not complete'}
+    legacy=s.get('legacy',0); passport=s.get('passport',{'visits':[],'tokens':0}); redeemed=s.get('redeemed',[])
+    last=s.get('last_seen_wall_ms',0); created=s.get('created_wall_ms',last)
+    import state as _state
+    fresh=_state.fresh_save(last)
+    fresh['created_wall_ms']=created; fresh['legacy']=legacy; fresh['passport']=passport; fresh['redeemed']=redeemed
+    s.clear(); s.update(fresh)
+    return {'ok':True,'legacy':legacy,'passport_visits':len(passport.get('visits',[]))}
+
 def add_beat(s,beats,bid):
     if bid not in s.setdefault('events',[]): s['events'].append(bid)
     if bid not in beats: beats.append(bid)

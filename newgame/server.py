@@ -69,6 +69,7 @@ async def api(path,method,body):
         return {'ok':True,'firmware_version':FIRMWARE_VERSION,'content_check':content.validate(),'stub_report':content.stub_report(),'device':dev,'save_version':s.get('save_version'),'act':s.get('act'),'tabs':s.get('unlocked_tabs'),'actions':s.get('unlocked_actions')}
     if path=='/api/action' and method=='POST':
         if data.get('action_id')=='build': res=sim.build(s,data.get('module_id'))
+        elif data.get('action_id')=='new_game_plus': res=sim.new_game_plus(s)
         else: res=sim.action(s,data.get('action_id'))
         if res.get('ok'): save_save(s); CTX['dirty']=False
         return full_snapshot({'result':res})
