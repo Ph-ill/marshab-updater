@@ -3,3 +3,4 @@
 #tutorial.tut4{align-items:start;padding-top:210px}
 #tutorial.placeTop{align-items:start!important;padding-top:14px!important}#tutorial.placeBottom{align-items:end!important;padding-bottom:calc(78px + env(safe-area-inset-bottom))!important}
 #res:not(.open) .r,#res:not(.open) .resMore{min-height:28px}.open .r,.open .resMore{min-height:34px}
+#res:not(.open) .r.showName{grid-column:span 2;box-shadow:0 0 0 1px #ffb454;background:#2b1b10}#res:not(.open) .r.showName b span{display:inline}#res:not(.open) .r.showName strong{font-size:13px}
