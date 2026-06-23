@@ -1,0 +1,98 @@
+{
+  "act_collect_ice": {
+    "flavor": "Send drones to scrape usable ice from shaded cuts.",
+    "label": "Collect Ice",
+    "result_1": "Drones return heavy. The tanks gain another day of margin.",
+    "result_2": "Ice retrieved. Cloudy with particulate, but the filters will sort it.",
+    "result_3": "Good haul. The shaded cuts still hold more than expected.",
+    "result_4": "Drones back. The ice crackles as it warms into the hold."
+  },
+  "act_decode_signal": {
+    "flavor": "Spend power on the recurring buried transmission.",
+    "label": "Decode Signal",
+    "result_1": "Another fragment resolves. The pattern is deliberate.",
+    "result_2": "Partial decode. Numbers that might be coordinates.",
+    "result_3": "The signal repeats with machine precision. It has been waiting.",
+    "result_4": "More structure emerges. This was not meant for us. Or was it."
+  },
+  "act_grow_rations": {
+    "flavor": "Coax calories from the first greenhouse trays.",
+    "label": "Grow Rations",
+    "result_1": "New growth. The trays smell like wet soil and something green.",
+    "result_2": "Harvest ready in a few cycles. The lights do their patient work.",
+    "result_3": "Okafor adjusted the nutrient mix. The kale is actually thriving.",
+    "result_4": "Growth logged. Calories accrue slowly, but they accrue."
+  },
+  "act_open_airlock": {
+    "flavor": "Prepare the final controlled exposure sequence.",
+    "label": "Open Airlock",
+    "result_1": "Airlock cycling. Pressure differential narrowing. Almost there.",
+    "result_2": "The inner door holds. The outer door waits. Between them: a world.",
+    "result_3": "Sequence initiated. Every sensor in the colony watches.",
+    "result_4": "The airlock breathes. Outside and inside converge."
+  },
+  "act_print_spares": {
+    "flavor": "Fabricate emergency parts from stored feedstock.",
+    "label": "Print Spares",
+    "result_1": "Part printed. Vasquez says it'll hold. That's high praise.",
+    "result_2": "The printer hums and delivers. Another seal, another day.",
+    "result_3": "Fabricated. The tolerances are tight enough. Barely.",
+    "result_4": "Spare ready. The feedstock bin drops. Worth it."
+  },
+  "act_reroute_power": {
+    "flavor": "Balance batteries and sun-starved circuits.",
+    "label": "Reroute Power",
+    "result_1": "Load balanced. The lights in Module 3 stop flickering.",
+    "result_2": "Power redistributed. The heaters hold for another cycle.",
+    "result_3": "Batteries rebalanced. No system is happy, but none are dying.",
+    "result_4": "Rerouted. The grid hums at a frequency that means stability."
+  },
+  "act_run_atmo_processor": {
+    "flavor": "Fire a slow terraforming processor cycle.",
+    "label": "Pulse Atmo Processor",
+    "result_1": "Processor pulsed. Atmospheric trace gases tick upward. Slowly.",
+    "result_2": "The processor exhales into the Martian sky. A small defiance.",
+    "result_3": "Cycle complete. The atmosphere thickens by a fraction no one feels.",
+    "result_4": "Pulsed. The sky doesn't look different yet. But it will."
+  },
+  "act_seed_bioreactor": {
+    "flavor": "Wake the sealed microbe vats.",
+    "label": "Seed Bioreactor",
+    "result_1": "The culture takes. Biomass readings climb overnight.",
+    "result_2": "Microbes stir in the dark. Life finds a way, even here.",
+    "result_3": "Bioreactor seeded. The colony's smallest workers begin their shift.",
+    "result_4": "Cultures established. The vats warm with something like purpose."
+  },
+  "act_sift_regolith": {
+    "flavor": "Sort dust and rock for useful feedstock.",
+    "label": "Sift Regolith",
+    "result_1": "Iron oxide, silicates, trace metals. The usual harvest.",
+    "result_2": "The sifters churn. Feedstock bins tick upward.",
+    "result_3": "Regolith sorted. Something glints in the fines—probably feldspar.",
+    "result_4": "Sorted. The dust yields what it always yields. Enough."
+  },
+  "act_stabilize_dome": {
+    "flavor": "Tune pressure and thermal flex in the outer dome.",
+    "label": "Stabilize Dome",
+    "result_1": "Dome pressure balanced. The membrane stops its restless creaking.",
+    "result_2": "Thermal gradient smoothed. The dome settles like a held breath.",
+    "result_3": "Flex compensators tuned. The structure finds its equilibrium.",
+    "result_4": "Stabilized. The dome holds against the wind it was born to hold."
+  },
+  "act_survey_crater": {
+    "flavor": "Map an old impact scar beyond the beacons.",
+    "label": "Survey Crater",
+    "result_1": "Survey complete. The crater wall shows layered stratigraphy.",
+    "result_2": "Mapped. The southern rim has a sheltered overhang worth noting.",
+    "result_3": "Drone returned with high-res terrain data. Some odd readings.",
+    "result_4": "The crater is older than expected. Erosion patterns don't match."
+  },
+  "act_vent_co2": {
+    "flavor": "Bleed carbon dioxide from the hab loop. The scrubbers cough awake.",
+    "label": "Vent CO₂",
+    "result_1": "The air thins toward breathable. Scrubbers groan their thanks.",
+    "result_2": "CO₂ drops. Someone in the bunk module takes a deeper breath.",
+    "result_3": "Vented. The hab exhales. Pressure ticks down, then steadies.",
+    "result_4": "Scrubber cycle complete. The colony breathes a little easier."
+  }
+}
