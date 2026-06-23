@@ -31,7 +31,16 @@ The firmware payload intentionally excludes `data/`.
 
 ## Content workflow
 
-Stub content lives in `content/*.json`. `content/content_manifest.json` is generated from the engine's authoritative hooks in `content_schema.py`; do not pad the manifest with unused IDs. A writer can replace values in those JSON files using the same keys.
+Runtime content lives in split JSON files under `content/*.json`. `content/content_manifest.json` is generated from the engine's authoritative hooks in `content_schema.py`; do not pad the manifest with unused IDs. The current runtime files contain integrated writer prose. Missing text is still intentionally rendered as `[STUB <id>]` so regressions are obvious.
+
+To drop in a future writer aggregate:
+
+1. Save the writer handoff as `content/content.json` temporarily.
+2. Split/merge values by manifest `type` into the matching runtime files: `actions.json`, `archive.json`, `away.json`, `beats.json`, `ending.json`, `events.json`, `letters.json`, and `ui.json`.
+3. Keep keys stable; never rename IDs to make prose fit.
+4. Run `python3 validate_content.py` from `newgame/`.
+5. Search for `[STUB` in runtime JSON before packaging.
+6. Treat `content/content.json`, `content/CANON.md`, `content/RECONCILIATION.md`, and `BUILD_PROMPT.md` as docs/source handoff files only; exclude them from Pico payloads.
 
 The content surface is structured so the story can grow without engine edits:
 
