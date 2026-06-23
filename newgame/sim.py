@@ -123,7 +123,7 @@ def goal(s):
 
 def snapshot(s,device=None):
     passport=s.get('passport',{'visits':[],'tokens':0})
-    return {'version':FIRMWARE_VERSION,'device':device or {},'act':s.get('act',1),'goal':goal(s),'complete':s.get('complete',False),'legacy':s.get('legacy',0),'passport':passport,'passport_bonus':round(len(passport.get('visits',[]))*0.02,2),'environment':environment(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
+    return {'version':FIRMWARE_VERSION,'now_ms':now_ms(),'device':device or {},'act':s.get('act',1),'goal':goal(s),'complete':s.get('complete',False),'legacy':s.get('legacy',0),'passport':passport,'passport_bonus':round(len(passport.get('visits',[]))*0.02,2),'environment':environment(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
 
 def clamp_res(s):
     caps=s.setdefault('caps',{})
