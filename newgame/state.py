@@ -32,10 +32,13 @@ def load_device():
     d=default_device(); save_device(d); return d
 def save_device(d): _atomic(DEVICE_PATH, DEVICE_BAK, d)
 def fresh_save(now=0):
-    return {'save_version':SAVE_VERSION,'last_seen_wall_ms':now,'created_wall_ms':now,'act':1,'legacy':0,'resources':{'o2':35,'power':30,'water':18,'food':12,'regolith':0,'population':6},'caps':{'o2':100,'power':100,'water':80,'food':80,'regolith':300,'population':12},'modules':{},'cooldowns':{},'unlocked_actions':['vent_co2','reroute_power','collect_ice','sift_regolith'],'unlocked_tabs':['hab','surface','comms'],'archive':['arc_boot_01'],'events':['evt_boot'],'tends':{},'redeemed':[],'trade_seq':0}
+    return {'save_version':SAVE_VERSION,'last_seen_wall_ms':now,'created_wall_ms':now,'act':1,'legacy':0,'resources':{'o2':35,'power':30,'water':18,'food':12,'regolith':0,'population':6},'caps':{'o2':100,'power':100,'water':80,'food':80,'regolith':300,'population':12},'modules':{},'cooldowns':{},'unlocked_actions':['vent_co2','reroute_power','collect_ice','sift_regolith'],'unlocked_tabs':['hab','surface','comms'],'archive':['arc_system_memory_01'],'letters':[],'ending':[],'events':['evt_equipment_backup_boot'],'event_recent':['evt_equipment_backup_boot'],'away_recent':[],'counters':{'decode_count':0,'survey_count':0,'explore_count':0},'tends':{},'redeemed':[],'trade_seq':0,'rng':12345}
 def migrate(s):
     if not isinstance(s,dict): return fresh_save(0)
-    s.setdefault('save_version',1); s.setdefault('resources',{}); s.setdefault('caps',{}); s.setdefault('modules',{}); s.setdefault('cooldowns',{}); s.setdefault('unlocked_actions',['vent_co2']); s.setdefault('unlocked_tabs',['hab']); s.setdefault('archive',[]); s.setdefault('events',[]); s.setdefault('tends',{}); s.setdefault('redeemed',[]); s.setdefault('trade_seq',0); s.setdefault('last_seen_wall_ms',0); s.setdefault('act',1); s.setdefault('legacy',0)
+    s.setdefault('save_version',1); s.setdefault('resources',{}); s.setdefault('caps',{}); s.setdefault('modules',{}); s.setdefault('cooldowns',{}); s.setdefault('unlocked_actions',['vent_co2']); s.setdefault('unlocked_tabs',['hab']); s.setdefault('archive',[]); s.setdefault('letters',[]); s.setdefault('ending',[]); s.setdefault('events',[]); s.setdefault('event_recent',[]); s.setdefault('away_recent',[]); s.setdefault('counters',{}); s.setdefault('tends',{}); s.setdefault('redeemed',[]); s.setdefault('trade_seq',0); s.setdefault('last_seen_wall_ms',0); s.setdefault('act',1); s.setdefault('legacy',0); s.setdefault('rng',12345)
+    s['counters'].setdefault('decode_count',0); s['counters'].setdefault('survey_count',0); s['counters'].setdefault('explore_count',0)
+    if 'arc_boot_01' in s.get('archive',[]): s['archive'].remove('arc_boot_01')
+    if not s.get('archive'): s['archive'].append('arc_system_memory_01')
     return s
 def load_save():
     ensure_data_dir()

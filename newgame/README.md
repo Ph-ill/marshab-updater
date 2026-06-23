@@ -29,13 +29,26 @@ The firmware payload intentionally excludes `data/`.
 
 ## Content workflow
 
-Stub content lives in `content/*.json`. `content/content_manifest.json` enumerates every ID, context, max length, and trigger. A writer can replace values in those JSON files using the same keys. Run:
+Stub content lives in `content/*.json`. `content/content_manifest.json` is generated from the engine's authoritative hooks in `content_schema.py`; do not pad the manifest with unused IDs. A writer can replace values in those JSON files using the same keys.
+
+The content surface is structured so the story can grow without engine edits:
+
+- `events`: weighted ambient pools (`weather`, `colony_life`, `equipment`, `anomaly`, `discovery`) with act gates. These are world happenings, not button-tap results.
+- `actions`: one canonical `act_<name>` entry per action, with `label`, `flavor`, and `result_1..result_4` variants for immediate tap feedback.
+- `away`: composable while-away fragments selected from gated pools during closed-form catch-up.
+- `archive`: ordered multi-strand mystery/codex chains (`arc_<strand>_<NN>`) unlocked progressively by act/counters.
+- `beats`: act transitions plus internal milestone beats.
+- `letters`: recurring senders (`ltr_<sender>_<NN>`) unlocked across the arc.
+- `ending`: ordered `end_<NN>_<name>` payoff sequence for the reveal, terraforming climax, and epilogue.
+- `ui`: labels, headers, buttons, tooltips, and short system copy.
+
+Run:
 
 ```bash
 python3 validate_content.py
 ```
 
-to report missing or extra IDs.
+to report missing content, stale extra content, manifest IDs with no engine hook, engine hooks missing from the manifest, and broken pools/chains/sequences.
 
 ## Offline progress
 
