@@ -3,7 +3,7 @@ try:
 except ImportError:
     import asyncio
 import socket, json, gc, os
-from config import AP_IP, HTTP_PORT, DNS_PORT, MAX_CATCHUP_MS
+from config import AP_IP, HTTP_PORT, DNS_PORT, MAX_CATCHUP_MS, FIRMWARE_VERSION
 from state import save_save, save_device
 import sim, content, multiplayer
 CTX=None
@@ -65,6 +65,8 @@ async def api(path,method,body):
         save_save(s); CTX['dirty']=False
         return full_snapshot({'away_report':report,'content_check':content.validate()})
     if path=='/api/state' and method=='GET': return full_snapshot()
+    if path=='/api/diagnostics' and method=='GET':
+        return {'ok':True,'firmware_version':FIRMWARE_VERSION,'content_check':content.validate(),'stub_report':content.stub_report(),'device':dev,'save_version':s.get('save_version'),'act':s.get('act'),'tabs':s.get('unlocked_tabs'),'actions':s.get('unlocked_actions')}
     if path=='/api/action' and method=='POST':
         if data.get('action_id')=='build': res=sim.build(s,data.get('module_id'))
         else: res=sim.action(s,data.get('action_id'))

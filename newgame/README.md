@@ -2,6 +2,8 @@
 
 A self-contained MicroPython idle/incremental game for Raspberry Pi Pico W. The Pico serves a WiFi AP and vanilla browser SPA; the device is authoritative for state.
 
+Development authority: read `BUILD_PROMPT.md` before game work. It is the original build/design prompt for this incremental Pico game and defines the constraints, architecture, and deliverables.
+
 ## Run / flash
 
 Install a recent Raspberry Pi Pico W MicroPython build, then copy all files from this payload to the device filesystem. Boot `main.py`. Join the AP shown in the serial log and open `http://192.168.4.1`.

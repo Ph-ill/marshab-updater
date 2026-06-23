@@ -61,3 +61,14 @@ def validate():
     end=[e.get('seq') for e in schema.ending_entries()]
     if end != list(range(1,len(end)+1)): bad.append('bad_ending_seq')
     return {'ok':not (missing or no_manifest or dead or bad),'missing':missing,'extra':extra,'no_manifest':no_manifest,'dead_manifest':dead,'bad':bad}
+
+def stub_report():
+    found=[]; counts={}
+    for t in TYPE_FILE:
+        d=load_type(t); c=0
+        for cid,v in d.items():
+            if '[STUB' in json.dumps(v):
+                c+=1
+                if len(found)<20: found.append(cid)
+        counts[t]=c
+    return {'stub_count':sum(counts.values()),'by_type':counts,'examples':found}

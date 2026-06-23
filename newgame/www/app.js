@@ -29,13 +29,15 @@ function fmt(n){return (Math.round(n*100)/100).toString()}
 function actionButton(a){let cd=(S.state.cooldowns||{})[a]||0,rem=Math.max(0,cd-performance.timeOrigin-Date.now()+performance.now());return `<button data-act="${a}" ${rem>0?'disabled':''}><span class=fill style="width:${rem>0?100:0}%"></span>${txt('actions',a,'label')}</button>`}
 function render(){
   res();let s=S.state,tabs=s.tabs||['hab'];
-  const tabLabel=t=>txt('ui',t==='comms'?'ui_tab_trade':'ui_tab_'+t);
+  const tabLabel=t=>t==='diag'?'Diag':txt('ui',t==='comms'?'ui_tab_trade':'ui_tab_'+t);
+  tabs=tabs.includes('diag')?tabs:tabs.concat(['diag']);
   $('#tabs').innerHTML=tabs.map(t=>`<button data-tab=${t}>${tabLabel(t)}</button>`).join('');
   let html='<div class=card><h1>Act '+s.act+' // '+(s.device.hab_name||'Mars Hab')+'</h1><p class=muted>signature export: '+s.device.signature_resource+'</p></div>';
   if(S.tab==='hab')html+='<div class=card><h2>'+txt('ui','ui_header_actions')+'</h2>'+s.actions.map(actionButton).join('')+'</div><div class=card><h2>'+txt('ui','ui_header_modules')+'</h2>'+Object.keys(s.upgrades||{}).map(k=>`<button data-build="${k}">${s.upgrades[k].label}</button>`).join('')+'</div>';
   if(S.tab==='surface')html+='<div class=card><h2>Surface</h2><p>'+txt('events','evt_weather_dust_storm_minor')+'</p></div>';
   if(S.tab==='comms')html+='<div class=card><h2>'+txt('ui','ui_tab_trade')+'</h2><button id=pkg>'+txt('ui','ui_button_copy_code')+'</button><p id=code class=code></p><textarea id=redeem placeholder="paste code"></textarea><button id=redeemBtn>'+txt('ui','ui_button_redeem_code')+'</button><button id=tend>'+txt('ui','ui_button_tend')+'</button></div>';
   if(S.tab==='archive')html+='<div class=card><h2>'+txt('ui','ui_header_archive')+'</h2>'+s.archive.map(id=>`<p>${txt('archive',id).replace(/\n/g,'<br>')}</p>`).join('')+'</div>';
+  if(S.tab==='diag')html+='<div class=card><h2>Diagnostics</h2><button id=diagRefresh>Refresh diagnostics</button><pre id=diagOut>tap refresh</pre></div>';
   $('#screen').innerHTML=html;
 }
 async function sync(){
@@ -56,6 +58,7 @@ document.body.onclick=async e=>{
   if(b.id==='pkg'){let r=await api('/api/trade/package');$('#code').textContent=r.code}
   if(b.id==='redeemBtn'){S.state=await api('/api/trade/redeem',{body:{code:$('#redeem').value}});render()}
   if(b.id==='tend'){S.state=await api('/api/tend',{body:{visitor:'guest'}});render()}
+  if(b.id==='diagRefresh'){let d=await api('/api/diagnostics');$('#diagOut').textContent=JSON.stringify(d,null,2)}
 };
 setInterval(async()=>{if(!S.state)return;S.state=await api('/api/state');render()},2000);
 sync();
