@@ -4,7 +4,7 @@ except ImportError:
     import asyncio
 import socket, json, gc, os
 from config import AP_IP, HTTP_PORT, DNS_PORT, MAX_CATCHUP_MS, FIRMWARE_VERSION
-from state import save_save, save_device
+from state import save_save, save_device, fresh_save
 import sim, content, multiplayer
 CTX=None
 def set_context(c):
@@ -59,6 +59,11 @@ async def api(path,method,body):
         save_save(s); CTX['dirty']=False
         return full_snapshot({'away_report':report,'content_check':content.validate()})
     if path=='/api/state' and method=='GET': return full_snapshot()
+    if path=='/api/reset' and method=='POST':
+        now=int(data.get('now') or 0)
+        CTX['state']=fresh_save(now)
+        save_save(CTX['state']); CTX['dirty']=False
+        return full_snapshot({'result':{'ok':True,'reset':True}})
     if path=='/api/diagnostics' and method=='GET':
         return {'ok':True,'firmware_version':FIRMWARE_VERSION,'content_check':content.validate(),'stub_report':content.stub_report(),'device':dev,'save_version':s.get('save_version'),'act':s.get('act'),'tabs':s.get('unlocked_tabs'),'actions':s.get('unlocked_actions')}
     if path=='/api/action' and method=='POST':
