@@ -108,7 +108,7 @@ function resetProgress(status = 'Standing by. Connect a device and select a rele
 function showPowerCycleModal(){
   els.powerCycleModal.hidden = false;
   els.powerCycleDoneBtn.focus();
-  log('operator action required: unplug/replug Pico power before testing WiFi gateway');
+  log('operator action required: unplug/replug your MarsHab device before testing the WiFi gateway');
 }
 function hidePowerCycleModal(){
   els.powerCycleModal.hidden = true;
@@ -190,7 +190,7 @@ function clearDeviceUi(){
 
 function markDeviceDisconnected(reason = 'device disconnected'){
   if(state.installResetInProgress){
-    log(`${reason}; waiting for Pico to return`);
+    log(`${reason}; waiting for the MarsHab device to return`);
     return;
   }
   if(!state.device && els.connectBtn.textContent === 'Connect device') return;
@@ -252,7 +252,7 @@ function initBrowserSupport(){
     return;
   }
   setStatus('disconnected', 'status-warn');
-  log('WebSerial available; waiting for Pico W');
+  log('WebSerial available; waiting for your MarsHab device');
 }
 async function connectDevice(){
   if(state.device){
@@ -293,7 +293,7 @@ async function refreshDeviceInfoAfterInstall(){
   state.installResetInProgress = true;
   await new Promise(resolve => setTimeout(resolve, 2200));
   try{
-    log('reconnecting to Pico serial after reset');
+    log('reconnecting to the MarsHab device after reset');
     await device.reopenExisting({ attempts: 12, delayMs: 900 });
     await device.enterRawRepl();
     const probe = await device.exec("print('ok')", { timeoutMs: 5000 });
@@ -332,7 +332,7 @@ async function installVersion(version){
         if(done === total) log(`verified ${file.path}`);
       },
     });
-    setProgress(100, `Install ${release.version} complete. AP restarted; power-cycle Pico if the gateway page does not load.`, 'complete');
+    setProgress(100, `Install ${release.version} complete. AP restarted; power-cycle your MarsHab device if the gateway page does not load.`, 'complete');
     await refreshDeviceInfoAfterInstall();
     showPowerCycleModal();
   }catch(err){
