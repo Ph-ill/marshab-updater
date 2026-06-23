@@ -28,13 +28,13 @@ MODULES={
  'atmo_processor':{'label':'atmosphere processor','desc':'A slow machine for a long promise: more air outside the walls.','act':3,'max':5,'requires':['dome_segment'],'cost':{'alloy':40,'polymer':35,'power':250},'rates':{'atmosphere':0.00000025},'unlock':['run_atmo_processor','seed_bioreactor'],'beat':'beat_first_atmo_processor'},
  'bioreactor':{'label':'bioreactor','desc':'Microbes rehearse a living Mars in sealed glass.','act':4,'max':4,'requires':['atmo_processor'],'cost':{'water':120,'food':80,'polymer':50,'power':300},'rates':{'biomass':0.000002,'temperature':0.000001},'unlock':['seed_bioreactor'],'beat':'beat_first_bioreactor'},
  'thermal_mirror':{'label':'thermal mirror','desc':'A bright wound in orbit nudges mean temperature upward.','act':4,'max':3,'requires':['atmo_processor'],'cost':{'rare_metals':35,'alloy':60,'power':420},'rates':{'temperature':0.000003},'beat':'beat_temperature_rise'},
- 'airlock_protocol':{'label':'airlock protocol','desc':'Final checks for controlled exposure under the new sky.','act':5,'max':1,'requires':['bioreactor','thermal_mirror'],'cost':{'atmosphere':1,'temperature':1,'biomass':0.05},'unlock':['open_airlock'],'beat':'beat_act5_choice'}
+ 'airlock_protocol':{'label':'airlock protocol','desc':'Final checks for controlled exposure under the new sky.','act':5,'max':1,'requires':['bioreactor','thermal_mirror'],'requires_env':{'atmosphere':1,'temperature':1,'biomass':0.05},'cost':{'power':500,'alloy':40,'rare_metals':20},'unlock':['open_airlock'],'beat':'beat_act5_choice'}
 }
 MILESTONES=[
  {'act':2,'cond':lambda s:s['resources'].get('population',0)>=8 or s['modules'].get('greenhouse',0)>0,'beat':'beat_act2_open','tab':'colony'},
  {'act':3,'cond':lambda s:s['modules'].get('fab_shop',0)>0,'beat':'beat_act3_open','tab':'trade'},
  {'act':4,'cond':lambda s:s['modules'].get('atmo_processor',0)>0,'beat':'beat_act4_open','tab':'archive'},
- {'act':5,'cond':lambda s:s['resources'].get('atmosphere',0)>=1,'beat':'beat_act5_open','tab':'archive'}]
+ {'act':5,'cond':lambda s:environment(s)['breathability_confidence']>=94,'beat':'beat_act5_open','tab':'ending'}]
 INTERNAL_BEATS=[
  ('beat_population_8',lambda s:s['resources'].get('population',0)>=8),('beat_population_12',lambda s:s['resources'].get('population',0)>=12),('beat_decode_3',lambda s:s['counters'].get('decode_count',0)>=3),('beat_atmosphere_025',lambda s:s['resources'].get('atmosphere',0)>=.25),('beat_atmosphere_050',lambda s:s['resources'].get('atmosphere',0)>=.5),('beat_biomass_trace',lambda s:s['resources'].get('biomass',0)>0),('beat_final_threshold',lambda s:s['act']>=5)]
 
@@ -91,7 +91,8 @@ def away_fragments(s,gains,event_ids,sec):
     return out
 
 def rates(s,device=None):
-    r={'o2':-0.001*s['resources'].get('population',0),'power':0.006,'water':-0.0005*s['resources'].get('population',0),'food':-0.0004*s['resources'].get('population',0),'regolith':0.002}
+    legacy=1+(s.get('legacy',0)*0.05)
+    r={'o2':-0.001*s['resources'].get('population',0),'power':0.006*legacy,'water':-0.0005*s['resources'].get('population',0),'food':-0.0004*s['resources'].get('population',0),'regolith':0.002*legacy}
     for mid,n in s.get('modules',{}).items():
         m=MODULES.get(mid,{})
         for k,v in m.get('rates',{}).items(): r[k]=r.get(k,0)+v*n
@@ -100,6 +101,16 @@ def rates(s,device=None):
             for k in list(r):
                 if r[k]>0: r[k]*=1.1
     return r
+
+def environment(s):
+    r=s.get('resources',{})
+    atm=max(0,min(1,r.get('atmosphere',0)))
+    temp=max(0,min(1,r.get('temperature',0)))
+    bio=max(0,min(1,r.get('biomass',0)))
+    pressure=round(62+(atm*38),1) if atm>0 else 6.1
+    conf=int(max(0,min(94,atm*70+temp*14+bio*10)))
+    if s.get('complete'): conf=100
+    return {'pressure_mb':pressure,'armstrong_limit_mb':62,'breathability_confidence':conf,'open_air_ready':conf>=94 and s.get('modules',{}).get('airlock_protocol',0)>0}
 
 def goal(s):
     act=s.get('act',1)
@@ -110,7 +121,7 @@ def goal(s):
     return 'Payoff: complete the airlock protocol and read the ending sequence.'
 
 def snapshot(s,device=None):
-    return {'version':FIRMWARE_VERSION,'device':device or {},'act':s.get('act',1),'goal':goal(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
+    return {'version':FIRMWARE_VERSION,'device':device or {},'act':s.get('act',1),'goal':goal(s),'complete':s.get('complete',False),'legacy':s.get('legacy',0),'environment':environment(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
 
 def clamp_res(s):
     caps=s.setdefault('caps',{})
@@ -143,7 +154,8 @@ def module_visible(s,mid,m):
     req=m.get('requires',[])
     return all(s.get('modules',{}).get(r,0)>0 for r in req) or s.get('act',1)>=m.get('act',1)
 def module_buildable(s,mid,m):
-    return s.get('act',1)>=m.get('act',1) and all(s.get('modules',{}).get(r,0)>0 for r in m.get('requires',[])) and s.get('modules',{}).get(mid,0)<m.get('max',99)
+    env_ok=all(s.get('resources',{}).get(k,0)>=v for k,v in m.get('requires_env',{}).items())
+    return env_ok and s.get('act',1)>=m.get('act',1) and all(s.get('modules',{}).get(r,0)>0 for r in m.get('requires',[])) and s.get('modules',{}).get(mid,0)<m.get('max',99)
 def available_modules(s):
     out={}
     for k,v in MODULES.items():
@@ -155,10 +167,16 @@ def action(s,aid,now=None):
     now=now or now_ms(); a=ACTIONS.get(aid)
     if not a: return {'ok':False,'error':'unknown action'}
     if aid not in available_actions(s): return {'ok':False,'error':'locked'}
+    if aid=='open_airlock' and not environment(s)['open_air_ready']: return {'ok':False,'error':'airlock not ready'}
     if s.setdefault('cooldowns',{}).get(aid,0)>now: return {'ok':False,'error':'cooldown'}
     if not check_cost(s,a.get('cost',{})): return {'ok':False,'error':'insufficient'}
     pay(s,a.get('cost',{})); apply_effect(s,a.get('effect',{})); s['cooldowns'][aid]=now+a.get('cooldown_ms',10000)
     if a.get('counter'): s.setdefault('counters',{})[a['counter']]=s.setdefault('counters',{}).get(a['counter'],0)+1
+    if aid=='open_airlock':
+        s['complete']=True; s['legacy']=s.get('legacy',0)+1
+        if 'ending' not in s.setdefault('unlocked_tabs',[]): s['unlocked_tabs'].append('ending')
+        for e in schema.ending_entries():
+            if e['id'] not in s.setdefault('ending',[]): s['ending'].append(e['id'])
     ev='act_'+aid+':'+action_result_id(s,aid)
     s.setdefault('events',[]).append(ev); beats=[]; unlock_narrative(s,beats)
     return {'ok':True,'event':ev,'beats':beats}
