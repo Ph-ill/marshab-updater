@@ -11,3 +11,5 @@
 @media(max-width:500px){.tutBtns{gap:4px}.tutBtns button{padding:8px 8px;font-size:12px}.tutBtns button[data-tut=skip],.tutBtns button[data-tut=back]{min-width:48px}.tutBtns .wait{padding:8px 6px;font-size:11px}}
 .tutBtns .wait{display:flex!important;align-items:center;justify-content:center;min-height:37px;line-height:1.1}@media(max-width:500px){.tutBtns .wait{min-height:34px}}
 .tutBtns button,.tutBtns .wait{height:34px!important;min-height:34px!important;display:flex!important;align-items:center!important;justify-content:center!important}.tutBtns button{line-height:1.1!important}
+
+.topTools{display:flex;gap:6px;align-items:center}.topTools .guideBtn{flex:1 1 auto}.settingsBtn{flex:0 0 42px!important;width:42px!important;padding:10px 0!important;text-align:center}#settings{border-color:#5b3921;background:#18100c}#settings .danger{border-color:#d46a3a!important;color:#ffd0b8!important;background:#35150e!important;box-shadow:0 0 0 1px rgba(212,106,58,.35)}#settings small{display:block;margin-top:4px}
