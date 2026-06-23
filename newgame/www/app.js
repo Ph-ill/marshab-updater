@@ -57,7 +57,27 @@ function render(){if(!S.state)return;res();let s=S.state;if(!tabs().includes(S.t
  if(S.tab==='archive')html+=`<div class=card><h2>📚 ${txt('ui','ui_header_archive')}</h2><p class=muted>${(s.archive||[]).length} archive entries · ${(s.letters||[]).length} letters recovered</p>${storyList('archive',s.archive)}</div><div class=card><h2>✉️ ${txt('ui','ui_header_letters')}</h2>${storyList('letters',s.letters)}</div>`;
  if(S.tab==='ending')html+=`<div class=card><h2>🚪 ${txt('ui','ui_header_ending')}</h2>${envPanel(s)}${storyList('ending',s.ending)}${s.complete?'<button id=newGamePlus>🔁 Begin New Game+ // keep legacy</button>':'<p class=muted>Reach airlock-ready conditions to unlock the final sequence.</p>'}</div>`;
  $('#screen').innerHTML=html+tutorial();applyGuide()}
-function applyGuide(){document.querySelectorAll('.guideFocus').forEach(e=>e.classList.remove('guideFocus'));if(tutDone()||!S.tutTarget)return;let el=document.querySelector(S.tutTarget);if(el)el.classList.add('guideFocus')}
+function applyGuide(){
+ document.querySelectorAll('.guideFocus').forEach(e=>e.classList.remove('guideFocus'));
+ if(tutDone()||!S.tutTarget)return;
+ let el=document.querySelector(S.tutTarget);if(!el)return;el.classList.add('guideFocus');
+ requestAnimationFrame(()=>scrollGuideTarget(el));
+}
+function scrollGuideTarget(el){
+ let card=document.querySelector('.tutCard');if(!card||!el)return;
+ let vh=window.innerHeight||document.documentElement.clientHeight||640,margin=14;
+ let cr=card.getBoundingClientRect(),er=el.getBoundingClientRect();
+ let nav=document.querySelector('nav'),nr=nav?nav.getBoundingClientRect():{top:vh};
+ let topGap=margin,bottomGap=Math.min(vh-margin,nr.top-margin);
+ let cardMid=(cr.top+cr.bottom)/2,targetMid=(er.top+er.bottom)/2;
+ if(targetMid<cardMid)bottomGap=Math.max(topGap,cr.top-margin);else topGap=Math.min(bottomGap,cr.bottom+margin);
+ if(bottomGap-topGap<90){topGap=margin;bottomGap=Math.min(vh-margin,nr.top-margin)}
+ let desired=(topGap+bottomGap)/2,actual=targetMid;
+ let maxY=Math.max(0,document.documentElement.scrollHeight-vh);
+ let next=Math.max(0,Math.min(maxY,window.scrollY+actual-desired));
+ window.scrollTo({top:next,behavior:'smooth'});
+}
+
 async function sync(){let min=new Promise(r=>setTimeout(r,1200));let p=api('/api/sync',{body:{now:Date.now()}});let [st]=await Promise.all([p,min]);S.state=st;S.fetchedAt=Date.now();await Promise.all(TYPES.map(loadContent));$('#load').classList.add('hide');if(!S.logSeeded){(st.events||[]).slice(-8).reverse().forEach(id=>log(line(id)));S.logSeeded=true}if(st.away_report&&st.away_report.elapsed_ms){let parts=(st.away_report.away||[]).map(id=>txt('away',id));(st.away_report.beats||[]).forEach(id=>log(txt('beats',id)));log(parts.length?parts.join(' / '):('while away: '+Object.entries(st.away_report.gains||{}).map(([k,v])=>nice(k)+' '+fmt(v)).join(', ')))}render()}
 async function refreshDiag(){S.diag=await api('/api/diagnostics')}
 document.body.onclick=async e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.tut){if(b.dataset.tut==='skip')closeTut(true);else{let n=tutStep()+1;if(n>5)closeTut(true);else{setTutStep(n);render()}}return}if(b.id==='guide'){openTut();return}if(b.dataset.tab){S.tab=b.dataset.tab;render();return}if(b.dataset.act){let st=await api('/api/action',{body:{action_id:b.dataset.act}});S.state=st;S.fetchedAt=Date.now();S.lastMsg=st.result&&st.result.ok?'action complete':((st.result&&st.result.error)||'action failed');if(st.result&&st.result.event)log(line(st.result.event));if(st.result&&st.result.beats)(st.result.beats||[]).forEach(id=>log(txt('beats',id)));render();return}if(b.dataset.build){let st=await api('/api/action',{body:{action_id:'build',module_id:b.dataset.build}});S.state=st;S.fetchedAt=Date.now();S.lastMsg=st.result&&st.result.ok?'module built':((st.result&&st.result.error)||'build failed');if(st.result&&st.result.beats)(st.result.beats||[]).forEach(id=>log(txt('beats',id)));render();return}if(b.dataset.redeemStored){let code=b.dataset.redeemStored;S.state=await api('/api/trade/redeem',{body:{code}});S.fetchedAt=Date.now();if(S.state.result&&S.state.result.ok)forgetCode(code);S.lastMsg=(S.state.result&&S.state.result.ok)?'carried package redeemed':((S.state.result&&S.state.result.error)||'redeem failed');render();return}if(b.id==='pkg'){let r=await api('/api/trade/package');$('#code').textContent=r.code;rememberCode(r.code);render();return}if(b.id==='redeemBtn'){let code=$('#redeem').value;S.state=await api('/api/trade/redeem',{body:{code}});S.fetchedAt=Date.now();if(S.state.result&&S.state.result.ok)forgetCode(code);S.lastMsg=(S.state.result&&S.state.result.ok)?'package redeemed':((S.state.result&&S.state.result.error)||'redeem failed');render();return}if(b.id==='tend'){S.state=await api('/api/tend',{body:{visitor:'guest'}});S.fetchedAt=Date.now();S.lastMsg='host tended';render();return}if(b.id==='newGamePlus'){S.state=await api('/api/action',{body:{action_id:'new_game_plus'}});S.fetchedAt=Date.now();S.lastMsg=(S.state.result&&S.state.result.ok)?'new game+ started':((S.state.result&&S.state.result.error)||'reset failed');S.tab='hab';render();return}};
