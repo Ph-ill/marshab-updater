@@ -18,12 +18,12 @@ ACTIONS={
  'open_airlock':{'label':'open airlock','cooldown_ms':300000,'effect':{},'cost':{}}
 }
 MODULES={
- 'solar_array':{'label':'solar array','desc':'Unfold scavenged panels; power becomes a margin instead of a prayer.','act':1,'max':6,'cost':{'regolith':80},'rates':{'power':0.004},'caps':{'power':50},'unlock':['grow_rations'],'beat':'beat_first_solar_array'},
- 'ice_well':{'label':'ice well','desc':'Tap a shaded lens and let the hab stop drinking from emergency bags.','act':1,'max':4,'cost':{'regolith':60,'power':40},'rates':{'water':0.003},'caps':{'water':60},'beat':'beat_first_ice_well'},
- 'greenhouse':{'label':'greenhouse','desc':'Trays, lamps, and patient hands. Food and oxygen become renewable.','act':1,'max':5,'cost':{'water':60,'power':70},'rates':{'food':0.003,'o2':0.007},'caps':{'food':80,'population':4},'beat':'beat_first_greenhouse'},
- 'fab_shop':{'label':'fabricator shop','desc':'Dust goes in. Emergency parts, polymer, and alloy come out.','act':2,'max':4,'requires':['solar_array','ice_well'],'cost':{'regolith':240,'power':160},'rates':{'polymer':0.0007,'alloy':0.00055},'unlock':['decode_signal','survey_crater','print_spares','stabilize_dome'],'beat':'beat_first_fab_shop'},
- 'relay_array':{'label':'relay array','desc':'Listen deeper into the buried signal and trade codes.','act':2,'max':3,'requires':['fab_shop'],'cost':{'alloy':6,'polymer':8,'power':140},'rates':{'power':-0.004},'unlock':['decode_signal'],'beat':'beat_first_trade'},
- 'survey_garage':{'label':'survey garage','desc':'Pressurized rover bay for crater work and rare-metal finds.','act':2,'max':3,'requires':['fab_shop'],'cost':{'alloy':10,'polymer':6,'power':180},'rates':{'rare_metals':0.00035},'unlock':['survey_crater'],'beat':'beat_first_crater_survey'},
+ 'solar_array':{'label':'solar array','desc':'Unfold scavenged panels; power becomes a margin instead of a prayer.','act':0,'max':6,'cost':{'regolith':80},'rates':{'power':0.004},'caps':{'power':50},'unlock':['grow_rations'],'beat':'beat_first_solar_array'},
+ 'ice_well':{'label':'ice well','desc':'Tap a shaded lens and let the hab stop drinking from emergency bags.','act':0,'max':4,'cost':{'regolith':60,'power':40},'rates':{'water':0.003},'caps':{'water':60},'beat':'beat_first_ice_well'},
+ 'greenhouse':{'label':'greenhouse','desc':'Trays, lamps, and patient hands. Food and oxygen become renewable.','act':0,'max':5,'cost':{'water':60,'power':70},'rates':{'food':0.003,'o2':0.007},'caps':{'food':80,'population':4},'beat':'beat_first_greenhouse'},
+ 'fab_shop':{'label':'fabricator shop','desc':'Dust goes in. Emergency parts, polymer, and alloy come out.','act':1,'max':4,'requires':['solar_array','ice_well'],'cost':{'regolith':240,'power':160},'rates':{'polymer':0.0007,'alloy':0.00055},'unlock':['decode_signal','survey_crater','print_spares','stabilize_dome'],'beat':'beat_first_fab_shop'},
+ 'relay_array':{'label':'relay array','desc':'Listen deeper into the buried signal and trade codes.','act':1,'max':3,'requires':['fab_shop'],'cost':{'alloy':6,'polymer':8,'power':140},'rates':{'power':-0.004},'unlock':['decode_signal'],'beat':'beat_first_trade'},
+ 'survey_garage':{'label':'survey garage','desc':'Pressurized rover bay for crater work and rare-metal finds.','act':1,'max':3,'requires':['fab_shop'],'cost':{'alloy':10,'polymer':6,'power':180},'rates':{'rare_metals':0.00035},'unlock':['survey_crater'],'beat':'beat_first_crater_survey'},
  'dome_segment':{'label':'dome segment','desc':'A larger pressure envelope for workers, children, and risk.','act':3,'max':4,'requires':['survey_garage'],'cost':{'alloy':20,'polymer':18,'rare_metals':8,'power':240},'rates':{'o2':-0.004,'food':-0.002},'caps':{'population':2,'o2':70,'food':50},'beat':'beat_first_dome_stable'},
  'atmo_processor':{'label':'atmosphere processor','desc':'A slow machine for a long promise: more air outside the walls.','act':3,'max':5,'requires':['dome_segment'],'cost':{'alloy':40,'polymer':35,'power':250},'rates':{'atmosphere':0.00000025},'unlock':['run_atmo_processor','seed_bioreactor'],'beat':'beat_first_atmo_processor'},
  'bioreactor':{'label':'bioreactor','desc':'Microbes rehearse a living Mars in sealed glass.','act':4,'max':4,'requires':['atmo_processor'],'cost':{'water':120,'food':80,'polymer':50,'power':300},'rates':{'biomass':0.000002,'temperature':0.000001},'unlock':['seed_bioreactor'],'beat':'beat_first_bioreactor'},
@@ -31,7 +31,7 @@ MODULES={
  'airlock_protocol':{'label':'airlock protocol','desc':'Final checks for controlled exposure under the new sky.','act':5,'max':1,'requires':['bioreactor','thermal_mirror'],'requires_env':{'atmosphere':1,'temperature':1,'biomass':0.05},'cost':{'power':500,'alloy':40,'rare_metals':20},'unlock':['open_airlock'],'beat':'beat_act5_choice'}
 }
 MILESTONES=[
- {'act':2,'cond':lambda s:s['resources'].get('population',0)>=8 or s['modules'].get('greenhouse',0)>0,'beat':'beat_act2_open','tab':'colony'},
+ {'act':1,'cond':lambda s:s['modules'].get('greenhouse',0)>0,'beat':'beat_act1_open','tab':'colony'},
  {'act':3,'cond':lambda s:s['modules'].get('fab_shop',0)>0,'beat':'beat_act3_open','tab':'trade'},
  {'act':4,'cond':lambda s:s['modules'].get('atmo_processor',0)>0,'beat':'beat_act4_open','tab':'archive'},
  {'act':5,'cond':lambda s:environment(s)['breathability_confidence']>=94,'beat':'beat_act5_open','tab':'ending'}]
@@ -57,7 +57,7 @@ def choose_weighted(s,weighted,recent_key='event_recent',recent_limit=8):
     return opts[-1][0]
 
 def draw_event(s,pool=None):
-    act=s.get('act',1); pools=[pool] if pool else list(schema.POOLS)
+    act=s.get('act',0); pools=[pool] if pool else list(schema.POOLS)
     for _ in range(len(pools)):
         p=pools[rng(s,len(pools))]
         weighted=schema.event_pool_ids(p,act)
@@ -79,7 +79,7 @@ def action_result_id(s,aid):
 
 def away_fragments(s,gains,event_ids,sec):
     if sec<1800: return []
-    act=s.get('act',1); candidates=[]
+    act=s.get('act',0); candidates=[]
     for e in schema.away_entries():
         a=str(e.get('act','1-5')); lo=int(a.split('-')[0]); hi=int(a.split('-')[-1])
         if lo<=act<=hi: candidates.append((e['id'],4 if e.get('pool')=='systems' else 3))
@@ -114,16 +114,16 @@ def environment(s):
     return {'pressure_mb':pressure,'armstrong_limit_mb':62,'breathability_confidence':conf,'open_air_ready':conf>=94 and s.get('modules',{}).get('airlock_protocol',0)>0}
 
 def goal(s):
-    act=s.get('act',1)
-    if act==1: return 'Stabilize survival: build solar, ice, and greenhouse capacity.'
-    if act==2: return 'Open industry: build the fabricator, relay, and survey garage.'
+    act=s.get('act',0)
+    if act==0: return 'Tutorial: learn the console and build the first survival loop.'
+    if act==1: return 'Open industry: build the fabricator, relay, and survey garage.'
     if act==3: return 'Expand beyond the hab: raise dome capacity and begin atmosphere work.'
     if act==4: return 'Transform the planet: grow atmosphere, temperature, and biomass.'
     return 'Payoff: complete the airlock protocol and read the ending sequence.'
 
 def snapshot(s,device=None):
     passport=s.get('passport',{'visits':[],'tokens':0})
-    return {'version':FIRMWARE_VERSION,'now_ms':now_ms(),'device':device or {},'act':s.get('act',1),'goal':goal(s),'complete':s.get('complete',False),'legacy':s.get('legacy',0),'passport':passport,'passport_bonus':round(len(passport.get('visits',[]))*0.02,2),'environment':environment(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
+    return {'version':FIRMWARE_VERSION,'now_ms':now_ms(),'device':device or {},'act':s.get('act',0),'goal':goal(s),'complete':s.get('complete',False),'legacy':s.get('legacy',0),'passport':passport,'passport_bonus':round(len(passport.get('visits',[]))*0.02,2),'environment':environment(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
 
 def clamp_res(s):
     caps=s.setdefault('caps',{})
@@ -152,12 +152,12 @@ def apply_effect(s,effect):
     clamp_res(s)
 def available_actions(s): return [a for a in s.get('unlocked_actions',[]) if a in ACTIONS]
 def module_visible(s,mid,m):
-    if s.get('act',1)+1 < m.get('act',1): return False
+    if s.get('act',0)+1 < m.get('act',1): return False
     req=m.get('requires',[])
-    return all(s.get('modules',{}).get(r,0)>0 for r in req) or s.get('act',1)>=m.get('act',1)
+    return all(s.get('modules',{}).get(r,0)>0 for r in req) or s.get('act',0)>=m.get('act',1)
 def module_buildable(s,mid,m):
     env_ok=all(s.get('resources',{}).get(k,0)>=v for k,v in m.get('requires_env',{}).items())
-    return env_ok and s.get('act',1)>=m.get('act',1) and all(s.get('modules',{}).get(r,0)>0 for r in m.get('requires',[])) and s.get('modules',{}).get(mid,0)<m.get('max',99)
+    return env_ok and s.get('act',0)>=m.get('act',1) and all(s.get('modules',{}).get(r,0)>0 for r in m.get('requires',[])) and s.get('modules',{}).get(mid,0)<m.get('max',99)
 def available_modules(s):
     out={}
     for k,v in MODULES.items():
@@ -213,14 +213,14 @@ def add_beat(s,beats,bid):
 
 def check_milestones(s,beats):
     for m in MILESTONES:
-        if s.get('act',1)<m['act'] and m['cond'](s):
+        if s.get('act',0)<m['act'] and m['cond'](s):
             s['act']=m['act']; add_beat(s,beats,m['beat'])
             if m.get('tab') and m['tab'] not in s.setdefault('unlocked_tabs',[]): s['unlocked_tabs'].append(m['tab'])
     for bid,cond in INTERNAL_BEATS:
         if cond(s) and bid not in s.setdefault('events',[]): add_beat(s,beats,bid)
 
 def unlock_narrative(s,beats):
-    act=s.get('act',1); counters=s.setdefault('counters',{})
+    act=s.get('act',0); counters=s.setdefault('counters',{})
     # Archive chains: unlock next eligible seq per strand as act/counters rise.
     for strand,count in schema.ARCHIVE_STRANDS.items():
         current=len([x for x in s.setdefault('archive',[]) if x.startswith('arc_'+strand+'_')])
