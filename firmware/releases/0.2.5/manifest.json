@@ -1,0 +1,195 @@
+{
+  "schema": 1,
+  "project": "MarsHab",
+  "version": "0.2.5",
+  "date": "2026-06-23",
+  "label": "Final narrative prose",
+  "device": "raspberry-pi-pico-w",
+  "runtime": "micropython",
+  "entrypoint": "main.py",
+  "preserve": [
+    "data/",
+    "data/device.json",
+    "data/device.bak",
+    "data/save.json",
+    "data/save.bak",
+    "data/passport.json",
+    "config.json",
+    "save.json",
+    "ledger.json"
+  ],
+  "delete": [
+    "assets",
+    "gift.mjs",
+    "hab.py",
+    "secrets.py",
+    "version.json",
+    "www",
+    "content",
+    "config.py",
+    "state.py",
+    "sim.py",
+    "server.py",
+    "content.py",
+    "content_schema.py",
+    "multiplayer.py",
+    "validate_content.py",
+    "README.md"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "url": "/firmware/releases/0.2.5/files/README.md",
+      "sha256": "7478fbdf4f494e2425c9350f695c06bbb66e8c69c19e38fdfa9483a3b3d2be60",
+      "size": 2820,
+      "encoding": "utf8"
+    },
+    {
+      "path": "config.py",
+      "url": "/firmware/releases/0.2.5/files/config.py",
+      "sha256": "04c778b149f1fecb8e0bd512ea9e0b6a7e1155c0eede1f9d5fba4eb58a6beda1",
+      "size": 335,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/actions.json",
+      "url": "/firmware/releases/0.2.5/files/content/actions.json",
+      "sha256": "14672e89719bb0d64e84c3bc8aba6683884d31af0f6d20e33fbc2386a8435d54",
+      "size": 5279,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/archive.json",
+      "url": "/firmware/releases/0.2.5/files/content/archive.json",
+      "sha256": "f08754f8536646aa4719fcbb566d1243873eb429f2a389fde79d0b9c48a36f39",
+      "size": 34641,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/away.json",
+      "url": "/firmware/releases/0.2.5/files/content/away.json",
+      "sha256": "d06b7c73a2691956d972aab0ea4d0c93f97774510472ad7b7aea87afbe3c5cb5",
+      "size": 3579,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/beats.json",
+      "url": "/firmware/releases/0.2.5/files/content/beats.json",
+      "sha256": "9799a877e99ab8852b5e13d85cc4c976ee3110de90ed0b7fd10dbace91c0d31f",
+      "size": 12132,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/content_manifest.json",
+      "url": "/firmware/releases/0.2.5/files/content/content_manifest.json",
+      "sha256": "fd6e52c4f32dec695045476dff46703c1431b60e96c1b68cf07fd302847a8c94",
+      "size": 90142,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/ending.json",
+      "url": "/firmware/releases/0.2.5/files/content/ending.json",
+      "sha256": "db3ae0a21c054973dd1b6c51eea1ba4da535b03712b1559ba2d12e1b389274cd",
+      "size": 8404,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/events.json",
+      "url": "/firmware/releases/0.2.5/files/content/events.json",
+      "sha256": "8efc33f92a1b3793123d3e5d013463dbb3c38d756b9cb2c0a2601ae75a600103",
+      "size": 10796,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/letters.json",
+      "url": "/firmware/releases/0.2.5/files/content/letters.json",
+      "sha256": "44aacc315603415f3d78abf5cb5e810603dd44bc491785dbfa4fda050ea18e99",
+      "size": 23680,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content/ui.json",
+      "url": "/firmware/releases/0.2.5/files/content/ui.json",
+      "sha256": "1da3ae3fa26cbc400cbde3f9cf113d9251f0f40636434a8c789ef054bf2f42b0",
+      "size": 2416,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content.py",
+      "url": "/firmware/releases/0.2.5/files/content.py",
+      "sha256": "f7baf228b433d1c308b6844d3332458b4e1836b0444471c33414d9d3fd87ffd1",
+      "size": 2668,
+      "encoding": "utf8"
+    },
+    {
+      "path": "content_schema.py",
+      "url": "/firmware/releases/0.2.5/files/content_schema.py",
+      "sha256": "6be8d5790e09654769b44b490262d22ea27cdcff565a4b876117f67d60701837",
+      "size": 9563,
+      "encoding": "utf8"
+    },
+    {
+      "path": "main.py",
+      "url": "/firmware/releases/0.2.5/files/main.py",
+      "sha256": "65936cc36cbbe47caf9cb038e835f907b2e0b5fb82ef584f838eb21dc0f6d7b7",
+      "size": 2400,
+      "encoding": "utf8"
+    },
+    {
+      "path": "multiplayer.py",
+      "url": "/firmware/releases/0.2.5/files/multiplayer.py",
+      "sha256": "86bfcf07bb050a4884e518fc83611ba608b3dc6f9c01761fc9e314d9f00de90d",
+      "size": 1588,
+      "encoding": "utf8"
+    },
+    {
+      "path": "server.py",
+      "url": "/firmware/releases/0.2.5/files/server.py",
+      "sha256": "148fb7ea7e52f149163c7b2a4353c2383a62d0ad6a30038da1902fe7b7bd6d3e",
+      "size": 6668,
+      "encoding": "utf8"
+    },
+    {
+      "path": "sim.py",
+      "url": "/firmware/releases/0.2.5/files/sim.py",
+      "sha256": "6cf2f293ae0963a5351a81d9883e71df73078c48fe45b8710009c4413c657d9f",
+      "size": 11194,
+      "encoding": "utf8"
+    },
+    {
+      "path": "state.py",
+      "url": "/firmware/releases/0.2.5/files/state.py",
+      "sha256": "babc96c979c3eac3fffe46c5cdf606cf238aaabfa46848dfd9e1a68f5254bfc1",
+      "size": 3551,
+      "encoding": "utf8"
+    },
+    {
+      "path": "validate_content.py",
+      "url": "/firmware/releases/0.2.5/files/validate_content.py",
+      "sha256": "b6de3715a4c5c074352fd1bbdd67f0621a06040360f023ac6f61a25c07dca277",
+      "size": 1887,
+      "encoding": "utf8"
+    },
+    {
+      "path": "www/app.js",
+      "url": "/firmware/releases/0.2.5/files/www/app.js",
+      "sha256": "f91a3542472d2b7ebd693326323e613c03b95553344f42dc303322735bcd9973",
+      "size": 3481,
+      "encoding": "utf8"
+    },
+    {
+      "path": "www/index.html",
+      "url": "/firmware/releases/0.2.5/files/www/index.html",
+      "sha256": "91b298c89a5569f5170ef861f09fb5389ad413f1fc363db57eca1f0a5cf81f95",
+      "size": 421,
+      "encoding": "utf8"
+    },
+    {
+      "path": "www/style.css",
+      "url": "/firmware/releases/0.2.5/files/www/style.css",
+      "sha256": "d5ce968d22719702e3bb7fdb4eb106abeeb1d201bcf0478d0d29a3a3ebbe25c8",
+      "size": 1773,
+      "encoding": "utf8"
+    }
+  ]
+}
