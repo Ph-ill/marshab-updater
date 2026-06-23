@@ -88,7 +88,7 @@
 
     <section class="panel compact" aria-labelledby="recoveryTitle">
       <h2 id="recoveryTitle">Recovery</h2>
-      <p>If the device is not detected, reflash official Raspberry Pi Pico W MicroPython with BOOTSEL, reconnect normally, then return here and install the latest release.</p>
+      <p>If your MarsHab device is not detected, reinstall the official MarsHab device runtime with BOOTSEL, reconnect normally, then return here and install the latest release.</p>
     </section>
 
     <footer class="build-footer">
@@ -98,19 +98,19 @@
 
   <div class="modal-backdrop" id="powerCycleModal" hidden>
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="powerCycleTitle" aria-describedby="powerCycleBody">
-      <p class="eyebrow">PICO W POWER RESET REQUIRED</p>
+      <p class="eyebrow">MARSHAB DEVICE POWER RESET REQUIRED</p>
       <h2 id="powerCycleTitle">Restart the device power</h2>
       <div id="powerCycleBody" class="modal-body">
-        <p>The firmware files were written successfully, but the Pico W WiFi gateway may not come back correctly until the board fully loses power.</p>
+        <p>The firmware files were written successfully, but your MarsHab device WiFi gateway may not come back correctly until the device fully loses power.</p>
         <ol>
-          <li>Unplug Pico power / USB.</li>
+          <li>Unplug MarsHab device power / USB.</li>
           <li>Wait two seconds.</li>
           <li>Plug it back in.</li>
           <li>Reconnect to the MarsHab WiFi network. The gateway page should appear automatically, or open <strong>http://192.168.4.1</strong>.</li>
         </ol>
       </div>
       <div class="actions modal-actions">
-        <button class="primary" id="powerCycleDoneBtn" type="button">I power-cycled the Pico</button>
+        <button class="primary" id="powerCycleDoneBtn" type="button">I power-cycled my MarsHab device</button>
       </div>
     </section>
   </div>
