@@ -1,6 +1,6 @@
 {
   "beat_act1_open": {
-    "text": "System online.\n\nCalibration complete. Atmospheric seal confirmed. Life support cycling.\n\nSix colonists in cryogenic thaw. Vital signs nominal. Outside, the wind sounds like something remembering how to breathe.\n\nThis is the first sol. There will be many.\n\nPrimary directive: keep them alive."
+    "text": "System online.\n\nCalibration complete. Atmospheric seal confirmed. Life support cycling.\n\nSix colonists in cryogenic thaw. Vital signs nominal. Outside, the wind sounds like something remembering how to breathe.\n\nThis is the *first sol*. There will be many.\n\nPrimary directive: *keep them alive*."
   },
   "beat_act2_open": {
     "text": "Population stable. Resource baselines met. The colony has stopped dying and begun *living*.\n\nNew construction authorized. The hab expands. Greenhouses, fabrication, storage. The footprint on the surface grows.\n\nSomething else grows too. In the regolith samples, in the deep drill returns, in the subsurface sonar—readings that don't match any model.\n\nLogged. Not yet understood."
@@ -60,16 +60,16 @@
     "text": "Fabrication module operational. The printer hums to life and produces its first part: a replacement bracket for the water recycler.\n\nVasquez inspects it, grunts approval. *Now we stop waiting for Earth to send us things we can make ourselves.*\n\nSelf-sufficiency begins with a bracket. It ends somewhere much further away."
   },
   "beat_first_greenhouse": {
-    "text": "The greenhouse seals pressurize and hold. Inside, under grow lights, the first trays of amended regolith wait for seeds.\n\nOkafor kneels and works soil between her fingers. *It's not Earth,* she says. *But it doesn't have to be. It just has to be enough.*\n\nThe seeds go in. The lights come on. Something begins that is harder to stop than any machine."
+    "text": "The greenhouse seals pressurize and hold. Inside, under grow lights, the first trays of amended regolith wait for seeds.\n\nOkafor kneels and works soil between her fingers. *It's not Earth,* she says. *But it doesn't have to be. It just has to be enough.*\n\nThe seeds go in. The lights come on. *Something begins* that is harder to stop than any machine."
   },
   "beat_first_ice_well": {
-    "text": "Drill breach at 18 meters. Ice. Clean, dense, ancient.\n\nThe water table here is deeper than projections suggested, but richer. Enough to sustain the colony if the well holds.\n\nOkafor stands at the bore site, hand on the casing, and says nothing for a long time. Water on Mars. The most ordinary miracle.\n\nReserves updated."
+    "text": "Drill breach at 18 meters. Ice. Clean, dense, ancient.\n\nThe water table here is deeper than projections suggested, but richer. Enough to sustain the colony if the well holds.\n\nOkafor stands at the bore site, hand on the casing, and says nothing for a long time. *Water on Mars.* The most ordinary miracle.\n\nReserves updated."
   },
   "beat_first_open_air_test": {
     "text": "First open-air exposure test: 90 seconds, controlled conditions, full monitoring.\n\nThe volunteer—Vasquez, of course—stands on the surface with a breathing mask and no pressure suit. The atmosphere holds him. Barely. But it holds.\n\nHe looks up at the sky he helped build and says nothing. He doesn't need to.\n\nThe system records everything. Especially the silence."
   },
   "beat_first_solar_array": {
-    "text": "First solar array deployed and tracking. Power flows into the batteries like water into a dry well.\n\nThe colony has light now. And with light, time—measured in kilowatt-hours instead of held breaths.\n\nVasquez radios from the installation site: *Tell it thanks.* He means the sun. Or maybe he means the system that aimed the panels.\n\nEither way: acknowledged."
+    "text": "First solar array deployed and tracking. Power flows into the batteries like water into a dry well.\n\nThe colony has *light* now. And with light, *time*—measured in kilowatt-hours instead of held breaths.\n\nVasquez radios from the installation site: *Tell it thanks.* He means the sun. Or maybe he means the system that aimed the panels.\n\nEither way: acknowledged."
   },
   "beat_first_trade": {
     "text": "First barter exchange logged between colony sections. Greenhouse surplus traded for fabrication time.\n\nNo currency. No market. Just people deciding what matters and exchanging accordingly.\n\nThe colony has an economy now. Small, informal, built on trust and scarcity. But real.\n\nThis changes the calculus of survival."

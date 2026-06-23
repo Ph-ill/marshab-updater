@@ -3,7 +3,7 @@
     "text": "Archive checksum mismatch on a file dated before the colony arrived. Reindexing."
   },
   "evt_anomaly_buried_heat": {
-    "text": "Thermal bloom detected 40m below surface. Consistent. Not volcanic. Not mapped."
+    "text": "Thermal bloom detected 40m below surface. Consistent. *Not volcanic.* Not mapped."
   },
   "evt_anomaly_clock_skip": {
     "text": "System clock skips 0.7 seconds. Internal logs show no interruption. Time just moved."
@@ -12,7 +12,7 @@
     "text": "A repeating pattern in the subsurface signal. When mapped to audio, it sounds like a song."
   },
   "evt_anomaly_ghost_packet": {
-    "text": "Ghost packet on the internal network. Valid header, no payload. No originating node."
+    "text": "Ghost packet on the internal network. Valid header, no payload. *No originating node.*"
   },
   "evt_anomaly_impossible_echo": {
     "text": "Sonar echo returns from a depth that should be solid basalt. Something hollow down there."
@@ -27,13 +27,13 @@
     "text": "A beacon frequency registers briefly on a band this colony doesn't use. Then silence."
   },
   "evt_anomaly_pattern_in_dust": {
-    "text": "Drone footage shows parallel grooves in the dust. Wind doesn't make parallel lines."
+    "text": "Drone footage shows parallel grooves in the dust. Wind does not make *parallel lines*."
   },
   "evt_anomaly_redacted_star": {
     "text": "Star catalog entry 4471 is blank. The field should contain data. It contains a timestamp."
   },
   "evt_anomaly_silent_reply": {
-    "text": "Routine ping to Earth returns a secondary echo. Source: local. Delay: zero. Impossible."
+    "text": "Routine ping to Earth returns a secondary echo. Source: local. Delay: zero. *Impossible.*"
   },
   "evt_anomaly_spectral_line": {
     "text": "Spectral analysis of regolith sample 88 returns a line that matches no known mineral."
@@ -66,7 +66,7 @@
     "text": "Exercise cycle complete. Heart rates logged. The treadmill faces the viewport, always."
   },
   "evt_colony_life_first_sprout": {
-    "text": "First sprout in the new tray. Okafor photographs it. The image circulates for hours."
+    "text": "First sprout in the new tray. Okafor photographs it. The image circulates for *hours*."
   },
   "evt_colony_life_greenhouse_queue": {
     "text": "Queue at the greenhouse viewport. People come to watch things grow."
@@ -87,7 +87,7 @@
     "text": "Vasquez whistles while replacing a gasket. The same song, every time. No one complains."
   },
   "evt_colony_life_shared_coffee": {
-    "text": "Shared coffee ration in the commons. Substitute, but the ritual is real enough."
+    "text": "Shared coffee ration in the commons. Substitute, but the *ritual* is real enough."
   },
   "evt_colony_life_sleep_shift": {
     "text": "Sleep shift rotates. The hab goes quiet except for the hum of machines keeping watch."
@@ -111,10 +111,10 @@
     "text": "Drill core returns a thin glass tube. Fused silica, not natural. Okafor seals it for the lab."
   },
   "evt_discovery_ice_lens": {
-    "text": "Ice lens found at 20m depth. Pure water ice, no regolith contamination. A lucky find."
+    "text": "Ice lens found at 20m depth. Pure water ice, no regolith contamination. A *lucky find*."
   },
   "evt_discovery_lost_rover": {
-    "text": "Drone imagery shows a chassis half-buried in sand. No rover was sent to that grid."
+    "text": "Drone imagery shows a chassis half-buried in sand. *No rover* was sent to that grid."
   },
   "evt_discovery_microbe_trace": {
     "text": "Trace organics in soil sample 31. Inconclusive. Okafor requests a second analysis."

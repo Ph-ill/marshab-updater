@@ -2,23 +2,23 @@
   "act_collect_ice": {
     "flavor": "Send drones to scrape usable ice from shaded cuts.",
     "label": "Collect Ice",
-    "result_1": "Drones return heavy. The tanks gain another day of margin.",
+    "result_1": "Drones return heavy. The tanks gain another day of *margin*.",
     "result_2": "Ice retrieved. Cloudy with particulate, but the filters will sort it.",
-    "result_3": "Good haul. The shaded cuts still hold more than expected.",
+    "result_3": "Good haul. The shaded cuts still hold *more than expected*.",
     "result_4": "Drones back. The ice crackles as it warms into the hold."
   },
   "act_decode_signal": {
     "flavor": "Spend power on the recurring buried transmission.",
     "label": "Decode Signal",
-    "result_1": "Another fragment resolves. The pattern is deliberate.",
+    "result_1": "Another fragment resolves. The pattern is *deliberate*.",
     "result_2": "Partial decode. Numbers that might be coordinates.",
-    "result_3": "The signal repeats with machine precision. It has been waiting.",
+    "result_3": "The signal repeats with machine precision. It has been *waiting*.",
     "result_4": "More structure emerges. This was not meant for us. Or was it."
   },
   "act_grow_rations": {
     "flavor": "Coax calories from the first greenhouse trays.",
     "label": "Grow Rations",
-    "result_1": "New growth. The trays smell like wet soil and something green.",
+    "result_1": "New growth. The trays smell like wet soil and something *green*.",
     "result_2": "Harvest ready in a few cycles. The lights do their patient work.",
     "result_3": "Okafor adjusted the nutrient mix. The kale is actually thriving.",
     "result_4": "Growth logged. Calories accrue slowly, but they accrue."
@@ -42,16 +42,16 @@
   "act_reroute_power": {
     "flavor": "Balance batteries and sun-starved circuits.",
     "label": "Reroute Power",
-    "result_1": "Load balanced. The lights in Module 3 stop flickering.",
+    "result_1": "Load balanced. The lights in Module 3 stop *flickering*.",
     "result_2": "Power redistributed. The heaters hold for another cycle.",
-    "result_3": "Batteries rebalanced. No system is happy, but none are dying.",
+    "result_3": "Batteries rebalanced. No system is happy, but none are *dying*.",
     "result_4": "Rerouted. The grid hums at a frequency that means stability."
   },
   "act_run_atmo_processor": {
     "flavor": "Fire a slow terraforming processor cycle.",
     "label": "Pulse Atmo Processor",
     "result_1": "Processor pulsed. Atmospheric trace gases tick upward. Slowly.",
-    "result_2": "The processor exhales into the Martian sky. A small defiance.",
+    "result_2": "The processor exhales into the Martian sky. A small *defiance*.",
     "result_3": "Cycle complete. The atmosphere thickens by a fraction no one feels.",
     "result_4": "Pulsed. The sky doesn't look different yet. But it will."
   },
@@ -59,7 +59,7 @@
     "flavor": "Wake the sealed microbe vats.",
     "label": "Seed Bioreactor",
     "result_1": "The culture takes. Biomass readings climb overnight.",
-    "result_2": "Microbes stir in the dark. Life finds a way, even here.",
+    "result_2": "Microbes stir in the dark. Life finds a way, *even here*.",
     "result_3": "Bioreactor seeded. The colony's smallest workers begin their shift.",
     "result_4": "Cultures established. The vats warm with something like purpose."
   },
@@ -69,7 +69,7 @@
     "result_1": "Iron oxide, silicates, trace metals. The usual harvest.",
     "result_2": "The sifters churn. Feedstock bins tick upward.",
     "result_3": "Regolith sorted. Something glints in the fines—probably feldspar.",
-    "result_4": "Sorted. The dust yields what it always yields. Enough."
+    "result_4": "Sorted. The dust yields what it always yields. *Enough.*"
   },
   "act_stabilize_dome": {
     "flavor": "Tune pressure and thermal flex in the outer dome.",
@@ -90,9 +90,9 @@
   "act_vent_co2": {
     "flavor": "Bleed carbon dioxide from the hab loop. The scrubbers cough awake.",
     "label": "Vent CO₂",
-    "result_1": "The air thins toward breathable. Scrubbers groan their thanks.",
-    "result_2": "CO₂ drops. Someone in the bunk module takes a deeper breath.",
+    "result_1": "The air thins toward *breathable*. Scrubbers groan their thanks.",
+    "result_2": "CO₂ drops. Someone in the bunk module takes a *deeper breath*.",
     "result_3": "Vented. The hab exhales. Pressure ticks down, then steadies.",
-    "result_4": "Scrubber cycle complete. The colony breathes a little easier."
+    "result_4": "Scrubber cycle complete. The colony breathes a little *easier*."
   }
 }
