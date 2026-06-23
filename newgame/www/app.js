@@ -29,7 +29,8 @@ function fmt(n){return (Math.round(n*100)/100).toString()}
 function actionButton(a){let cd=(S.state.cooldowns||{})[a]||0,rem=Math.max(0,cd-performance.timeOrigin-Date.now()+performance.now());return `<button data-act="${a}" ${rem>0?'disabled':''}><span class=fill style="width:${rem>0?100:0}%"></span>${txt('actions',a,'label')}</button>`}
 function render(){
   res();let s=S.state,tabs=s.tabs||['hab'];
-  $('#tabs').innerHTML=tabs.map(t=>`<button data-tab=${t}>${txt('ui','ui_tab_'+t)}</button>`).join('');
+  const tabLabel=t=>txt('ui',t==='comms'?'ui_tab_trade':'ui_tab_'+t);
+  $('#tabs').innerHTML=tabs.map(t=>`<button data-tab=${t}>${tabLabel(t)}</button>`).join('');
   let html='<div class=card><h1>Act '+s.act+' // '+(s.device.hab_name||'Mars Hab')+'</h1><p class=muted>signature export: '+s.device.signature_resource+'</p></div>';
   if(S.tab==='hab')html+='<div class=card><h2>'+txt('ui','ui_header_actions')+'</h2>'+s.actions.map(actionButton).join('')+'</div><div class=card><h2>'+txt('ui','ui_header_modules')+'</h2>'+Object.keys(s.upgrades||{}).map(k=>`<button data-build="${k}">${s.upgrades[k].label}</button>`).join('')+'</div>';
   if(S.tab==='surface')html+='<div class=card><h2>Surface</h2><p>'+txt('events','evt_weather_dust_storm_minor')+'</p></div>';
