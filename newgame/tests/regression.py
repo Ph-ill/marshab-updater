@@ -48,6 +48,22 @@ def economy_offline_checks():
     assert_true(s['resources']['power']<=s['caps']['power'],(s['resources'],s['caps']))
     assert_true(report['away'],report)
 
+def pacing_checks():
+    s=state.fresh_save(0); dev=state.default_device()
+    s['resources'].update({'regolith':50000,'power':50000,'water':50000,'food':50000,'alloy':50000,'polymer':50000,'rare_metals':50000})
+    for mid in ['solar_array','ice_well','greenhouse','fab_shop','relay_array','survey_garage','dome_segment','atmo_processor','bioreactor','thermal_mirror']:
+        res=sim.build(s,mid); assert_true(res['ok'],(mid,res))
+    report=sim.advance(s,30*24*3600*1000,dev)
+    env=sim.environment(s)
+    assert_true(env['breathability_confidence']>=30,(env,report,s['resources']))
+    assert_true(s['resources']['atmosphere']<1,(env,s['resources']))
+    s['resources'].update({'regolith':50000,'power':50000,'water':50000,'food':50000,'alloy':50000,'polymer':50000,'rare_metals':50000})
+    for mid in ['solar_array','ice_well','greenhouse','fab_shop','relay_array','survey_garage','dome_segment','atmo_processor','bioreactor','thermal_mirror']:
+        while sim.available_modules(s).get(mid,{}).get('buildable'):
+            res=sim.build(s,mid); assert_true(res['ok'],(mid,res))
+    sim.advance(s,30*24*3600*1000,dev)
+    assert_true(sim.environment(s)['breathability_confidence']>=94,(sim.environment(s),s['resources']))
+
 def multiplayer_checks():
     home=state.fresh_save(0); dev=state.default_device(); dev['device_uid']='origin01'; dev['signature_resource']='ice'
     other=state.fresh_save(0); base=sim.rates(other,dev)['power']
@@ -74,7 +90,7 @@ def protected_payload_checks():
 
 def main():
     os.environ['PYTHONDONTWRITEBYTECODE']='1'
-    syntax_checks(); content_checks(); build_full_spine(); economy_offline_checks(); multiplayer_checks(); new_game_plus_checks(); protected_payload_checks()
-    print(json.dumps({'ok':True,'checks':['syntax','content','full_spine','offline','multiplayer','new_game_plus','payload_hygiene']}))
+    syntax_checks(); content_checks(); build_full_spine(); economy_offline_checks(); pacing_checks(); multiplayer_checks(); new_game_plus_checks(); protected_payload_checks()
+    print(json.dumps({'ok':True,'checks':['syntax','content','full_spine','offline','pacing','multiplayer','new_game_plus','payload_hygiene']}))
 
 if __name__=='__main__': main()
