@@ -24,17 +24,11 @@ async def send(w,status,ctype,body,extra=''):
 def portal_body(path):
     return '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=http://%s/"><title>Mars Hab Gateway</title></head><body><p>Mars Hab gateway: <a href="http://%s/">open colony control</a></p></body></html>'%(AP_IP,AP_IP)
 async def send_portal(w,path):
-    loc='Location: http://%s/\r\n'%AP_IP
-    # Captive portal detectors expect their connectivity probes to fail or redirect.
-    # Use absolute Location because clients probe arbitrary hostnames that DNS maps here.
-    if path in ('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html'):
-        await send(w,302,'text/html; charset=utf-8',portal_body(path),loc)
-    elif path in ('/hotspot-detect.html','/library/test/success.html','/success.txt'):
-        await send(w,200,'text/html; charset=utf-8',portal_body(path))
-    elif path in ('/ncsi.txt','/connecttest.txt'):
-        await send(w,200,'text/html; charset=utf-8',portal_body(path))
-    else:
-        await send(w,302,'text/html; charset=utf-8',portal_body(path),loc)
+    # Be deliberately obvious to OS captive-portal detectors. Returning a real
+    # HTML body instead of 204/no-content is what makes phones open their sign-in
+    # sheet. Avoid relying on redirects; some mobile stacks cache or suppress
+    # them on repeat joins.
+    await send(w,200,'text/html; charset=utf-8',portal_body(path))
 def file_bytes(path):
     with open(path,'rb') as f: return f.read()
 async def read_req(r):
@@ -84,7 +78,7 @@ async def api(path,method,body):
             if k in data: dev[k]=data[k]
         save_device(dev); return {'ok':True,'device':dev}
     return {'ok':False,'error':'not_found'}
-PORTAL=('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html','/hotspot-detect.html','/library/test/success.html','/ncsi.txt','/connecttest.txt','/success.txt','/redirect')
+PORTAL=('/generate_204','/gen_204','/mobile/status.php','/connectivity-check.html','/hotspot-detect.html','/library/test/success.html','/ncsi.txt','/connecttest.txt','/success.txt','/redirect','/canonical.html','/chat','/fwlink','/kindle-wifi/wifiredirect.html','/check_network_status.txt')
 async def handle(r,w):
     try:
         req=await read_req(r)
@@ -96,7 +90,10 @@ async def handle(r,w):
         else:
             p='www/index.html' if path=='/' else 'www/'+path.lstrip('/')
             if '..' in p: raise OSError
-            await send(w,200,mime(p),file_bytes(p))
+            try:
+                await send(w,200,mime(p),file_bytes(p))
+            except OSError:
+                await send_portal(w,path)
     except Exception as e:
         try: await send(w,500,'application/json',js({'ok':False,'error':str(e)}))
         except Exception: pass

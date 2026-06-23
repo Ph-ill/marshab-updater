@@ -4,7 +4,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 sys.modules.setdefault('machine',types.SimpleNamespace(unique_id=lambda: b'abc123'))
 sys.modules.setdefault('ubinascii',binascii)
-import state, sim, content, multiplayer
+import state, sim, content, multiplayer, server
 
 def assert_true(x,msg):
     if not x: raise AssertionError(msg)
@@ -88,9 +88,15 @@ def protected_payload_checks():
     bad=[str(p) for p in ROOT.rglob('__pycache__')]
     assert_true(not bad,bad)
 
+def captive_portal_checks():
+    for p in ('/generate_204','/gen_204','/hotspot-detect.html','/ncsi.txt','/connecttest.txt','/canonical.html','/fwlink'):
+        assert_true(p in server.PORTAL,p)
+    body=server.portal_body('/generate_204')
+    assert_true('Mars Hab gateway' in body and '192.168.4.1' in body,body)
+
 def main():
     os.environ['PYTHONDONTWRITEBYTECODE']='1'
-    syntax_checks(); content_checks(); build_full_spine(); economy_offline_checks(); pacing_checks(); multiplayer_checks(); new_game_plus_checks(); protected_payload_checks()
-    print(json.dumps({'ok':True,'checks':['syntax','content','full_spine','offline','pacing','multiplayer','new_game_plus','payload_hygiene']}))
+    syntax_checks(); content_checks(); build_full_spine(); economy_offline_checks(); pacing_checks(); multiplayer_checks(); new_game_plus_checks(); captive_portal_checks(); protected_payload_checks()
+    print(json.dumps({'ok':True,'checks':['syntax','content','full_spine','offline','pacing','multiplayer','new_game_plus','captive_portal','payload_hygiene']}))
 
 if __name__=='__main__': main()
