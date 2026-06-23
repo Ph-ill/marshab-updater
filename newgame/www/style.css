@@ -37,3 +37,7 @@ nav button.new{background:#28190d!important;color:#ffefbd!important;border-color
 nav button.flash{animation:logDing 1.8s ease-out both!important}
 @keyframes logDing{0%{transform:translateY(0) scale(1);filter:brightness(1)}8%{transform:translateY(-3px) scale(1.08);filter:brightness(1.8)}18%{transform:translateY(0) scale(1.02)}32%{box-shadow:0 0 0 4px rgba(255,208,138,.28),0 0 26px rgba(255,180,84,.7),inset 0 0 18px rgba(255,180,84,.18)}65%{filter:brightness(1.25)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
 @media(prefers-reduced-motion:reduce){nav button.flash{animation:none!important}}
+
+.topTools .actBtn,.topTools .settingsBtn,.topTools .guideBtn{height:44px!important;min-height:44px!important;max-height:44px!important;align-self:stretch!important}
+.topTools .actBtn{padding:0!important;font-size:15px!important;line-height:1!important}
+@media(max-width:500px){.topTools .actBtn,.topTools .settingsBtn,.topTools .guideBtn{height:44px!important;min-height:44px!important;max-height:44px!important}}
