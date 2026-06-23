@@ -1,64 +1,33 @@
-const S={state:null,tab:'hab',content:{},lastSync:0,diag:null};
+const S={state:null,tab:'hab',content:{},diag:null,lastMsg:''};
 const $=q=>document.querySelector(q);
-const log=m=>{let li=document.createElement('li');li.textContent=m;$('#log').prepend(li)};
+const TYPES=['actions','beats','archive','events','away','ui','ending','letters'];
+function log(m){if(!m)return;let li=document.createElement('li');li.textContent=m;$('#log').prepend(li)}
 async function api(p,o={}){let r=await fetch(p,{method:o.body?'POST':(o.method||'GET'),headers:{'Content-Type':'application/json'},body:o.body&&JSON.stringify(o.body)});return r.json()}
 async function loadContent(t){if(!S.content[t])S.content[t]=await api('/api/content/'+t);return S.content[t]}
-function val(v,field){
-  if(!v)return '';
-  if(typeof v==='string')return v;
-  if(field&&v[field])return v[field];
-  if(v.text)return v.text;
-  if(v.body&&v.title)return v.title+'\n\n'+v.body;
-  if(v.body)return v.body;
-  if(v.title)return v.title;
-  if(v.label)return v.label;
-  return JSON.stringify(v);
-}
-function txt(t,id,field){
-  let d=S.content[t]||{}, key=id, result=null;
-  if(t==='actions'){
-    if(id.includes(':')){let p=id.split(':');key=p[0];result=p[1]}
-    else if(!id.startsWith('act_'))key='act_'+id;
-  }
-  let v=d[key];
-  if(!v)return '[STUB '+key+(result?':'+result:'')+']';
-  return val(v,field||result);
-}
-function res(){let s=S.state,r=s.resources||{},rates=s.rates||{};$('#res').innerHTML=Object.keys(r).slice(0,9).map(k=>`<div class=r>${k}: ${fmt(r[k])}<div class=rate>${rates[k]?fmt(rates[k]*86400)+'/sol':''}</div></div>`).join('')}
-function fmt(n){return (Math.round(n*100)/100).toString()}
-function actionButton(a){let cd=(S.state.cooldowns||{})[a]||0,rem=Math.max(0,cd-performance.timeOrigin-Date.now()+performance.now());return `<button data-act="${a}" ${rem>0?'disabled':''}><span class=fill style="width:${rem>0?100:0}%"></span>${txt('actions',a,'label')}</button>`}
-function render(){
-  res();let s=S.state,tabs=s.tabs||['hab'];
-  const tabLabel=t=>t==='diag'?'Diag':txt('ui',t==='comms'?'ui_tab_trade':'ui_tab_'+t);
-  tabs=tabs.includes('diag')?tabs:tabs.concat(['diag']);
-  $('#tabs').innerHTML=tabs.map(t=>`<button data-tab=${t}>${tabLabel(t)}</button>`).join('');
-  let html='<div class=card><h1>Act '+s.act+' // '+(s.device.hab_name||'Mars Hab')+'</h1><p class=muted>signature export: '+s.device.signature_resource+'</p></div>';
-  if(S.tab==='hab')html+='<div class=card><h2>'+txt('ui','ui_header_actions')+'</h2>'+s.actions.map(actionButton).join('')+'</div><div class=card><h2>'+txt('ui','ui_header_modules')+'</h2>'+Object.keys(s.upgrades||{}).map(k=>`<button data-build="${k}">${s.upgrades[k].label}</button>`).join('')+'</div>';
-  if(S.tab==='surface')html+='<div class=card><h2>Surface</h2><p>'+txt('events','evt_weather_dust_storm_minor')+'</p></div>';
-  if(S.tab==='comms')html+='<div class=card><h2>'+txt('ui','ui_tab_trade')+'</h2><button id=pkg>'+txt('ui','ui_button_copy_code')+'</button><p id=code class=code></p><textarea id=redeem placeholder="paste code"></textarea><button id=redeemBtn>'+txt('ui','ui_button_redeem_code')+'</button><button id=tend>'+txt('ui','ui_button_tend')+'</button></div>';
-  if(S.tab==='archive')html+='<div class=card><h2>'+txt('ui','ui_header_archive')+'</h2>'+s.archive.map(id=>`<p>${txt('archive',id).replace(/\n/g,'<br>')}</p>`).join('')+'</div>';
-  if(S.tab==='diag')html+='<div class=card><h2>Diagnostics</h2><button id=diagRefresh>Refresh diagnostics</button><pre id=diagOut>'+(S.diag?JSON.stringify(S.diag,null,2):'loading diagnostics...')+'</pre></div>';
-  $('#screen').innerHTML=html;
-}
-async function sync(){
-  let min=new Promise(r=>setTimeout(r,1200));let p=api('/api/sync',{body:{now:Date.now()}});let [st]=await Promise.all([p,min]);S.state=st;
-  await Promise.all(['actions','beats','archive','events','away','ui','ending','letters'].map(loadContent));
-  $('#load').classList.add('hide');
-  if(st.away_report&&st.away_report.elapsed_ms){
-    let parts=(st.away_report.away||[]).map(id=>txt('away',id));
-    log(parts.length?parts.join(' / '):('while away: '+Object.entries(st.away_report.gains).map(([k,v])=>k+' '+fmt(v)).join(', ')));
-  }
-  render();
-}
-document.body.onclick=async e=>{
-  let b=e.target.closest('button');if(!b)return;
-  if(b.dataset.tab){S.tab=b.dataset.tab;render(); if(S.tab==='diag'&&!S.diag){S.diag=await api('/api/diagnostics');render()}}
-  if(b.dataset.act){S.state=await api('/api/action',{body:{action_id:b.dataset.act}});if(S.state.result&&S.state.result.event)log(txt('actions',S.state.result.event));render()}
-  if(b.dataset.build){S.state=await api('/api/action',{body:{action_id:'build',module_id:b.dataset.build}});if(S.state.result&&S.state.result.beats)(S.state.result.beats||[]).forEach(id=>log(txt('beats',id)));render()}
-  if(b.id==='pkg'){let r=await api('/api/trade/package');$('#code').textContent=r.code}
-  if(b.id==='redeemBtn'){S.state=await api('/api/trade/redeem',{body:{code:$('#redeem').value}});render()}
-  if(b.id==='tend'){S.state=await api('/api/tend',{body:{visitor:'guest'}});render()}
-  if(b.id==='diagRefresh'){S.diag=await api('/api/diagnostics');render()}
-};
+function val(v,field){if(!v)return '';if(typeof v==='string')return v;if(field&&v[field])return v[field];if(v.text)return v.text;if(v.body&&v.title)return v.title+'\n\n'+v.body;if(v.body)return v.body;if(v.title)return v.title;if(v.label)return v.label;return JSON.stringify(v)}
+function txt(t,id,field){let d=S.content[t]||{},key=id,result=null;if(t==='actions'){if(id.includes(':')){let p=id.split(':');key=p[0];result=p[1]}else if(!id.startsWith('act_'))key='act_'+id}let v=d[key];if(!v)return '[STUB '+key+(result?':'+result:'')+']';return val(v,field||result)}
+function fmt(n){if(n===undefined||n===null)return '0';if(Math.abs(n)>=100)return Math.round(n).toString();if(Math.abs(n)>=10)return (Math.round(n*10)/10).toString();return (Math.round(n*100)/100).toString()}
+function pct(n){return fmt((n||0)*100)+'%'}
+function nice(k){return txt('ui','ui_resource_'+k)||k.replace(/_/g,' ')}
+function cost(c){return Object.keys(c||{}).map(k=>nice(k)+' '+fmt(c[k])).join(' · ')||'free'}
+function rate(v,k){if(!v)return '';let per=v*86400;if(k==='atmosphere'||k==='temperature'||k==='biomass')return (per>=0?'+':'')+fmt(per*100)+'/sol';return (per>=0?'+':'')+fmt(per)+'/sol'}
+function res(){let s=S.state,r=s.resources||{},rates=s.rates||{},caps=s.caps||{};$('#res').innerHTML=Object.keys(r).map(k=>`<div class=r><b>${nice(k)}</b> ${k==='atmosphere'||k==='temperature'||k==='biomass'?pct(r[k]):fmt(r[k])}${caps[k]&&caps[k]<999999?' / '+fmt(caps[k]):''}<div class=rate>${rate(rates[k],k)}</div></div>`).join('')}
+function tabs(){let t=(S.state.tabs||['hab']).slice();['hab','surface','colony','comms','archive','ending'].forEach(x=>{if(t.includes(x))return});if(!t.includes('diag'))t.push('diag');return t}
+function tabLabel(t){if(t==='diag')return 'Diag';if(t==='comms')return txt('ui','ui_tab_trade');return txt('ui','ui_tab_'+t)}
+function actionButton(a){let cd=(S.state.cooldowns||{})[a]||0,rem=Math.max(0,cd-Date.now());let w=rem?Math.max(0,Math.min(100,rem/((a==='open_airlock'?300:15)*1000)*100)):0;return `<button data-act="${a}" ${rem>0?'disabled':''}><span class=fill style="width:${w}%"></span><b>${txt('actions',a,'label')}</b><small>${txt('actions',a,'flavor')}</small>${rem>0?`<em>${Math.ceil(rem/1000)}s</em>`:''}</button>`}
+function moduleButton(id,m){let owned=m.owned||0,can=m.buildable!==false;return `<button data-build="${id}" ${can?'':'disabled'}><b>${m.label} ${owned?`×${owned}`:''}</b><small>${m.desc||''}</small><small>cost: ${cost(m.cost)}</small><small>rates: ${cost(m.rates||{})}</small></button>`}
+function storyList(type,ids){if(!ids||!ids.length)return '<p class=muted>Nothing recovered yet.</p>';return ids.map(id=>`<article class=entry>${txt(type,id).replace(/\n/g,'<br>')}</article>`).join('')}
+function render(){if(!S.state)return;res();let s=S.state;$('#tabs').innerHTML=tabs().map(t=>`<button data-tab=${t} class=${S.tab===t?'on':''}>${tabLabel(t)}</button>`).join('');let html=`<div class=card><h1>Act ${s.act} // ${(s.device&&s.device.hab_name)||'Mars Hab'}</h1><p>${s.goal||''}</p><p class=muted>firmware ${s.version||'?'} · signature export: ${(s.device&&s.device.signature_resource)||'unknown'}</p>${S.lastMsg?`<p class=msg>${S.lastMsg}</p>`:''}</div>`;
+ if(S.tab==='hab')html+=`<div class=card><h2>${txt('ui','ui_header_actions')}</h2>${(s.actions||[]).map(actionButton).join('')}</div><div class=card><h2>${txt('ui','ui_header_modules')}</h2>${Object.keys(s.upgrades||{}).map(k=>moduleButton(k,s.upgrades[k])).join('')}</div>`;
+ if(S.tab==='surface')html+=`<div class=card><h2>Surface</h2><p>${txt('events','evt_weather_dust_storm_minor')}</p><p class=muted>Use survey and terraforming actions as they unlock. Surface events land in the log and archive.</p></div>`;
+ if(S.tab==='colony')html+=`<div class=card><h2>Colony</h2><p>Population ${fmt((s.resources||{}).population||0)} / ${fmt((s.caps||{}).population||12)}</p>${storyList('letters',s.letters)}</div>`;
+ if(S.tab==='comms')html+=`<div class=card><h2>${txt('ui','ui_tab_trade')}</h2><button id=pkg>${txt('ui','ui_button_copy_code')}</button><p id=code class=code></p><textarea id=redeem placeholder="paste code"></textarea><button id=redeemBtn>${txt('ui','ui_button_redeem_code')}</button><button id=tend>${txt('ui','ui_button_tend')}</button></div>`;
+ if(S.tab==='archive')html+=`<div class=card><h2>${txt('ui','ui_header_archive')}</h2>${storyList('archive',s.archive)}</div><div class=card><h2>${txt('ui','ui_header_letters')}</h2>${storyList('letters',s.letters)}</div>`;
+ if(S.tab==='ending')html+=`<div class=card><h2>${txt('ui','ui_header_ending')}</h2>${storyList('ending',s.ending)}</div>`;
+ if(S.tab==='diag')html+=`<div class=card><h2>Diagnostics</h2><button id=diagRefresh>Refresh diagnostics</button><pre id=diagOut>${S.diag?JSON.stringify(S.diag,null,2):'loading diagnostics...'}</pre></div>`;
+ $('#screen').innerHTML=html}
+async function sync(){let min=new Promise(r=>setTimeout(r,1200));let p=api('/api/sync',{body:{now:Date.now()}});let [st]=await Promise.all([p,min]);S.state=st;await Promise.all(TYPES.map(loadContent));$('#load').classList.add('hide');if(st.away_report&&st.away_report.elapsed_ms){let parts=(st.away_report.away||[]).map(id=>txt('away',id));(st.away_report.beats||[]).forEach(id=>log(txt('beats',id)));log(parts.length?parts.join(' / '):('while away: '+Object.entries(st.away_report.gains||{}).map(([k,v])=>nice(k)+' '+fmt(v)).join(', ')))}render()}
+async function refreshDiag(){S.diag=await api('/api/diagnostics');render()}
+document.body.onclick=async e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.tab){S.tab=b.dataset.tab;render();if(S.tab==='diag'&&!S.diag)await refreshDiag();return}if(b.dataset.act){let st=await api('/api/action',{body:{action_id:b.dataset.act}});S.state=st;S.lastMsg=st.result&&st.result.ok?'action complete':((st.result&&st.result.error)||'action failed');if(st.result&&st.result.event)log(txt('actions',st.result.event));if(st.result&&st.result.beats)(st.result.beats||[]).forEach(id=>log(txt('beats',id)));render();return}if(b.dataset.build){let st=await api('/api/action',{body:{action_id:'build',module_id:b.dataset.build}});S.state=st;S.lastMsg=st.result&&st.result.ok?'module built':((st.result&&st.result.error)||'build failed');if(st.result&&st.result.beats)(st.result.beats||[]).forEach(id=>log(txt('beats',id)));render();return}if(b.id==='pkg'){let r=await api('/api/trade/package');$('#code').textContent=r.code;return}if(b.id==='redeemBtn'){S.state=await api('/api/trade/redeem',{body:{code:$('#redeem').value}});S.lastMsg=(S.state.result&&S.state.result.ok)?'package redeemed':((S.state.result&&S.state.result.error)||'redeem failed');render();return}if(b.id==='tend'){S.state=await api('/api/tend',{body:{visitor:'guest'}});S.lastMsg='host tended';render();return}if(b.id==='diagRefresh'){await refreshDiag();return}};
 setInterval(async()=>{if(!S.state)return;S.state=await api('/api/state');render()},2000);
 sync();
