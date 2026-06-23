@@ -43,7 +43,7 @@ function res(){let s=S.state,r=s.resources||{},rates=s.rates||{},caps=s.caps||{}
  let secondary=['atmosphere','temperature','biomass','ice','alloy','polymer','rare_metals'];
  let relevant=k=>r[k]!==undefined&&((r[k]||0)>0||(rates[k]||0)!==0||['atmosphere','temperature','biomass'].includes(k)&&((s.act||1)>=3));
  let shown=primary.filter(k=>r[k]!==undefined), hidden=secondary.filter(relevant);
- let chip=k=>`<div class=r data-res="${k}"><b>${icon(k)} <span>${nice(k)}</span></b><strong>${k==='atmosphere'||k==='temperature'||k==='biomass'?pct(r[k]):fmt(r[k])}${S.resOpen&&caps[k]&&caps[k]<999999?' / '+fmt(caps[k]):''}</strong><em>${rate(rates[k],k)}</em></div>`;
+ let chip=k=>`<div class=r data-res="${k}" data-label="${nice(k)}"><b>${icon(k)} <span>${nice(k)}</span></b><strong>${k==='atmosphere'||k==='temperature'||k==='biomass'?pct(r[k]):fmt(r[k])}${S.resOpen&&caps[k]&&caps[k]<999999?' / '+fmt(caps[k]):''}</strong><em>${rate(rates[k],k)}</em></div>`;
  $('#res').innerHTML=`<div class=resTop>${shown.map(chip).join('')}<button id=resMore class=resMore>${S.resOpen?'Less ▲':'More ▾'} ${hidden.length?`(${hidden.length})`:''}</button></div>${S.resOpen&&hidden.length?`<div class=resDetail>${hidden.map(chip).join('')}</div>`:''}`;
 }
 function tabs(){let t=(S.state.tabs||['hab']).slice().filter(x=>x!=='diag');if(!t.includes('hab'))t.unshift('hab');return t.slice(0,4)}
