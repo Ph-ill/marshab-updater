@@ -1,22 +1,23 @@
 const S={state:null,tab:'hab',content:{},diag:null,lastMsg:'',fetchedAt:0,logSeeded:false};
 const $=q=>document.querySelector(q);
 const TYPES=['actions','beats','archive','events','away','ui','ending','letters'];
+const FALLBACK={ui_tab_hab:'Hab',ui_tab_surface:'Surface',ui_tab_colony:'Colony',ui_tab_trade:'Trade',ui_tab_archive:'Archive',ui_tab_ending:'End',ui_header_actions:'Operations',ui_header_archive:'Archive',ui_header_letters:'Letters',ui_header_ending:'Finale',ui_button_copy_code:'Copy Code',ui_button_redeem_code:'Redeem Code',ui_button_tend:'Tend',ui_resource_o2:'O₂',ui_resource_power:'Power',ui_resource_water:'Water',ui_resource_food:'Rations',ui_resource_regolith:'Regolith',ui_resource_population:'Crew',ui_resource_atmosphere:'Atmosphere',ui_resource_temperature:'Temp',ui_resource_biomass:'Biomass',ui_resource_alloy:'Alloy',ui_resource_polymer:'Polymer',ui_resource_rare_metals:'Rare Metals',ui_resource_ice:'Ice'};
 function log(m){if(!m)return;let li=document.createElement('li');li.textContent=m;$('#log').prepend(li)}
 async function api(p,o={}){let r=await fetch(p,{method:o.body?'POST':(o.method||'GET'),headers:{'Content-Type':'application/json'},body:o.body&&JSON.stringify(o.body)});return r.json()}
 function carried(){try{return JSON.parse(localStorage.getItem('marsHabPackages')||'[]')}catch(e){return []}}
 function saveCarried(a){try{localStorage.setItem('marsHabPackages',JSON.stringify(a.slice(-12)))}catch(e){}}
 function rememberCode(c){let a=carried();if(c&&!a.includes(c)){a.push(c);saveCarried(a)}}
 function forgetCode(c){saveCarried(carried().filter(x=>x!==c))}
-async function loadContent(t){if(!S.content[t])S.content[t]=await api('/api/content/'+t);return S.content[t]}
+async function loadContent(t){if(!S.content[t]){try{S.content[t]=await api('/api/content/'+t)}catch(e){S.content[t]={}}}return S.content[t]}
 function val(v,field){if(!v)return '';if(typeof v==='string')return v;if(field&&v[field])return v[field];if(v.text)return v.text;if(v.body&&v.title)return v.title+'\n\n'+v.body;if(v.body)return v.body;if(v.title)return v.title;if(v.label)return v.label;return JSON.stringify(v)}
-function txt(t,id,field){let d=S.content[t]||{},key=id,result=null;if(t==='actions'){if(id.includes(':')){let p=id.split(':');key=p[0];result=p[1]}else if(!id.startsWith('act_'))key='act_'+id}let v=d[key];if(!v)return '[STUB '+key+(result?':'+result:'')+']';return val(v,field||result)}
+function txt(t,id,field){let d=S.content[t]||{},key=id,result=null;if(t==='actions'){if(id.includes(':')){let p=id.split(':');key=p[0];result=p[1]}else if(!id.startsWith('act_'))key='act_'+id}let v=d[key];if(!v&&t==='ui')return FALLBACK[key]||FALLBACK[id]||id.replace(/^ui_(tab|resource|header|button)_/,'').replace(/_/g,' ');if(!v)return '[STUB '+key+(result?':'+result:'')+']';return val(v,field||result)}
 function line(id){if(!id)return '';if(id.startsWith('act_'))return txt('actions',id);if(id.startsWith('beat_'))return txt('beats',id);if(id.startsWith('evt_'))return txt('events',id);if(id.startsWith('away_'))return txt('away',id);if(id.startsWith('end_'))return txt('ending',id);return id}
 function fmt(n){if(n===undefined||n===null)return '0';if(Math.abs(n)>=100)return Math.round(n).toString();if(Math.abs(n)>=10)return (Math.round(n*10)/10).toString();return (Math.round(n*100)/100).toString()}
 function pct(n){return fmt((n||0)*100)+'%'}
 function nice(k){return txt('ui','ui_resource_'+k)||k.replace(/_/g,' ')}
 function cost(c){return Object.keys(c||{}).map(k=>nice(k)+' '+fmt(c[k])).join(' · ')||'free'}
 function rate(v,k){if(!v)return '';let per=v*86400;if(k==='atmosphere'||k==='temperature'||k==='biomass')return (per>=0?'+':'')+fmt(per*100)+'/sol';return (per>=0?'+':'')+fmt(per)+'/sol'}
-function res(){let s=S.state,r=s.resources||{},rates=s.rates||{},caps=s.caps||{};$('#res').innerHTML=Object.keys(r).map(k=>`<div class=r><b>${nice(k)}</b> ${k==='atmosphere'||k==='temperature'||k==='biomass'?pct(r[k]):fmt(r[k])}${caps[k]&&caps[k]<999999?' / '+fmt(caps[k]):''}<div class=rate>${rate(rates[k],k)}</div></div>`).join('')}
+function res(){let s=S.state,r=s.resources||{},rates=s.rates||{},caps=s.caps||{},order=['o2','power','water','food','regolith','population','atmosphere','temperature','biomass','ice','alloy','polymer','rare_metals'];$('#res').innerHTML=order.filter(k=>r[k]!==undefined).map(k=>`<div class=r><b>${nice(k)}</b><span>${k==='atmosphere'||k==='temperature'||k==='biomass'?pct(r[k]):fmt(r[k])}${caps[k]&&caps[k]<999999?' / '+fmt(caps[k]):''}</span><em>${rate(rates[k],k)}</em></div>`).join('')}
 function tabs(){let t=(S.state.tabs||['hab']).slice();['hab','surface','colony','comms','archive','ending'].forEach(x=>{if(t.includes(x))return});if(!t.includes('diag'))t.push('diag');return t}
 function tabLabel(t){if(t==='diag')return 'Diag';if(t==='comms')return txt('ui','ui_tab_trade');return txt('ui','ui_tab_'+t)}
 function serverNow(){return (S.state.now_ms||0)+(Date.now()-(S.fetchedAt||Date.now()))}
