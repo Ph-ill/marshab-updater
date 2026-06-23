@@ -1,0 +1,11 @@
+MAX_CATCHUP_MS = 30 * 24 * 60 * 60 * 1000
+SIM_TICK_MS = 1000
+PERSIST_INTERVAL_MS = 45000
+LOAD_MIN_MS = 1200
+AP_IP = '192.168.4.1'
+HTTP_PORT = 80
+DNS_PORT = 53
+SAVE_VERSION = 1
+IDENTITY_VERSION = 1
+FIRMWARE_VERSION = '0.2.3'
+PROTECTED_PATHS = ('data/device.json','data/device.bak','data/save.json','data/save.bak','data/passport.json')
