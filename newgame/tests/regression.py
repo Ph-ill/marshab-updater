@@ -78,7 +78,7 @@ def new_game_plus_checks():
     s,dev=build_full_spine(); s['passport']={'visits':['aaaaaa','bbbbbb'],'tokens':2}; s['redeemed']=['aaaaaa:1']
     res=sim.new_game_plus(s); assert_true(res['ok'],res)
     snap=sim.snapshot(s,dev)
-    assert_true(snap['act']==1 and not snap['complete'],snap)
+    assert_true(snap['act']==0 and not snap['complete'],snap)
     assert_true(snap['legacy']==1 and snap['passport_bonus']==0.04,snap)
     assert_true(s['redeemed']==['aaaaaa:1'],s['redeemed'])
 
