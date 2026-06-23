@@ -21,7 +21,12 @@ def redeem(state,code):
         key=origin+':'+seq
         if key in state.setdefault('redeemed',[]): return {'ok':False,'error':'already redeemed'}
         state['redeemed'].append(key); state.setdefault('resources',{})[res]=state['resources'].get(res,0)+int(amt)
-        return {'ok':True,'resource':res,'amount':int(amt),'origin':origin}
+        p=state.setdefault('passport',{'visits':[],'tokens':0})
+        p.setdefault('visits',[]); p.setdefault('tokens',0)
+        first=origin not in p['visits']
+        if first:
+            p['visits'].append(origin); p['tokens']=p.get('tokens',0)+1
+        return {'ok':True,'resource':res,'amount':int(amt),'origin':origin,'new_visit':first,'passport_visits':len(p['visits'])}
     except Exception as e: return {'ok':False,'error':'invalid'}
 def tend(state,visitor='guest'):
     key=visitor[:12]; now=time.ticks_ms() if hasattr(time,'ticks_ms') else int(time.time()*1000); state.setdefault('tends',{})[key]={'until_ms':now+6*60*60*1000,'boost':0.1}

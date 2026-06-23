@@ -91,7 +91,8 @@ def away_fragments(s,gains,event_ids,sec):
     return out
 
 def rates(s,device=None):
-    legacy=1+(s.get('legacy',0)*0.05)
+    passport=1+(len(s.get('passport',{}).get('visits',[]))*0.02)
+    legacy=(1+(s.get('legacy',0)*0.05))*passport
     r={'o2':-0.001*s['resources'].get('population',0),'power':0.006*legacy,'water':-0.0005*s['resources'].get('population',0),'food':-0.0004*s['resources'].get('population',0),'regolith':0.002*legacy}
     for mid,n in s.get('modules',{}).items():
         m=MODULES.get(mid,{})
@@ -121,7 +122,8 @@ def goal(s):
     return 'Payoff: complete the airlock protocol and read the ending sequence.'
 
 def snapshot(s,device=None):
-    return {'version':FIRMWARE_VERSION,'device':device or {},'act':s.get('act',1),'goal':goal(s),'complete':s.get('complete',False),'legacy':s.get('legacy',0),'environment':environment(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
+    passport=s.get('passport',{'visits':[],'tokens':0})
+    return {'version':FIRMWARE_VERSION,'device':device or {},'act':s.get('act',1),'goal':goal(s),'complete':s.get('complete',False),'legacy':s.get('legacy',0),'passport':passport,'passport_bonus':round(len(passport.get('visits',[]))*0.02,2),'environment':environment(s),'resources':s.get('resources',{}),'caps':s.get('caps',{}),'rates':rates(s,device),'modules':s.get('modules',{}),'actions':available_actions(s),'upgrades':available_modules(s),'cooldowns':s.get('cooldowns',{}),'tabs':s.get('unlocked_tabs',[]),'archive':s.get('archive',[]),'letters':s.get('letters',[]),'ending':s.get('ending',[]),'events':s.get('events',[])[-30:]}
 
 def clamp_res(s):
     caps=s.setdefault('caps',{})
