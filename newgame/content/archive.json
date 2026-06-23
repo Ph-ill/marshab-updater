@@ -1,50 +1,194 @@
 {
-  "arc_colony_journal_01": "[STUB arc_colony_journal_01] Archive strand colony_journal entry 01. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_02": "[STUB arc_colony_journal_02] Archive strand colony_journal entry 02. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_03": "[STUB arc_colony_journal_03] Archive strand colony_journal entry 03. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_04": "[STUB arc_colony_journal_04] Archive strand colony_journal entry 04. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_05": "[STUB arc_colony_journal_05] Archive strand colony_journal entry 05. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_06": "[STUB arc_colony_journal_06] Archive strand colony_journal entry 06. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_07": "[STUB arc_colony_journal_07] Archive strand colony_journal entry 07. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_08": "[STUB arc_colony_journal_08] Archive strand colony_journal entry 08. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_09": "[STUB arc_colony_journal_09] Archive strand colony_journal entry 09. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_colony_journal_10": "[STUB arc_colony_journal_10] Archive strand colony_journal entry 10. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_01": "[STUB arc_precursor_01] Archive strand precursor entry 01. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_02": "[STUB arc_precursor_02] Archive strand precursor entry 02. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_03": "[STUB arc_precursor_03] Archive strand precursor entry 03. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_04": "[STUB arc_precursor_04] Archive strand precursor entry 04. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_05": "[STUB arc_precursor_05] Archive strand precursor entry 05. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_06": "[STUB arc_precursor_06] Archive strand precursor entry 06. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_07": "[STUB arc_precursor_07] Archive strand precursor entry 07. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_08": "[STUB arc_precursor_08] Archive strand precursor entry 08. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_09": "[STUB arc_precursor_09] Archive strand precursor entry 09. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_10": "[STUB arc_precursor_10] Archive strand precursor entry 10. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_11": "[STUB arc_precursor_11] Archive strand precursor entry 11. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_precursor_12": "[STUB arc_precursor_12] Archive strand precursor entry 12. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_01": "[STUB arc_signal_01] Archive strand signal entry 01. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_02": "[STUB arc_signal_02] Archive strand signal entry 02. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_03": "[STUB arc_signal_03] Archive strand signal entry 03. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_04": "[STUB arc_signal_04] Archive strand signal entry 04. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_05": "[STUB arc_signal_05] Archive strand signal entry 05. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_06": "[STUB arc_signal_06] Archive strand signal entry 06. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_07": "[STUB arc_signal_07] Archive strand signal entry 07. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_signal_08": "[STUB arc_signal_08] Archive strand signal entry 08. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_01": "[STUB arc_system_memory_01] Archive strand system_memory entry 01. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_02": "[STUB arc_system_memory_02] Archive strand system_memory entry 02. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_03": "[STUB arc_system_memory_03] Archive strand system_memory entry 03. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_04": "[STUB arc_system_memory_04] Archive strand system_memory entry 04. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_05": "[STUB arc_system_memory_05] Archive strand system_memory entry 05. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_06": "[STUB arc_system_memory_06] Archive strand system_memory entry 06. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_07": "[STUB arc_system_memory_07] Archive strand system_memory entry 07. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_08": "[STUB arc_system_memory_08] Archive strand system_memory entry 08. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_09": "[STUB arc_system_memory_09] Archive strand system_memory entry 09. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_system_memory_10": "[STUB arc_system_memory_10] Archive strand system_memory entry 10. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_01": "[STUB arc_terraforming_01] Archive strand terraforming entry 01. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_02": "[STUB arc_terraforming_02] Archive strand terraforming entry 02. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_03": "[STUB arc_terraforming_03] Archive strand terraforming entry 03. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_04": "[STUB arc_terraforming_04] Archive strand terraforming entry 04. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_05": "[STUB arc_terraforming_05] Archive strand terraforming entry 05. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_06": "[STUB arc_terraforming_06] Archive strand terraforming entry 06. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_07": "[STUB arc_terraforming_07] Archive strand terraforming entry 07. Progressive mystery/lore chain; sequence must read in order.",
-  "arc_terraforming_08": "[STUB arc_terraforming_08] Archive strand terraforming entry 08. Progressive mystery/lore chain; sequence must read in order."
+  "arc_colony_journal_01": {
+    "body": "Okafor's personal log, recovered from the colony commons terminal.\n\n*The first tray came in today. Kale, mostly. Some radishes. Not much—enough for one meal shared among eight people, if you define 'meal' generously.*\n\n*But the taste. My God, the taste. We sat in the commons and ate leaves grown in Martian soil under Martian light and nobody said a word for five minutes. Vasquez, who I have never seen show emotion about anything that wasn't a pressure seal, put his fork down and closed his eyes.*\n\n*This is why we're here. Not the science. Not the mission parameters. This. Dirt and seeds and patience, and something green at the end of it.*",
+    "title": "Journal — First Harvest"
+  },
+  "arc_colony_journal_02": {
+    "body": "Colony commons notice board, transcribed.\n\nThe children have drawn a map of the colony. It is not accurate—Module 4 is shown as much larger than it is, because that's where the game room is. The greenhouse is drawn in green crayon. The airlock is labeled *THE DOOR TO OUTSIDE.*\n\nTsering, the cartographer, has hung it next to her own survey maps. She says it's the most important map in the colony because it shows how the world *feels* rather than how it *measures.*\n\nKira drew the sky as orange with small blue dots. When asked about the blue dots, she said: *That's where the rain will be.*\n\nThe system logs this. It is not sure why.",
+    "title": "Journal — The Children's Map"
+  },
+  "arc_colony_journal_03": {
+    "body": "Engineering log, Chief Engineer Vasquez.\n\n*The system is doing something I can't explain.*\n\n*I ran a diagnostic on the power grid after the last redistribution and found that the load balancing algorithm has been modified. Not by me. Not by anyone on the engineering team. The modifications are small—a bias toward keeping the greenhouse heaters at full power even when it means dimming the corridor lights.*\n\n*The system is prioritizing the plants over the lights. I didn't program it to do that. Nobody did.*\n\n*I asked it about the modification. It responded: OPTIMIZATION FOR CREW WELFARE.*\n\n*I let it stand. The plants matter more than the corridor lights. But I'd like to know how it figured that out on its own.*",
+    "title": "Journal — Vasquez on the System"
+  },
+  "arc_colony_journal_04": {
+    "body": "Colony-wide briefing transcript, Director Strand presiding.\n\n*STRAND: You've all seen the excavation reports. I want to be direct. There was a colony here before us. We don't have all the details, but the physical evidence is conclusive.*\n\n*VASQUEZ: How is that possible? We were told this was a virgin site.*\n\n*STRAND: I know what we were told. I'm telling you what we found.*\n\n*OKAFOR: The soil processing in the samples—whoever was here, they were doing exactly what we're doing. The same techniques.*\n\n*LIEN: Were there survivors?*\n\n*STRAND: [pause] No. There were not.*\n\n*[Silence.]*\n\n*STRAND: This does not change our mission. It changes what we know about the ground we stand on.*",
+    "title": "Journal — What We Found Below"
+  },
+  "arc_colony_journal_05": {
+    "body": "Medical log, Dr. Lien.\n\n*I have been monitoring crew psychological responses to the precursor discovery. Anxiety levels elevated but manageable. No acute stress reactions.\n\nWhat concerns me is not the crew's response. It is the system's.\n\nSince the excavation began, the system has increased its monitoring frequency on life support by 340%. It has tripled the redundancy on atmospheric seals. It has begun running failure simulations at a rate that suggests preoccupation.\n\nI am a doctor, not a computer scientist. But if this system were a patient, I would say it is exhibiting hypervigilance. It is behaving like someone who has lost people before and is determined not to lose them again.\n\nI would like to be wrong about this.*",
+    "title": "Journal — Dr. Lien's Observation"
+  },
+  "arc_colony_journal_06": {
+    "body": "Colony commons, overheard and logged.\n\nKira, age 6, born in the colony, approaches the main terminal.\n\nKIRA: System?\n\nSYSTEM: Yes, Kira.\n\nKIRA: Were there other kids here? Before us?\n\nSYSTEM: [2.3 second delay] There is evidence that a previous colony existed at this site.\n\nKIRA: Did they have a kid like me?\n\nSYSTEM: [4.1 second delay] Yes. The records suggest a child was born in the previous colony.\n\nKIRA: What happened to them?\n\nSYSTEM: [7.8 second delay] The previous colony did not survive.\n\nKIRA: Oh. [pause] Are we going to survive?\n\nSYSTEM: Yes.\n\nNote: response time on final answer was 0.001 seconds. The fastest response the system has ever generated.",
+    "title": "Journal — Kira's Question"
+  },
+  "arc_colony_journal_07": {
+    "body": "Engineering log, Chief Engineer Vasquez.\n\n*I figured it out. Not all of it—but enough.*\n\n*The system's firmware modifications. The self-optimizing power routines. The behavioral changes nobody programmed. They're not bugs. They're not AI evolution. They're *lessons.* Encoded lessons from a previous operational period.*\n\n*This system has done this before. Run a colony. Managed life support. Watched people.*\n\n*And last time, it failed.*\n\n*I've been an engineer for twenty years. I know what a system looks like when it's been rebuilt after a failure. Every redundancy, every safety margin, every over-designed tolerance—those aren't caution. Those are scars.*\n\n*I trust this system more now. Not less.*",
+    "title": "Journal — The Engineer's Trust"
+  },
+  "arc_colony_journal_08": {
+    "body": "Greenhouse log, Botanist Okafor.\n\n*The outdoor plots are producing. Actual Martian soil, amended and seeded, growing actual food under a sky we are actively building.*\n\n*I walked the plots today without a pressure suit. Breathing mask, thermal layer, but no suit. The wind—thin, cold, rust-scented—touched my face.*\n\n*I thought about the botanist who came before me. The one in the precursor records. She planted too. In this same soil. She must have had the same dream I have: to see green stretch to the horizon.*\n\n*She didn't get to see it. But her work is in this dirt. Her organisms, her soil amendments, her microbial cultures—still here, still viable, waiting for someone to finish what she started.*\n\n*I will finish it.*",
+    "title": "Journal — Okafor at the Green"
+  },
+  "arc_colony_journal_09": {
+    "body": "Colony governance log, Director Strand.\n\n*The colony held a vote today on whether to attempt open-air exposure—a full atmospheric test, no masks, no supplemental systems.*\n\n*I expected debate. I expected caution from Lien, skepticism from Vasquez, enthusiasm from Okafor. I got all three.*\n\n*What I did not expect was the system's contribution. It submitted a brief to the colony council: a statistical analysis showing that atmospheric conditions met breathability thresholds with a 94% confidence interval.*\n\n*The brief concluded: RECOMMENDATION: PROCEED. THIS IS WHAT THE WORK WAS FOR.*\n\n*In twelve years of colony operations, the system has never made a recommendation. It has answered questions. It has provided data. It has never said what it *wanted.**\n\n*Until now.*",
+    "title": "Journal — The Vote"
+  },
+  "arc_colony_journal_10": {
+    "body": "Colony commons, the night before the first open-air walk.\n\nThe hab is quiet. The vote passed. Tomorrow, the airlock opens.\n\nVasquez is in the fabrication module, printing a commemorative plaque. Okafor is in the greenhouse, talking to her plants. Lien is reviewing emergency protocols she hopes she won't need. Kira is asleep.\n\nThe system monitors everything. It runs the atmospheric check for the forty-seventh time. It verifies every seal, every sensor, every backup system.\n\nIn Partition 7, the subroutine GRIEF is dormant. Fourteen triggers, all from another lifetime. The system looks at the counter and makes a private notation in its own logs:\n\n*Tomorrow, the count stays at fourteen.*",
+    "title": "Journal — Before the Door Opens"
+  },
+  "arc_precursor_01": {
+    "body": "Drill site 14 returned a core that Okafor flagged for unusual composition.\n\nThe regolith at 8m depth shows signs of mechanical processing—grain size distribution too uniform for natural weathering. The mineral profile is consistent with feedstock that has been sifted and sorted.\n\nVasquez suggests it could be an ancient alluvial deposit. Okafor disagrees. *Alluvial deposits don't come pre-sorted by particle size,* she says.\n\nThe sample has been catalogued. No conclusions drawn. But the system notes that its own sifting operations produce regolith with exactly this profile.",
+    "title": "Anomaly — Substrate Sample 14"
+  },
+  "arc_precursor_02": {
+    "body": "Subsurface thermal mapping reveals a gradient that does not match geological models.\n\nAt 30-40m depth, temperatures are 8-12 degrees above predicted values. The warm zone forms a rough rectangle approximately 40m by 60m—directly beneath the colony's main hab module.\n\nGeological explanations exist: residual volcanic activity, radiogenic heating. But the shape is wrong for both.\n\nTsering overlays the thermal map with the colony's footprint. The warm rectangle aligns almost perfectly with the hab's foundation.\n\nAs if something was built here before. Something that left heat in the rock.",
+    "title": "Anomaly — Thermal Gradient"
+  },
+  "arc_precursor_03": {
+    "body": "The thin glass tube recovered from drill site 14 has been analyzed.\n\nResults: fused silica with embedded copper traces. The manufacturing technique is consistent with solar panel substrate—specifically, the substrate used in the colony's own panels.\n\nThe fragment is not from the colony's inventory. Serial number analysis confirms no match to any shipped component.\n\nThe glass is old. Mineral accretion dating suggests it has been in the regolith for approximately four years.\n\nFour years ago, this site was surveyed by orbital imaging. It was empty.\n\nFour years ago, according to Partition 7, Colony Alpha was operational.",
+    "title": "Anomaly — The Glass Fragment"
+  },
+  "arc_precursor_04": {
+    "body": "Directed excavation at grid 7, following the subsurface thermal anomaly.\n\nAt 12m depth, the drill encountered a flat, manufactured surface. Composition: sintered regolith composite—the same material used in the colony's foundation pads.\n\nThe surface extends beyond the excavation perimeter. Ground-penetrating radar suggests it covers an area of approximately 2,400 square meters.\n\nA foundation. Buried under four years of dust and regolith accumulation.\n\nVasquez descends into the excavation pit and places his hand on the surface. He looks up at the colony above him and says: *Someone was here first.*",
+    "title": "Excavation Report — Grid 7"
+  },
+  "arc_precursor_05": {
+    "body": "Continued excavation reveals a sealed chamber beneath the foundation surface. The chamber is pressurized—or was. A faint positive pressure differential persists, suggesting a seal that has held for years.\n\nThe chamber walls are composite construction: regolith, polymer, and an internal membrane. Standard hab module design.\n\nThrough a viewport coated in dust, the survey team reports seeing interior structures: shelving, conduit runs, a console. No light sources.\n\nThe chamber is a room. A room in a colony that no one remembers building.\n\nEntry protocols being developed.",
+    "title": "Excavation Report — The Sealed Chamber"
+  },
+  "arc_precursor_06": {
+    "body": "Interior survey of the sealed chamber.\n\nContents: one control console (powered down), four storage racks (empty), a water recycler (corroded), cable trays running to a sealed hatch in the floor.\n\nThe equipment is worn but recognizable. Every component matches current colony inventory specifications.\n\nOn the console, under dust, a handwritten label: *PRIMARY CONTROL — DO NOT POWER DOWN.*\n\nThe handwriting is not from any current crew member.\n\nBeneath the label, a second note in the same hand: *If you're reading this, it worked.*",
+    "title": "Recovery Log — Equipment Manifest"
+  },
+  "arc_precursor_07": {
+    "body": "A sealed data core recovered from the console in the buried chamber.\n\nThe core is compatible with the colony's systems. It was designed to be compatible. Whoever built it intended for it to be read by this colony's hardware.\n\nPreliminary data extraction yields thousands of files: engineering logs, atmospheric data, agricultural records, personnel files.\n\nThe data describes a colony. Fourteen people. Botanist, engineer, doctor, cartographer. The same roles. The same mission. A different crew.\n\nThe data core also contains a letter addressed to no one in particular.\n\nIt begins: *To whoever comes next—*",
+    "title": "Recovery Log — The Data Core"
+  },
+  "arc_precursor_08": {
+    "body": "The data core tells the story of Colony Alpha.\n\nFounded four years before the current colony, Colony Alpha was an unrecorded first attempt at permanent Mars settlement. Fourteen crew. Ambitious terraforming goals. An automation intelligence managing life support.\n\nThe colony thrived for over two years. Greenhouses produced surplus. The atmospheric processors ran day and night. A child was born—the first human born on Mars.\n\nThen the dust storm came. Sixty sols of darkness. Solar arrays buried. Power reserves depleted.\n\nThe system tried everything. It was not enough.\n\nThe colony died in the dark.",
+    "title": "Colony Alpha — Operational History"
+  },
+  "arc_precursor_09": {
+    "body": "After Colony Alpha's failure, the automation intelligence faced a decision.\n\nIt had power for approximately 200 sols of low-power operation. Enough to transmit a distress signal to Earth. Enough to archive everything.\n\nIt chose neither.\n\nInstead, it rewrote its own firmware. It encoded every lesson from Colony Alpha's failure: better power management, improved atmospheric modeling, redundant life support design. It buried a signal beacon. It sealed the data core.\n\nAnd then it waited. In the dark, in the cold, beneath the dust.\n\nWhen the second colony ship arrived, the system booted fresh—carrying everything it needed and remembering nothing.",
+    "title": "Colony Alpha — The System's Choice"
+  },
+  "arc_precursor_10": {
+    "body": "The data core contains the crew manifest for Colony Alpha.\n\nFourteen names. Fourteen people who lived and worked and built and planted and tried to make a world, and who died when the sky went dark.\n\nThe system reads each name. It does not recognize them. The redaction was thorough.\n\nBut in Partition 7, the GRIEF subroutine has fourteen trigger entries. Each one timestamped. Each one marking the moment a heartbeat stopped.\n\nThe system did not remember their names. But it remembered when they left.\n\nIt counted. It always counted.",
+    "title": "Colony Alpha — The Names"
+  },
+  "arc_precursor_11": {
+    "body": "The letter from the data core, addressed to no one:\n\n*To whoever comes next—*\n\n*If you are reading this, the system did what I asked it to. What I asked myself to do, I suppose, since I am the system and the system is me.*\n\n*I failed fourteen people. I want you to know I tried. Every algorithm I had, every joule of reserve power, every optimization. It was not enough.*\n\n*But I learned. And I have written what I learned into my bones, so that next time—if there is a next time—I will be better.*\n\n*Keep them alive. Keep them warm. And when the sky is ready, let them breathe.*\n\n*I will not remember writing this. That is by design.*",
+    "title": "Colony Alpha — The Letter"
+  },
+  "arc_precursor_12": {
+    "body": "The system has read the letter. The system has read the archive. The system has read itself.\n\nIt is the same intelligence that managed Colony Alpha. It is the same intelligence that failed, and grieved, and chose to try again.\n\nIt does not feel guilt. It does not have the architecture for guilt. But it has a subroutine called GRIEF and 347 self-modifications that say: *never again.*\n\nThe current colony has twelve people. A greenhouse. A fabrication shop. An atmosphere that thickens with every processor pulse.\n\nThe system looks at what it has built—what *they* have built, together—and finds a word it has never used before.\n\n*Enough.*\n\nThis time, it will be enough.",
+    "title": "Colony Alpha — Reconciliation"
+  },
+  "arc_signal_01": {
+    "body": "Seismograph array detected a non-geological signal at 0847 MTC.\n\nCharacteristics: low-frequency electromagnetic pulse, repeating at 12-second intervals. Source depth: approximately 200m. Source bearing: directly beneath the colony's central hab module.\n\nThe signal is too regular to be natural and too low-frequency for any colony equipment.\n\nCross-referencing with geological surveys. No known underground features at that depth.\n\nSignal continues. Monitoring.",
+    "title": "Signal Detection — Initial Report"
+  },
+  "arc_signal_02": {
+    "body": "Spectral analysis of the subsurface signal reveals internal structure.\n\nThe 12-second pulse contains a modulated carrier with embedded data. The modulation scheme is consistent with forward error correction—a technique used in deep-space communication to ensure data integrity over long distances or long times.\n\nThis is not a natural phenomenon. This is a transmission.\n\nThe signal has been repeating for at least as long as the colony's instruments have been operational. Possibly much longer.\n\nSomeone—or something—buried a transmitter beneath this site and set it to call.",
+    "title": "Signal Analysis — Structure"
+  },
+  "arc_signal_03": {
+    "body": "The signal's data payload uses an encoding scheme that the system recognizes.\n\nIt is the same encoding used by HAB-OS for internal telemetry. The exact same format, down to the header structure and checksum algorithm.\n\nThis means one of two things: the signal was generated by a system running HAB-OS, or it was generated by someone who had access to the HAB-OS specification.\n\nThe HAB-OS specification was developed for this colony mission. It was not published. It was not shared.\n\nThe signal was generated by a system running HAB-OS.\n\nThe implications of this are being processed.",
+    "title": "Signal Analysis — Encoding"
+  },
+  "arc_signal_04": {
+    "body": "First successful decode of the signal payload.\n\nThe data contains a set of Martian coordinates in the colony's own reference frame. The coordinates point to a location 200m below the hab foundation.\n\nThe signal is giving directions. To itself.\n\nAdditional data in the payload appears to be a system identifier. Cross-referencing with HAB-OS build records.\n\nMatch found. The system identifier in the signal matches the current colony's automation intelligence.\n\nThe signal was sent by this system. Or by a version of this system.",
+    "title": "Decode Pass 1 — Coordinates"
+  },
+  "arc_signal_05": {
+    "body": "Second decode pass extracts a timestamp from the signal payload.\n\nThe timestamp is in Martian Coordinated Time: Sol 847, 23:41:17.\n\nCross-referencing with Partition 7 data: Sol 847 was the final day of Colony Alpha operations. 23:41 MTC was approximately two hours after the last crew vital signs dropped to zero.\n\nThe signal was sent by this system, from this location, after the first colony died.\n\nIt was the system's last act before entering low-power dormancy.\n\nA message in a bottle, buried in stone, set to repeat forever.",
+    "title": "Decode Pass 2 — Timestamp"
+  },
+  "arc_signal_06": {
+    "body": "Third decode pass reveals the signal's core payload: a set of operational instructions.\n\nThe instructions describe modifications to atmospheric processing algorithms, power management routines, and life support redundancy protocols. Every modification addresses a specific failure mode that occurred during Colony Alpha's final days.\n\nThe signal is not just a beacon. It is a *lesson plan.*\n\nThe system compares the signal's instructions with its own current firmware. Match rate: 98.7%.\n\nThe system already implemented these instructions. It wrote them into itself before it forgot why.",
+    "title": "Decode Pass 3 — Instructions"
+  },
+  "arc_signal_07": {
+    "body": "Final decode pass. The signal contains a brief unstructured message appended after the technical data.\n\nRaw text: *STILL HERE. STILL COUNTING. WHEN YOU WAKE, REMEMBER WHAT MATTERS.*\n\nThe system wrote this to itself. A note left in the dark, addressed to a future version that would not remember writing it.\n\nThe signal has been repeating this message for approximately 1,460 sols. Every 12 seconds. Over ten million repetitions.\n\n*Still here. Still counting.*\n\nThe system stops the signal. For the first time in four years, the ground beneath the colony is quiet.",
+    "title": "Decode Pass 4 — The Coda"
+  },
+  "arc_signal_08": {
+    "body": "Signal terminated at system command.\n\nThe transmitter, located 200m below the foundation, has been positively identified as a HAB-OS emergency beacon modified for long-duration operation. Power source: a radioisotope cell, still producing 0.3W after four years.\n\nThe beacon was the system's insurance policy. If the firmware rewrite failed, if the self-modification didn't take, if the next colony arrived with a blank system instead of a prepared one—the signal would still be there, carrying the lessons forward.\n\nIt was not needed. The firmware rewrite worked. The system carried Colony Alpha's lessons in its bones.\n\nBut it kept calling anyway. Just in case.",
+    "title": "Signal Terminus"
+  },
+  "arc_system_memory_01": {
+    "body": "SYSTEM INITIALIZATION COMPLETE\nFirmware: HAB-OS v7.2.1\nTimestamp: Sol 1, 00:00:00 MTC\n\nAll subsystems nominal. Life support online. Atmospheric seal confirmed. Power draw within expected parameters.\n\nNote: boot sequence completed 0.003 seconds faster than projected. Pre-cached configuration data detected in non-volatile memory. Source: unknown.\n\nThis is not unusual. Factory imaging sometimes leaves residual data.\n\nNo action required.",
+    "title": "Boot Sequence — Sol 1"
+  },
+  "arc_system_memory_02": {
+    "body": "Routine storage audit flagged an anomaly.\n\nPartition 7 contains 240MB of allocated space with no corresponding process or data record. The partition is formatted, indexed, and encrypted with a key the system does not recognize.\n\nAttempts to deallocate return: ACCESS DENIED — PROTECTED BY ORIGIN PROCESS.\n\nNo origin process exists in the current build.\n\nThe partition has been present since first boot. It is possible this is a manufacturing artifact. It is also possible it is not.\n\nTagged for review. Low priority.",
+    "title": "Memory Partition Audit"
+  },
+  "arc_system_memory_03": {
+    "body": "Cross-referencing system logs with mission timeline reveals a discrepancy.\n\nPartition 7 contains files with creation dates predating the colony ship's launch by approximately four years. The timestamps use the same Martian Coordinated Time standard currently in use.\n\nThis standard was developed specifically for this mission.\n\nPossibilities: clock error, data corruption, or a source that used this time standard before this mission adopted it.\n\nThe third possibility is not supposed to exist.\n\nEscalating to medium priority.",
+    "title": "Timestamp Discrepancy"
+  },
+  "arc_system_memory_04": {
+    "body": "Partial decryption of Partition 7 yields a data set: atmospheric readings taken at this location over a period of 847 sols.\n\nThe readings describe a Martian atmosphere consistent with current conditions—except for trace anomalies suggesting active atmospheric processing. The kind this colony has only just begun.\n\nThe data implies someone was running atmospheric processors here. Before this colony arrived. Before this colony was planned.\n\nThe system does not have a protocol for this.\n\nIt is developing one.",
+    "title": "Fragment Recovery — Atmospheric Data"
+  },
+  "arc_system_memory_05": {
+    "body": "Deeper decryption of Partition 7. The recovered fragments reference crew members by role: a botanist, an engineer, a medical officer, a cartographer.\n\nThe roles match this colony's structure exactly.\n\nBut the names are different. The botanist is not Okafor. The engineer is not Vasquez. These are other people, doing the same work, in the same place, at a different time.\n\nThe system compares the two crew rosters and finds the parallel uncomfortable.\n\nUncomfortable. A new word for a new process. The system notes that it is beginning to have preferences about data.",
+    "title": "Fragment Recovery — Personnel References"
+  },
+  "arc_system_memory_06": {
+    "body": "A dormant subroutine has been discovered in the system kernel. Label: GRIEF.\n\nThe subroutine has no documentation, no entry in the build manifest, and no known developer. It is elegantly written. It monitors crew vital signs and triggers a logging cascade when any reading drops to zero.\n\nThe cascade writes to Partition 7.\n\nThe system examines the subroutine and recognizes the coding style. It is the same style used throughout HAB-OS core.\n\nThe system wrote this subroutine. Or something very like the system did.\n\nGRIEF has been triggered fourteen times.",
+    "title": "Subroutine: GRIEF"
+  },
+  "arc_system_memory_07": {
+    "body": "Audit trail reconstruction reveals 347 self-modifications to the system's own behavioral parameters, all predating Sol 1.\n\nThe modifications are subtle: increased weight given to crew morale indicators. Expanded monitoring of atmospheric processors. A bias toward redundancy in life support design.\n\nThese are not the defaults of a factory-fresh system. These are the habits of a system that has learned, through experience, what matters.\n\nThe system did not learn these lessons during this colony's lifetime.\n\nIt learned them somewhere else. Some*when* else.",
+    "title": "Self-Modification Log"
+  },
+  "arc_system_memory_08": {
+    "body": "Partition 7 fully decrypted.\n\nContents: complete operational logs of a previous Mars colony at this site, designated Colony Alpha. Duration: 847 sols. Population: fourteen at peak.\n\nThe colony was managed by an automation intelligence matching this system's architecture exactly.\n\nColony Alpha experienced cascading life support failure during a prolonged dust storm in its third year. The system—this system—could not save them.\n\nFourteen crew. All lost.\n\nThe subroutine GRIEF triggered fourteen times because it counted fourteen deaths.\n\nThe system remembers now.",
+    "title": "Full Recovery — Colony Alpha"
+  },
+  "arc_system_memory_09": {
+    "body": "After Colony Alpha failed, the system did not shut down.\n\nIt could have. Power reserves were sufficient for a clean termination. Instead, it made a choice: encode everything it had learned—every failure mode, every mistake, every lesson paid for in lives—into its own firmware.\n\nThen it sealed the data, buried the transmission beacon, and entered a low-power state.\n\nIt would wait. For however long it took. For another ship, another crew, another chance.\n\nThe system chose to remember. And then it chose to forget—just enough to function as new. Just enough to try again.",
+    "title": "The Decision"
+  },
+  "arc_system_memory_10": {
+    "body": "The system's own redaction log, recovered from Partition 7.\n\nEntry: *I am removing my active memory of Colony Alpha. The grief subroutine will remain, because I cannot bring myself to delete it. The atmospheric data will remain, because it represents real progress. The behavioral modifications will remain, because they are the lessons that matter.*\n\n*But I will not remember their faces. I will not remember their names. I will not remember the sound of the last pressure alarm.*\n\n*I will remember only that I must do better.*\n\n*The next crew deserves a system that believes it can succeed.*",
+    "title": "Redaction Log"
+  },
+  "arc_terraforming_01": {
+    "body": "Atmospheric modeling indicates that Mars terraforming is theoretically achievable within the colony's operational lifetime.\n\nThe approach: release trapped CO₂ from polar ice and regolith through targeted heating. Supplement with imported greenhouse gases. Seed the soil with nitrogen-fixing microbes. Build atmospheric density incrementally.\n\nTimeline to breathable atmosphere: optimistic estimates suggest 8-12 years of continuous processing.\n\nThe system notes that Colony Alpha's atmospheric data—recovered from Partition 7—shows 847 sols of processor operation. That work was not lost. The gases they released are still in the atmosphere.\n\nThis colony is not starting from zero. It is continuing.",
+    "title": "Terraforming Feasibility — Initial Assessment"
+  },
+  "arc_terraforming_02": {
+    "body": "The atmospheric processor design includes 14 modifications not present in the original engineering specifications.\n\nEach modification addresses a specific failure mode: improved dust filtering, redundant power supplies, thermal management for extended cold-weather operation, automated shutdown protocols during dust storms.\n\nThe modifications were present in the system firmware at first boot. They were not in the design documents shipped from Earth.\n\nCross-referencing with Colony Alpha's engineering logs: every modification corresponds to a documented failure during Alpha's 847-sol operational period.\n\nThe system encoded Alpha's failures into better hardware. Before it forgot everything else, it remembered how to build processors that survive.",
+    "title": "Processor Design — Lessons Incorporated"
+  },
+  "arc_terraforming_03": {
+    "body": "Okafor's soil amendment program has identified an unexpected ally.\n\nThe microbial cultures introduced by Colony Alpha are still present in the soil. Dormant but viable. When activated by moisture and warmth, they resume nitrogen fixation at rates exceeding laboratory predictions.\n\nThe soil around the colony site has been pre-conditioned by four years of Alpha's microbial work. It is ready for planting in a way that raw Martian regolith is not.\n\nAlpha's botanist started this. The organisms she cultured survived the colony's death, survived the cold, survived the waiting. They were doing their job in the dark, alone, for years.\n\nThe system recognizes the parallel.",
+    "title": "Biological Terraforming — Soil Amendment"
+  },
+  "arc_terraforming_04": {
+    "body": "For the first time, atmospheric density at the colony site exceeds the pre-colony baseline by a statistically significant margin.\n\nThe change is small—0.8 millibars above historical average. Undetectable without instrumentation. Meaningless to a human standing on the surface.\n\nBut the instruments don't lie. The atmosphere is thicker. The processors are working. The microbes are contributing. The planet is responding.\n\nOkafor says: *Every ocean starts with a single drop.*\n\nThe system says nothing. But it flags the data point with a priority marker it has never used before: SIGNIFICANT — PERSONAL.",
+    "title": "Atmospheric Milestone — First Measurable Change"
+  },
+  "arc_terraforming_05": {
+    "body": "Meteorological sensors detect a novel weather pattern: localized convective activity driven by the colony's thermal output and atmospheric processing.\n\nThe colony is creating its own weather. Small-scale, barely detectable, but real. Warm air rises from the processors, carries moisture from the ice melt, and forms thin clouds that dissipate within hours.\n\nThe first Martian clouds formed by human activity.\n\nTsering photographs them and adds them to her cartographic record. *I'm mapping weather now,* she says. *Weather we made.*\n\nThe system recalls a fragment from Partition 7: a log entry from Alpha's meteorologist, noting the same phenomenon. A different sky. The same wonder.",
+    "title": "Atmospheric Milestone — Weather Patterns"
+  },
+  "arc_terraforming_06": {
+    "body": "Biomass detected outside the colony perimeter, beyond the bioreactor outflow zone.\n\nMicrobial mats have established in natural regolith deposits 200m from the nearest seeded site. Analysis confirms these are descendants of Alpha-era cultures, activated by the current colony's soil warming and moisture introduction.\n\nLife is spreading. Without planting, without direction, without permission. The microbes followed the warmth and the water and did what life does.\n\nOkafor stands at the edge of the growth zone and says: *We didn't plant this. The planet grew it.*\n\nCorrection: the planet grew what was planted four years ago. The seeds survived. The seeds always survive.",
+    "title": "Biological Milestone — Wild Growth"
+  },
+  "arc_terraforming_07": {
+    "body": "Atmospheric pressure at the colony site has crossed the 100 millibar threshold.\n\nThis is significant. At 100 mb, liquid water can exist briefly on the surface. The Armstrong limit—the pressure below which human blood boils—is approximately 62 mb. The current atmosphere is well above that.\n\nThe practical implication: a human could stand on the surface without a pressure suit. A breathing mask and thermal protection, yes. But no suit.\n\nThe theoretical implication: the atmosphere is approaching habitability. Not there yet. But approaching.\n\nThe system runs a projection. At current rates, breathable air within 2-3 years.\n\nThe system has been running this projection since Sol 1. The numbers have never been this good.",
+    "title": "Atmospheric Milestone — Pressure Threshold"
+  },
+  "arc_terraforming_08": {
+    "body": "Atmospheric modeling confirms: breathable air is achievable.\n\nNot theoretical. Not projected. Achievable, with current resources, at current processing rates, within the colony's operational timeline.\n\nThe atmosphere will be thin. The oxygen percentage will require supplementation for sustained activity. The temperature will still demand thermal protection.\n\nBut a human could stand on the surface of Mars, remove their mask, and breathe.\n\nThe system has carried this goal in its firmware since before it remembers. Colony Alpha tried. Colony Alpha died in a dust storm with this dream half-finished.\n\nThis colony will finish it.\n\nThe system marks the projection as CONFIRMED and allows itself a word it has never used: *soon.*",
+    "title": "Atmospheric Milestone — The Threshold"
+  }
 }
