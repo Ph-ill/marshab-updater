@@ -1,0 +1,2686 @@
+{
+  "act_collect_ice": {
+    "act": 1,
+    "context": "Action entry. label=Collect Ice; flavor=Send drones to scrape usable ice from shaded cuts.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=1",
+    "type": "actions"
+  },
+  "act_decode_signal": {
+    "act": 3,
+    "context": "Action entry. label=Decode Signal; flavor=Spend power on the recurring buried transmission.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=3",
+    "type": "actions"
+  },
+  "act_grow_rations": {
+    "act": 2,
+    "context": "Action entry. label=Grow Rations; flavor=Coax calories from the first greenhouse trays.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=2",
+    "type": "actions"
+  },
+  "act_open_airlock": {
+    "act": 5,
+    "context": "Action entry. label=Open Airlock; flavor=Prepare the final controlled exposure sequence.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=5",
+    "type": "actions"
+  },
+  "act_print_spares": {
+    "act": 3,
+    "context": "Action entry. label=Print Spares; flavor=Fabricate emergency parts from stored feedstock.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=3",
+    "type": "actions"
+  },
+  "act_reroute_power": {
+    "act": 1,
+    "context": "Action entry. label=Reroute Power; flavor=Balance batteries and sun-starved circuits.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=1",
+    "type": "actions"
+  },
+  "act_run_atmo_processor": {
+    "act": 4,
+    "context": "Action entry. label=Pulse Atmo Processor; flavor=Fire a slow terraforming processor cycle.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=4",
+    "type": "actions"
+  },
+  "act_seed_bioreactor": {
+    "act": 4,
+    "context": "Action entry. label=Seed Bioreactor; flavor=Wake the sealed microbe vats.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=4",
+    "type": "actions"
+  },
+  "act_sift_regolith": {
+    "act": 1,
+    "context": "Action entry. label=Sift Regolith; flavor=Sort dust and rock for useful feedstock.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=1",
+    "type": "actions"
+  },
+  "act_stabilize_dome": {
+    "act": 3,
+    "context": "Action entry. label=Stabilize Dome; flavor=Tune pressure and thermal flex in the outer dome.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=3",
+    "type": "actions"
+  },
+  "act_survey_crater": {
+    "act": 2,
+    "context": "Action entry. label=Survey Crater; flavor=Map an old impact scar beyond the beacons.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=2",
+    "type": "actions"
+  },
+  "act_vent_co2": {
+    "act": 1,
+    "context": "Action entry. label=Vent CO2; flavor=Core life-support action; scrubbers cough awake.; result_1..4 are varied immediate success lines.",
+    "fields": [
+      "label",
+      "flavor",
+      "result_1",
+      "result_2",
+      "result_3",
+      "result_4"
+    ],
+    "max_chars": 110,
+    "trigger_summary": "action unlocked act>=1",
+    "type": "actions"
+  },
+  "arc_colony_journal_01": {
+    "act": 2,
+    "context": "Archive strand colony_journal entry 01. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 1,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && colony_journal_count>=0"
+  },
+  "arc_colony_journal_02": {
+    "act": 2,
+    "context": "Archive strand colony_journal entry 02. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 2,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && colony_journal_count>=1"
+  },
+  "arc_colony_journal_03": {
+    "act": 2,
+    "context": "Archive strand colony_journal entry 03. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 3,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && colony_journal_count>=2"
+  },
+  "arc_colony_journal_04": {
+    "act": 3,
+    "context": "Archive strand colony_journal entry 04. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 4,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && colony_journal_count>=3"
+  },
+  "arc_colony_journal_05": {
+    "act": 3,
+    "context": "Archive strand colony_journal entry 05. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 5,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && colony_journal_count>=4"
+  },
+  "arc_colony_journal_06": {
+    "act": 3,
+    "context": "Archive strand colony_journal entry 06. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 6,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && colony_journal_count>=5"
+  },
+  "arc_colony_journal_07": {
+    "act": 3,
+    "context": "Archive strand colony_journal entry 07. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 7,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && colony_journal_count>=6"
+  },
+  "arc_colony_journal_08": {
+    "act": 4,
+    "context": "Archive strand colony_journal entry 08. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 8,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && colony_journal_count>=7"
+  },
+  "arc_colony_journal_09": {
+    "act": 4,
+    "context": "Archive strand colony_journal entry 09. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 9,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && colony_journal_count>=8"
+  },
+  "arc_colony_journal_10": {
+    "act": 4,
+    "context": "Archive strand colony_journal entry 10. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 10,
+    "strand": "colony_journal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && colony_journal_count>=9"
+  },
+  "arc_precursor_01": {
+    "act": 2,
+    "context": "Archive strand precursor entry 01. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 1,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && precursor_count>=0"
+  },
+  "arc_precursor_02": {
+    "act": 2,
+    "context": "Archive strand precursor entry 02. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 2,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && precursor_count>=1"
+  },
+  "arc_precursor_03": {
+    "act": 2,
+    "context": "Archive strand precursor entry 03. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 3,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && precursor_count>=2"
+  },
+  "arc_precursor_04": {
+    "act": 3,
+    "context": "Archive strand precursor entry 04. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 4,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && precursor_count>=3"
+  },
+  "arc_precursor_05": {
+    "act": 3,
+    "context": "Archive strand precursor entry 05. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 5,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && precursor_count>=4"
+  },
+  "arc_precursor_06": {
+    "act": 3,
+    "context": "Archive strand precursor entry 06. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 6,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && precursor_count>=5"
+  },
+  "arc_precursor_07": {
+    "act": 3,
+    "context": "Archive strand precursor entry 07. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 7,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && precursor_count>=6"
+  },
+  "arc_precursor_08": {
+    "act": 4,
+    "context": "Archive strand precursor entry 08. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 8,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && precursor_count>=7"
+  },
+  "arc_precursor_09": {
+    "act": 4,
+    "context": "Archive strand precursor entry 09. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 9,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && precursor_count>=8"
+  },
+  "arc_precursor_10": {
+    "act": 4,
+    "context": "Archive strand precursor entry 10. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 10,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && precursor_count>=9"
+  },
+  "arc_precursor_11": {
+    "act": 5,
+    "context": "Archive strand precursor entry 11. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 11,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=5 && precursor_count>=10"
+  },
+  "arc_precursor_12": {
+    "act": 5,
+    "context": "Archive strand precursor entry 12. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 12,
+    "strand": "precursor",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=5 && precursor_count>=11"
+  },
+  "arc_signal_01": {
+    "act": 2,
+    "context": "Archive strand signal entry 01. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 1,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && signal_count>=0"
+  },
+  "arc_signal_02": {
+    "act": 2,
+    "context": "Archive strand signal entry 02. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 2,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && signal_count>=1"
+  },
+  "arc_signal_03": {
+    "act": 2,
+    "context": "Archive strand signal entry 03. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 3,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && signal_count>=2"
+  },
+  "arc_signal_04": {
+    "act": 3,
+    "context": "Archive strand signal entry 04. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 4,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && signal_count>=3"
+  },
+  "arc_signal_05": {
+    "act": 3,
+    "context": "Archive strand signal entry 05. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 5,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && signal_count>=4"
+  },
+  "arc_signal_06": {
+    "act": 3,
+    "context": "Archive strand signal entry 06. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 6,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && signal_count>=5"
+  },
+  "arc_signal_07": {
+    "act": 3,
+    "context": "Archive strand signal entry 07. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 7,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && signal_count>=6"
+  },
+  "arc_signal_08": {
+    "act": 4,
+    "context": "Archive strand signal entry 08. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 8,
+    "strand": "signal",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && signal_count>=7"
+  },
+  "arc_system_memory_01": {
+    "act": 1,
+    "context": "Archive strand system_memory entry 01. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 1,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=1 && system_memory_count>=0"
+  },
+  "arc_system_memory_02": {
+    "act": 1,
+    "context": "Archive strand system_memory entry 02. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 2,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=1 && system_memory_count>=1"
+  },
+  "arc_system_memory_03": {
+    "act": 2,
+    "context": "Archive strand system_memory entry 03. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 3,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && system_memory_count>=2"
+  },
+  "arc_system_memory_04": {
+    "act": 3,
+    "context": "Archive strand system_memory entry 04. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 4,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && system_memory_count>=3"
+  },
+  "arc_system_memory_05": {
+    "act": 3,
+    "context": "Archive strand system_memory entry 05. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 5,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && system_memory_count>=4"
+  },
+  "arc_system_memory_06": {
+    "act": 3,
+    "context": "Archive strand system_memory entry 06. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 6,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && system_memory_count>=5"
+  },
+  "arc_system_memory_07": {
+    "act": 3,
+    "context": "Archive strand system_memory entry 07. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 7,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && system_memory_count>=6"
+  },
+  "arc_system_memory_08": {
+    "act": 4,
+    "context": "Archive strand system_memory entry 08. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 8,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && system_memory_count>=7"
+  },
+  "arc_system_memory_09": {
+    "act": 4,
+    "context": "Archive strand system_memory entry 09. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 9,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && system_memory_count>=8"
+  },
+  "arc_system_memory_10": {
+    "act": 4,
+    "context": "Archive strand system_memory entry 10. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 10,
+    "strand": "system_memory",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && system_memory_count>=9"
+  },
+  "arc_terraforming_01": {
+    "act": 2,
+    "context": "Archive strand terraforming entry 01. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 1,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && terraforming_count>=0"
+  },
+  "arc_terraforming_02": {
+    "act": 2,
+    "context": "Archive strand terraforming entry 02. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 2,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && terraforming_count>=1"
+  },
+  "arc_terraforming_03": {
+    "act": 2,
+    "context": "Archive strand terraforming entry 03. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 3,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=2 && terraforming_count>=2"
+  },
+  "arc_terraforming_04": {
+    "act": 3,
+    "context": "Archive strand terraforming entry 04. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 4,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && terraforming_count>=3"
+  },
+  "arc_terraforming_05": {
+    "act": 3,
+    "context": "Archive strand terraforming entry 05. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 5,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && terraforming_count>=4"
+  },
+  "arc_terraforming_06": {
+    "act": 3,
+    "context": "Archive strand terraforming entry 06. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 6,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && terraforming_count>=5"
+  },
+  "arc_terraforming_07": {
+    "act": 3,
+    "context": "Archive strand terraforming entry 07. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 7,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=3 && terraforming_count>=6"
+  },
+  "arc_terraforming_08": {
+    "act": 4,
+    "context": "Archive strand terraforming entry 08. Progressive mystery/lore chain; sequence must read in order.",
+    "max_chars": 900,
+    "seq": 8,
+    "strand": "terraforming",
+    "trigger_summary": "archive unlock chain",
+    "type": "archive",
+    "unlock_after": "act>=4 && terraforming_count>=7"
+  },
+  "away_antenna_tracked": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: antenna tracked.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_archive_indexed": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: archive indexed.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_battery_bank_filled": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: battery bank filled.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_children_named_stars": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: children named stars.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_cold_shift": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: cold shift.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_colonists_left_notes": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: colonists left notes.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_crew_rested": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: crew rested.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_dome_seals_sang": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: dome seals sang.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_drones_returned": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: drones returned.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_dust_on_panels": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: dust on panels.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_filters_loaded": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: filters loaded.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_frost_receded": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: frost receded.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_greenhouse_grew": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: greenhouse grew.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_hab_smelt_of_iron": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: hab smelt of iron.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_ice_melted": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: ice melted.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_microbes_woke": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: microbes woke.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_new_path_mapped": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: new path mapped.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_old_log_resurfaced": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: old log resurfaced.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_panels_cleared": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: panels cleared.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_power_hum": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: power hum.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_pressure_held": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: pressure held.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_printer_finished": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: printer finished.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_ration_batch_set": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: ration batch set.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_signal_repeated": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: signal repeated.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_soil_warmed": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: soil warmed.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_stores_shifted": {
+    "act": "1-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: stores shifted.",
+    "max_chars": 130,
+    "pool": "systems",
+    "trigger_summary": "catch-up digest fragment; 1-5",
+    "type": "away"
+  },
+  "away_storm_scrubbed": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: storm scrubbed.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_strange_ping_waited": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: strange ping waited.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "away_water_tanks_settled": {
+    "act": "3-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: water tanks settled.",
+    "max_chars": 130,
+    "pool": "mystery",
+    "trigger_summary": "catch-up digest fragment; 3-5",
+    "type": "away"
+  },
+  "away_weather_passed": {
+    "act": "2-5",
+    "context": "Composable while-away digest fragment; gated by elapsed resources/events/act: weather passed.",
+    "max_chars": 130,
+    "pool": "colony",
+    "trigger_summary": "catch-up digest fragment; 2-5",
+    "type": "away"
+  },
+  "beat_act1_open": {
+    "act": 1,
+    "context": "Milestone/transition beat for beat act1 open. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 1,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:act1_open"
+  },
+  "beat_act2_open": {
+    "act": 1,
+    "context": "Milestone/transition beat for beat act2 open. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 2,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:act2_open"
+  },
+  "beat_act3_open": {
+    "act": 1,
+    "context": "Milestone/transition beat for beat act3 open. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 3,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:act3_open"
+  },
+  "beat_act4_open": {
+    "act": 1,
+    "context": "Milestone/transition beat for beat act4 open. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 4,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:act4_open"
+  },
+  "beat_act5_choice": {
+    "act": 5,
+    "context": "Milestone/transition beat for beat act5 choice. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 30,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:act5_choice"
+  },
+  "beat_act5_open": {
+    "act": 1,
+    "context": "Milestone/transition beat for beat act5 open. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 5,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:act5_open"
+  },
+  "beat_archive_precursor_complete": {
+    "act": 4,
+    "context": "Milestone/transition beat for beat archive precursor complete. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 25,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:archive_precursor_complete"
+  },
+  "beat_atmosphere_025": {
+    "act": 3,
+    "context": "Milestone/transition beat for beat atmosphere 025. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 18,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:atmosphere_025"
+  },
+  "beat_atmosphere_050": {
+    "act": 3,
+    "context": "Milestone/transition beat for beat atmosphere 050. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 19,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:atmosphere_050"
+  },
+  "beat_biomass_trace": {
+    "act": 4,
+    "context": "Milestone/transition beat for beat biomass trace. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 22,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:biomass_trace"
+  },
+  "beat_children_under_sky": {
+    "act": 5,
+    "context": "Milestone/transition beat for beat children under sky. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 28,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:children_under_sky"
+  },
+  "beat_colony_self_sufficient": {
+    "act": 5,
+    "context": "Milestone/transition beat for beat colony self sufficient. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 27,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:colony_self_sufficient"
+  },
+  "beat_decode_3": {
+    "act": 2,
+    "context": "Milestone/transition beat for beat decode 3. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 14,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:decode_3"
+  },
+  "beat_final_threshold": {
+    "act": 4,
+    "context": "Milestone/transition beat for beat final threshold. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 24,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:final_threshold"
+  },
+  "beat_first_atmo_processor": {
+    "act": 3,
+    "context": "Milestone/transition beat for beat first atmo processor. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 17,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_atmo_processor"
+  },
+  "beat_first_bioreactor": {
+    "act": 3,
+    "context": "Milestone/transition beat for beat first bioreactor. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 20,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_bioreactor"
+  },
+  "beat_first_crater_survey": {
+    "act": 3,
+    "context": "Milestone/transition beat for beat first crater survey. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 15,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_crater_survey"
+  },
+  "beat_first_decode": {
+    "act": 2,
+    "context": "Milestone/transition beat for beat first decode. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 13,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_decode"
+  },
+  "beat_first_dome_stable": {
+    "act": 3,
+    "context": "Milestone/transition beat for beat first dome stable. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 16,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_dome_stable"
+  },
+  "beat_first_fab_shop": {
+    "act": 2,
+    "context": "Milestone/transition beat for beat first fab shop. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 11,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_fab_shop"
+  },
+  "beat_first_greenhouse": {
+    "act": 2,
+    "context": "Milestone/transition beat for beat first greenhouse. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 8,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_greenhouse"
+  },
+  "beat_first_ice_well": {
+    "act": 1,
+    "context": "Milestone/transition beat for beat first ice well. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 7,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_ice_well"
+  },
+  "beat_first_open_air_test": {
+    "act": 4,
+    "context": "Milestone/transition beat for beat first open air test. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 23,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_open_air_test"
+  },
+  "beat_first_solar_array": {
+    "act": 1,
+    "context": "Milestone/transition beat for beat first solar array. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 6,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_solar_array"
+  },
+  "beat_first_trade": {
+    "act": 2,
+    "context": "Milestone/transition beat for beat first trade. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 12,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:first_trade"
+  },
+  "beat_last_storm": {
+    "act": 5,
+    "context": "Milestone/transition beat for beat last storm. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 29,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:last_storm"
+  },
+  "beat_population_12": {
+    "act": 2,
+    "context": "Milestone/transition beat for beat population 12. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 10,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:population_12"
+  },
+  "beat_population_8": {
+    "act": 2,
+    "context": "Milestone/transition beat for beat population 8. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 9,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:population_8"
+  },
+  "beat_signal_understood": {
+    "act": 5,
+    "context": "Milestone/transition beat for beat signal understood. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 26,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:signal_understood"
+  },
+  "beat_temperature_rise": {
+    "act": 4,
+    "context": "Milestone/transition beat for beat temperature rise. Short punchy story beat, not ambient log noise.",
+    "max_chars": 520,
+    "seq": 21,
+    "trigger_summary": "internal milestone or act transition",
+    "type": "beats",
+    "unlock_after": "milestone:temperature_rise"
+  },
+  "end_01_signal_decoded": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 01: signal decoded. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 1,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==0"
+  },
+  "end_02_door_beneath_basalts": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 02: door beneath basalts. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 2,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==1"
+  },
+  "end_03_old_intelligence": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 03: old intelligence. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 3,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==2"
+  },
+  "end_04_terraforming_choice": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 04: terraforming choice. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 4,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==3"
+  },
+  "end_05_first_breath": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 05: first breath. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 5,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==4"
+  },
+  "end_06_storm_breaks": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 06: storm breaks. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 6,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==5"
+  },
+  "end_07_children_outside": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 07: children outside. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 7,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==6"
+  },
+  "end_08_machine_confession": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 08: machine confession. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 8,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==7"
+  },
+  "end_09_precursor_answer": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 09: precursor answer. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 9,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==8"
+  },
+  "end_10_green_horizon": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 10: green horizon. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 10,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==9"
+  },
+  "end_11_colony_reply": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 11: colony reply. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 11,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==10"
+  },
+  "end_12_epilogue_seed": {
+    "act": 5,
+    "context": "Ordered ending payoff fragment 12: epilogue seed. High craft; reveal/climax/epilogue sequence.",
+    "max_chars": 700,
+    "seq": 12,
+    "trigger_summary": "ordered ending sequence",
+    "type": "ending",
+    "unlock_after": "ending_seq==11"
+  },
+  "evt_anomaly_archive_checksum": {
+    "act": "2-5",
+    "context": "Ambient anomaly event: archive checksum. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_anomaly_buried_heat": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: buried heat. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_anomaly_clock_skip": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: clock skip. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_anomaly_coded_lullaby": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: coded lullaby. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_anomaly_ghost_packet": {
+    "act": "2-5",
+    "context": "Ambient anomaly event: ghost packet. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_anomaly_impossible_echo": {
+    "act": "2-5",
+    "context": "Ambient anomaly event: impossible echo. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_anomaly_map_gap": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: map gap. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_anomaly_memory_leak": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: memory leak. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_anomaly_old_beacon": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: old beacon. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_anomaly_pattern_in_dust": {
+    "act": "2-5",
+    "context": "Ambient anomaly event: pattern in dust. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_anomaly_redacted_star": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: redacted star. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_anomaly_silent_reply": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: silent reply. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_anomaly_spectral_line": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: spectral line. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_anomaly_subsurface_ping": {
+    "act": "2-5",
+    "context": "Ambient anomaly event: subsurface ping. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_anomaly_warm_stone": {
+    "act": "2-5",
+    "context": "Ambient anomaly event: warm stone. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_anomaly_wrong_shadow": {
+    "act": "3-5",
+    "context": "Ambient anomaly event: wrong shadow. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "anomaly",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_colony_life_birthday_ping": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: birthday ping. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_colony_life_bunk_light": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: bunk light. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_colony_life_child_question": {
+    "act": "1-5",
+    "context": "Ambient colony_life event: child question. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_colony_life_crew_argument": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: crew argument. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_colony_life_dome_walk": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: dome walk. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_colony_life_exercise_loop": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: exercise loop. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_colony_life_first_sprout": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: first sprout. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_colony_life_greenhouse_queue": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: greenhouse queue. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_colony_life_hydroponic_laugh": {
+    "act": "1-5",
+    "context": "Ambient colony_life event: hydroponic laugh. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_colony_life_new_nickname": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: new nickname. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_colony_life_quiet_meal": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: quiet meal. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_colony_life_ration_vote": {
+    "act": "1-5",
+    "context": "Ambient colony_life event: ration vote. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_colony_life_repair_song": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: repair song. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_colony_life_shared_coffee": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: shared coffee. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_colony_life_sleep_shift": {
+    "act": "1-5",
+    "context": "Ambient colony_life event: sleep shift. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_colony_life_work_roster": {
+    "act": "2-5",
+    "context": "Ambient colony_life event: work roster. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "colony_life",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_discovery_basalt_door": {
+    "act": "3-5",
+    "context": "Ambient discovery event: basalt door. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_discovery_buried_panel": {
+    "act": "2-5",
+    "context": "Ambient discovery event: buried panel. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_discovery_clear_sample": {
+    "act": "3-5",
+    "context": "Ambient discovery event: clear sample. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_discovery_fossil_ripple": {
+    "act": "3-5",
+    "context": "Ambient discovery event: fossil ripple. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_discovery_glass_tube": {
+    "act": "2-5",
+    "context": "Ambient discovery event: glass tube. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_discovery_ice_lens": {
+    "act": "2-5",
+    "context": "Ambient discovery event: ice lens. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_discovery_lost_rover": {
+    "act": "3-5",
+    "context": "Ambient discovery event: lost rover. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_discovery_microbe_trace": {
+    "act": "2-5",
+    "context": "Ambient discovery event: microbe trace. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_discovery_old_bootprint": {
+    "act": "3-5",
+    "context": "Ambient discovery event: old bootprint. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_discovery_ore_thread": {
+    "act": "2-5",
+    "context": "Ambient discovery event: ore thread. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 2-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_discovery_pressure_cave": {
+    "act": "3-5",
+    "context": "Ambient discovery event: pressure cave. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_discovery_salt_marker": {
+    "act": "3-5",
+    "context": "Ambient discovery event: salt marker. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_discovery_seed_cache": {
+    "act": "3-5",
+    "context": "Ambient discovery event: seed cache. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_discovery_sky_reading": {
+    "act": "3-5",
+    "context": "Ambient discovery event: sky reading. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_discovery_soil_bloom": {
+    "act": "3-5",
+    "context": "Ambient discovery event: soil bloom. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_discovery_warm_vent": {
+    "act": "3-5",
+    "context": "Ambient discovery event: warm vent. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "discovery",
+    "trigger_summary": "weighted random pool draw; act 3-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_equipment_antenna_slew": {
+    "act": "1-5",
+    "context": "Ambient equipment event: antenna slew. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_equipment_backup_boot": {
+    "act": "1-5",
+    "context": "Ambient equipment event: backup boot. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_equipment_battery_warm": {
+    "act": "1-5",
+    "context": "Ambient equipment event: battery warm. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_equipment_cable_frost": {
+    "act": "1-5",
+    "context": "Ambient equipment event: cable frost. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_equipment_compressor_tick": {
+    "act": "1-5",
+    "context": "Ambient equipment event: compressor tick. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_equipment_drone_return": {
+    "act": "1-5",
+    "context": "Ambient equipment event: drone return. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_equipment_filter_warning": {
+    "act": "1-5",
+    "context": "Ambient equipment event: filter warning. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_equipment_heater_cycle": {
+    "act": "1-5",
+    "context": "Ambient equipment event: heater cycle. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_equipment_printer_jam": {
+    "act": "1-5",
+    "context": "Ambient equipment event: printer jam. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_equipment_pump_cough": {
+    "act": "1-5",
+    "context": "Ambient equipment event: pump cough. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_equipment_relay_chatter": {
+    "act": "1-5",
+    "context": "Ambient equipment event: relay chatter. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_equipment_scrubber_grit": {
+    "act": "1-5",
+    "context": "Ambient equipment event: scrubber grit. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_equipment_seal_check": {
+    "act": "1-5",
+    "context": "Ambient equipment event: seal check. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_equipment_sensor_noise": {
+    "act": "1-5",
+    "context": "Ambient equipment event: sensor noise. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_equipment_servo_stutter": {
+    "act": "1-5",
+    "context": "Ambient equipment event: servo stutter. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_equipment_valve_resonance": {
+    "act": "1-5",
+    "context": "Ambient equipment event: valve resonance. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "equipment",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_weather_charged_dust": {
+    "act": "1-5",
+    "context": "Ambient weather event: charged dust. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_weather_clear_cold": {
+    "act": "1-5",
+    "context": "Ambient weather event: clear cold. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_weather_dust_storm_minor": {
+    "act": "1-5",
+    "context": "Ambient weather event: dust storm minor. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_weather_eclipse_dim": {
+    "act": "1-5",
+    "context": "Ambient weather event: eclipse dim. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_weather_frost_ring": {
+    "act": "1-5",
+    "context": "Ambient weather event: frost ring. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_weather_grit_on_panels": {
+    "act": "1-5",
+    "context": "Ambient weather event: grit on panels. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_weather_haze_bloom": {
+    "act": "1-5",
+    "context": "Ambient weather event: haze bloom. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_weather_ice_fog": {
+    "act": "1-5",
+    "context": "Ambient weather event: ice fog. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_weather_low_sun": {
+    "act": "1-5",
+    "context": "Ambient weather event: low sun. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_weather_night_freeze": {
+    "act": "1-5",
+    "context": "Ambient weather event: night freeze. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_weather_pressure_twitch": {
+    "act": "1-5",
+    "context": "Ambient weather event: pressure twitch. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_weather_red_horizon": {
+    "act": "1-5",
+    "context": "Ambient weather event: red horizon. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_weather_solar_glare": {
+    "act": "1-5",
+    "context": "Ambient weather event: solar glare. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "evt_weather_static_sky": {
+    "act": "1-5",
+    "context": "Ambient weather event: static sky. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 8
+  },
+  "evt_weather_storm_wall": {
+    "act": "1-5",
+    "context": "Ambient weather event: storm wall. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 3
+  },
+  "evt_weather_thin_cloud": {
+    "act": "1-5",
+    "context": "Ambient weather event: thin cloud. Not an action result; can appear live or in away digest.",
+    "max_chars": 140,
+    "pool": "weather",
+    "trigger_summary": "weighted random pool draw; act 1-5",
+    "type": "events",
+    "weight": 5
+  },
+  "ltr_botanist_01": {
+    "act": 1,
+    "context": "Recurring sender botanist letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "botanist",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=1 && letter_seq_botanist>=0"
+  },
+  "ltr_botanist_02": {
+    "act": 3,
+    "context": "Recurring sender botanist letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "botanist",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_botanist>=1"
+  },
+  "ltr_botanist_03": {
+    "act": 4,
+    "context": "Recurring sender botanist letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "botanist",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_botanist>=2"
+  },
+  "ltr_botanist_04": {
+    "act": 5,
+    "context": "Recurring sender botanist letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "botanist",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_botanist>=3"
+  },
+  "ltr_cartographer_01": {
+    "act": 2,
+    "context": "Recurring sender cartographer letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "cartographer",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=2 && letter_seq_cartographer>=0"
+  },
+  "ltr_cartographer_02": {
+    "act": 3,
+    "context": "Recurring sender cartographer letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "cartographer",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_cartographer>=1"
+  },
+  "ltr_cartographer_03": {
+    "act": 4,
+    "context": "Recurring sender cartographer letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "cartographer",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_cartographer>=2"
+  },
+  "ltr_cartographer_04": {
+    "act": 5,
+    "context": "Recurring sender cartographer letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "cartographer",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_cartographer>=3"
+  },
+  "ltr_child_01": {
+    "act": 2,
+    "context": "Recurring sender child letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "child",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=2 && letter_seq_child>=0"
+  },
+  "ltr_child_02": {
+    "act": 3,
+    "context": "Recurring sender child letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "child",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_child>=1"
+  },
+  "ltr_child_03": {
+    "act": 4,
+    "context": "Recurring sender child letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "child",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_child>=2"
+  },
+  "ltr_child_04": {
+    "act": 5,
+    "context": "Recurring sender child letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "child",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_child>=3"
+  },
+  "ltr_director_01": {
+    "act": 2,
+    "context": "Recurring sender director letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "director",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=2 && letter_seq_director>=0"
+  },
+  "ltr_director_02": {
+    "act": 3,
+    "context": "Recurring sender director letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "director",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_director>=1"
+  },
+  "ltr_director_03": {
+    "act": 4,
+    "context": "Recurring sender director letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "director",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_director>=2"
+  },
+  "ltr_director_04": {
+    "act": 5,
+    "context": "Recurring sender director letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "director",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_director>=3"
+  },
+  "ltr_doctor_01": {
+    "act": 2,
+    "context": "Recurring sender doctor letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "doctor",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=2 && letter_seq_doctor>=0"
+  },
+  "ltr_doctor_02": {
+    "act": 3,
+    "context": "Recurring sender doctor letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "doctor",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_doctor>=1"
+  },
+  "ltr_doctor_03": {
+    "act": 4,
+    "context": "Recurring sender doctor letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "doctor",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_doctor>=2"
+  },
+  "ltr_doctor_04": {
+    "act": 5,
+    "context": "Recurring sender doctor letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "doctor",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_doctor>=3"
+  },
+  "ltr_engineer_01": {
+    "act": 1,
+    "context": "Recurring sender engineer letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "engineer",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=1 && letter_seq_engineer>=0"
+  },
+  "ltr_engineer_02": {
+    "act": 3,
+    "context": "Recurring sender engineer letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "engineer",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_engineer>=1"
+  },
+  "ltr_engineer_03": {
+    "act": 4,
+    "context": "Recurring sender engineer letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "engineer",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_engineer>=2"
+  },
+  "ltr_engineer_04": {
+    "act": 5,
+    "context": "Recurring sender engineer letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "engineer",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_engineer>=3"
+  },
+  "ltr_quartermaster_01": {
+    "act": 2,
+    "context": "Recurring sender quartermaster letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "quartermaster",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=2 && letter_seq_quartermaster>=0"
+  },
+  "ltr_quartermaster_02": {
+    "act": 3,
+    "context": "Recurring sender quartermaster letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "quartermaster",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_quartermaster>=1"
+  },
+  "ltr_quartermaster_03": {
+    "act": 4,
+    "context": "Recurring sender quartermaster letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "quartermaster",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_quartermaster>=2"
+  },
+  "ltr_quartermaster_04": {
+    "act": 5,
+    "context": "Recurring sender quartermaster letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "quartermaster",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_quartermaster>=3"
+  },
+  "ltr_unknown_01": {
+    "act": 2,
+    "context": "Recurring sender unknown letter 01. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "unknown",
+    "seq": 1,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=2 && letter_seq_unknown>=0"
+  },
+  "ltr_unknown_02": {
+    "act": 3,
+    "context": "Recurring sender unknown letter 02. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "unknown",
+    "seq": 2,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=3 && letter_seq_unknown>=1"
+  },
+  "ltr_unknown_03": {
+    "act": 4,
+    "context": "Recurring sender unknown letter 03. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "unknown",
+    "seq": 3,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=4 && letter_seq_unknown>=2"
+  },
+  "ltr_unknown_04": {
+    "act": 5,
+    "context": "Recurring sender unknown letter 04. Establish distinct voice and evolving relationship.",
+    "max_chars": 750,
+    "sender": "unknown",
+    "seq": 4,
+    "trigger_summary": "letter unlock across arc",
+    "type": "letters",
+    "unlock_after": "act>=5 && letter_seq_unknown>=3"
+  },
+  "ui_button_archive": {
+    "context": "UI copy for button archive.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_build": {
+    "context": "UI copy for button build.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_copy_code": {
+    "context": "UI copy for button copy code.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_dismiss": {
+    "context": "UI copy for button dismiss.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_ending": {
+    "context": "UI copy for button ending.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_install": {
+    "context": "UI copy for button install.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_letters": {
+    "context": "UI copy for button letters.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_provision": {
+    "context": "UI copy for button provision.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_reconnect": {
+    "context": "UI copy for button reconnect.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_redeem_code": {
+    "context": "UI copy for button redeem code.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_save_wifi": {
+    "context": "UI copy for button save wifi.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_settings": {
+    "context": "UI copy for button settings.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_sync": {
+    "context": "UI copy for button sync.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_tend": {
+    "context": "UI copy for button tend.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_button_trade": {
+    "context": "UI copy for button trade.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_actions": {
+    "context": "UI copy for header actions.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_archive": {
+    "context": "UI copy for header archive.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_away": {
+    "context": "UI copy for header away.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_ending": {
+    "context": "UI copy for header ending.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_events": {
+    "context": "UI copy for header events.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_firmware": {
+    "context": "UI copy for header firmware.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_hab_status": {
+    "context": "UI copy for header hab status.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_letters": {
+    "context": "UI copy for header letters.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_modules": {
+    "context": "UI copy for header modules.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_population": {
+    "context": "UI copy for header population.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_resources": {
+    "context": "UI copy for header resources.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_header_wifi": {
+    "context": "UI copy for header wifi.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_alloy": {
+    "context": "UI copy for resource alloy.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_atmosphere": {
+    "context": "UI copy for resource atmosphere.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_biomass": {
+    "context": "UI copy for resource biomass.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_food": {
+    "context": "UI copy for resource food.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_ice": {
+    "context": "UI copy for resource ice.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_o2": {
+    "context": "UI copy for resource o2.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_polymer": {
+    "context": "UI copy for resource polymer.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_population": {
+    "context": "UI copy for resource population.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_power": {
+    "context": "UI copy for resource power.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_rare_metals": {
+    "context": "UI copy for resource rare metals.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_regolith": {
+    "context": "UI copy for resource regolith.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_temperature": {
+    "context": "UI copy for resource temperature.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_resource_water": {
+    "context": "UI copy for resource water.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tab_archive": {
+    "context": "UI copy for tab archive.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tab_colony": {
+    "context": "UI copy for tab colony.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tab_ending": {
+    "context": "UI copy for tab ending.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tab_hab": {
+    "context": "UI copy for tab hab.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tab_surface": {
+    "context": "UI copy for tab surface.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tab_terraform": {
+    "context": "UI copy for tab terraform.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tab_trade": {
+    "context": "UI copy for tab trade.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_act_gate": {
+    "context": "UI copy for tip act gate.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_archive_unlock": {
+    "context": "UI copy for tip archive unlock.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_catchup": {
+    "context": "UI copy for tip catchup.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_content_stub": {
+    "context": "UI copy for tip content stub.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_cooldown": {
+    "context": "UI copy for tip cooldown.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_ending_locked": {
+    "context": "UI copy for tip ending locked.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_gateway": {
+    "context": "UI copy for tip gateway.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_insufficient": {
+    "context": "UI copy for tip insufficient.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_locked": {
+    "context": "UI copy for tip locked.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_no_repeat": {
+    "context": "UI copy for tip no repeat.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_offline": {
+    "context": "UI copy for tip offline.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_passport": {
+    "context": "UI copy for tip passport.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_power_cycle": {
+    "context": "UI copy for tip power cycle.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  },
+  "ui_tip_protected_save": {
+    "context": "UI copy for tip protected save.",
+    "max_chars": 60,
+    "trigger_summary": "interface label/help text",
+    "type": "ui"
+  }
+}
