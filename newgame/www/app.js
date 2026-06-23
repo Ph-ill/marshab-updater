@@ -14,7 +14,9 @@ function setTutStep(n){S.tutStep=Math.max(0,Math.min(8,n));if(S.tutStep>=7)S.tab
 function closeTut(done){if(done){S.tutDone=true;try{localStorage.setItem('marsHabTutorialDone','1')}catch(e){}}render()}
 function openTut(){S.tutDone=false;setTutStep(0);try{localStorage.removeItem('marsHabTutorialDone')}catch(e){}render()}
 function backTut(){S.tutDone=false;setTutStep(Math.max(0,tutStep()-1));try{localStorage.removeItem('marsHabTutorialDone')}catch(e){}render()}
-function tutorial(){if(tutDone()||!S.state)return '';let s=S.state,u=s.upgrades||{},step=tutStep();let steps=[
+function starterLoopBuilt(u){return ['solar_array','ice_well','greenhouse'].every(k=>u&&u[k]&&u[k].owned)}
+function catchUpTut(){if(tutDone()||!S.state)return;let u=S.state.upgrades||{},step=tutStep(),next=step;if(step===4&&u.solar_array&&u.solar_array.owned)next=starterLoopBuilt(u)?6:5;if(step===5&&starterLoopBuilt(u))next=6;if(step===7&&S.tab==='comms')next=8;if(next!==step)setTutStep(next)}
+function tutorial(){if(tutDone()||!S.state)return '';catchUpTut();let s=S.state,u=s.upgrades||{},step=tutStep();let steps=[
  {t:'Welcome to MarsHab',b:'Your MarsHab device is hosting this whole colony console. You are the quiet automation layer between six tired settlers and a very large, very cold planet. The hab is alive, but only just: air leaks into scrubbers, batteries sag, water is rationed, and every useful thing begins as dust, ice, and sunlight.',a:'Continue',target:''},
  {t:'Your first job',b:'MarsHab is an idle survival game about turning fragile systems into dependable loops. You will tap active operations for quick help, build modules for lasting production, and check back as the colony slowly becomes less emergency-shaped. If anything feels mysterious, the Guide button brings this help back.',a:'Show me the console',target:'#guide'},
  {t:'Read the resource strip',b:'The top strip is mission control in miniature. The six always-visible chips are life support: O₂, power, water, rations, regolith, and crew. Tap any chip now to reveal its name. Later, More opens the full engineering readout with rates and advanced materials.',a:'Waiting for resource tap…',target:'#res',wait:true},
@@ -33,7 +35,7 @@ function maybeTut(kind,data){
  if(tutDone())return false;
  let step=tutStep();
  if((step===2&&kind==='resource')||(step===3&&kind==='action')||(step===4&&kind==='build'&&data==='solar_array')||(step===7&&kind==='tab'&&data==='comms')){setTutStep(step+1);return true}
- if(step===5&&kind==='build'){let u=S.state?.upgrades||{};if(['solar_array','ice_well','greenhouse'].every(k=>u[k]&&u[k].owned)){setTutStep(6);return true}}
+ if(step===5&&kind==='build'){let u=S.state?.upgrades||{};if(starterLoopBuilt(u)){setTutStep(6);return true}}
  if(step===8&&kind==='package'){closeTut(true);return true}
  return false;
 }
