@@ -41,3 +41,9 @@ nav button.flash{animation:logDing 1.8s ease-out both!important}
 .topTools .actBtn,.topTools .settingsBtn,.topTools .guideBtn{height:44px!important;min-height:44px!important;max-height:44px!important;align-self:stretch!important}
 .topTools .actBtn{padding:0!important;font-size:15px!important;line-height:1!important}
 @media(max-width:500px){.topTools .actBtn,.topTools .settingsBtn,.topTools .guideBtn{height:44px!important;min-height:44px!important;max-height:44px!important}}
+
+#res:not(.open) .r.showName{animation:resNameHold 2s ease both!important}
+#res:not(.open) .r.showName b{animation:resNameText 2s ease both!important}
+@keyframes resNameHold{0%{background:#21160f;box-shadow:0 0 0 0 rgba(255,180,84,0)}12%,82%{background:#2b1b10;box-shadow:0 0 0 1px #ffb454,0 0 12px rgba(255,180,84,.18)}100%{background:#21160f;box-shadow:0 0 0 0 rgba(255,180,84,0)}}
+@keyframes resNameText{0%{opacity:0;transform:translateY(2px)}12%,82%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-2px)}}
+@media(prefers-reduced-motion:reduce){#res:not(.open) .r.showName,#res:not(.open) .r.showName b{animation:none!important}}
