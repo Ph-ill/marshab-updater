@@ -20,7 +20,7 @@ function tutorial(){if(tutDone()||!S.state)return '';let s=S.state,u=s.upgrades|
  {t:'Read the resource strip',b:'The top strip is mission control in miniature. The six always-visible chips are life support: O₂, power, water, rations, regolith, and crew. Tap any chip now to reveal its name. Later, More opens the full engineering readout with rates and advanced materials.',a:'Waiting for resource tap…',target:'#res',wait:true},
  {t:'Operations are your hands',b:'Operations are quick orders you can send right now. They buy time: vent stale air, reroute power, collect ice, sift dust. Use one ready operation now. You are not solving Mars forever yet — you are making the next few minutes safer.',a:'Waiting for operation…',target:'[data-guide=ops]',wait:true},
  {t:'Modules make habits',b:'Operations are emergency nudges. Modules are habits the colony can keep doing without you. Solar Array is first because power makes every other plan less desperate: pumps run, lamps glow, and the crew stops choosing which system gets electricity.',a:'Waiting for Solar Array…',target:'[data-build=solar_array]',wait:true},
- {t:'The first loop',b:'Good. One panel is not a city, but it is a start. The early colony wants a loop: Solar Array feeds Ice Well, Ice Well feeds Greenhouse, Greenhouse feeds rations and oxygen. That loop is your first real foothold on Mars.',a:'Continue',target:'[data-guide=mods]'},
+ {t:'The first loop',b:'Good. One panel is not a city, but it is a start. Finish the starter loop now: Solar Array feeds Ice Well, Ice Well feeds Greenhouse, Greenhouse feeds rations and oxygen. Build Ice Well and Greenhouse so the hab has its first real foothold on Mars.',a:'Waiting for starter loop…',target:'[data-guide=mods]',wait:true},
  {t:'Check in, then let it breathe',b:'MarsHab keeps working while powered. You do not need to stare at it every second; return later to read logs, spend gains, and shore up whichever system is grumbling loudest. The colony should feel like a living little machine, not a spreadsheet demanding tribute.',a:'Continue',target:'#guide'},
  {t:'Visit Trade',b:'Trade is the friendly, optional part of the network. It creates care-package codes and records passport visits so other habs can help without making solo play mandatory. Tap Trade now so you know where that social machinery lives.',a:'Waiting for Trade tab…',target:'nav',wait:true},
  {t:'Pack something useful',b:'Create one care-package code. Think of it as sealing a little box of surplus, goodwill, and Martian duct tape. You can share codes later, redeem carried packages, or ignore trade entirely and still finish the colony.',a:'Waiting for package code…',target:'#pkg',wait:true}];
@@ -33,6 +33,7 @@ function maybeTut(kind,data){
  if(tutDone())return false;
  let step=tutStep();
  if((step===2&&kind==='resource')||(step===3&&kind==='action')||(step===4&&kind==='build'&&data==='solar_array')||(step===7&&kind==='tab'&&data==='comms')){setTutStep(step+1);return true}
+ if(step===5&&kind==='build'){let u=S.state?.upgrades||{};if(['solar_array','ice_well','greenhouse'].every(k=>u[k]&&u[k].owned)){setTutStep(6);return true}}
  if(step===8&&kind==='package'){closeTut(true);return true}
  return false;
 }
