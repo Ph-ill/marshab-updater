@@ -1,4 +1,4 @@
-const S={state:null,tab:'hab',content:{},diag:null,lastMsg:'',fetchedAt:0,logSeeded:false,logs:[],unreadLogs:0,tutStep:0,tutDone:false,tutTarget:'',resOpen:false,settingsOpen:false,resetArmed:false,tutReview:false,actOpen:false,stageSeen:null,stageFlash:false,surfaceTutDone:false};
+const S={state:null,tab:'hab',content:{},diag:null,lastMsg:'',fetchedAt:0,logSeeded:false,logs:[],unreadLogs:0,tutStep:0,tutDone:false,tutTarget:'',resOpen:false,settingsOpen:false,resetArmed:false,tutReview:false,actOpen:false,stageSeen:null,stageFlash:false,surfaceTutDone:false,tutScrollY:null};
 const $=q=>document.querySelector(q);
 const TYPES=['actions','beats','archive','events','away','ui','ending','letters'];
 const ICON={o2:'🫁',power:'⚡',water:'💧',food:'🥫',regolith:'🪨',population:'👥',atmosphere:'🌫️',temperature:'🌡️',biomass:'🌱',ice:'🧊',alloy:'🔩',polymer:'🧪',rare_metals:'💎',vent_co2:'🌬️',reroute_power:'⚡',collect_ice:'🧊',sift_regolith:'🪨',grow_rations:'🌱',decode_signal:'📡',survey_crater:'🛞',print_spares:'🛠️',stabilize_dome:'🏕️',run_atmo_processor:'🌫️',seed_bioreactor:'🧫',open_airlock:'🚪'};
@@ -103,11 +103,16 @@ function render(){if(!S.state)return;res();let s=S.state;if(!tabs().includes(S.t
  if(S.tab==='archive')html+=`<div class=card><h2>📚 ${txt('ui','ui_header_archive')}</h2><p class=muted>${(s.archive||[]).length} archive entries · ${(s.letters||[]).length} letters recovered</p>${storyList('archive',s.archive)}</div><div class=card><h2>✉️ ${txt('ui','ui_header_letters')}</h2>${storyList('letters',s.letters)}</div>`;
  if(S.tab==='ending')html+=`<div class=card><h2>🚪 ${txt('ui','ui_header_ending')}</h2>${envPanel(s)}${storyList('ending',s.ending)}${s.complete?'<button id=newGamePlus>🔁 Begin New Game+ // keep legacy</button>':'<p class=muted>Reach airlock-ready conditions to unlock the final sequence.</p>'}</div>`;
  $('#screen').innerHTML=html+tutorial()+surfaceTutorial();if(S.tab==='console')requestAnimationFrame(()=>{let l=document.querySelector('.consoleLog');if(l)l.scrollTop=l.scrollHeight});applyGuide()}
+function setTutLock(on){
+ if(on){if(S.tutScrollY!==null)return;S.tutScrollY=window.scrollY||0;document.body.style.top=`-${S.tutScrollY}px`;document.body.classList.add('tutLock')}
+ else if(S.tutScrollY!==null){let y=S.tutScrollY;S.tutScrollY=null;document.body.classList.remove('tutLock');document.body.style.top='';window.scrollTo(0,y)}
+}
 function applyGuide(){
  document.querySelectorAll('.guideFocus').forEach(e=>e.classList.remove('guideFocus'));
  let tut=document.querySelector('#tutorial');if(tut){tut.classList.remove('placeTop','placeBottom')}
- if(tutDone()||!S.tutTarget)return;
- let el=document.querySelector(S.tutTarget);if(!el)return;el.classList.add('guideFocus');
+ if(!tut){setTutLock(false);return}
+ if(tutDone()||!S.tutTarget){setTutLock(true);return}
+ let el=document.querySelector(S.tutTarget);if(!el){setTutLock(true);return}setTutLock(false);el.classList.add('guideFocus');
  requestAnimationFrame(()=>placeAndScrollGuide(el));
 }
 function placeAndScrollGuide(el){
@@ -131,6 +136,7 @@ function placeAndScrollGuide(el){
   let maxY=Math.max(0,document.documentElement.scrollHeight-vh);
   let next=Math.max(0,Math.min(maxY,window.scrollY+actual-desired));
   window.scrollTo({top:next,behavior:'auto'});
+  requestAnimationFrame(()=>setTutLock(true));
  });
 }
 async function sync(){let min=new Promise(r=>setTimeout(r,1200));let p=api('/api/sync',{body:{now:Date.now()}});let [st]=await Promise.all([p,min]);S.state=st;S.fetchedAt=Date.now();await Promise.all(TYPES.map(loadContent));$('#load').classList.add('hide');if(!S.logSeeded){(st.events||[]).slice(-8).reverse().forEach(id=>log(line(id),true));S.logSeeded=true}if(st.away_report&&st.away_report.elapsed_ms){let parts=(st.away_report.away||[]).map(id=>txt('away',id));(st.away_report.beats||[]).forEach(id=>log(txt('beats',id)));log(parts.length?parts.join(' / '):('while away: '+Object.entries(st.away_report.gains||{}).map(([k,v])=>nice(k)+' '+fmt(v)).join(', ')))}render()}
