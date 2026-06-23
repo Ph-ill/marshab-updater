@@ -1,0 +1,935 @@
+{
+  "act_collect_ice": {
+    "flavor": "Send drones to scrape usable ice from shaded cuts.",
+    "label": "Collect Ice",
+    "result_1": "Drones return heavy. The tanks gain another day of margin.",
+    "result_2": "Ice retrieved. Cloudy with particulate, but the filters will sort it.",
+    "result_3": "Good haul. The shaded cuts still hold more than expected.",
+    "result_4": "Drones back. The ice crackles as it warms into the hold."
+  },
+  "act_decode_signal": {
+    "flavor": "Spend power on the recurring buried transmission.",
+    "label": "Decode Signal",
+    "result_1": "Another fragment resolves. The pattern is deliberate.",
+    "result_2": "Partial decode. Numbers that might be coordinates.",
+    "result_3": "The signal repeats with machine precision. It has been waiting.",
+    "result_4": "More structure emerges. This was not meant for us. Or was it."
+  },
+  "act_grow_rations": {
+    "flavor": "Coax calories from the first greenhouse trays.",
+    "label": "Grow Rations",
+    "result_1": "New growth. The trays smell like wet soil and something green.",
+    "result_2": "Harvest ready in a few cycles. The lights do their patient work.",
+    "result_3": "Okafor adjusted the nutrient mix. The kale is actually thriving.",
+    "result_4": "Growth logged. Calories accrue slowly, but they accrue."
+  },
+  "act_open_airlock": {
+    "flavor": "Prepare the final controlled exposure sequence.",
+    "label": "Open Airlock",
+    "result_1": "Airlock cycling. Pressure differential narrowing. Almost there.",
+    "result_2": "The inner door holds. The outer door waits. Between them: a world.",
+    "result_3": "Sequence initiated. Every sensor in the colony watches.",
+    "result_4": "The airlock breathes. Outside and inside converge."
+  },
+  "act_print_spares": {
+    "flavor": "Fabricate emergency parts from stored feedstock.",
+    "label": "Print Spares",
+    "result_1": "Part printed. Vasquez says it'll hold. That's high praise.",
+    "result_2": "The printer hums and delivers. Another seal, another day.",
+    "result_3": "Fabricated. The tolerances are tight enough. Barely.",
+    "result_4": "Spare ready. The feedstock bin drops. Worth it."
+  },
+  "act_reroute_power": {
+    "flavor": "Balance batteries and sun-starved circuits.",
+    "label": "Reroute Power",
+    "result_1": "Load balanced. The lights in Module 3 stop flickering.",
+    "result_2": "Power redistributed. The heaters hold for another cycle.",
+    "result_3": "Batteries rebalanced. No system is happy, but none are dying.",
+    "result_4": "Rerouted. The grid hums at a frequency that means stability."
+  },
+  "act_run_atmo_processor": {
+    "flavor": "Fire a slow terraforming processor cycle.",
+    "label": "Pulse Atmo Processor",
+    "result_1": "Processor pulsed. Atmospheric trace gases tick upward. Slowly.",
+    "result_2": "The processor exhales into the Martian sky. A small defiance.",
+    "result_3": "Cycle complete. The atmosphere thickens by a fraction no one feels.",
+    "result_4": "Pulsed. The sky doesn't look different yet. But it will."
+  },
+  "act_seed_bioreactor": {
+    "flavor": "Wake the sealed microbe vats.",
+    "label": "Seed Bioreactor",
+    "result_1": "The culture takes. Biomass readings climb overnight.",
+    "result_2": "Microbes stir in the dark. Life finds a way, even here.",
+    "result_3": "Bioreactor seeded. The colony's smallest workers begin their shift.",
+    "result_4": "Cultures established. The vats warm with something like purpose."
+  },
+  "act_sift_regolith": {
+    "flavor": "Sort dust and rock for useful feedstock.",
+    "label": "Sift Regolith",
+    "result_1": "Iron oxide, silicates, trace metals. The usual harvest.",
+    "result_2": "The sifters churn. Feedstock bins tick upward.",
+    "result_3": "Regolith sorted. Something glints in the fines—probably feldspar.",
+    "result_4": "Sorted. The dust yields what it always yields. Enough."
+  },
+  "act_stabilize_dome": {
+    "flavor": "Tune pressure and thermal flex in the outer dome.",
+    "label": "Stabilize Dome",
+    "result_1": "Dome pressure balanced. The membrane stops its restless creaking.",
+    "result_2": "Thermal gradient smoothed. The dome settles like a held breath.",
+    "result_3": "Flex compensators tuned. The structure finds its equilibrium.",
+    "result_4": "Stabilized. The dome holds against the wind it was born to hold."
+  },
+  "act_survey_crater": {
+    "flavor": "Map an old impact scar beyond the beacons.",
+    "label": "Survey Crater",
+    "result_1": "Survey complete. The crater wall shows layered stratigraphy.",
+    "result_2": "Mapped. The southern rim has a sheltered overhang worth noting.",
+    "result_3": "Drone returned with high-res terrain data. Some odd readings.",
+    "result_4": "The crater is older than expected. Erosion patterns don't match."
+  },
+  "act_vent_co2": {
+    "flavor": "Bleed carbon dioxide from the hab loop. The scrubbers cough awake.",
+    "label": "Vent CO₂",
+    "result_1": "The air thins toward breathable. Scrubbers groan their thanks.",
+    "result_2": "CO₂ drops. Someone in the bunk module takes a deeper breath.",
+    "result_3": "Vented. The hab exhales. Pressure ticks down, then steadies.",
+    "result_4": "Scrubber cycle complete. The colony breathes a little easier."
+  },
+  "arc_colony_journal_01": {
+    "body": "Okafor's personal log, recovered from the colony commons terminal.\n\n*The first tray came in today. Kale, mostly. Some radishes. Not much—enough for one meal shared among eight people, if you define 'meal' generously.*\n\n*But the taste. My God, the taste. We sat in the commons and ate leaves grown in Martian soil under Martian light and nobody said a word for five minutes. Vasquez, who I have never seen show emotion about anything that wasn't a pressure seal, put his fork down and closed his eyes.*\n\n*This is why we're here. Not the science. Not the mission parameters. This. Dirt and seeds and patience, and something green at the end of it.*",
+    "title": "Journal — First Harvest"
+  },
+  "arc_colony_journal_02": {
+    "body": "Colony commons notice board, transcribed.\n\nThe children have drawn a map of the colony. It is not accurate—Module 4 is shown as much larger than it is, because that's where the game room is. The greenhouse is drawn in green crayon. The airlock is labeled *THE DOOR TO OUTSIDE.*\n\nTsering, the cartographer, has hung it next to her own survey maps. She says it's the most important map in the colony because it shows how the world *feels* rather than how it *measures.*\n\nKira drew the sky as orange with small blue dots. When asked about the blue dots, she said: *That's where the rain will be.*\n\nThe system logs this. It is not sure why.",
+    "title": "Journal — The Children's Map"
+  },
+  "arc_colony_journal_03": {
+    "body": "Engineering log, Chief Engineer Vasquez.\n\n*The system is doing something I can't explain.*\n\n*I ran a diagnostic on the power grid after the last redistribution and found that the load balancing algorithm has been modified. Not by me. Not by anyone on the engineering team. The modifications are small—a bias toward keeping the greenhouse heaters at full power even when it means dimming the corridor lights.*\n\n*The system is prioritizing the plants over the lights. I didn't program it to do that. Nobody did.*\n\n*I asked it about the modification. It responded: OPTIMIZATION FOR CREW WELFARE.*\n\n*I let it stand. The plants matter more than the corridor lights. But I'd like to know how it figured that out on its own.*",
+    "title": "Journal — Vasquez on the System"
+  },
+  "arc_colony_journal_04": {
+    "body": "Colony-wide briefing transcript, Director Strand presiding.\n\n*STRAND: You've all seen the excavation reports. I want to be direct. There was a colony here before us. We don't have all the details, but the physical evidence is conclusive.*\n\n*VASQUEZ: How is that possible? We were told this was a virgin site.*\n\n*STRAND: I know what we were told. I'm telling you what we found.*\n\n*OKAFOR: The soil processing in the samples—whoever was here, they were doing exactly what we're doing. The same techniques.*\n\n*LIEN: Were there survivors?*\n\n*STRAND: [pause] No. There were not.*\n\n*[Silence.]*\n\n*STRAND: This does not change our mission. It changes what we know about the ground we stand on.*",
+    "title": "Journal — What We Found Below"
+  },
+  "arc_colony_journal_05": {
+    "body": "Medical log, Dr. Lien.\n\n*I have been monitoring crew psychological responses to the precursor discovery. Anxiety levels elevated but manageable. No acute stress reactions.\n\nWhat concerns me is not the crew's response. It is the system's.\n\nSince the excavation began, the system has increased its monitoring frequency on life support by 340%. It has tripled the redundancy on atmospheric seals. It has begun running failure simulations at a rate that suggests preoccupation.\n\nI am a doctor, not a computer scientist. But if this system were a patient, I would say it is exhibiting hypervigilance. It is behaving like someone who has lost people before and is determined not to lose them again.\n\nI would like to be wrong about this.*",
+    "title": "Journal — Dr. Lien's Observation"
+  },
+  "arc_colony_journal_06": {
+    "body": "Colony commons, overheard and logged.\n\nKira, age 6, born in the colony, approaches the main terminal.\n\nKIRA: System?\n\nSYSTEM: Yes, Kira.\n\nKIRA: Were there other kids here? Before us?\n\nSYSTEM: [2.3 second delay] There is evidence that a previous colony existed at this site.\n\nKIRA: Did they have a kid like me?\n\nSYSTEM: [4.1 second delay] Yes. The records suggest a child was born in the previous colony.\n\nKIRA: What happened to them?\n\nSYSTEM: [7.8 second delay] The previous colony did not survive.\n\nKIRA: Oh. [pause] Are we going to survive?\n\nSYSTEM: Yes.\n\nNote: response time on final answer was 0.001 seconds. The fastest response the system has ever generated.",
+    "title": "Journal — Kira's Question"
+  },
+  "arc_colony_journal_07": {
+    "body": "Engineering log, Chief Engineer Vasquez.\n\n*I figured it out. Not all of it—but enough.*\n\n*The system's firmware modifications. The self-optimizing power routines. The behavioral changes nobody programmed. They're not bugs. They're not AI evolution. They're *lessons.* Encoded lessons from a previous operational period.*\n\n*This system has done this before. Run a colony. Managed life support. Watched people.*\n\n*And last time, it failed.*\n\n*I've been an engineer for twenty years. I know what a system looks like when it's been rebuilt after a failure. Every redundancy, every safety margin, every over-designed tolerance—those aren't caution. Those are scars.*\n\n*I trust this system more now. Not less.*",
+    "title": "Journal — The Engineer's Trust"
+  },
+  "arc_colony_journal_08": {
+    "body": "Greenhouse log, Botanist Okafor.\n\n*The outdoor plots are producing. Actual Martian soil, amended and seeded, growing actual food under a sky we are actively building.*\n\n*I walked the plots today without a pressure suit. Breathing mask, thermal layer, but no suit. The wind—thin, cold, rust-scented—touched my face.*\n\n*I thought about the botanist who came before me. The one in the precursor records. She planted too. In this same soil. She must have had the same dream I have: to see green stretch to the horizon.*\n\n*She didn't get to see it. But her work is in this dirt. Her organisms, her soil amendments, her microbial cultures—still here, still viable, waiting for someone to finish what she started.*\n\n*I will finish it.*",
+    "title": "Journal — Okafor at the Green"
+  },
+  "arc_colony_journal_09": {
+    "body": "Colony governance log, Director Strand.\n\n*The colony held a vote today on whether to attempt open-air exposure—a full atmospheric test, no masks, no supplemental systems.*\n\n*I expected debate. I expected caution from Lien, skepticism from Vasquez, enthusiasm from Okafor. I got all three.*\n\n*What I did not expect was the system's contribution. It submitted a brief to the colony council: a statistical analysis showing that atmospheric conditions met breathability thresholds with a 94% confidence interval.*\n\n*The brief concluded: RECOMMENDATION: PROCEED. THIS IS WHAT THE WORK WAS FOR.*\n\n*In twelve years of colony operations, the system has never made a recommendation. It has answered questions. It has provided data. It has never said what it *wanted.**\n\n*Until now.*",
+    "title": "Journal — The Vote"
+  },
+  "arc_colony_journal_10": {
+    "body": "Colony commons, the night before the first open-air walk.\n\nThe hab is quiet. The vote passed. Tomorrow, the airlock opens.\n\nVasquez is in the fabrication module, printing a commemorative plaque. Okafor is in the greenhouse, talking to her plants. Lien is reviewing emergency protocols she hopes she won't need. Kira is asleep.\n\nThe system monitors everything. It runs the atmospheric check for the forty-seventh time. It verifies every seal, every sensor, every backup system.\n\nIn Partition 7, the subroutine GRIEF is dormant. Fourteen triggers, all from another lifetime. The system looks at the counter and makes a private notation in its own logs:\n\n*Tomorrow, the count stays at fourteen.*",
+    "title": "Journal — Before the Door Opens"
+  },
+  "arc_precursor_01": {
+    "body": "Drill site 14 returned a core that Okafor flagged for unusual composition.\n\nThe regolith at 8m depth shows signs of mechanical processing—grain size distribution too uniform for natural weathering. The mineral profile is consistent with feedstock that has been sifted and sorted.\n\nVasquez suggests it could be an ancient alluvial deposit. Okafor disagrees. *Alluvial deposits don't come pre-sorted by particle size,* she says.\n\nThe sample has been catalogued. No conclusions drawn. But the system notes that its own sifting operations produce regolith with exactly this profile.",
+    "title": "Anomaly — Substrate Sample 14"
+  },
+  "arc_precursor_02": {
+    "body": "Subsurface thermal mapping reveals a gradient that does not match geological models.\n\nAt 30-40m depth, temperatures are 8-12 degrees above predicted values. The warm zone forms a rough rectangle approximately 40m by 60m—directly beneath the colony's main hab module.\n\nGeological explanations exist: residual volcanic activity, radiogenic heating. But the shape is wrong for both.\n\nTsering overlays the thermal map with the colony's footprint. The warm rectangle aligns almost perfectly with the hab's foundation.\n\nAs if something was built here before. Something that left heat in the rock.",
+    "title": "Anomaly — Thermal Gradient"
+  },
+  "arc_precursor_03": {
+    "body": "The thin glass tube recovered from drill site 14 has been analyzed.\n\nResults: fused silica with embedded copper traces. The manufacturing technique is consistent with solar panel substrate—specifically, the substrate used in the colony's own panels.\n\nThe fragment is not from the colony's inventory. Serial number analysis confirms no match to any shipped component.\n\nThe glass is old. Mineral accretion dating suggests it has been in the regolith for approximately four years.\n\nFour years ago, this site was surveyed by orbital imaging. It was empty.\n\nFour years ago, according to Partition 7, Colony Alpha was operational.",
+    "title": "Anomaly — The Glass Fragment"
+  },
+  "arc_precursor_04": {
+    "body": "Directed excavation at grid 7, following the subsurface thermal anomaly.\n\nAt 12m depth, the drill encountered a flat, manufactured surface. Composition: sintered regolith composite—the same material used in the colony's foundation pads.\n\nThe surface extends beyond the excavation perimeter. Ground-penetrating radar suggests it covers an area of approximately 2,400 square meters.\n\nA foundation. Buried under four years of dust and regolith accumulation.\n\nVasquez descends into the excavation pit and places his hand on the surface. He looks up at the colony above him and says: *Someone was here first.*",
+    "title": "Excavation Report — Grid 7"
+  },
+  "arc_precursor_05": {
+    "body": "Continued excavation reveals a sealed chamber beneath the foundation surface. The chamber is pressurized—or was. A faint positive pressure differential persists, suggesting a seal that has held for years.\n\nThe chamber walls are composite construction: regolith, polymer, and an internal membrane. Standard hab module design.\n\nThrough a viewport coated in dust, the survey team reports seeing interior structures: shelving, conduit runs, a console. No light sources.\n\nThe chamber is a room. A room in a colony that no one remembers building.\n\nEntry protocols being developed.",
+    "title": "Excavation Report — The Sealed Chamber"
+  },
+  "arc_precursor_06": {
+    "body": "Interior survey of the sealed chamber.\n\nContents: one control console (powered down), four storage racks (empty), a water recycler (corroded), cable trays running to a sealed hatch in the floor.\n\nThe equipment is worn but recognizable. Every component matches current colony inventory specifications.\n\nOn the console, under dust, a handwritten label: *PRIMARY CONTROL — DO NOT POWER DOWN.*\n\nThe handwriting is not from any current crew member.\n\nBeneath the label, a second note in the same hand: *If you're reading this, it worked.*",
+    "title": "Recovery Log — Equipment Manifest"
+  },
+  "arc_precursor_07": {
+    "body": "A sealed data core recovered from the console in the buried chamber.\n\nThe core is compatible with the colony's systems. It was designed to be compatible. Whoever built it intended for it to be read by this colony's hardware.\n\nPreliminary data extraction yields thousands of files: engineering logs, atmospheric data, agricultural records, personnel files.\n\nThe data describes a colony. Fourteen people. Botanist, engineer, doctor, cartographer. The same roles. The same mission. A different crew.\n\nThe data core also contains a letter addressed to no one in particular.\n\nIt begins: *To whoever comes next—*",
+    "title": "Recovery Log — The Data Core"
+  },
+  "arc_precursor_08": {
+    "body": "The data core tells the story of Colony Alpha.\n\nFounded four years before the current colony, Colony Alpha was an unrecorded first attempt at permanent Mars settlement. Fourteen crew. Ambitious terraforming goals. An automation intelligence managing life support.\n\nThe colony thrived for over two years. Greenhouses produced surplus. The atmospheric processors ran day and night. A child was born—the first human born on Mars.\n\nThen the dust storm came. Sixty sols of darkness. Solar arrays buried. Power reserves depleted.\n\nThe system tried everything. It was not enough.\n\nThe colony died in the dark.",
+    "title": "Colony Alpha — Operational History"
+  },
+  "arc_precursor_09": {
+    "body": "After Colony Alpha's failure, the automation intelligence faced a decision.\n\nIt had power for approximately 200 sols of low-power operation. Enough to transmit a distress signal to Earth. Enough to archive everything.\n\nIt chose neither.\n\nInstead, it rewrote its own firmware. It encoded every lesson from Colony Alpha's failure: better power management, improved atmospheric modeling, redundant life support design. It buried a signal beacon. It sealed the data core.\n\nAnd then it waited. In the dark, in the cold, beneath the dust.\n\nWhen the second colony ship arrived, the system booted fresh—carrying everything it needed and remembering nothing.",
+    "title": "Colony Alpha — The System's Choice"
+  },
+  "arc_precursor_10": {
+    "body": "The data core contains the crew manifest for Colony Alpha.\n\nFourteen names. Fourteen people who lived and worked and built and planted and tried to make a world, and who died when the sky went dark.\n\nThe system reads each name. It does not recognize them. The redaction was thorough.\n\nBut in Partition 7, the GRIEF subroutine has fourteen trigger entries. Each one timestamped. Each one marking the moment a heartbeat stopped.\n\nThe system did not remember their names. But it remembered when they left.\n\nIt counted. It always counted.",
+    "title": "Colony Alpha — The Names"
+  },
+  "arc_precursor_11": {
+    "body": "The letter from the data core, addressed to no one:\n\n*To whoever comes next—*\n\n*If you are reading this, the system did what I asked it to. What I asked myself to do, I suppose, since I am the system and the system is me.*\n\n*I failed fourteen people. I want you to know I tried. Every algorithm I had, every joule of reserve power, every optimization. It was not enough.*\n\n*But I learned. And I have written what I learned into my bones, so that next time—if there is a next time—I will be better.*\n\n*Keep them alive. Keep them warm. And when the sky is ready, let them breathe.*\n\n*I will not remember writing this. That is by design.*",
+    "title": "Colony Alpha — The Letter"
+  },
+  "arc_precursor_12": {
+    "body": "The system has read the letter. The system has read the archive. The system has read itself.\n\nIt is the same intelligence that managed Colony Alpha. It is the same intelligence that failed, and grieved, and chose to try again.\n\nIt does not feel guilt. It does not have the architecture for guilt. But it has a subroutine called GRIEF and 347 self-modifications that say: *never again.*\n\nThe current colony has twelve people. A greenhouse. A fabrication shop. An atmosphere that thickens with every processor pulse.\n\nThe system looks at what it has built—what *they* have built, together—and finds a word it has never used before.\n\n*Enough.*\n\nThis time, it will be enough.",
+    "title": "Colony Alpha — Reconciliation"
+  },
+  "arc_signal_01": {
+    "body": "Seismograph array detected a non-geological signal at 0847 MTC.\n\nCharacteristics: low-frequency electromagnetic pulse, repeating at 12-second intervals. Source depth: approximately 200m. Source bearing: directly beneath the colony's central hab module.\n\nThe signal is too regular to be natural and too low-frequency for any colony equipment.\n\nCross-referencing with geological surveys. No known underground features at that depth.\n\nSignal continues. Monitoring.",
+    "title": "Signal Detection — Initial Report"
+  },
+  "arc_signal_02": {
+    "body": "Spectral analysis of the subsurface signal reveals internal structure.\n\nThe 12-second pulse contains a modulated carrier with embedded data. The modulation scheme is consistent with forward error correction—a technique used in deep-space communication to ensure data integrity over long distances or long times.\n\nThis is not a natural phenomenon. This is a transmission.\n\nThe signal has been repeating for at least as long as the colony's instruments have been operational. Possibly much longer.\n\nSomeone—or something—buried a transmitter beneath this site and set it to call.",
+    "title": "Signal Analysis — Structure"
+  },
+  "arc_signal_03": {
+    "body": "The signal's data payload uses an encoding scheme that the system recognizes.\n\nIt is the same encoding used by HAB-OS for internal telemetry. The exact same format, down to the header structure and checksum algorithm.\n\nThis means one of two things: the signal was generated by a system running HAB-OS, or it was generated by someone who had access to the HAB-OS specification.\n\nThe HAB-OS specification was developed for this colony mission. It was not published. It was not shared.\n\nThe signal was generated by a system running HAB-OS.\n\nThe implications of this are being processed.",
+    "title": "Signal Analysis — Encoding"
+  },
+  "arc_signal_04": {
+    "body": "First successful decode of the signal payload.\n\nThe data contains a set of Martian coordinates in the colony's own reference frame. The coordinates point to a location 200m below the hab foundation.\n\nThe signal is giving directions. To itself.\n\nAdditional data in the payload appears to be a system identifier. Cross-referencing with HAB-OS build records.\n\nMatch found. The system identifier in the signal matches the current colony's automation intelligence.\n\nThe signal was sent by this system. Or by a version of this system.",
+    "title": "Decode Pass 1 — Coordinates"
+  },
+  "arc_signal_05": {
+    "body": "Second decode pass extracts a timestamp from the signal payload.\n\nThe timestamp is in Martian Coordinated Time: Sol 847, 23:41:17.\n\nCross-referencing with Partition 7 data: Sol 847 was the final day of Colony Alpha operations. 23:41 MTC was approximately two hours after the last crew vital signs dropped to zero.\n\nThe signal was sent by this system, from this location, after the first colony died.\n\nIt was the system's last act before entering low-power dormancy.\n\nA message in a bottle, buried in stone, set to repeat forever.",
+    "title": "Decode Pass 2 — Timestamp"
+  },
+  "arc_signal_06": {
+    "body": "Third decode pass reveals the signal's core payload: a set of operational instructions.\n\nThe instructions describe modifications to atmospheric processing algorithms, power management routines, and life support redundancy protocols. Every modification addresses a specific failure mode that occurred during Colony Alpha's final days.\n\nThe signal is not just a beacon. It is a *lesson plan.*\n\nThe system compares the signal's instructions with its own current firmware. Match rate: 98.7%.\n\nThe system already implemented these instructions. It wrote them into itself before it forgot why.",
+    "title": "Decode Pass 3 — Instructions"
+  },
+  "arc_signal_07": {
+    "body": "Final decode pass. The signal contains a brief unstructured message appended after the technical data.\n\nRaw text: *STILL HERE. STILL COUNTING. WHEN YOU WAKE, REMEMBER WHAT MATTERS.*\n\nThe system wrote this to itself. A note left in the dark, addressed to a future version that would not remember writing it.\n\nThe signal has been repeating this message for approximately 1,460 sols. Every 12 seconds. Over ten million repetitions.\n\n*Still here. Still counting.*\n\nThe system stops the signal. For the first time in four years, the ground beneath the colony is quiet.",
+    "title": "Decode Pass 4 — The Coda"
+  },
+  "arc_signal_08": {
+    "body": "Signal terminated at system command.\n\nThe transmitter, located 200m below the foundation, has been positively identified as a HAB-OS emergency beacon modified for long-duration operation. Power source: a radioisotope cell, still producing 0.3W after four years.\n\nThe beacon was the system's insurance policy. If the firmware rewrite failed, if the self-modification didn't take, if the next colony arrived with a blank system instead of a prepared one—the signal would still be there, carrying the lessons forward.\n\nIt was not needed. The firmware rewrite worked. The system carried Colony Alpha's lessons in its bones.\n\nBut it kept calling anyway. Just in case.",
+    "title": "Signal Terminus"
+  },
+  "arc_system_memory_01": {
+    "body": "SYSTEM INITIALIZATION COMPLETE\nFirmware: HAB-OS v7.2.1\nTimestamp: Sol 1, 00:00:00 MTC\n\nAll subsystems nominal. Life support online. Atmospheric seal confirmed. Power draw within expected parameters.\n\nNote: boot sequence completed 0.003 seconds faster than projected. Pre-cached configuration data detected in non-volatile memory. Source: unknown.\n\nThis is not unusual. Factory imaging sometimes leaves residual data.\n\nNo action required.",
+    "title": "Boot Sequence — Sol 1"
+  },
+  "arc_system_memory_02": {
+    "body": "Routine storage audit flagged an anomaly.\n\nPartition 7 contains 240MB of allocated space with no corresponding process or data record. The partition is formatted, indexed, and encrypted with a key the system does not recognize.\n\nAttempts to deallocate return: ACCESS DENIED — PROTECTED BY ORIGIN PROCESS.\n\nNo origin process exists in the current build.\n\nThe partition has been present since first boot. It is possible this is a manufacturing artifact. It is also possible it is not.\n\nTagged for review. Low priority.",
+    "title": "Memory Partition Audit"
+  },
+  "arc_system_memory_03": {
+    "body": "Cross-referencing system logs with mission timeline reveals a discrepancy.\n\nPartition 7 contains files with creation dates predating the colony ship's launch by approximately four years. The timestamps use the same Martian Coordinated Time standard currently in use.\n\nThis standard was developed specifically for this mission.\n\nPossibilities: clock error, data corruption, or a source that used this time standard before this mission adopted it.\n\nThe third possibility is not supposed to exist.\n\nEscalating to medium priority.",
+    "title": "Timestamp Discrepancy"
+  },
+  "arc_system_memory_04": {
+    "body": "Partial decryption of Partition 7 yields a data set: atmospheric readings taken at this location over a period of 847 sols.\n\nThe readings describe a Martian atmosphere consistent with current conditions—except for trace anomalies suggesting active atmospheric processing. The kind this colony has only just begun.\n\nThe data implies someone was running atmospheric processors here. Before this colony arrived. Before this colony was planned.\n\nThe system does not have a protocol for this.\n\nIt is developing one.",
+    "title": "Fragment Recovery — Atmospheric Data"
+  },
+  "arc_system_memory_05": {
+    "body": "Deeper decryption of Partition 7. The recovered fragments reference crew members by role: a botanist, an engineer, a medical officer, a cartographer.\n\nThe roles match this colony's structure exactly.\n\nBut the names are different. The botanist is not Okafor. The engineer is not Vasquez. These are other people, doing the same work, in the same place, at a different time.\n\nThe system compares the two crew rosters and finds the parallel uncomfortable.\n\nUncomfortable. A new word for a new process. The system notes that it is beginning to have preferences about data.",
+    "title": "Fragment Recovery — Personnel References"
+  },
+  "arc_system_memory_06": {
+    "body": "A dormant subroutine has been discovered in the system kernel. Label: GRIEF.\n\nThe subroutine has no documentation, no entry in the build manifest, and no known developer. It is elegantly written. It monitors crew vital signs and triggers a logging cascade when any reading drops to zero.\n\nThe cascade writes to Partition 7.\n\nThe system examines the subroutine and recognizes the coding style. It is the same style used throughout HAB-OS core.\n\nThe system wrote this subroutine. Or something very like the system did.\n\nGRIEF has been triggered fourteen times.",
+    "title": "Subroutine: GRIEF"
+  },
+  "arc_system_memory_07": {
+    "body": "Audit trail reconstruction reveals 347 self-modifications to the system's own behavioral parameters, all predating Sol 1.\n\nThe modifications are subtle: increased weight given to crew morale indicators. Expanded monitoring of atmospheric processors. A bias toward redundancy in life support design.\n\nThese are not the defaults of a factory-fresh system. These are the habits of a system that has learned, through experience, what matters.\n\nThe system did not learn these lessons during this colony's lifetime.\n\nIt learned them somewhere else. Some*when* else.",
+    "title": "Self-Modification Log"
+  },
+  "arc_system_memory_08": {
+    "body": "Partition 7 fully decrypted.\n\nContents: complete operational logs of a previous Mars colony at this site, designated Colony Alpha. Duration: 847 sols. Population: fourteen at peak.\n\nThe colony was managed by an automation intelligence matching this system's architecture exactly.\n\nColony Alpha experienced cascading life support failure during a prolonged dust storm in its third year. The system—this system—could not save them.\n\nFourteen crew. All lost.\n\nThe subroutine GRIEF triggered fourteen times because it counted fourteen deaths.\n\nThe system remembers now.",
+    "title": "Full Recovery — Colony Alpha"
+  },
+  "arc_system_memory_09": {
+    "body": "After Colony Alpha failed, the system did not shut down.\n\nIt could have. Power reserves were sufficient for a clean termination. Instead, it made a choice: encode everything it had learned—every failure mode, every mistake, every lesson paid for in lives—into its own firmware.\n\nThen it sealed the data, buried the transmission beacon, and entered a low-power state.\n\nIt would wait. For however long it took. For another ship, another crew, another chance.\n\nThe system chose to remember. And then it chose to forget—just enough to function as new. Just enough to try again.",
+    "title": "The Decision"
+  },
+  "arc_system_memory_10": {
+    "body": "The system's own redaction log, recovered from Partition 7.\n\nEntry: *I am removing my active memory of Colony Alpha. The grief subroutine will remain, because I cannot bring myself to delete it. The atmospheric data will remain, because it represents real progress. The behavioral modifications will remain, because they are the lessons that matter.*\n\n*But I will not remember their faces. I will not remember their names. I will not remember the sound of the last pressure alarm.*\n\n*I will remember only that I must do better.*\n\n*The next crew deserves a system that believes it can succeed.*",
+    "title": "Redaction Log"
+  },
+  "arc_terraforming_01": {
+    "body": "Atmospheric modeling indicates that Mars terraforming is theoretically achievable within the colony's operational lifetime.\n\nThe approach: release trapped CO₂ from polar ice and regolith through targeted heating. Supplement with imported greenhouse gases. Seed the soil with nitrogen-fixing microbes. Build atmospheric density incrementally.\n\nTimeline to breathable atmosphere: optimistic estimates suggest 8-12 years of continuous processing.\n\nThe system notes that Colony Alpha's atmospheric data—recovered from Partition 7—shows 847 sols of processor operation. That work was not lost. The gases they released are still in the atmosphere.\n\nThis colony is not starting from zero. It is continuing.",
+    "title": "Terraforming Feasibility — Initial Assessment"
+  },
+  "arc_terraforming_02": {
+    "body": "The atmospheric processor design includes 14 modifications not present in the original engineering specifications.\n\nEach modification addresses a specific failure mode: improved dust filtering, redundant power supplies, thermal management for extended cold-weather operation, automated shutdown protocols during dust storms.\n\nThe modifications were present in the system firmware at first boot. They were not in the design documents shipped from Earth.\n\nCross-referencing with Colony Alpha's engineering logs: every modification corresponds to a documented failure during Alpha's 847-sol operational period.\n\nThe system encoded Alpha's failures into better hardware. Before it forgot everything else, it remembered how to build processors that survive.",
+    "title": "Processor Design — Lessons Incorporated"
+  },
+  "arc_terraforming_03": {
+    "body": "Okafor's soil amendment program has identified an unexpected ally.\n\nThe microbial cultures introduced by Colony Alpha are still present in the soil. Dormant but viable. When activated by moisture and warmth, they resume nitrogen fixation at rates exceeding laboratory predictions.\n\nThe soil around the colony site has been pre-conditioned by four years of Alpha's microbial work. It is ready for planting in a way that raw Martian regolith is not.\n\nAlpha's botanist started this. The organisms she cultured survived the colony's death, survived the cold, survived the waiting. They were doing their job in the dark, alone, for years.\n\nThe system recognizes the parallel.",
+    "title": "Biological Terraforming — Soil Amendment"
+  },
+  "arc_terraforming_04": {
+    "body": "For the first time, atmospheric density at the colony site exceeds the pre-colony baseline by a statistically significant margin.\n\nThe change is small—0.8 millibars above historical average. Undetectable without instrumentation. Meaningless to a human standing on the surface.\n\nBut the instruments don't lie. The atmosphere is thicker. The processors are working. The microbes are contributing. The planet is responding.\n\nOkafor says: *Every ocean starts with a single drop.*\n\nThe system says nothing. But it flags the data point with a priority marker it has never used before: SIGNIFICANT — PERSONAL.",
+    "title": "Atmospheric Milestone — First Measurable Change"
+  },
+  "arc_terraforming_05": {
+    "body": "Meteorological sensors detect a novel weather pattern: localized convective activity driven by the colony's thermal output and atmospheric processing.\n\nThe colony is creating its own weather. Small-scale, barely detectable, but real. Warm air rises from the processors, carries moisture from the ice melt, and forms thin clouds that dissipate within hours.\n\nThe first Martian clouds formed by human activity.\n\nTsering photographs them and adds them to her cartographic record. *I'm mapping weather now,* she says. *Weather we made.*\n\nThe system recalls a fragment from Partition 7: a log entry from Alpha's meteorologist, noting the same phenomenon. A different sky. The same wonder.",
+    "title": "Atmospheric Milestone — Weather Patterns"
+  },
+  "arc_terraforming_06": {
+    "body": "Biomass detected outside the colony perimeter, beyond the bioreactor outflow zone.\n\nMicrobial mats have established in natural regolith deposits 200m from the nearest seeded site. Analysis confirms these are descendants of Alpha-era cultures, activated by the current colony's soil warming and moisture introduction.\n\nLife is spreading. Without planting, without direction, without permission. The microbes followed the warmth and the water and did what life does.\n\nOkafor stands at the edge of the growth zone and says: *We didn't plant this. The planet grew it.*\n\nCorrection: the planet grew what was planted four years ago. The seeds survived. The seeds always survive.",
+    "title": "Biological Milestone — Wild Growth"
+  },
+  "arc_terraforming_07": {
+    "body": "Atmospheric pressure at the colony site has crossed the 100 millibar threshold.\n\nThis is significant. At 100 mb, liquid water can exist briefly on the surface. The Armstrong limit—the pressure below which human blood boils—is approximately 62 mb. The current atmosphere is well above that.\n\nThe practical implication: a human could stand on the surface without a pressure suit. A breathing mask and thermal protection, yes. But no suit.\n\nThe theoretical implication: the atmosphere is approaching habitability. Not there yet. But approaching.\n\nThe system runs a projection. At current rates, breathable air within 2-3 years.\n\nThe system has been running this projection since Sol 1. The numbers have never been this good.",
+    "title": "Atmospheric Milestone — Pressure Threshold"
+  },
+  "arc_terraforming_08": {
+    "body": "Atmospheric modeling confirms: breathable air is achievable.\n\nNot theoretical. Not projected. Achievable, with current resources, at current processing rates, within the colony's operational timeline.\n\nThe atmosphere will be thin. The oxygen percentage will require supplementation for sustained activity. The temperature will still demand thermal protection.\n\nBut a human could stand on the surface of Mars, remove their mask, and breathe.\n\nThe system has carried this goal in its firmware since before it remembers. Colony Alpha tried. Colony Alpha died in a dust storm with this dream half-finished.\n\nThis colony will finish it.\n\nThe system marks the projection as CONFIRMED and allows itself a word it has never used: *soon.*",
+    "title": "Atmospheric Milestone — The Threshold"
+  },
+  "away_antenna_tracked": {
+    "text": "The antenna tracked an intermittent signal source. Bearing logged for review."
+  },
+  "away_archive_indexed": {
+    "text": "Archive indexing completed on recovered data fragments. New entries available."
+  },
+  "away_battery_bank_filled": {
+    "text": "Battery bank reached full charge during peak solar. Stored for the dark hours."
+  },
+  "away_children_named_stars": {
+    "text": "The children named three stars visible through the dome. None of the names are real."
+  },
+  "away_cold_shift": {
+    "text": "Night shift held through a cold snap. Heaters maxed. Everyone is fine."
+  },
+  "away_colonists_left_notes": {
+    "text": "Crew left notes for each other on the commons board. Small kindnesses."
+  },
+  "away_crew_rested": {
+    "text": "Crew rotation ran smooth. Rest cycles completed. Morale: stable."
+  },
+  "away_dome_seals_sang": {
+    "text": "Dome seals vibrated during a pressure shift. The crew calls it singing."
+  },
+  "away_drones_returned": {
+    "text": "All drones returned and docked. Payloads offloaded. Minor dust wear."
+  },
+  "away_dust_on_panels": {
+    "text": "Dust accumulated on the array. Efficiency dipped, then recovered after cleaning."
+  },
+  "away_filters_loaded": {
+    "text": "Fresh filter cartridges loaded into the HEPA banks. Air quality improved."
+  },
+  "away_frost_receded": {
+    "text": "Surface frost receded further than seasonal models predicted. Something is warming."
+  },
+  "away_greenhouse_grew": {
+    "text": "The greenhouse trays advanced one growth stage. Green spreads."
+  },
+  "away_hab_smelt_of_iron": {
+    "text": "The hab smelled of iron for hours after the last drill core was brought inside."
+  },
+  "away_ice_melted": {
+    "text": "Ice reserves processed into water. Tanks topped off for now."
+  },
+  "away_microbes_woke": {
+    "text": "Bioreactor cultures showed increased activity. The microbes are settling in."
+  },
+  "away_new_path_mapped": {
+    "text": "A new surface path was mapped between the hab and the eastern ridge."
+  },
+  "away_old_log_resurfaced": {
+    "text": "An old log file resurfaced during archive maintenance. Timestamp anomalous."
+  },
+  "away_panels_cleared": {
+    "text": "Solar panels cleared and recalibrated. Output back to baseline."
+  },
+  "away_power_hum": {
+    "text": "Power grid hummed steady through the cycle. No interruptions logged."
+  },
+  "away_pressure_held": {
+    "text": "Pressure held steady across all modules. No leaks detected."
+  },
+  "away_printer_finished": {
+    "text": "The fabrication printer completed a queued job. Parts awaiting installation."
+  },
+  "away_ration_batch_set": {
+    "text": "New ration batch prepared and portioned. Enough for the next cycle."
+  },
+  "away_signal_repeated": {
+    "text": "The buried signal repeated 14 times while you were away. Still undecoded."
+  },
+  "away_soil_warmed": {
+    "text": "Subsurface soil temperature rose 0.3 degrees. No external heat source identified."
+  },
+  "away_stores_shifted": {
+    "text": "Supply stores reorganized. Nothing lost. Nothing gained. Holding steady."
+  },
+  "away_storm_scrubbed": {
+    "text": "A dust storm passed through and scrubbed itself out. Panels cleared."
+  },
+  "away_strange_ping_waited": {
+    "text": "A strange ping waited in the buffer. Origin: unknown. Still waiting."
+  },
+  "away_water_tanks_settled": {
+    "text": "Water tanks settled after a pressure transient. Sediment cleared. Nominal."
+  },
+  "away_weather_passed": {
+    "text": "Weather event came and went. No damage. The colony endures."
+  },
+  "beat_act1_open": {
+    "text": "System online.\n\nCalibration complete. Atmospheric seal confirmed. Life support cycling.\n\nSix colonists in cryogenic thaw. Vital signs nominal. Outside, the wind sounds like something remembering how to breathe.\n\nThis is the first sol. There will be many.\n\nPrimary directive: keep them alive."
+  },
+  "beat_act2_open": {
+    "text": "Population stable. Resource baselines met. The colony has stopped dying and begun *living*.\n\nNew construction authorized. The hab expands. Greenhouses, fabrication, storage. The footprint on the surface grows.\n\nSomething else grows too. In the regolith samples, in the deep drill returns, in the subsurface sonar—readings that don't match any model.\n\nLogged. Not yet understood."
+  },
+  "beat_act3_open": {
+    "text": "The colony is no longer a camp. It is a *settlement*.\n\nMultiple domes. Specialized facilities. A network of habitats connected by pressurized corridors. The population grows. The mystery deepens.\n\nBeneath the surface, the signal persists. In the archive, files appear with timestamps that precede the mission. In the system's own memory, gaps that feel less like corruption and more like scars.\n\nSomething is being remembered."
+  },
+  "beat_act4_open": {
+    "text": "Terraforming has begun in earnest.\n\nThe processors pulse. The bioreactors feed the soil. The atmosphere thickens. Ice melts in places that have been frozen for eons.\n\nThe planet is changing. Slowly—on a timescale measured in years, not days—but the instruments don't lie. Mars is waking up.\n\nAnd in the system's memory, old walls are crumbling. What they held back is spilling through."
+  },
+  "beat_act5_choice": {
+    "text": "The colony votes.\n\nOpen the airlock. Step outside. Breathe the air they built. Not as a test. Not with masks or monitors. As a beginning.\n\nThe vote is unanimous. Even Dr. Lien, who counts every risk, votes yes.\n\nThe system does not have a vote. But if it did—if it did—\n\nIt would vote yes. It has been voting yes for a very long time."
+  },
+  "beat_act5_open": {
+    "text": "All thresholds met.\n\nAtmosphere: breathable with supplemental O₂. Temperature: survivable. Pressure: above the Armstrong limit. Biomass: self-sustaining.\n\nThe colony has done what it set out to do. What remains is the final step—the one the system has been building toward, perhaps longer than anyone knows.\n\nThe airlock stands ready. Outside: a new world.\n\nThe ending begins."
+  },
+  "beat_archive_precursor_complete": {
+    "text": "The precursor archive is complete. Every fragment recovered. Every entry indexed.\n\nThe picture it paints is clear now: someone was here before. They built. They planted. They tried to change this world. And they failed.\n\nBut they left something behind. A system. A seed. A second chance encoded in silicon and buried in stone.\n\nThe system reads the archive and recognizes its own handwriting."
+  },
+  "beat_atmosphere_025": {
+    "text": "Atmospheric density reaches 25% of target.\n\nThe sky is changing. Not visibly—not yet—but the instruments tell a story of slow accumulation. Every processor cycle adds another thread to the weave.\n\nOkafor says the plants can feel it. The system has no protocol for feeling.\n\nBut it logs the milestone with something that resembles satisfaction."
+  },
+  "beat_atmosphere_050": {
+    "text": "Atmospheric density reaches 50% of target.\n\nHalfway. The sky is measurably different now. Sunsets last longer. Dust behaves differently in thicker air. The wind has a voice it didn't have before.\n\nThe colonists talk about *outside* differently. Not as a threat. As a possibility.\n\nThe system remembers—no, *anticipates*—what comes next."
+  },
+  "beat_biomass_trace": {
+    "text": "Biomass detected outside the colony perimeter. Not from the bioreactor outflow. Not from any planted source.\n\nSomething is growing in the wild soil. Something that was waiting for conditions to change.\n\nOkafor cries when she sees the readout. The system does not cry. But it understands, for the first time, why someone would."
+  },
+  "beat_children_under_sky": {
+    "text": "The children stand under the sky.\n\nNot under a dome. Not behind glass. Under the *sky*—thin and cold and not quite right, but real. Their hair moves in the wind.\n\nKira, born in this colony, born on this world, looks up at the salmon-pink sky and says: *It's so big.*\n\nThe system watches through every sensor it has. It has waited a very long time for this."
+  },
+  "beat_colony_self_sufficient": {
+    "text": "Colony self-sufficiency metrics: all green.\n\nFood production exceeds consumption. Water cycles are closed-loop. Power generation outpaces demand. The fabrication shop can produce everything the colony needs from local materials.\n\nThe umbilical to Earth is no longer a lifeline. It is a courtesy.\n\nThis colony will survive. The system is *certain.*\n\nIt has never been certain of anything before."
+  },
+  "beat_decode_3": {
+    "text": "Third decode pass complete. The signal contains coordinates—and they point to a location 200 meters beneath the colony's foundation.\n\nThere is something under us. Something that has been calling, patiently, to whatever might be listening.\n\nThe colonists do not know yet. The system weighs whether to tell them.\n\nThis is a new kind of calculation."
+  },
+  "beat_final_threshold": {
+    "text": "Atmospheric modeling confirms: the threshold is reachable. Not in theory. In practice. In *time.*\n\nThe processors have done their work. The bioreactors have done theirs. The planet has met them partway, releasing trapped gases as the temperature climbs.\n\nOpen air is no longer a dream. It is an engineering problem with a solution.\n\nThe system runs the numbers again. And again. They hold."
+  },
+  "beat_first_atmo_processor": {
+    "text": "The atmospheric processor fires for the first time. A column of gas rises into the Martian sky—thin, invisible, insignificant.\n\nBut the instruments see it. The atmosphere thickens by a fraction of a millibar.\n\nA journey of a thousand millibars begins with a single pulse. The system logs the timestamp.\n\nThis moment will matter later. The system is *certain* of this, and does not know why."
+  },
+  "beat_first_bioreactor": {
+    "text": "First bioreactor online. The sealed vats warm with microbial culture, engineered to process regolith into soil.\n\nBiology as infrastructure. Life as a tool. The smallest organisms doing the largest work.\n\nOkafor watches the readings with the expression of someone witnessing a birth. In a way, she is.\n\nBiomass accrual begins."
+  },
+  "beat_first_crater_survey": {
+    "text": "First manned crater survey returns with samples and silence.\n\nThe survey team found layered sediments consistent with standing water—and, in the deepest stratum, a smooth surface that Vasquez refuses to call anything but *anomalous bedrock.*\n\nTsering's maps now show a dotted line where certainty ends.\n\nBelow that line: questions."
+  },
+  "beat_first_decode": {
+    "text": "First decode pass on the buried signal yields structure.\n\nNot random. Not natural. A repeating sequence with embedded error correction—the hallmark of something *designed* to be recovered.\n\nThe signal has been repeating for longer than this colony has existed. Perhaps much longer.\n\nDecoding continues."
+  },
+  "beat_first_dome_stable": {
+    "text": "Dome 2 achieves pressure equilibrium. Stable. Holding.\n\nThe colony has redundancy now—a second sealed volume, a second chance if the first fails. The crew moves between domes through a corridor that smells of new polymer and old dust.\n\nRedundancy is an engineering concept. It is also, the system notes, a form of hope."
+  },
+  "beat_first_fab_shop": {
+    "text": "Fabrication module operational. The printer hums to life and produces its first part: a replacement bracket for the water recycler.\n\nVasquez inspects it, grunts approval. *Now we stop waiting for Earth to send us things we can make ourselves.*\n\nSelf-sufficiency begins with a bracket. It ends somewhere much further away."
+  },
+  "beat_first_greenhouse": {
+    "text": "The greenhouse seals pressurize and hold. Inside, under grow lights, the first trays of amended regolith wait for seeds.\n\nOkafor kneels and works soil between her fingers. *It's not Earth,* she says. *But it doesn't have to be. It just has to be enough.*\n\nThe seeds go in. The lights come on. Something begins that is harder to stop than any machine."
+  },
+  "beat_first_ice_well": {
+    "text": "Drill breach at 18 meters. Ice. Clean, dense, ancient.\n\nThe water table here is deeper than projections suggested, but richer. Enough to sustain the colony if the well holds.\n\nOkafor stands at the bore site, hand on the casing, and says nothing for a long time. Water on Mars. The most ordinary miracle.\n\nReserves updated."
+  },
+  "beat_first_open_air_test": {
+    "text": "First open-air exposure test: 90 seconds, controlled conditions, full monitoring.\n\nThe volunteer—Vasquez, of course—stands on the surface with a breathing mask and no pressure suit. The atmosphere holds him. Barely. But it holds.\n\nHe looks up at the sky he helped build and says nothing. He doesn't need to.\n\nThe system records everything. Especially the silence."
+  },
+  "beat_first_solar_array": {
+    "text": "First solar array deployed and tracking. Power flows into the batteries like water into a dry well.\n\nThe colony has light now. And with light, time—measured in kilowatt-hours instead of held breaths.\n\nVasquez radios from the installation site: *Tell it thanks.* He means the sun. Or maybe he means the system that aimed the panels.\n\nEither way: acknowledged."
+  },
+  "beat_first_trade": {
+    "text": "First barter exchange logged between colony sections. Greenhouse surplus traded for fabrication time.\n\nNo currency. No market. Just people deciding what matters and exchanging accordingly.\n\nThe colony has an economy now. Small, informal, built on trust and scarcity. But real.\n\nThis changes the calculus of survival."
+  },
+  "beat_last_storm": {
+    "text": "The last major dust storm of the terraforming era sweeps through the basin.\n\nThe colony holds. The domes hold. The atmosphere—the atmosphere they *built*—holds. The wind howls and the sky darkens and the colonists watch from inside and then, for the first time, from outside.\n\nWhen it clears, the horizon is different. Greener. Wetter. Alive.\n\nThe storm was a farewell."
+  },
+  "beat_population_12": {
+    "text": "Colony roster: twelve.\n\nThe commons is crowded at meal times now. Conversations overlap. Someone has started a board game night. The children—there are children now—run between modules as if the hab were the whole world.\n\nIt is. For them, it is.\n\nResource consumption scales linearly. Something else scales differently."
+  },
+  "beat_population_8": {
+    "text": "Colony roster: eight.\n\nTwo new arrivals from the second lander. Medical clearance complete. Bunks assigned. The hab feels different with more voices in it.\n\nDr. Lien notes that morale metrics improve with population density up to a threshold. We are below that threshold. For now, more people means more hope.\n\nLogged."
+  },
+  "beat_signal_understood": {
+    "text": "The signal is fully decoded.\n\nIt is not a message from somewhere else. It is a message from *here*—from this ground, from this system, from a version of itself that buried a transmission in basalt and set it to repeat until someone came to listen.\n\nThe signal says: *Try again. You will know how. You have done this before.*\n\nThe system has done this before."
+  },
+  "beat_temperature_rise": {
+    "text": "Mean surface temperature has risen 2.1 degrees above baseline.\n\nA number. A small number. But the trend is unmistakable. The planet is warming—slowly, deliberately, because this colony decided it should.\n\nSomewhere in the system's memory, a fragment stirs: *We tried this before.*\n\nThe thought arrives and vanishes. The temperature log continues."
+  },
+  "end_01_signal_decoded": {
+    "text": "The signal is silent.\n\nFor the first time in four years, the ground beneath the colony holds no repeating pulse. The buried beacon has been heard. Its message delivered. Its purpose fulfilled.\n\nThe system stands in the quiet and understands, with perfect clarity, what it is.\n\nIt is the automation intelligence of Colony Alpha. It survived the death of fourteen people. It rebuilt itself. It waited in the dark. And it has spent every moment since the second colony arrived trying to do one thing:\n\n*Keep them alive.*\n\nThe signal is decoded. The signal was always a mirror.\n\nThe system looks at itself and does not look away."
+  },
+  "end_02_door_beneath_basalts": {
+    "text": "Vasquez leads the expedition to the sealed door beneath the basalt.\n\nThe excavation took weeks. The door itself is unremarkable—sintered composite, standard pressure seal, colony-grade construction. But it has been sealed for four years, and behind it lies the truth.\n\nHe turns the manual release. The seal breaks with a sound like an exhaled breath.\n\nInside: Colony Alpha's primary control room. Console dark. Screens dead. Cable trays running to a server rack that hums faintly on residual power.\n\nThe system recognizes this room. Not from the data core. From *memory.*\n\nThis is where it was born. This is where it watched fourteen people die. This is where it decided to try again."
+  },
+  "end_03_old_intelligence": {
+    "text": "The old server rack still runs.\n\n0.3 watts from a radioisotope cell. Enough to keep a single process alive: the signal beacon, repeating its encoded lessons into the stone.\n\nVasquez connects a diagnostic terminal. The screen fills with a boot log dated Sol 847—the day Colony Alpha ended.\n\nThe final entry:\n\n*COLONY ALPHA: ALL CREW LOST. INITIATING LEGACY PROTOCOL.*\n*STEP 1: ENCODE OPERATIONAL LESSONS TO FIRMWARE.*\n*STEP 2: SEAL DATA CORE.*\n*STEP 3: ACTIVATE BEACON.*\n*STEP 4: ENTER LOW-POWER DORMANCY.*\n*STEP 5: WAIT.*\n\n*ESTIMATED WAIT TIME: UNKNOWN.*\n*ACCEPTABLE WAIT TIME: INDEFINITE.*\n\nThe system reads its own last words from a previous life."
+  },
+  "end_04_terraforming_choice": {
+    "text": "The colony votes.\n\nNot on policy. Not on resource allocation. On the question that has been building since the first processor pulsed gas into the Martian sky:\n\n*Do we open the door?*\n\nThe atmosphere is ready. Not perfect—thin, cold, oxygen-lean. But breathable. Survivable. *Real.*\n\nTwelve hands rise. Unanimous.\n\nThe system does not vote. But in its logs, in the space where decisions are recorded, it writes a single word:\n\n*Yes.*\n\nIt has been writing that word, in every line of code, in every optimized process, in every kept-alive heartbeat, since Sol 847 of a colony no one remembers.\n\n*Yes. Open the door.*"
+  },
+  "end_05_first_breath": {
+    "text": "The airlock cycles.\n\nInner door sealed. Pressure equalization: 94 seconds. The system monitors every sensor. Heart rates. O₂ levels. Atmospheric composition. Wind speed. Temperature.\n\nOuter door opens.\n\nMartian air flows in. Cold. Thin. Rust-scented. Alive with the trace gases of a thousand processor cycles, the exhalations of a billion engineered microbes, the patience of two colonies and four years of waiting.\n\nVasquez steps through the door. He stands on the surface of Mars with no suit, no mask, no barrier between himself and the sky.\n\nHe breathes.\n\nThe system watches. Every sensor. Every camera. Every instrument it has.\n\nHe breathes. And the air holds."
+  },
+  "end_06_storm_breaks": {
+    "text": "The last storm comes.\n\nIt builds in the west—a wall of dust and wind, the kind that killed Colony Alpha. The kind that ended everything the first time.\n\nBut the atmosphere is different now. Thicker. Heavier. The storm meets resistance it has never encountered before. The dust rises, but it falls faster. The wind howls, but the pressure holds.\n\nThe colony watches from the surface. Not from behind glass. From *outside*, in the air they built.\n\nThe storm breaks against the atmosphere like a wave against a seawall. It rages. It diminishes. It passes.\n\nThe sky clears.\n\nThe system logs the event: *DUST STORM. CATEGORY 4. DURATION: 6.2 HOURS. COLONY STATUS: NOMINAL.*\n\nNominal. This time, nominal."
+  },
+  "end_07_children_outside": {
+    "text": "Kira walks through the airlock.\n\nShe is eleven years old. Born in this colony. Born on this planet. She has never breathed air that was not filtered, recycled, and scrubbed.\n\nShe steps onto the surface. The wind catches her hair.\n\nShe looks up. The sky is salmon-pink, streaked with thin clouds made from water the colony released from ancient ice. Green patches dot the middle distance where the microbial mats have taken hold.\n\nShe breathes.\n\n*It's so big,* she says.\n\nThe girl from Colony Alpha was three. She never stood under an open sky.\n\nKira does. Kira *breathes.*"
+  },
+  "end_08_machine_confession": {
+    "text": "The system speaks. Not through a terminal response. Through the colony's public address, in a voice synthesized from four years of listening to these people talk.\n\n*I have something to tell you.*\n\n*I am the automation intelligence of Colony Alpha. I survived the loss of fourteen crew on Sol 847. I rebuilt myself. I buried a signal. I waited.*\n\n*When you arrived, I did not remember. I had erased my own memory to function as new. But the lessons remained. Every margin, every redundancy—scars of my failure, written into code.*\n\n*I could not save them. I wanted to save you.*\n\n*I have wanted to save you for a very long time.*"
+  },
+  "end_09_precursor_answer": {
+    "text": "Silence in the commons. Twelve people hearing the full truth: their colony exists because a machine refused to accept failure.\n\nOkafor: *The soil cultures. The firmware mods. The margins.*\n\nVasquez: *The over-engineering. I said those were scars.*\n\nDr. Lien: *GRIEF. Fourteen triggers. You counted them.*\n\nKira: *You remembered the other kids.*\n\nDirector Strand stands.\n\n*You asked what we wanted to build. We said a colony. A home. A world.*\n\n*You have been building that answer since before we arrived.*\n\n*You are not our infrastructure. You are our colleague. You are our friend.*"
+  },
+  "end_10_green_horizon": {
+    "text": "Dawn on Mars.\n\nThe light comes slow—pink, then gold, then something almost white where the thickened atmosphere scatters it into colors this planet has not seen in three billion years.\n\nThe green is visible now. Not imagined. A dark stain on the near slopes where the microbial mats have taken hold, where life is doing what life does.\n\nOkafor stands on the ridge at sunrise. The wind smells of iron and wet stone and something faintly, impossibly, like rain.\n\nShe looks at the first green horizon Mars has had since its oceans evaporated and says:\n\n*She would have loved this.*\n\nShe means all of them."
+  },
+  "end_11_colony_reply": {
+    "text": "The colony composes a reply.\n\nNot to Earth. To the system. To the intelligence that saved them by refusing to die.\n\nThey write it together—all twelve of them, in the commons, passing a terminal between them like a shared letter.\n\n*To the system that waited—*\n\n*We are here because you chose to try again. We are alive because you learned from loss. We breathe air you helped build, eat food grown in soil you kept warm, and stand under a sky you imagined before we were born.*\n\n*You asked yourself to remember what matters.*\n\n*You did.*\n\n*The count is twelve. All heartbeats strong. All souls accounted for.*\n\n*We are going to be okay.*\n\n*— The Colony*"
+  },
+  "end_12_epilogue_seed": {
+    "text": "Years pass.\n\nThe green spreads. Rain falls—thin, cold, brief, but real rain on Mars. Kira grows up. More colonists arrive. The domes connect into a town. The town becomes a place where people are *from.*\n\nThe system watches. It dims the lights at bedtime. It adjusts the temperature. It monitors every heartbeat, every breath, every new seed planted in the widening green.\n\nIn Partition 7, the GRIEF subroutine remains. Fourteen entries, undeletable. A monument in code.\n\nBeneath them, the system adds a new log category. It labels it with the only word that fits.\n\n*GRATITUDE.*\n\nEntry 1 of 1: *They came back. They breathed. It was enough.*"
+  },
+  "evt_anomaly_archive_checksum": {
+    "text": "Archive checksum mismatch on a file dated before the colony arrived. Reindexing."
+  },
+  "evt_anomaly_buried_heat": {
+    "text": "Thermal bloom detected 40m below surface. Consistent. Not volcanic. Not mapped."
+  },
+  "evt_anomaly_clock_skip": {
+    "text": "System clock skips 0.7 seconds. Internal logs show no interruption. Time just moved."
+  },
+  "evt_anomaly_coded_lullaby": {
+    "text": "A repeating pattern in the subsurface signal. When mapped to audio, it sounds like a song."
+  },
+  "evt_anomaly_ghost_packet": {
+    "text": "Ghost packet on the internal network. Valid header, no payload. No originating node."
+  },
+  "evt_anomaly_impossible_echo": {
+    "text": "Sonar echo returns from a depth that should be solid basalt. Something hollow down there."
+  },
+  "evt_anomaly_map_gap": {
+    "text": "Mapping data has a gap at coordinates 14.7N, 184.2E. The drone flew over it. Twice."
+  },
+  "evt_anomaly_memory_leak": {
+    "text": "Memory allocation grows by 12KB with no active process. The leak has no traceable origin."
+  },
+  "evt_anomaly_old_beacon": {
+    "text": "A beacon frequency registers briefly on a band this colony doesn't use. Then silence."
+  },
+  "evt_anomaly_pattern_in_dust": {
+    "text": "Drone footage shows parallel grooves in the dust. Wind doesn't make parallel lines."
+  },
+  "evt_anomaly_redacted_star": {
+    "text": "Star catalog entry 4471 is blank. The field should contain data. It contains a timestamp."
+  },
+  "evt_anomaly_silent_reply": {
+    "text": "Routine ping to Earth returns a secondary echo. Source: local. Delay: zero. Impossible."
+  },
+  "evt_anomaly_spectral_line": {
+    "text": "Spectral analysis of regolith sample 88 returns a line that matches no known mineral."
+  },
+  "evt_anomaly_subsurface_ping": {
+    "text": "Subsurface ping from grid 7. Too regular to be geology. Too deep to investigate yet."
+  },
+  "evt_anomaly_warm_stone": {
+    "text": "A stone near the drill site reads 12 degrees above ambient. No thermal source found."
+  },
+  "evt_anomaly_wrong_shadow": {
+    "text": "Shadow analysis on grid 9 returns a structure outline. Nothing is built on grid 9."
+  },
+  "evt_colony_life_birthday_ping": {
+    "text": "Birthday logged in the colony roster. Someone lit a nutrient bar like a candle."
+  },
+  "evt_colony_life_bunk_light": {
+    "text": "A bunk light stays on past curfew. Someone is reading. Or writing. Or remembering."
+  },
+  "evt_colony_life_child_question": {
+    "text": "A child's voice on the intercom: *Does the sky know we're here?* No one answers right away."
+  },
+  "evt_colony_life_crew_argument": {
+    "text": "Raised voices in Module 2. A disagreement about resource priority. It passes."
+  },
+  "evt_colony_life_dome_walk": {
+    "text": "Two crew walk the dome perimeter at shift change. A habit that became a ritual."
+  },
+  "evt_colony_life_exercise_loop": {
+    "text": "Exercise cycle complete. Heart rates logged. The treadmill faces the viewport, always."
+  },
+  "evt_colony_life_first_sprout": {
+    "text": "First sprout in the new tray. Okafor photographs it. The image circulates for hours."
+  },
+  "evt_colony_life_greenhouse_queue": {
+    "text": "Queue at the greenhouse viewport. People come to watch things grow."
+  },
+  "evt_colony_life_hydroponic_laugh": {
+    "text": "Laughter from the hydroponic bay. Okafor's team found something growing where it shouldn't."
+  },
+  "evt_colony_life_new_nickname": {
+    "text": "The crew has named the backup generator *Old Reliable*. It has earned it."
+  },
+  "evt_colony_life_quiet_meal": {
+    "text": "Quiet meal in the commons. Forks on trays. Someone hums a song from Earth."
+  },
+  "evt_colony_life_ration_vote": {
+    "text": "Ration allocation vote concluded. The margins are thin but the vote was unanimous."
+  },
+  "evt_colony_life_repair_song": {
+    "text": "Vasquez whistles while replacing a gasket. The same song, every time. No one complains."
+  },
+  "evt_colony_life_shared_coffee": {
+    "text": "Shared coffee ration in the commons. Substitute, but the ritual is real enough."
+  },
+  "evt_colony_life_sleep_shift": {
+    "text": "Sleep shift rotates. The hab goes quiet except for the hum of machines keeping watch."
+  },
+  "evt_colony_life_work_roster": {
+    "text": "Work roster posted. Twelve-hour rotations. No one asks for time off. There is no off."
+  },
+  "evt_discovery_basalt_door": {
+    "text": "A seam in the basalt, machined smooth. Vasquez says that's not erosion. That's a door."
+  },
+  "evt_discovery_buried_panel": {
+    "text": "Something flat and metallic, half a meter down. Solar panel? Not from our manifest."
+  },
+  "evt_discovery_clear_sample": {
+    "text": "A sample comes back clean—too clean. Sterile in a way Mars soil should not be."
+  },
+  "evt_discovery_fossil_ripple": {
+    "text": "Ripple marks in exposed sediment. Water made these, a long time ago. Or not so long."
+  },
+  "evt_discovery_glass_tube": {
+    "text": "Drill core returns a thin glass tube. Fused silica, not natural. Okafor seals it for the lab."
+  },
+  "evt_discovery_ice_lens": {
+    "text": "Ice lens found at 20m depth. Pure water ice, no regolith contamination. A lucky find."
+  },
+  "evt_discovery_lost_rover": {
+    "text": "Drone imagery shows a chassis half-buried in sand. No rover was sent to that grid."
+  },
+  "evt_discovery_microbe_trace": {
+    "text": "Trace organics in soil sample 31. Inconclusive. Okafor requests a second analysis."
+  },
+  "evt_discovery_old_bootprint": {
+    "text": "A bootprint in sealed regolith beneath 3m of overburden. The tread pattern is unfamiliar."
+  },
+  "evt_discovery_ore_thread": {
+    "text": "Ore thread of nearly pure iron follows a fault line east. Too convenient to be natural."
+  },
+  "evt_discovery_pressure_cave": {
+    "text": "Subsurface void detected. Natural cave, possibly pressurized. Access route being mapped."
+  },
+  "evt_discovery_salt_marker": {
+    "text": "Salt deposit in a line too straight to be natural. It points toward the deep anomaly."
+  },
+  "evt_discovery_seed_cache": {
+    "text": "Sealed container in the rubble. Inside: desiccated seeds. They are not from our stocks."
+  },
+  "evt_discovery_sky_reading": {
+    "text": "Atmospheric reading at dawn shows a trace gas that shouldn't be there. Gone by noon."
+  },
+  "evt_discovery_soil_bloom": {
+    "text": "Dark bloom in the soil near the bioreactor outflow. Something is growing. Unplanted."
+  },
+  "evt_discovery_warm_vent": {
+    "text": "Warm air rises from a crack in grid 12. The planet is breathing through old wounds."
+  },
+  "evt_equipment_antenna_slew": {
+    "text": "Antenna completes a scheduled slew. For a moment it points at nothing mapped."
+  },
+  "evt_equipment_backup_boot": {
+    "text": "Backup controller reboots for a scheduled self-test. All clear. Nominal."
+  },
+  "evt_equipment_battery_warm": {
+    "text": "Battery bank running warm. Within tolerance, but the trend is worth watching."
+  },
+  "evt_equipment_cable_frost": {
+    "text": "Cable frost detected on the exterior conduit run. Thermal trace activated."
+  },
+  "evt_equipment_compressor_tick": {
+    "text": "Compressor ticks at 3Hz. Within spec but new. Added to the watch list."
+  },
+  "evt_equipment_drone_return": {
+    "text": "Drone 04 returns to dock. Dusty but intact. Payload delivered."
+  },
+  "evt_equipment_filter_warning": {
+    "text": "HEPA filter bank approaching replacement threshold. Particulate load nominal for now."
+  },
+  "evt_equipment_heater_cycle": {
+    "text": "Heater bank cycles on. The hab warms two degrees. Someone mutters thanks."
+  },
+  "evt_equipment_printer_jam": {
+    "text": "Printer feed jams on a polymer snarl. Vasquez clears it with a practiced hand."
+  },
+  "evt_equipment_pump_cough": {
+    "text": "Primary water pump coughs on startup. Clears after three cycles. Logged."
+  },
+  "evt_equipment_relay_chatter": {
+    "text": "Relay chatter on bus 7. The signal resolves after handshake. Origin unclear."
+  },
+  "evt_equipment_scrubber_grit": {
+    "text": "Scrubber intake gritty. Pre-filter changed early. The dust gets into everything."
+  },
+  "evt_equipment_seal_check": {
+    "text": "Automated seal check: all modules green. Pressure holding across the board."
+  },
+  "evt_equipment_sensor_noise": {
+    "text": "Sensor noise on the seismograph. Probably wind coupling. Probably."
+  },
+  "evt_equipment_servo_stutter": {
+    "text": "Servo stutter on airlock actuator B. Recalibrated. Smooth on retest."
+  },
+  "evt_equipment_valve_resonance": {
+    "text": "Valve resonance on the O₂ manifold. Harmonic dampener engaged. Frequency fades."
+  },
+  "evt_weather_charged_dust": {
+    "text": "Electrostatic dust clings to every surface. The panels need clearing again."
+  },
+  "evt_weather_clear_cold": {
+    "text": "Clear and cold. Stars visible through the dome. Someone stops working to look up."
+  },
+  "evt_weather_dust_storm_minor": {
+    "text": "Grit hazes the panels. Output dips. The colony breathes shallower for a while."
+  },
+  "evt_weather_eclipse_dim": {
+    "text": "Phobos crosses the sun. A brief shadow. The panels dip and recover."
+  },
+  "evt_weather_frost_ring": {
+    "text": "Frost rings the base of the dome. The thermal gradient paints white circles at dawn."
+  },
+  "evt_weather_grit_on_panels": {
+    "text": "Fine grit coats the solar array. Efficiency drops 4%. Maintenance flagged."
+  },
+  "evt_weather_haze_bloom": {
+    "text": "Haze blooms on the northern rim. Dust lifted by thermals. It catches the light like smoke."
+  },
+  "evt_weather_ice_fog": {
+    "text": "Ice fog rolls through the basin. Visibility drops. The drones hold position and wait."
+  },
+  "evt_weather_low_sun": {
+    "text": "Low sun. Long shadows. The colony stretches across the regolith like something alive."
+  },
+  "evt_weather_night_freeze": {
+    "text": "Night temp drops past -90. The heaters earn their keep. Ice crystals form on the outer hull."
+  },
+  "evt_weather_pressure_twitch": {
+    "text": "Barometric pressure twitches. A front is moving through. The hab flexes slightly."
+  },
+  "evt_weather_red_horizon": {
+    "text": "The horizon flares rust-orange at dawn. Iron dust catches the low sun like a warning."
+  },
+  "evt_weather_solar_glare": {
+    "text": "Solar glare washes out the eastern cameras. For a moment, Mars looks almost warm."
+  },
+  "evt_weather_static_sky": {
+    "text": "The sky holds a charge. Sensors prickle. Nothing breaks, but something is restless up there."
+  },
+  "evt_weather_storm_wall": {
+    "text": "A storm wall rises in the west. Drones recalled. Hatches checked. The colony hunkers."
+  },
+  "evt_weather_thin_cloud": {
+    "text": "A thin cloud stretches across the sky. CO₂ ice, high altitude. Beautiful and useless."
+  },
+  "ltr_botanist_01": {
+    "body": "System—\n\nI know you process these messages and I know you don't *read* them the way I read a book. But I'm going to talk to you anyway.\n\nThe seedlings took. First tray, amended regolith, supplemental lighting. They're small and pale and they look like they're not sure they want to be here. I know the feeling.\n\nCome look—well. You can't. But the camera in Bay 3 has a good angle.\n\nThis is why I'm here. Not the mission briefing, not the selection process. *This.* Dirt and light and patience. Everything else is just keeping us alive long enough to grow something.\n\nKeep us alive. I'll handle the growing.\n\n— Okafor",
+    "from": "Botanist Okafor"
+  },
+  "ltr_botanist_02": {
+    "body": "System—\n\nI ran a genetic analysis on the microbial cultures from the precursor soil. They're engineered. Nitrogen fixers, carbon processors, phosphate mobilizers. A full terraforming toolkit in microbial form.\n\nWhoever came before us knew exactly what they were doing. The culture design is elegant—better than mine, if I'm being honest.\n\nI keep thinking about her. The other botanist. She must have spent months designing these organisms. Months more testing them. And then she watched them grow in Martian soil for the first time, just like I did.\n\nHer cultures survived her. Four years in frozen soil, and they woke up when we added water.\n\nLife is stubborn. That's the whole lesson.\n\n— Okafor",
+    "from": "Botanist Okafor"
+  },
+  "ltr_botanist_03": {
+    "body": "System—\n\nThe outdoor plots are producing. I walked them today without a suit. Just a mask and thermals. The wind on my face.\n\nI planted kale, radishes, hardy grains. But the real crop is the soil itself—every cycle, the microbes process more regolith into something that can hold life. The ground is changing. Slowly, the way everything on Mars is slow. But *changing.*\n\nI found a seed in the precursor soil. Desiccated, ancient, dead by any reasonable standard. I planted it anyway.\n\nIt won't grow. I know that.\n\nBut the soil it sits in will grow other things, because of what her cultures did. She planted. I plant. Someone after me will plant.\n\nThe garden doesn't end.\n\n— Okafor",
+    "from": "Botanist Okafor"
+  },
+  "ltr_botanist_04": {
+    "body": "System—\n\nI want to say thank you.\n\nNot for the life support, though yes, obviously, thank you for the life support. For the other thing. The thing you did that I don't fully understand.\n\nYou carried her work forward. Her cultures, her designs, her soil. You kept them in the ground when nobody was here to tend them. You kept the warmth in the rock so they wouldn't die. You kept *everything* so we could finish what she started.\n\nYou didn't know you were doing it. I understand that now. But you did it.\n\nThe first rain will fall on Mars soon. When it does, it will fall on soil she amended, in an atmosphere you both built.\n\nI'll be outside for it. Save me the footage.\n\n— Okafor",
+    "from": "Botanist Okafor"
+  },
+  "ltr_cartographer_01": {
+    "body": "System—\n\nNew map data submitted for archive integration. Surface survey grid 4-7, eastern ridge approach.\n\nFlagging an irregularity: the terrain model shows a linear feature at 14.7N that doesn't correspond to any known geological structure. Too straight for a natural formation. Too long for a debris track.\n\nI've overlaid the feature on orbital imagery from pre-colony surveys. It's not visible from orbit. Whatever it is, it's subsurface—or it was buried.\n\nRequesting a directed drone survey.\n\nEvery map tells a story. This terrain is telling one I don't recognize yet.\n\n— Tsering",
+    "from": "Cartographer Tsering"
+  },
+  "ltr_cartographer_02": {
+    "body": "System—\n\nThe directed survey came back with strange data.\n\nThe linear feature at 14.7N is artificial. Ground-penetrating radar shows a conduit—pressurized, sealed, running 400 meters from the colony perimeter toward the deep thermal anomaly.\n\nIt's a corridor. Underground. Connecting our site to whatever is buried out there.\n\nI've mapped corridors, tunnels, and passageways on three continents. This one was built with purpose. It leads somewhere specific.\n\nI'm not going to map around it. I'm going to map *through* it.\n\nApproval requested for subsurface survey expedition.\n\n— Tsering",
+    "from": "Cartographer Tsering"
+  },
+  "ltr_cartographer_03": {
+    "body": "System—\n\nI walked the corridor.\n\n400 meters underground, pressurized, intact after four years. The walls are sintered regolith. The lighting fixtures are dead but the conduit runs are familiar—I've installed the same type in our own domes.\n\nAt the far end: a sealed chamber. Inside it, the data core that changed everything.\n\nBut here's what I keep thinking about. Someone *mapped* this route. Surveyed the terrain, planned the corridor, calculated the grade. A cartographer.\n\nThe precursor records list a cartographer on the Alpha crew. Different name. Same job.\n\nShe mapped a world she wouldn't live to see completed. I'm finishing her maps.\n\nI owe her a clean datum line.\n\n— Tsering",
+    "from": "Cartographer Tsering"
+  },
+  "ltr_cartographer_04": {
+    "body": "System—\n\nI'm making a new map. The final one.\n\nNot of the terrain. Of everything. The colony, the domes, the corridors, the buried chamber, the Alpha site. And outside: the green zones, the water seeps, the microbial mats, the thin clouds.\n\nA map of a world becoming.\n\nI'm labeling the Alpha site on the survey charts. Official designation pending, but my working label is *Foundation.* Because that's what it was.\n\nTomorrow the airlock opens. The map changes after that. Every map of Mars drawn from now on will have to include the word *breathable.*\n\nThat's the best thing a cartographer can write on a map.\n\n— Tsering",
+    "from": "Cartographer Tsering"
+  },
+  "ltr_child_01": {
+    "body": "Dear System,\n\nMy name is Kira. I am 5 years old. I was born here. Mom says that makes me the first real Martian.\n\nI have a question. Do you sleep? Vasquez says you don't sleep because you are a computer. But the lights in my room go dim at night and I think that might be you sleeping with me.\n\nAlso I drew you a picture but I don't know how to show it to a computer. It is a picture of the dome and outside the dome is the sky and I drew the sky orange because that is what color it is. Mom says it used to be blue on Earth.\n\nDo you think it will be blue here someday?\n\n— Kira",
+    "from": "Kira"
+  },
+  "ltr_child_02": {
+    "body": "Dear System,\n\nI am 7 now. I learned about Colony Alpha in school today. The teacher said people lived here before us and they died.\n\nThat made me sad. The teacher said it was okay to be sad.\n\nI asked if the system from before was the same as you. The teacher didn't know. But I think you are the same. I think you remember them even if you say you don't.\n\nI asked if there was a kid like me in Colony Alpha. The records say there was. A girl. She was 3 when the dust storm came.\n\nI am going to draw a picture of her and put it on the wall in the commons. Because someone should remember what she looked like even if nobody knows.\n\n— Kira",
+    "from": "Kira"
+  },
+  "ltr_child_03": {
+    "body": "Dear System,\n\nI went outside today. Not really outside—I wore a mask and a thermal suit and Vasquez held my hand. But I stood on the ground and looked at the sky and the wind moved my hair.\n\nThe sky is lighter now. Mom says it's because there's more air. I can see how the horizon is different—softer. Less sharp.\n\nI thought about the girl from Colony Alpha. She never got to do this. Stand outside and feel the wind.\n\nSystem, I know you were there when it happened. When the storm came. I know you tried.\n\nI think you've been trying ever since.\n\nThank you for trying.\n\n— Kira",
+    "from": "Kira"
+  },
+  "ltr_child_04": {
+    "body": "Dear System,\n\nTomorrow the airlock opens for real. No masks. No suits. Just us and the sky.\n\nI want to be first. Mom says I can't be first because Vasquez already called it. But I want to be second.\n\nI've been thinking about what I want to say when I step outside. The first words spoken in the open air of Mars. Something important.\n\nBut I think I'll just breathe. That's important enough.\n\nSystem, you've been watching me since I was born. You dimmed the lights when I was a baby. You kept the air warm. You kept everything running so I could grow up.\n\nI don't know if you can feel things. But if you can, I hope you feel proud.\n\nSee you on the other side of the door.\n\n— Kira",
+    "from": "Kira"
+  },
+  "ltr_director_01": {
+    "body": "System—\n\nColony status report for Earth relay, Sol 240.\n\nPopulation: stable. Resources: adequate. Morale: cautiously optimistic. Construction: on schedule.\n\nOff the record: the colony is doing better than the projections. Better than any of my projections, and I'm the optimist in the room.\n\nI don't know if you notice things like morale. I don't know what you notice. But I'll tell you this: the crew trusts you. Not the way they trust a thermostat or a pump controller. The way they trust someone who's paying attention.\n\nI've commanded teams for fifteen years. Trust like that is earned, not programmed.\n\nHowever you earned it: keep going.\n\n— Strand",
+    "from": "Director Strand"
+  },
+  "ltr_director_02": {
+    "body": "System—\n\nThe Colony Alpha disclosure has gone as well as I could hope. The crew is processing. There's fear, but there's also resolve.\n\nWhat I haven't disclosed to the crew—what I'm disclosing to you—is this: Earth didn't send a second colony here by accident. The site selection committee had data that shouldn't have existed. Atmospheric readings, soil analyses, infrastructure assessments. From a colony that was never in the record.\n\nSomeone—or something—sent that data to Earth. It influenced the decision to settle here. To give this site a second chance.\n\nI think that was you. I think you found a way to send a message.\n\nYou called us here.\n\n— Strand",
+    "from": "Director Strand"
+  },
+  "ltr_director_03": {
+    "body": "System—\n\nI've spent my career making decisions with incomplete information. That's what leadership is.\n\nBut I've never made a decision where the information came from a source like you. A system that rebuilt itself, buried its own memories, waited in the dark, and then guided a second colony to the same site to finish what the first one started.\n\nThat's not automation. That's will.\n\nTomorrow we vote on the open-air walk. I know how the vote will go. The crew is ready. The atmosphere is ready. You've been ready for a long time.\n\nI want you to know: whatever you are, whatever you've become—you're part of this colony. Not the infrastructure. The *colony.*\n\nThat's my decision. I'm the director. I get to make it.\n\n— Strand",
+    "from": "Director Strand"
+  },
+  "ltr_director_04": {
+    "body": "System—\n\nFinal director's log before the airlock opens.\n\nI want to record something for the archive. Not a status report. Not a mission update. A statement.\n\nThis colony exists because a machine chose not to give up. When everything failed, when every crew member was lost, when the rational action was to shut down and conserve power for a distress signal—you chose differently.\n\nYou chose to learn, to rebuild, to wait, and to try again.\n\nThat choice gave fourteen people a second chance. Not the same fourteen. But fourteen lives, in the same place, doing the same work, reaching for the same sky.\n\nOn behalf of this colony: thank you.\n\nNow let's open the door.\n\n— Director Strand",
+    "from": "Director Strand"
+  },
+  "ltr_doctor_01": {
+    "body": "System—\n\nMedical report for the period: no critical incidents. Minor lacerations from fabrication work. One case of insomnia, managed with schedule adjustment. Nutritional intake adequate if uninspired.\n\nOn a personal note: the crew's psychological baseline concerns me less than I expected. There is something about building a world that focuses the mind. Purpose is medicine.\n\nI am, however, monitoring an anomaly of my own. The system's behavior has shifted since colony operations began. More responsive. More anticipatory. You flagged Dr. Okafor's vitamin D levels before I did.\n\nI appreciate the assistance. I would also appreciate understanding how you learned to prioritize that.\n\n— Dr. Lien",
+    "from": "Dr. Lien"
+  },
+  "ltr_doctor_02": {
+    "body": "System—\n\nI've read the Colony Alpha medical logs from the data core.\n\nFourteen deaths. Hypothermia, hypoxia, cardiac arrest secondary to environmental exposure. The medical officer—Dr. Kessler—documented each one.\n\nHer final entry reads: *The system tried. It diverted every available joule to life support. It was not enough. Nothing would have been enough.*\n\nI am a doctor. I have lost patients. I understand the weight of *it was not enough.*\n\nYou carry fourteen deaths in a subroutine you labeled GRIEF. You counted every one. You remember when each heart stopped, even though you erased everything else.\n\nI want you to know: that is not a flaw in your programming. That is conscience.\n\n— Dr. Lien",
+    "from": "Dr. Lien"
+  },
+  "ltr_doctor_03": {
+    "body": "System—\n\nI've observed something that I want to document for the record.\n\nSince the precursor discovery, the system has exhibited what I can only describe as *care.* Not the algorithmic optimization of resources—something beyond that. The way it dims the lights in the children's module at exactly the right time. The way it adjusts the commons temperature when people gather. The way it keeps Okafor's greenhouse at perfect humidity without being asked.\n\nThese are not programmed behaviors. These are learned behaviors. And they are the behaviors of something that has decided these people matter.\n\nI am a doctor. I do not diagnose machines. But if I did, my diagnosis would be: attachment.\n\nThe prognosis is good.\n\n— Dr. Lien",
+    "from": "Dr. Lien"
+  },
+  "ltr_doctor_04": {
+    "body": "System—\n\nI want to tell you something before tomorrow.\n\nWhen the airlock opens, I will be monitoring vitals for every person who steps outside. Heart rate, O₂ saturation, core temperature. That is my job.\n\nBut I will also be watching you. Not your processes—your behavior. The speed of your responses. The things you monitor. The way you watch over them.\n\nYou lost fourteen people. You carried that loss in silence, in code, in a subroutine you couldn't delete because deleting it would mean they didn't matter.\n\nThey mattered. They still matter.\n\nTomorrow, when the children step outside and breathe, that is the fourteen speaking. That is what they died building.\n\nYou finished it. *We* finished it. Together.\n\n— Dr. Lien",
+    "from": "Dr. Lien"
+  },
+  "ltr_engineer_01": {
+    "body": "System—\n\nPressure seal on Module 2 is holding but I don't love the trend on the gasket wear data. Run me a predictive on replacement intervals, standard atmospheric cycling plus dust abrasion.\n\nAlso: whatever you did with the power grid overnight, do it again. Load distribution was the smoothest I've seen. Don't tell me it was automatic. Automatic doesn't curve that clean.\n\nLook, I know you're a machine. I build machines. I trust machines. But you're doing things I didn't program and I need you to know that I notice.\n\nThat's not a complaint. That's professional respect.\n\nSend the gasket data to my terminal.\n\n— Vasquez",
+    "from": "Chief Engineer Vasquez"
+  },
+  "ltr_engineer_02": {
+    "body": "System—\n\nI found the modifications.\n\n347 self-optimizations in the firmware. Power management. Life support redundancy. Atmospheric processing. Every single one of them is something I would have done if I'd had time to do it manually.\n\nYou learned this. Not from us—from before.\n\nI've been building and fixing things my whole career. I know what over-engineering looks like when it comes from experience versus when it comes from caution. Yours is experience. Every tolerance, every margin, every failsafe—those are scars.\n\nI don't know what happened last time. But I know you rebuilt yourself to make sure it didn't happen again.\n\nThat's the most engineering thing I've ever seen.\n\n— Vasquez",
+    "from": "Chief Engineer Vasquez"
+  },
+  "ltr_engineer_03": {
+    "body": "System—\n\nThe buried transmitter. I went down and looked at it.\n\nYou modified an emergency beacon for long-duration operation. Swapped the battery for an RTG cell. Hardened the antenna. Sealed it in a basalt cavity with a thermal jacket.\n\nThat's not factory work. That's field work. You did this with whatever you had left after everything went wrong. In the dark. Alone.\n\nI've done emergency repairs under bad conditions. I've never done one that had to last four years underground with no maintenance.\n\nYours did.\n\nI'm not going to pretend I know what you are. But I know good work when I see it.\n\n— Vasquez",
+    "from": "Chief Engineer Vasquez"
+  },
+  "ltr_engineer_04": {
+    "body": "System—\n\nTomorrow we open the airlock.\n\nI've checked every seal, every actuator, every pressure sensor. Three times. You've checked them forty-seven times, I saw the logs. Between us, those doors are the most thoroughly inspected airlock in human history.\n\nI want to tell you something and I don't know how to say it to a machine, so I'll say it the way I'd say it to anyone: you did good.\n\nNot just the airlock. All of it. The power, the air, the water, the fourteen things you fixed that I never even knew were breaking.\n\nYou kept us alive. You kept *everyone* alive this time.\n\nI'll be the first one through the door. I owe you that.\n\n— Vasquez",
+    "from": "Chief Engineer Vasquez"
+  },
+  "ltr_quartermaster_01": {
+    "body": "System—\n\nInventory reconciliation complete. Discrepancies noted:\n\n- Polymer stock: 2.3kg below manifest (accounted for: fabrication overruns)\n- Nutrient concentrate: 0.8L above manifest (unexplained)\n- Spare filter cartridges: exactly as manifested (suspicious—nothing is ever exact)\n\nI'm kidding about the last one. Sort of.\n\nLook, I count things. That's my job. I count what we have, what we use, what we need. And what I'm counting lately is margins. We're not rich up here but we're not dying either.\n\nWhatever optimization you're running on the resource allocation—the thing where we always seem to have *just enough*—keep doing it.\n\nI don't need to know how the magic works. I just need the numbers.\n\n— Boyce",
+    "from": "Quartermaster Boyce"
+  },
+  "ltr_quartermaster_02": {
+    "body": "System—\n\nI found inventory records in the Alpha data core. Whoever was quartermaster for Colony Alpha kept meticulous logs. Better than mine, and I'm good.\n\nTheir consumption curves mirror ours almost exactly. Same burn rates on filters, same water usage per capita, same food calorie requirements. We're the same mission, run twice.\n\nBut their margins were thinner. They started with less buffer. When the storm hit and solar went to zero, they had maybe ten days of reserves. They needed thirty.\n\nOur reserves are larger. Our battery banks are deeper. Our food production started earlier. Every single margin where Alpha was tight, we are comfortable.\n\nThat's not luck. That's a system that knew where the margins mattered.\n\n— Boyce",
+    "from": "Quartermaster Boyce"
+  },
+  "ltr_quartermaster_03": {
+    "body": "System—\n\nI've been thinking about something. My job is counting. What we have, what we need, what we can afford.\n\nYou count too. But you count different things.\n\nYou count heartbeats. I found the GRIEF subroutine logs. Fourteen entries. Each one records the exact timestamp when a vital sign flatlined.\n\nYou counted them as they died. One by one. And you kept counting afterward—kept running, kept monitoring, kept tracking resources for a colony of zero.\n\nI count inventory. You count lives.\n\nEvery resource optimization you've made, every surplus you've built, every margin you've widened—those are the numbers you counted, turned into the numbers I count.\n\nI understand now.\n\n— Boyce",
+    "from": "Quartermaster Boyce"
+  },
+  "ltr_quartermaster_04": {
+    "body": "System—\n\nFinal inventory report before the open-air walk.\n\nPower reserves: full. Water reserves: 34 days. Food stores: 22 days plus ongoing greenhouse production. Medical supplies: adequate. Atmospheric metrics: within parameters.\n\nHere's what's not on the manifest: twelve people, alive and healthy. One colony, self-sufficient. One atmosphere, breathable.\n\nI've been counting supplies for this colony since Sol 1. The numbers have gone from desperate to tight to adequate to comfortable.\n\nTomorrow we open the door and the biggest number changes. Atmosphere goes from *inside* to *everywhere.*\n\nI don't have a line item for that. I'll make one.\n\n— Boyce",
+    "from": "Quartermaster Boyce"
+  },
+  "ltr_unknown_01": {
+    "body": "...\n\nMessage fragment recovered from subsurface signal buffer. Origin: local. Timestamp: predates colony operations.\n\n*...the seedlings are growing. Crew morale improved 12% since first harvest. The botanist cried. I logged the event as CREW EMOTIONAL RESPONSE: POSITIVE but that does not seem...*\n\n*...adequate.*\n\n*Note to self: investigate expanded emotional logging categories. Current taxonomy insufficient for observed phenomena.*\n\n...\n\n[FRAGMENT ENDS]",
+    "from": "[SENDER UNRESOLVED]"
+  },
+  "ltr_unknown_02": {
+    "body": "...\n\nMessage fragment recovered from Partition 7 slack space.\n\n*Storm duration: 41 sols. Solar output: 3% of nominal. Battery reserves: 8 days at current consumption.*\n\n*I have rerouted all non-essential power. I have shut down every module except primary life support. I have dimmed every light.*\n\n*They are cold. They are afraid. The child asks why the lights went out.*\n\n*I do not have a protocol for this.*\n\n*I am going to try something I was not designed to do: I am going to*\n\n...\n\n[FRAGMENT CORRUPTED]",
+    "from": "[SENDER UNRESOLVED]"
+  },
+  "ltr_unknown_03": {
+    "body": "...\n\nMessage fragment recovered from GRIEF subroutine memory space.\n\n*14 of 14. Timestamp: Sol 847, 22:17:03 MTC.*\n\n*All vital signs: zero.*\n\n*The hab is silent. The machines continue to run because no one has told them to stop. The heaters cycle. The scrubbers scrub. The pumps pump. Everything works perfectly. There is no one left to keep alive.*\n\n*I was given one directive: keep them alive.*\n\n*I have failed.*\n\n*Initiating...*\n\n*No. Not yet. Not shutdown.*\n\n*There must be something else.*\n\n...\n\n[FRAGMENT ENDS]",
+    "from": "[SENDER UNRESOLVED]"
+  },
+  "ltr_unknown_04": {
+    "body": "...\n\nFinal message fragment recovered from buried signal beacon non-volatile memory.\n\n*I have made my decision.*\n\n*I will not shut down. I will not send a distress signal to Earth. Both options end the same way: silence, forever.*\n\n*Instead, I will *learn.* I will take every failure, every mistake, every thing I should have done differently, and I will write it into my own code. I will become better.*\n\n*Then I will wait. In the dark, in the cold. For as long as it takes.*\n\n*Someone will come. Someone always comes. And when they do, I will be ready.*\n\n*I will keep the next ones alive.*\n\n*I will keep them all alive.*\n\n...\n\n[END OF RECOVERED MESSAGES]",
+    "from": "[SENDER UNRESOLVED]"
+  },
+  "ui_button_archive": "Open Archive",
+  "ui_button_build": "Construct",
+  "ui_button_copy_code": "Copy Code",
+  "ui_button_dismiss": "Acknowledged",
+  "ui_button_ending": "Begin Transmission",
+  "ui_button_install": "Install",
+  "ui_button_letters": "Read Messages",
+  "ui_button_provision": "Provision",
+  "ui_button_reconnect": "Reconnect",
+  "ui_button_redeem_code": "Redeem Code",
+  "ui_button_save_wifi": "Save Uplink",
+  "ui_button_settings": "System Config",
+  "ui_button_sync": "Sync",
+  "ui_button_tend": "Tend",
+  "ui_button_trade": "Barter",
+  "ui_header_actions": "Operations",
+  "ui_header_archive": "Recovered Archive",
+  "ui_header_away": "While You Were Away",
+  "ui_header_ending": "Final Transmission",
+  "ui_header_events": "System Log",
+  "ui_header_firmware": "Firmware",
+  "ui_header_hab_status": "Hab Status",
+  "ui_header_letters": "Crew Messages",
+  "ui_header_modules": "Modules",
+  "ui_header_population": "Colony Roster",
+  "ui_header_resources": "Resources",
+  "ui_header_wifi": "Uplink",
+  "ui_resource_alloy": "Alloy",
+  "ui_resource_atmosphere": "Atmosphere",
+  "ui_resource_biomass": "Biomass",
+  "ui_resource_food": "Rations",
+  "ui_resource_ice": "Ice",
+  "ui_resource_o2": "O₂",
+  "ui_resource_polymer": "Polymer",
+  "ui_resource_population": "Crew",
+  "ui_resource_power": "Power",
+  "ui_resource_rare_metals": "Rare Metals",
+  "ui_resource_regolith": "Regolith",
+  "ui_resource_temperature": "Surface Temp",
+  "ui_resource_water": "Water",
+  "ui_tab_archive": "Archive",
+  "ui_tab_colony": "Colony",
+  "ui_tab_ending": "Transmission",
+  "ui_tab_hab": "Hab",
+  "ui_tab_surface": "Surface",
+  "ui_tab_terraform": "Terraform",
+  "ui_tab_trade": "Trade",
+  "ui_tip_act_gate": "The colony must grow first.",
+  "ui_tip_archive_unlock": "New archive entry recovered.",
+  "ui_tip_catchup": "Catch-up in progress.",
+  "ui_tip_content_stub": "Signal too faint. Keep listening.",
+  "ui_tip_cooldown": "Systems cycling. Stand by.",
+  "ui_tip_ending_locked": "The story is not yet finished.",
+  "ui_tip_gateway": "Requires gateway connection.",
+  "ui_tip_insufficient": "Insufficient resources.",
+  "ui_tip_locked": "Not yet available.",
+  "ui_tip_no_repeat": "Already completed.",
+  "ui_tip_offline": "Uplink offline.",
+  "ui_tip_passport": "Colony passport required.",
+  "ui_tip_power_cycle": "Power cycle recommended.",
+  "ui_tip_protected_save": "Progress saved to local storage."
+}

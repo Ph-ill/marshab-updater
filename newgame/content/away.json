@@ -1,32 +1,92 @@
 {
-  "away_antenna_tracked": "[STUB away_antenna_tracked] Composable while-away digest fragment; gated by elapsed resources/events/act: antenna tracked.",
-  "away_archive_indexed": "[STUB away_archive_indexed] Composable while-away digest fragment; gated by elapsed resources/events/act: archive indexed.",
-  "away_battery_bank_filled": "[STUB away_battery_bank_filled] Composable while-away digest fragment; gated by elapsed resources/events/act: battery bank filled.",
-  "away_children_named_stars": "[STUB away_children_named_stars] Composable while-away digest fragment; gated by elapsed resources/events/act: children named stars.",
-  "away_cold_shift": "[STUB away_cold_shift] Composable while-away digest fragment; gated by elapsed resources/events/act: cold shift.",
-  "away_colonists_left_notes": "[STUB away_colonists_left_notes] Composable while-away digest fragment; gated by elapsed resources/events/act: colonists left notes.",
-  "away_crew_rested": "[STUB away_crew_rested] Composable while-away digest fragment; gated by elapsed resources/events/act: crew rested.",
-  "away_dome_seals_sang": "[STUB away_dome_seals_sang] Composable while-away digest fragment; gated by elapsed resources/events/act: dome seals sang.",
-  "away_drones_returned": "[STUB away_drones_returned] Composable while-away digest fragment; gated by elapsed resources/events/act: drones returned.",
-  "away_dust_on_panels": "[STUB away_dust_on_panels] Composable while-away digest fragment; gated by elapsed resources/events/act: dust on panels.",
-  "away_filters_loaded": "[STUB away_filters_loaded] Composable while-away digest fragment; gated by elapsed resources/events/act: filters loaded.",
-  "away_frost_receded": "[STUB away_frost_receded] Composable while-away digest fragment; gated by elapsed resources/events/act: frost receded.",
-  "away_greenhouse_grew": "[STUB away_greenhouse_grew] Composable while-away digest fragment; gated by elapsed resources/events/act: greenhouse grew.",
-  "away_hab_smelt_of_iron": "[STUB away_hab_smelt_of_iron] Composable while-away digest fragment; gated by elapsed resources/events/act: hab smelt of iron.",
-  "away_ice_melted": "[STUB away_ice_melted] Composable while-away digest fragment; gated by elapsed resources/events/act: ice melted.",
-  "away_microbes_woke": "[STUB away_microbes_woke] Composable while-away digest fragment; gated by elapsed resources/events/act: microbes woke.",
-  "away_new_path_mapped": "[STUB away_new_path_mapped] Composable while-away digest fragment; gated by elapsed resources/events/act: new path mapped.",
-  "away_old_log_resurfaced": "[STUB away_old_log_resurfaced] Composable while-away digest fragment; gated by elapsed resources/events/act: old log resurfaced.",
-  "away_panels_cleared": "[STUB away_panels_cleared] Composable while-away digest fragment; gated by elapsed resources/events/act: panels cleared.",
-  "away_power_hum": "[STUB away_power_hum] Composable while-away digest fragment; gated by elapsed resources/events/act: power hum.",
-  "away_pressure_held": "[STUB away_pressure_held] Composable while-away digest fragment; gated by elapsed resources/events/act: pressure held.",
-  "away_printer_finished": "[STUB away_printer_finished] Composable while-away digest fragment; gated by elapsed resources/events/act: printer finished.",
-  "away_ration_batch_set": "[STUB away_ration_batch_set] Composable while-away digest fragment; gated by elapsed resources/events/act: ration batch set.",
-  "away_signal_repeated": "[STUB away_signal_repeated] Composable while-away digest fragment; gated by elapsed resources/events/act: signal repeated.",
-  "away_soil_warmed": "[STUB away_soil_warmed] Composable while-away digest fragment; gated by elapsed resources/events/act: soil warmed.",
-  "away_stores_shifted": "[STUB away_stores_shifted] Composable while-away digest fragment; gated by elapsed resources/events/act: stores shifted.",
-  "away_storm_scrubbed": "[STUB away_storm_scrubbed] Composable while-away digest fragment; gated by elapsed resources/events/act: storm scrubbed.",
-  "away_strange_ping_waited": "[STUB away_strange_ping_waited] Composable while-away digest fragment; gated by elapsed resources/events/act: strange ping waited.",
-  "away_water_tanks_settled": "[STUB away_water_tanks_settled] Composable while-away digest fragment; gated by elapsed resources/events/act: water tanks settled.",
-  "away_weather_passed": "[STUB away_weather_passed] Composable while-away digest fragment; gated by elapsed resources/events/act: weather passed."
+  "away_antenna_tracked": {
+    "text": "The antenna tracked an intermittent signal source. Bearing logged for review."
+  },
+  "away_archive_indexed": {
+    "text": "Archive indexing completed on recovered data fragments. New entries available."
+  },
+  "away_battery_bank_filled": {
+    "text": "Battery bank reached full charge during peak solar. Stored for the dark hours."
+  },
+  "away_children_named_stars": {
+    "text": "The children named three stars visible through the dome. None of the names are real."
+  },
+  "away_cold_shift": {
+    "text": "Night shift held through a cold snap. Heaters maxed. Everyone is fine."
+  },
+  "away_colonists_left_notes": {
+    "text": "Crew left notes for each other on the commons board. Small kindnesses."
+  },
+  "away_crew_rested": {
+    "text": "Crew rotation ran smooth. Rest cycles completed. Morale: stable."
+  },
+  "away_dome_seals_sang": {
+    "text": "Dome seals vibrated during a pressure shift. The crew calls it singing."
+  },
+  "away_drones_returned": {
+    "text": "All drones returned and docked. Payloads offloaded. Minor dust wear."
+  },
+  "away_dust_on_panels": {
+    "text": "Dust accumulated on the array. Efficiency dipped, then recovered after cleaning."
+  },
+  "away_filters_loaded": {
+    "text": "Fresh filter cartridges loaded into the HEPA banks. Air quality improved."
+  },
+  "away_frost_receded": {
+    "text": "Surface frost receded further than seasonal models predicted. Something is warming."
+  },
+  "away_greenhouse_grew": {
+    "text": "The greenhouse trays advanced one growth stage. Green spreads."
+  },
+  "away_hab_smelt_of_iron": {
+    "text": "The hab smelled of iron for hours after the last drill core was brought inside."
+  },
+  "away_ice_melted": {
+    "text": "Ice reserves processed into water. Tanks topped off for now."
+  },
+  "away_microbes_woke": {
+    "text": "Bioreactor cultures showed increased activity. The microbes are settling in."
+  },
+  "away_new_path_mapped": {
+    "text": "A new surface path was mapped between the hab and the eastern ridge."
+  },
+  "away_old_log_resurfaced": {
+    "text": "An old log file resurfaced during archive maintenance. Timestamp anomalous."
+  },
+  "away_panels_cleared": {
+    "text": "Solar panels cleared and recalibrated. Output back to baseline."
+  },
+  "away_power_hum": {
+    "text": "Power grid hummed steady through the cycle. No interruptions logged."
+  },
+  "away_pressure_held": {
+    "text": "Pressure held steady across all modules. No leaks detected."
+  },
+  "away_printer_finished": {
+    "text": "The fabrication printer completed a queued job. Parts awaiting installation."
+  },
+  "away_ration_batch_set": {
+    "text": "New ration batch prepared and portioned. Enough for the next cycle."
+  },
+  "away_signal_repeated": {
+    "text": "The buried signal repeated 14 times while you were away. Still undecoded."
+  },
+  "away_soil_warmed": {
+    "text": "Subsurface soil temperature rose 0.3 degrees. No external heat source identified."
+  },
+  "away_stores_shifted": {
+    "text": "Supply stores reorganized. Nothing lost. Nothing gained. Holding steady."
+  },
+  "away_storm_scrubbed": {
+    "text": "A dust storm passed through and scrubbed itself out. Panels cleared."
+  },
+  "away_strange_ping_waited": {
+    "text": "A strange ping waited in the buffer. Origin: unknown. Still waiting."
+  },
+  "away_water_tanks_settled": {
+    "text": "Water tanks settled after a pressure transient. Sediment cleared. Nominal."
+  },
+  "away_weather_passed": {
+    "text": "Weather event came and went. No damage. The colony endures."
+  }
 }

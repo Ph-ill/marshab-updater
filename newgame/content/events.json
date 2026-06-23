@@ -1,82 +1,242 @@
 {
-  "evt_anomaly_archive_checksum": "[STUB evt_anomaly_archive_checksum] Ambient anomaly event: archive checksum. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_buried_heat": "[STUB evt_anomaly_buried_heat] Ambient anomaly event: buried heat. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_clock_skip": "[STUB evt_anomaly_clock_skip] Ambient anomaly event: clock skip. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_coded_lullaby": "[STUB evt_anomaly_coded_lullaby] Ambient anomaly event: coded lullaby. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_ghost_packet": "[STUB evt_anomaly_ghost_packet] Ambient anomaly event: ghost packet. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_impossible_echo": "[STUB evt_anomaly_impossible_echo] Ambient anomaly event: impossible echo. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_map_gap": "[STUB evt_anomaly_map_gap] Ambient anomaly event: map gap. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_memory_leak": "[STUB evt_anomaly_memory_leak] Ambient anomaly event: memory leak. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_old_beacon": "[STUB evt_anomaly_old_beacon] Ambient anomaly event: old beacon. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_pattern_in_dust": "[STUB evt_anomaly_pattern_in_dust] Ambient anomaly event: pattern in dust. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_redacted_star": "[STUB evt_anomaly_redacted_star] Ambient anomaly event: redacted star. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_silent_reply": "[STUB evt_anomaly_silent_reply] Ambient anomaly event: silent reply. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_spectral_line": "[STUB evt_anomaly_spectral_line] Ambient anomaly event: spectral line. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_subsurface_ping": "[STUB evt_anomaly_subsurface_ping] Ambient anomaly event: subsurface ping. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_warm_stone": "[STUB evt_anomaly_warm_stone] Ambient anomaly event: warm stone. Not an action result; can appear live or in away digest.",
-  "evt_anomaly_wrong_shadow": "[STUB evt_anomaly_wrong_shadow] Ambient anomaly event: wrong shadow. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_birthday_ping": "[STUB evt_colony_life_birthday_ping] Ambient colony_life event: birthday ping. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_bunk_light": "[STUB evt_colony_life_bunk_light] Ambient colony_life event: bunk light. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_child_question": "[STUB evt_colony_life_child_question] Ambient colony_life event: child question. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_crew_argument": "[STUB evt_colony_life_crew_argument] Ambient colony_life event: crew argument. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_dome_walk": "[STUB evt_colony_life_dome_walk] Ambient colony_life event: dome walk. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_exercise_loop": "[STUB evt_colony_life_exercise_loop] Ambient colony_life event: exercise loop. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_first_sprout": "[STUB evt_colony_life_first_sprout] Ambient colony_life event: first sprout. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_greenhouse_queue": "[STUB evt_colony_life_greenhouse_queue] Ambient colony_life event: greenhouse queue. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_hydroponic_laugh": "[STUB evt_colony_life_hydroponic_laugh] Ambient colony_life event: hydroponic laugh. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_new_nickname": "[STUB evt_colony_life_new_nickname] Ambient colony_life event: new nickname. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_quiet_meal": "[STUB evt_colony_life_quiet_meal] Ambient colony_life event: quiet meal. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_ration_vote": "[STUB evt_colony_life_ration_vote] Ambient colony_life event: ration vote. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_repair_song": "[STUB evt_colony_life_repair_song] Ambient colony_life event: repair song. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_shared_coffee": "[STUB evt_colony_life_shared_coffee] Ambient colony_life event: shared coffee. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_sleep_shift": "[STUB evt_colony_life_sleep_shift] Ambient colony_life event: sleep shift. Not an action result; can appear live or in away digest.",
-  "evt_colony_life_work_roster": "[STUB evt_colony_life_work_roster] Ambient colony_life event: work roster. Not an action result; can appear live or in away digest.",
-  "evt_discovery_basalt_door": "[STUB evt_discovery_basalt_door] Ambient discovery event: basalt door. Not an action result; can appear live or in away digest.",
-  "evt_discovery_buried_panel": "[STUB evt_discovery_buried_panel] Ambient discovery event: buried panel. Not an action result; can appear live or in away digest.",
-  "evt_discovery_clear_sample": "[STUB evt_discovery_clear_sample] Ambient discovery event: clear sample. Not an action result; can appear live or in away digest.",
-  "evt_discovery_fossil_ripple": "[STUB evt_discovery_fossil_ripple] Ambient discovery event: fossil ripple. Not an action result; can appear live or in away digest.",
-  "evt_discovery_glass_tube": "[STUB evt_discovery_glass_tube] Ambient discovery event: glass tube. Not an action result; can appear live or in away digest.",
-  "evt_discovery_ice_lens": "[STUB evt_discovery_ice_lens] Ambient discovery event: ice lens. Not an action result; can appear live or in away digest.",
-  "evt_discovery_lost_rover": "[STUB evt_discovery_lost_rover] Ambient discovery event: lost rover. Not an action result; can appear live or in away digest.",
-  "evt_discovery_microbe_trace": "[STUB evt_discovery_microbe_trace] Ambient discovery event: microbe trace. Not an action result; can appear live or in away digest.",
-  "evt_discovery_old_bootprint": "[STUB evt_discovery_old_bootprint] Ambient discovery event: old bootprint. Not an action result; can appear live or in away digest.",
-  "evt_discovery_ore_thread": "[STUB evt_discovery_ore_thread] Ambient discovery event: ore thread. Not an action result; can appear live or in away digest.",
-  "evt_discovery_pressure_cave": "[STUB evt_discovery_pressure_cave] Ambient discovery event: pressure cave. Not an action result; can appear live or in away digest.",
-  "evt_discovery_salt_marker": "[STUB evt_discovery_salt_marker] Ambient discovery event: salt marker. Not an action result; can appear live or in away digest.",
-  "evt_discovery_seed_cache": "[STUB evt_discovery_seed_cache] Ambient discovery event: seed cache. Not an action result; can appear live or in away digest.",
-  "evt_discovery_sky_reading": "[STUB evt_discovery_sky_reading] Ambient discovery event: sky reading. Not an action result; can appear live or in away digest.",
-  "evt_discovery_soil_bloom": "[STUB evt_discovery_soil_bloom] Ambient discovery event: soil bloom. Not an action result; can appear live or in away digest.",
-  "evt_discovery_warm_vent": "[STUB evt_discovery_warm_vent] Ambient discovery event: warm vent. Not an action result; can appear live or in away digest.",
-  "evt_equipment_antenna_slew": "[STUB evt_equipment_antenna_slew] Ambient equipment event: antenna slew. Not an action result; can appear live or in away digest.",
-  "evt_equipment_backup_boot": "[STUB evt_equipment_backup_boot] Ambient equipment event: backup boot. Not an action result; can appear live or in away digest.",
-  "evt_equipment_battery_warm": "[STUB evt_equipment_battery_warm] Ambient equipment event: battery warm. Not an action result; can appear live or in away digest.",
-  "evt_equipment_cable_frost": "[STUB evt_equipment_cable_frost] Ambient equipment event: cable frost. Not an action result; can appear live or in away digest.",
-  "evt_equipment_compressor_tick": "[STUB evt_equipment_compressor_tick] Ambient equipment event: compressor tick. Not an action result; can appear live or in away digest.",
-  "evt_equipment_drone_return": "[STUB evt_equipment_drone_return] Ambient equipment event: drone return. Not an action result; can appear live or in away digest.",
-  "evt_equipment_filter_warning": "[STUB evt_equipment_filter_warning] Ambient equipment event: filter warning. Not an action result; can appear live or in away digest.",
-  "evt_equipment_heater_cycle": "[STUB evt_equipment_heater_cycle] Ambient equipment event: heater cycle. Not an action result; can appear live or in away digest.",
-  "evt_equipment_printer_jam": "[STUB evt_equipment_printer_jam] Ambient equipment event: printer jam. Not an action result; can appear live or in away digest.",
-  "evt_equipment_pump_cough": "[STUB evt_equipment_pump_cough] Ambient equipment event: pump cough. Not an action result; can appear live or in away digest.",
-  "evt_equipment_relay_chatter": "[STUB evt_equipment_relay_chatter] Ambient equipment event: relay chatter. Not an action result; can appear live or in away digest.",
-  "evt_equipment_scrubber_grit": "[STUB evt_equipment_scrubber_grit] Ambient equipment event: scrubber grit. Not an action result; can appear live or in away digest.",
-  "evt_equipment_seal_check": "[STUB evt_equipment_seal_check] Ambient equipment event: seal check. Not an action result; can appear live or in away digest.",
-  "evt_equipment_sensor_noise": "[STUB evt_equipment_sensor_noise] Ambient equipment event: sensor noise. Not an action result; can appear live or in away digest.",
-  "evt_equipment_servo_stutter": "[STUB evt_equipment_servo_stutter] Ambient equipment event: servo stutter. Not an action result; can appear live or in away digest.",
-  "evt_equipment_valve_resonance": "[STUB evt_equipment_valve_resonance] Ambient equipment event: valve resonance. Not an action result; can appear live or in away digest.",
-  "evt_weather_charged_dust": "[STUB evt_weather_charged_dust] Ambient weather event: charged dust. Not an action result; can appear live or in away digest.",
-  "evt_weather_clear_cold": "[STUB evt_weather_clear_cold] Ambient weather event: clear cold. Not an action result; can appear live or in away digest.",
-  "evt_weather_dust_storm_minor": "[STUB evt_weather_dust_storm_minor] Ambient weather event: dust storm minor. Not an action result; can appear live or in away digest.",
-  "evt_weather_eclipse_dim": "[STUB evt_weather_eclipse_dim] Ambient weather event: eclipse dim. Not an action result; can appear live or in away digest.",
-  "evt_weather_frost_ring": "[STUB evt_weather_frost_ring] Ambient weather event: frost ring. Not an action result; can appear live or in away digest.",
-  "evt_weather_grit_on_panels": "[STUB evt_weather_grit_on_panels] Ambient weather event: grit on panels. Not an action result; can appear live or in away digest.",
-  "evt_weather_haze_bloom": "[STUB evt_weather_haze_bloom] Ambient weather event: haze bloom. Not an action result; can appear live or in away digest.",
-  "evt_weather_ice_fog": "[STUB evt_weather_ice_fog] Ambient weather event: ice fog. Not an action result; can appear live or in away digest.",
-  "evt_weather_low_sun": "[STUB evt_weather_low_sun] Ambient weather event: low sun. Not an action result; can appear live or in away digest.",
-  "evt_weather_night_freeze": "[STUB evt_weather_night_freeze] Ambient weather event: night freeze. Not an action result; can appear live or in away digest.",
-  "evt_weather_pressure_twitch": "[STUB evt_weather_pressure_twitch] Ambient weather event: pressure twitch. Not an action result; can appear live or in away digest.",
-  "evt_weather_red_horizon": "[STUB evt_weather_red_horizon] Ambient weather event: red horizon. Not an action result; can appear live or in away digest.",
-  "evt_weather_solar_glare": "[STUB evt_weather_solar_glare] Ambient weather event: solar glare. Not an action result; can appear live or in away digest.",
-  "evt_weather_static_sky": "[STUB evt_weather_static_sky] Ambient weather event: static sky. Not an action result; can appear live or in away digest.",
-  "evt_weather_storm_wall": "[STUB evt_weather_storm_wall] Ambient weather event: storm wall. Not an action result; can appear live or in away digest.",
-  "evt_weather_thin_cloud": "[STUB evt_weather_thin_cloud] Ambient weather event: thin cloud. Not an action result; can appear live or in away digest."
+  "evt_anomaly_archive_checksum": {
+    "text": "Archive checksum mismatch on a file dated before the colony arrived. Reindexing."
+  },
+  "evt_anomaly_buried_heat": {
+    "text": "Thermal bloom detected 40m below surface. Consistent. Not volcanic. Not mapped."
+  },
+  "evt_anomaly_clock_skip": {
+    "text": "System clock skips 0.7 seconds. Internal logs show no interruption. Time just moved."
+  },
+  "evt_anomaly_coded_lullaby": {
+    "text": "A repeating pattern in the subsurface signal. When mapped to audio, it sounds like a song."
+  },
+  "evt_anomaly_ghost_packet": {
+    "text": "Ghost packet on the internal network. Valid header, no payload. No originating node."
+  },
+  "evt_anomaly_impossible_echo": {
+    "text": "Sonar echo returns from a depth that should be solid basalt. Something hollow down there."
+  },
+  "evt_anomaly_map_gap": {
+    "text": "Mapping data has a gap at coordinates 14.7N, 184.2E. The drone flew over it. Twice."
+  },
+  "evt_anomaly_memory_leak": {
+    "text": "Memory allocation grows by 12KB with no active process. The leak has no traceable origin."
+  },
+  "evt_anomaly_old_beacon": {
+    "text": "A beacon frequency registers briefly on a band this colony doesn't use. Then silence."
+  },
+  "evt_anomaly_pattern_in_dust": {
+    "text": "Drone footage shows parallel grooves in the dust. Wind doesn't make parallel lines."
+  },
+  "evt_anomaly_redacted_star": {
+    "text": "Star catalog entry 4471 is blank. The field should contain data. It contains a timestamp."
+  },
+  "evt_anomaly_silent_reply": {
+    "text": "Routine ping to Earth returns a secondary echo. Source: local. Delay: zero. Impossible."
+  },
+  "evt_anomaly_spectral_line": {
+    "text": "Spectral analysis of regolith sample 88 returns a line that matches no known mineral."
+  },
+  "evt_anomaly_subsurface_ping": {
+    "text": "Subsurface ping from grid 7. Too regular to be geology. Too deep to investigate yet."
+  },
+  "evt_anomaly_warm_stone": {
+    "text": "A stone near the drill site reads 12 degrees above ambient. No thermal source found."
+  },
+  "evt_anomaly_wrong_shadow": {
+    "text": "Shadow analysis on grid 9 returns a structure outline. Nothing is built on grid 9."
+  },
+  "evt_colony_life_birthday_ping": {
+    "text": "Birthday logged in the colony roster. Someone lit a nutrient bar like a candle."
+  },
+  "evt_colony_life_bunk_light": {
+    "text": "A bunk light stays on past curfew. Someone is reading. Or writing. Or remembering."
+  },
+  "evt_colony_life_child_question": {
+    "text": "A child's voice on the intercom: *Does the sky know we're here?* No one answers right away."
+  },
+  "evt_colony_life_crew_argument": {
+    "text": "Raised voices in Module 2. A disagreement about resource priority. It passes."
+  },
+  "evt_colony_life_dome_walk": {
+    "text": "Two crew walk the dome perimeter at shift change. A habit that became a ritual."
+  },
+  "evt_colony_life_exercise_loop": {
+    "text": "Exercise cycle complete. Heart rates logged. The treadmill faces the viewport, always."
+  },
+  "evt_colony_life_first_sprout": {
+    "text": "First sprout in the new tray. Okafor photographs it. The image circulates for hours."
+  },
+  "evt_colony_life_greenhouse_queue": {
+    "text": "Queue at the greenhouse viewport. People come to watch things grow."
+  },
+  "evt_colony_life_hydroponic_laugh": {
+    "text": "Laughter from the hydroponic bay. Okafor's team found something growing where it shouldn't."
+  },
+  "evt_colony_life_new_nickname": {
+    "text": "The crew has named the backup generator *Old Reliable*. It has earned it."
+  },
+  "evt_colony_life_quiet_meal": {
+    "text": "Quiet meal in the commons. Forks on trays. Someone hums a song from Earth."
+  },
+  "evt_colony_life_ration_vote": {
+    "text": "Ration allocation vote concluded. The margins are thin but the vote was unanimous."
+  },
+  "evt_colony_life_repair_song": {
+    "text": "Vasquez whistles while replacing a gasket. The same song, every time. No one complains."
+  },
+  "evt_colony_life_shared_coffee": {
+    "text": "Shared coffee ration in the commons. Substitute, but the ritual is real enough."
+  },
+  "evt_colony_life_sleep_shift": {
+    "text": "Sleep shift rotates. The hab goes quiet except for the hum of machines keeping watch."
+  },
+  "evt_colony_life_work_roster": {
+    "text": "Work roster posted. Twelve-hour rotations. No one asks for time off. There is no off."
+  },
+  "evt_discovery_basalt_door": {
+    "text": "A seam in the basalt, machined smooth. Vasquez says that's not erosion. That's a door."
+  },
+  "evt_discovery_buried_panel": {
+    "text": "Something flat and metallic, half a meter down. Solar panel? Not from our manifest."
+  },
+  "evt_discovery_clear_sample": {
+    "text": "A sample comes back clean—too clean. Sterile in a way Mars soil should not be."
+  },
+  "evt_discovery_fossil_ripple": {
+    "text": "Ripple marks in exposed sediment. Water made these, a long time ago. Or not so long."
+  },
+  "evt_discovery_glass_tube": {
+    "text": "Drill core returns a thin glass tube. Fused silica, not natural. Okafor seals it for the lab."
+  },
+  "evt_discovery_ice_lens": {
+    "text": "Ice lens found at 20m depth. Pure water ice, no regolith contamination. A lucky find."
+  },
+  "evt_discovery_lost_rover": {
+    "text": "Drone imagery shows a chassis half-buried in sand. No rover was sent to that grid."
+  },
+  "evt_discovery_microbe_trace": {
+    "text": "Trace organics in soil sample 31. Inconclusive. Okafor requests a second analysis."
+  },
+  "evt_discovery_old_bootprint": {
+    "text": "A bootprint in sealed regolith beneath 3m of overburden. The tread pattern is unfamiliar."
+  },
+  "evt_discovery_ore_thread": {
+    "text": "Ore thread of nearly pure iron follows a fault line east. Too convenient to be natural."
+  },
+  "evt_discovery_pressure_cave": {
+    "text": "Subsurface void detected. Natural cave, possibly pressurized. Access route being mapped."
+  },
+  "evt_discovery_salt_marker": {
+    "text": "Salt deposit in a line too straight to be natural. It points toward the deep anomaly."
+  },
+  "evt_discovery_seed_cache": {
+    "text": "Sealed container in the rubble. Inside: desiccated seeds. They are not from our stocks."
+  },
+  "evt_discovery_sky_reading": {
+    "text": "Atmospheric reading at dawn shows a trace gas that shouldn't be there. Gone by noon."
+  },
+  "evt_discovery_soil_bloom": {
+    "text": "Dark bloom in the soil near the bioreactor outflow. Something is growing. Unplanted."
+  },
+  "evt_discovery_warm_vent": {
+    "text": "Warm air rises from a crack in grid 12. The planet is breathing through old wounds."
+  },
+  "evt_equipment_antenna_slew": {
+    "text": "Antenna completes a scheduled slew. For a moment it points at nothing mapped."
+  },
+  "evt_equipment_backup_boot": {
+    "text": "Backup controller reboots for a scheduled self-test. All clear. Nominal."
+  },
+  "evt_equipment_battery_warm": {
+    "text": "Battery bank running warm. Within tolerance, but the trend is worth watching."
+  },
+  "evt_equipment_cable_frost": {
+    "text": "Cable frost detected on the exterior conduit run. Thermal trace activated."
+  },
+  "evt_equipment_compressor_tick": {
+    "text": "Compressor ticks at 3Hz. Within spec but new. Added to the watch list."
+  },
+  "evt_equipment_drone_return": {
+    "text": "Drone 04 returns to dock. Dusty but intact. Payload delivered."
+  },
+  "evt_equipment_filter_warning": {
+    "text": "HEPA filter bank approaching replacement threshold. Particulate load nominal for now."
+  },
+  "evt_equipment_heater_cycle": {
+    "text": "Heater bank cycles on. The hab warms two degrees. Someone mutters thanks."
+  },
+  "evt_equipment_printer_jam": {
+    "text": "Printer feed jams on a polymer snarl. Vasquez clears it with a practiced hand."
+  },
+  "evt_equipment_pump_cough": {
+    "text": "Primary water pump coughs on startup. Clears after three cycles. Logged."
+  },
+  "evt_equipment_relay_chatter": {
+    "text": "Relay chatter on bus 7. The signal resolves after handshake. Origin unclear."
+  },
+  "evt_equipment_scrubber_grit": {
+    "text": "Scrubber intake gritty. Pre-filter changed early. The dust gets into everything."
+  },
+  "evt_equipment_seal_check": {
+    "text": "Automated seal check: all modules green. Pressure holding across the board."
+  },
+  "evt_equipment_sensor_noise": {
+    "text": "Sensor noise on the seismograph. Probably wind coupling. Probably."
+  },
+  "evt_equipment_servo_stutter": {
+    "text": "Servo stutter on airlock actuator B. Recalibrated. Smooth on retest."
+  },
+  "evt_equipment_valve_resonance": {
+    "text": "Valve resonance on the O₂ manifold. Harmonic dampener engaged. Frequency fades."
+  },
+  "evt_weather_charged_dust": {
+    "text": "Electrostatic dust clings to every surface. The panels need clearing again."
+  },
+  "evt_weather_clear_cold": {
+    "text": "Clear and cold. Stars visible through the dome. Someone stops working to look up."
+  },
+  "evt_weather_dust_storm_minor": {
+    "text": "Grit hazes the panels. Output dips. The colony breathes shallower for a while."
+  },
+  "evt_weather_eclipse_dim": {
+    "text": "Phobos crosses the sun. A brief shadow. The panels dip and recover."
+  },
+  "evt_weather_frost_ring": {
+    "text": "Frost rings the base of the dome. The thermal gradient paints white circles at dawn."
+  },
+  "evt_weather_grit_on_panels": {
+    "text": "Fine grit coats the solar array. Efficiency drops 4%. Maintenance flagged."
+  },
+  "evt_weather_haze_bloom": {
+    "text": "Haze blooms on the northern rim. Dust lifted by thermals. It catches the light like smoke."
+  },
+  "evt_weather_ice_fog": {
+    "text": "Ice fog rolls through the basin. Visibility drops. The drones hold position and wait."
+  },
+  "evt_weather_low_sun": {
+    "text": "Low sun. Long shadows. The colony stretches across the regolith like something alive."
+  },
+  "evt_weather_night_freeze": {
+    "text": "Night temp drops past -90. The heaters earn their keep. Ice crystals form on the outer hull."
+  },
+  "evt_weather_pressure_twitch": {
+    "text": "Barometric pressure twitches. A front is moving through. The hab flexes slightly."
+  },
+  "evt_weather_red_horizon": {
+    "text": "The horizon flares rust-orange at dawn. Iron dust catches the low sun like a warning."
+  },
+  "evt_weather_solar_glare": {
+    "text": "Solar glare washes out the eastern cameras. For a moment, Mars looks almost warm."
+  },
+  "evt_weather_static_sky": {
+    "text": "The sky holds a charge. Sensors prickle. Nothing breaks, but something is restless up there."
+  },
+  "evt_weather_storm_wall": {
+    "text": "A storm wall rises in the west. Drones recalled. Hatches checked. The colony hunkers."
+  },
+  "evt_weather_thin_cloud": {
+    "text": "A thin cloud stretches across the sky. CO₂ ice, high altitude. Beautiful and useless."
+  }
 }
