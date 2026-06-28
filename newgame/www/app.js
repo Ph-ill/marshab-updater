@@ -118,12 +118,12 @@ function setTutLock(on){
  else if(S.tutScrollY!==null){let y=S.tutScrollY;S.tutScrollY=null;document.body.classList.remove('tutLock');document.body.style.top='';window.scrollTo(0,y)}
 }
 function applyGuide(){
- document.querySelectorAll('.guideFocus').forEach(e=>e.classList.remove('guideFocus'));
+ document.querySelectorAll('.guideFocus').forEach(e=>e.classList.remove('guideFocus'));document.querySelectorAll('.guideLift').forEach(e=>e.classList.remove('guideLift'));
  let tut=document.querySelector('#tutorial');if(tut){tut.classList.remove('placeTop','placeBottom');tut.style.alignItems='';tut.style.paddingTop='';tut.style.paddingBottom=''}
  if(!tut){S.guideKey='';setTutLock(false);return}
  if(!S.tutTarget){S.guideKey='';setTutLock(true);return}
  let el=document.querySelector(S.tutTarget);if(!el){setTutLock(true);return}
- el.classList.add('guideFocus');
+ el.classList.add('guideFocus');let parent=el.closest('nav');if(parent)parent.classList.add('guideLift');
  let key=[S.tab,tutStep(),S.tutTarget].join('|'),allowScroll=S.guideKey!==key;S.guideKey=key;
  requestAnimationFrame(()=>placeAndScrollGuide(el,allowScroll));
 }
