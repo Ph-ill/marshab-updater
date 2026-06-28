@@ -28,7 +28,7 @@ function catchUpTut(){if(tutDone()||!S.state)return;let u=S.state.upgrades||{},s
 function tutorial(){if(tutDone()||!S.state)return '';if(!S.tutReview)catchUpTut();let s=S.state,u=s.upgrades||{},step=tutStep();let steps=[
  {t:'Welcome to MarsHab',b:['Your MarsHab device is hosting this whole colony console. You are the *quiet automation layer* between nine tired settlers and a very large, very cold planet.','The hab is alive, but only just: air leaks into scrubbers, batteries sag, 💧 water is rationed, and every useful thing begins as dust, ice, and sunlight.'],a:'Continue',target:''},
  {t:'Your first job',b:['MarsHab is an idle survival game about turning *fragile systems* into *dependable loops*.','You will tap active operations for quick help, build modules for lasting production, and check back as the colony slowly becomes less emergency-shaped.','*Pressure* is measured in mb, short for millibars: it tells you how much atmosphere Mars has outside the hab. *Confidence* is the crew’s safety estimate, combining pressure, temperature, and biology into one cautious ‘are we nearly breathable?’ number. *Legacy* is only for later replays: each completed run leaves a tiny boost behind.','If anything feels mysterious, the Guide button brings this help back.'],a:'Show me the console',target:''},
- {t:'Read the resource strip',b:['The top strip is *mission control in miniature*. The six always-visible chips are life support: 🫁 O₂, ⚡ power, 💧 water, 🥫 rations, 🪨 regolith, and 👥 crew.','Tap any chip now to reveal its name. Later, More opens the full engineering readout with rates and advanced materials.','Act and system details live behind the small 🚀 button. You can ignore them while learning; they are there when you want the engineering readout. The Surface tab is also safe to ignore for now; when expeditions and terraforming controls become relevant, MarsHab will explain them in place.'],a:'Waiting for resource tap…',target:'#res',wait:true},
+ {t:'Read the resource strip',b:['The top strip is *mission control in miniature*. The six always-visible chips are life support: 🫁 O₂, ⚡ power, 💧 water, 🥫 rations, 🪨 regolith, and 👥 crew.','Tap any chip now to reveal its name. Later, More opens the full engineering readout with rates and advanced materials.','Act and system details live behind the small 🚀 button. You can ignore them while learning; they are there when you want the engineering readout. The Surface tab is also safe to ignore for now; when expeditions and terraforming controls become relevant, MarsHab will explain them in place.'],a:'Waiting for resource tap…',target:'#res .r',wait:true},
  {t:'Operations are your hands',b:'*Operations* are quick orders you can send right now. They *buy time*: vent stale air, reroute ⚡ power, collect 🧊 ice, sift 🪨 regolith. Use one ready operation now. You are not solving Mars forever yet — you are making the next few minutes safer.',a:'Waiting for operation…',target:'[data-act]',wait:true},
  {t:'The log tells the story',b:['Every operation, module, away report, and strange signal writes into the *Console Log*. It is not just a receipt list — it is how MarsHab tells you what the 👥 crew noticed and what the planet is starting to answer.','The operation you just ran added a new line. Tap Log now and look at the newest entry at the bottom of the terminal. When the Log button glows or shows a • number, there is something new to read.'],a:'Waiting for Log tab…',target:'[data-tab=console]',wait:true},
  {t:'Read the newest entry',b:['This terminal is the *story feed*. The newest line is always at the bottom and marked *LATEST*.','As you build, leave, return, trade, or uncover odd signals, this is where MarsHab speaks back. Check it whenever the Log button says something new is waiting.'],a:'Back to building',target:'.consoleLog li.latest'},
@@ -131,11 +131,11 @@ function placeAndScrollGuide(el,allowScroll){
  let tut=document.querySelector('#tutorial'),card=document.querySelector('.tutCard');if(!tut||!card||!el)return;
  let vh=window.innerHeight||document.documentElement.clientHeight||640,margin=18;
  let nav=document.querySelector('nav'),nr=nav?nav.getBoundingClientRect():{top:vh};
- let mobileSafe=(window.innerWidth||document.documentElement.clientWidth||999)<=500?80:margin;
+ let mobileSafe=(window.innerWidth||document.documentElement.clientWidth||999)<=500?96:margin;
  let usableTop=margin,usableBottom=Math.min(vh-margin,nr.top-mobileSafe);
- let er=el.getBoundingClientRect();
+ let er=el.getBoundingClientRect(),navTarget=!!el.closest('nav');
  let spaceAbove=Math.max(0,er.top-usableTop-margin),spaceBelow=Math.max(0,usableBottom-er.bottom-margin);
- let wantBelow=spaceBelow>=Math.min(260,Math.max(160,card.scrollHeight||card.offsetHeight||220))||spaceBelow>=spaceAbove;
+ let wantBelow=navTarget?false:(spaceBelow>=Math.min(260,Math.max(160,card.scrollHeight||card.offsetHeight||220))||spaceBelow>=spaceAbove);
  tut.classList.remove('placeTop','placeBottom');
  if(wantBelow){
   tut.classList.add('placeBottom');
@@ -156,16 +156,18 @@ function placeAndScrollGuide(el,allowScroll){
   if(cr.bottom<=er2.top-margin)topLimit=Math.max(topLimit,cr.bottom+margin);
   if(cr.top>=er2.bottom+margin)bottomLimit=Math.min(bottomLimit,cr.top-margin);
   if(bottomLimit-topLimit<Math.min(90,er2.height+margin)){topLimit=usableTop;bottomLimit=usableBottom}
-  if(overlap){
-   let actual=wantBelow?er2.bottom:er2.top,desired=wantBelow?cr.top-margin:cr.bottom+margin;
-   next+=actual-desired;
-  }else if(er2.bottom>bottomLimit){next+=er2.bottom-bottomLimit}
-  else if(er2.top<topLimit){next+=er2.top-topLimit}
+  if(!navTarget){
+   if(overlap){
+    let actual=wantBelow?er2.bottom:er2.top,desired=wantBelow?cr.top-margin:cr.bottom+margin;
+    next+=actual-desired;
+   }else if(er2.bottom>bottomLimit){next+=er2.bottom-bottomLimit}
+   else if(er2.top<topLimit){next+=er2.top-topLimit}
+  }
   let main=document.querySelector('main'),mr=main?main.getBoundingClientRect():{bottom:vh};
   let docH=Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,mr.bottom+current+160);
   let maxY=Math.max(0,docH-vh);
   next=Math.max(0,Math.min(maxY,next));
-  if(allowScroll&&Math.abs(next-current)>3){setTutLock(false);requestAnimationFrame(()=>{window.scrollTo({top:next,behavior:'auto'});requestAnimationFrame(()=>setTutLock(true))})}
+  if(allowScroll&&Math.abs(next-current)>3){setTutLock(false);requestAnimationFrame(()=>{window.scrollTo({top:next,behavior:'auto'});requestAnimationFrame(()=>{setTutLock(true);requestAnimationFrame(applyGuide)})})}
   else setTutLock(true);
  });
 }
