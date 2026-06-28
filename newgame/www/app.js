@@ -119,7 +119,7 @@ function setTutLock(on){
 }
 function applyGuide(){
  document.querySelectorAll('.guideFocus').forEach(e=>e.classList.remove('guideFocus'));
- let tut=document.querySelector('#tutorial');if(tut){tut.classList.remove('placeTop','placeBottom')}
+ let tut=document.querySelector('#tutorial');if(tut){tut.classList.remove('placeTop','placeBottom');tut.style.alignItems='';tut.style.paddingTop='';tut.style.paddingBottom=''}
  if(!tut){S.guideKey='';setTutLock(false);return}
  if(!S.tutTarget){S.guideKey='';setTutLock(true);return}
  let el=document.querySelector(S.tutTarget);if(!el){setTutLock(true);return}
@@ -129,25 +129,33 @@ function applyGuide(){
 }
 function placeAndScrollGuide(el,allowScroll){
  let tut=document.querySelector('#tutorial'),card=document.querySelector('.tutCard');if(!tut||!card||!el)return;
- let vh=window.innerHeight||document.documentElement.clientHeight||640,margin=22;
+ let vh=window.innerHeight||document.documentElement.clientHeight||640,margin=18;
  let nav=document.querySelector('nav'),nr=nav?nav.getBoundingClientRect():{top:vh};
  let usableTop=margin,usableBottom=Math.min(vh-margin,nr.top-margin);
- let er=el.getBoundingClientRect(),targetMid=(er.top+er.bottom)/2;
+ let er=el.getBoundingClientRect();
  let spaceAbove=Math.max(0,er.top-usableTop-margin),spaceBelow=Math.max(0,usableBottom-er.bottom-margin);
+ let wantBelow=spaceBelow>=Math.min(260,Math.max(160,card.scrollHeight||card.offsetHeight||220))||spaceBelow>=spaceAbove;
  tut.classList.remove('placeTop','placeBottom');
- if(spaceAbove>=spaceBelow)tut.classList.add('placeTop');else tut.classList.add('placeBottom');
+ if(wantBelow){
+  tut.classList.add('placeBottom');
+  tut.style.setProperty('align-items','start','important');
+  tut.style.setProperty('padding-top',Math.max(usableTop,Math.min(usableBottom-80,er.bottom+margin))+'px','important');
+  tut.style.setProperty('padding-bottom','calc(78px + env(safe-area-inset-bottom))','important');
+ }else{
+  tut.classList.add('placeTop');
+  tut.style.setProperty('align-items','end','important');
+  tut.style.setProperty('padding-top','12px','important');
+  tut.style.setProperty('padding-bottom',Math.max(vh-usableBottom,Math.min(vh-usableTop-80,vh-er.top+margin))+'px','important');
+ }
  requestAnimationFrame(()=>{
-  let cr=card.getBoundingClientRect();
-  let topGap=usableTop,bottomGap=usableBottom;
-  if(tut.classList.contains('placeTop'))topGap=Math.min(bottomGap,cr.bottom+margin);else bottomGap=Math.max(topGap,cr.top-margin);
-  if(bottomGap-topGap<80){topGap=usableTop;bottomGap=usableBottom}
-  let er2=el.getBoundingClientRect(),space=bottomGap-topGap,actual=(er2.top+er2.bottom)/2,desired=(topGap+bottomGap)/2;
-  if(er2.height>space){
-   if(tut.classList.contains('placeTop')){actual=er2.top;desired=topGap}else{actual=er2.bottom;desired=bottomGap}
+  let cr=card.getBoundingClientRect(),er2=el.getBoundingClientRect();
+  let overlap=!(cr.bottom<=er2.top-margin||cr.top>=er2.bottom+margin);
+  let locked=S.tutScrollY!==null,current=locked?S.tutScrollY:window.scrollY,next=current;
+  if(overlap){
+   let actual=wantBelow?er2.bottom:er2.top,desired=wantBelow?cr.top-margin:cr.bottom+margin;
+   let maxY=Math.max(0,document.documentElement.scrollHeight-vh);
+   next=Math.max(0,Math.min(maxY,current+actual-desired));
   }
-  let locked=S.tutScrollY!==null,current=locked?S.tutScrollY:window.scrollY;
-  let maxY=Math.max(0,document.documentElement.scrollHeight-vh);
-  let next=Math.max(0,Math.min(maxY,current+actual-desired));
   if(allowScroll&&Math.abs(next-current)>3){setTutLock(false);requestAnimationFrame(()=>{window.scrollTo({top:next,behavior:'auto'});requestAnimationFrame(()=>setTutLock(true))})}
   else setTutLock(true);
  });
