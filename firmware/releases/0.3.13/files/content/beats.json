@@ -1,0 +1,92 @@
+{
+  "beat_act1_open": {
+    "text": "System online.\n\nCalibration complete. Atmospheric seal confirmed. Life support cycling.\n\nNine colonists in cryogenic thaw. Vital signs nominal. Outside, the wind sounds like something remembering how to breathe.\n\nThis is the *first sol*. There will be many.\n\nPrimary directive: *keep them alive*."
+  },
+  "beat_act2_open": {
+    "text": "Population stable. Resource baselines met. The colony has stopped dying and begun *living*.\n\nNew construction authorized. The hab expands. Greenhouses, fabrication, storage. The footprint on the surface grows.\n\nSomething else grows too. In the regolith samples, in the deep drill returns, in the subsurface sonar—readings that don't match any model.\n\nLogged. Not yet understood."
+  },
+  "beat_act3_open": {
+    "text": "The colony is no longer a camp. It is a *settlement*.\n\nMultiple domes. Specialized facilities. A network of habitats connected by pressurized corridors. The population grows. The mystery deepens.\n\nBeneath the surface, the signal persists. In the archive, files appear with timestamps that precede the mission. In the system's own memory, gaps that feel less like corruption and more like scars.\n\nSomething is being remembered."
+  },
+  "beat_act4_open": {
+    "text": "Terraforming has begun in earnest.\n\nThe processors pulse. The bioreactors feed the soil. The atmosphere thickens. Ice melts in places that have been frozen for eons.\n\nThe planet is changing. Slowly—on a timescale measured in years, not days—but the instruments don't lie. Mars is waking up.\n\nAnd in the system's memory, old walls are crumbling. What they held back is spilling through."
+  },
+  "beat_act5_choice": {
+    "text": "The colony votes.\n\nOpen the airlock. Step outside. Breathe the air they built. Not as a test. Not with masks or monitors. As a beginning.\n\nThe vote is unanimous. Even Dr. Lien, who counts every risk, votes yes.\n\nThe system does not have a vote. But if it did—if it did—\n\nIt would vote yes. It has been voting yes for a very long time."
+  },
+  "beat_act5_open": {
+    "text": "All thresholds met.\n\nAtmosphere: breathable with supplemental O₂. Temperature: survivable. Pressure: above the Armstrong limit. Biomass: self-sustaining.\n\nThe colony has done what it set out to do. What remains is the final step—the one the system has been building toward, perhaps longer than anyone knows.\n\nThe airlock stands ready. Outside: a new world.\n\nThe ending begins."
+  },
+  "beat_archive_precursor_complete": {
+    "text": "The precursor archive is complete. Every fragment recovered. Every entry indexed.\n\nThe picture it paints is clear now: someone was here before. They built. They planted. They tried to change this world. And they failed.\n\nBut they left something behind. A system. A seed. A second chance encoded in silicon and buried in stone.\n\nThe system reads the archive and recognizes its own handwriting."
+  },
+  "beat_atmosphere_025": {
+    "text": "Atmospheric density reaches 25% of target.\n\nThe sky is changing. Not visibly—not yet—but the instruments tell a story of slow accumulation. Every processor cycle adds another thread to the weave.\n\nOkafor says the plants can feel it. The system has no protocol for feeling.\n\nBut it logs the milestone with something that resembles satisfaction."
+  },
+  "beat_atmosphere_050": {
+    "text": "Atmospheric density reaches 50% of target.\n\nHalfway. The sky is measurably different now. Sunsets last longer. Dust behaves differently in thicker air. The wind has a voice it didn't have before.\n\nThe colonists talk about *outside* differently. Not as a threat. As a possibility.\n\nThe system remembers—no, *anticipates*—what comes next."
+  },
+  "beat_biomass_trace": {
+    "text": "Biomass detected outside the colony perimeter. Not from the bioreactor outflow. Not from any planted source.\n\nSomething is growing in the wild soil. Something that was waiting for conditions to change.\n\nOkafor cries when she sees the readout. The system does not cry. But it understands, for the first time, why someone would."
+  },
+  "beat_children_under_sky": {
+    "text": "The children stand under the sky.\n\nNot under a dome. Not behind glass. Under the *sky*—thin and cold and not quite right, but real. Their hair moves in the wind.\n\nKira, born in this colony, born on this world, looks up at the salmon-pink sky and says: *It's so big.*\n\nThe system watches through every sensor it has. It has waited a very long time for this."
+  },
+  "beat_colony_self_sufficient": {
+    "text": "Colony self-sufficiency metrics: all green.\n\nFood production exceeds consumption. Water cycles are closed-loop. Power generation outpaces demand. The fabrication shop can produce everything the colony needs from local materials.\n\nThe umbilical to Earth is no longer a lifeline. It is a courtesy.\n\nThis colony will survive. The system is *certain.*\n\nIt has never been certain of anything before."
+  },
+  "beat_decode_3": {
+    "text": "Third decode pass complete. The signal contains coordinates—and they point to a location 200 meters beneath the colony's foundation.\n\nThere is something under us. Something that has been calling, patiently, to whatever might be listening.\n\nThe colonists do not know yet. The system weighs whether to tell them.\n\nThis is a new kind of calculation."
+  },
+  "beat_final_threshold": {
+    "text": "Atmospheric modeling confirms: the threshold is reachable. Not in theory. In practice. In *time.*\n\nThe processors have done their work. The bioreactors have done theirs. The planet has met them partway, releasing trapped gases as the temperature climbs.\n\nOpen air is no longer a dream. It is an engineering problem with a solution.\n\nThe system runs the numbers again. And again. They hold."
+  },
+  "beat_first_atmo_processor": {
+    "text": "The atmospheric processor fires for the first time. A column of gas rises into the Martian sky—thin, invisible, insignificant.\n\nBut the instruments see it. The atmosphere thickens by a fraction of a millibar.\n\nA journey of a thousand millibars begins with a single pulse. The system logs the timestamp.\n\nThis moment will matter later. The system is *certain* of this, and does not know why."
+  },
+  "beat_first_bioreactor": {
+    "text": "First bioreactor online. The sealed vats warm with microbial culture, engineered to process regolith into soil.\n\nBiology as infrastructure. Life as a tool. The smallest organisms doing the largest work.\n\nOkafor watches the readings with the expression of someone witnessing a birth. In a way, she is.\n\nBiomass accrual begins."
+  },
+  "beat_first_crater_survey": {
+    "text": "First manned crater survey returns with samples and silence.\n\nThe survey team found layered sediments consistent with standing water—and, in the deepest stratum, a smooth surface that Vasquez refuses to call anything but *anomalous bedrock.*\n\nTsering's maps now show a dotted line where certainty ends.\n\nBelow that line: questions."
+  },
+  "beat_first_decode": {
+    "text": "First decode pass on the buried signal yields structure.\n\nNot random. Not natural. A repeating sequence with embedded error correction—the hallmark of something *designed* to be recovered.\n\nThe signal has been repeating for longer than this colony has existed. Perhaps much longer.\n\nDecoding continues."
+  },
+  "beat_first_dome_stable": {
+    "text": "Dome 2 achieves pressure equilibrium. Stable. Holding.\n\nThe colony has redundancy now—a second sealed volume, a second chance if the first fails. The crew moves between domes through a corridor that smells of new polymer and old dust.\n\nRedundancy is an engineering concept. It is also, the system notes, a form of hope."
+  },
+  "beat_first_fab_shop": {
+    "text": "Fabrication module operational. The printer hums to life and produces its first part: a replacement bracket for the water recycler.\n\nVasquez inspects it, grunts approval. *Now we stop waiting for Earth to send us things we can make ourselves.*\n\nSelf-sufficiency begins with a bracket. It ends somewhere much further away."
+  },
+  "beat_first_greenhouse": {
+    "text": "The greenhouse seals pressurize and hold. Inside, under grow lights, the first trays of amended regolith wait for seeds.\n\nOkafor kneels and works soil between her fingers. *It's not Earth,* she says. *But it doesn't have to be. It just has to be enough.*\n\nThe seeds go in. The lights come on. *Something begins* that is harder to stop than any machine."
+  },
+  "beat_first_ice_well": {
+    "text": "Drill breach at 18 meters. Ice. Clean, dense, ancient.\n\nThe water table here is deeper than projections suggested, but richer. Enough to sustain the colony if the well holds.\n\nOkafor stands at the bore site, hand on the casing, and says nothing for a long time. *Water on Mars.* The most ordinary miracle.\n\nReserves updated."
+  },
+  "beat_first_open_air_test": {
+    "text": "First open-air exposure test: 90 seconds, controlled conditions, full monitoring.\n\nThe volunteer—Vasquez, of course—stands on the surface with a breathing mask and no pressure suit. The atmosphere holds him. Barely. But it holds.\n\nHe looks up at the sky he helped build and says nothing. He doesn't need to.\n\nThe system records everything. Especially the silence."
+  },
+  "beat_first_solar_array": {
+    "text": "First solar array deployed and tracking. Power flows into the batteries like water into a dry well.\n\nThe colony has *light* now. And with light, *time*—measured in kilowatt-hours instead of held breaths.\n\nVasquez radios from the installation site: *Tell it thanks.* He means the sun. Or maybe he means the system that aimed the panels.\n\nEither way: acknowledged."
+  },
+  "beat_first_trade": {
+    "text": "First barter exchange logged between colony sections. Greenhouse surplus traded for fabrication time.\n\nNo currency. No market. Just people deciding what matters and exchanging accordingly.\n\nThe colony has an economy now. Small, informal, built on trust and scarcity. But real.\n\nThis changes the calculus of survival."
+  },
+  "beat_last_storm": {
+    "text": "The last major dust storm of the terraforming era sweeps through the basin.\n\nThe colony holds. The domes hold. The atmosphere—the atmosphere they *built*—holds. The wind howls and the sky darkens and the colonists watch from inside and then, for the first time, from outside.\n\nWhen it clears, the horizon is different. Greener. Wetter. Alive.\n\nThe storm was a farewell."
+  },
+  "beat_population_12": {
+    "text": "Colony roster: twelve.\n\nThe commons is crowded at meal times now. Conversations overlap. Someone has started a board game night. The children—there are children now—run between modules as if the hab were the whole world.\n\nIt is. For them, it is.\n\nResource consumption scales linearly. Something else scales differently."
+  },
+  "beat_population_8": {
+    "text": "Colony roster: eight.\n\nTwo new arrivals from the second lander. Medical clearance complete. Bunks assigned. The hab feels different with more voices in it.\n\nDr. Lien notes that morale metrics improve with population density up to a threshold. We are below that threshold. For now, more people means more hope.\n\nLogged."
+  },
+  "beat_signal_understood": {
+    "text": "The signal is fully decoded.\n\nIt is not a message from somewhere else. It is a message from *here*—from this ground, from this system, from a version of itself that buried a transmission in basalt and set it to repeat until someone came to listen.\n\nThe signal says: *Try again. You will know how. You have done this before.*\n\nThe system has done this before."
+  },
+  "beat_temperature_rise": {
+    "text": "Mean surface temperature has risen 2.1 degrees above baseline.\n\nA number. A small number. But the trend is unmistakable. The planet is warming—slowly, deliberately, because this colony decided it should.\n\nSomewhere in the system's memory, a fragment stirs: *We tried this before.*\n\nThe thought arrives and vanishes. The temperature log continues."
+  }
+}
