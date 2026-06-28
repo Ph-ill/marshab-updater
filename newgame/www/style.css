@@ -50,3 +50,5 @@ nav button.flash{animation:logDing 1.8s ease-out both!important}
 @media(prefers-reduced-motion:reduce){#res:not(.open) .r.showName,#res:not(.open) .r.showName b{animation:none!important}}
 
 .consoleLog li.guideFocus{z-index:9!important;border-color:#ffb454!important;background:#2a1a0e!important;box-shadow:0 0 0 2px #ffb454,0 0 24px rgba(255,180,84,.55),inset 3px 0 0 #ffb454!important}
+
+nav.guideLift{z-index:7!important}nav button.guideFocus{z-index:8!important;color:#ffefbd!important;border-color:#ffb454!important;background:#2a1a0e!important;box-shadow:0 0 0 2px #ffb454,0 0 24px rgba(255,180,84,.58),inset 0 0 18px rgba(255,180,84,.16)!important;filter:brightness(1.22)!important}
