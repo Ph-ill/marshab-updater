@@ -91,8 +91,9 @@ def protected_payload_checks():
 def captive_portal_checks():
     for p in ('/generate_204','/gen_204','/hotspot-detect.html','/ncsi.txt','/connecttest.txt','/canonical.html','/fwlink'):
         assert_true(p in server.PORTAL,p)
+    assert_true(server.portal_location()=='http://192.168.4.1/',server.portal_location())
     body=server.portal_body('/generate_204')
-    assert_true('id="load"' in body and '/style.css' in body and '/app.js' in body,body)
+    assert_true('redirects' in body and 'http://192.168.4.1/' in body and 'Open colony control' not in body,body)
 
 def main():
     os.environ['PYTHONDONTWRITEBYTECODE']='1'

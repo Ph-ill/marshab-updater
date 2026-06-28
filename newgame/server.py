@@ -22,18 +22,14 @@ async def send(w,status,ctype,body,extra=''):
     reason={200:'OK',204:'No Content',302:'Found',404:'Not Found',500:'Error'}.get(status,'OK')
     head='HTTP/1.0 %d %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\nConnection: close\r\n%s\r\n'%(status,reason,ctype,len(body),extra)
     w.write(head.encode()+body); await w.drain()
+def portal_location(): return 'http://%s/'%AP_IP
 def portal_body(path):
-    for p in ('www/index.html','newgame/www/index.html',os.path.join(os.path.dirname(__file__),'www/index.html')):
-        try: return file_bytes(p).decode()
-        except Exception: pass
-    return '<!doctype html><title>Mars Hab</title><body><div id="load">MARS HAB</div><link rel="stylesheet" href="/style.css"><script src="/app.js"></script></body>'
+    return '<!doctype html><title>Mars Hab</title><body>Mars Hab redirects to <a href="%s">colony control</a>.</body>'%portal_location()
 
 async def send_portal(w,path):
-    # Be deliberately obvious to OS captive-portal detectors. Returning a real
-    # HTML body instead of 204/no-content is what makes phones open their sign-in
-    # sheet. Avoid relying on redirects; some mobile stacks cache or suppress
-    # them on repeat joins.
-    await send(w,200,'text/html; charset=utf-8',portal_body(path))
+    # Captive probes should go straight to the real game root. A separate
+    # gateway/join page caused phone captive webviews to linger or fail.
+    await send(w,302,'text/html; charset=utf-8',portal_body(path),'Location: %s\r\n'%portal_location())
 def file_bytes(path):
     with open(path,'rb') as f: return f.read()
 async def read_req(r):
