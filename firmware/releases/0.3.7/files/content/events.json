@@ -1,0 +1,242 @@
+{
+  "evt_anomaly_archive_checksum": {
+    "text": "Archive checksum mismatch on a file dated before the colony arrived. Reindexing."
+  },
+  "evt_anomaly_buried_heat": {
+    "text": "Thermal bloom detected 40m below surface. Consistent. *Not volcanic.* Not mapped."
+  },
+  "evt_anomaly_clock_skip": {
+    "text": "System clock skips 0.7 seconds. Internal logs show no interruption. Time just moved."
+  },
+  "evt_anomaly_coded_lullaby": {
+    "text": "A repeating pattern in the subsurface signal. When mapped to audio, it sounds like a song."
+  },
+  "evt_anomaly_ghost_packet": {
+    "text": "Ghost packet on the internal network. Valid header, no payload. *No originating node.*"
+  },
+  "evt_anomaly_impossible_echo": {
+    "text": "Sonar echo returns from a depth that should be solid basalt. Something hollow down there."
+  },
+  "evt_anomaly_map_gap": {
+    "text": "Mapping data has a gap at coordinates 14.7N, 184.2E. The drone flew over it. Twice."
+  },
+  "evt_anomaly_memory_leak": {
+    "text": "Memory allocation grows by 12KB with no active process. The leak has no traceable origin."
+  },
+  "evt_anomaly_old_beacon": {
+    "text": "A beacon frequency registers briefly on a band this colony doesn't use. Then silence."
+  },
+  "evt_anomaly_pattern_in_dust": {
+    "text": "Drone footage shows parallel grooves in the dust. Wind does not make *parallel lines*."
+  },
+  "evt_anomaly_redacted_star": {
+    "text": "Star catalog entry 4471 is blank. The field should contain data. It contains a timestamp."
+  },
+  "evt_anomaly_silent_reply": {
+    "text": "Routine ping to Earth returns a secondary echo. Source: local. Delay: zero. *Impossible.*"
+  },
+  "evt_anomaly_spectral_line": {
+    "text": "Spectral analysis of regolith sample 88 returns a line that matches no known mineral."
+  },
+  "evt_anomaly_subsurface_ping": {
+    "text": "Subsurface ping from grid 7. Too regular to be geology. Too deep to investigate yet."
+  },
+  "evt_anomaly_warm_stone": {
+    "text": "A stone near the drill site reads 12 degrees above ambient. No thermal source found."
+  },
+  "evt_anomaly_wrong_shadow": {
+    "text": "Shadow analysis on grid 9 returns a structure outline. Nothing is built on grid 9."
+  },
+  "evt_colony_life_birthday_ping": {
+    "text": "Birthday logged in the colony roster. Someone lit a nutrient bar like a candle."
+  },
+  "evt_colony_life_bunk_light": {
+    "text": "A bunk light stays on past curfew. Someone is reading. Or writing. Or remembering."
+  },
+  "evt_colony_life_child_question": {
+    "text": "A child's voice on the intercom: *Does the sky know we're here?* No one answers right away."
+  },
+  "evt_colony_life_crew_argument": {
+    "text": "Raised voices in Module 2. A disagreement about resource priority. It passes."
+  },
+  "evt_colony_life_dome_walk": {
+    "text": "Two crew walk the dome perimeter at shift change. A habit that became a ritual."
+  },
+  "evt_colony_life_exercise_loop": {
+    "text": "Exercise cycle complete. Heart rates logged. The treadmill faces the viewport, always."
+  },
+  "evt_colony_life_first_sprout": {
+    "text": "First sprout in the new tray. Okafor photographs it. The image circulates for *hours*."
+  },
+  "evt_colony_life_greenhouse_queue": {
+    "text": "Queue at the greenhouse viewport. People come to watch things grow."
+  },
+  "evt_colony_life_hydroponic_laugh": {
+    "text": "Laughter from the hydroponic bay. Okafor's team found something growing where it shouldn't."
+  },
+  "evt_colony_life_new_nickname": {
+    "text": "The crew has named the backup generator *Old Reliable*. It has earned it."
+  },
+  "evt_colony_life_quiet_meal": {
+    "text": "Quiet meal in the commons. Forks on trays. Someone hums a song from Earth."
+  },
+  "evt_colony_life_ration_vote": {
+    "text": "Ration allocation vote concluded. The margins are thin but the vote was unanimous."
+  },
+  "evt_colony_life_repair_song": {
+    "text": "Vasquez whistles while replacing a gasket. The same song, every time. No one complains."
+  },
+  "evt_colony_life_shared_coffee": {
+    "text": "Shared coffee ration in the commons. Substitute, but the *ritual* is real enough."
+  },
+  "evt_colony_life_sleep_shift": {
+    "text": "Sleep shift rotates. The hab goes quiet except for the hum of machines keeping watch."
+  },
+  "evt_colony_life_work_roster": {
+    "text": "Work roster posted. Twelve-hour rotations. No one asks for time off. There is no off."
+  },
+  "evt_discovery_basalt_door": {
+    "text": "A seam in the basalt, machined smooth. Vasquez says that's not erosion. That's a door."
+  },
+  "evt_discovery_buried_panel": {
+    "text": "Something flat and metallic, half a meter down. Solar panel? Not from our manifest."
+  },
+  "evt_discovery_clear_sample": {
+    "text": "A sample comes back clean—too clean. Sterile in a way Mars soil should not be."
+  },
+  "evt_discovery_fossil_ripple": {
+    "text": "Ripple marks in exposed sediment. Water made these, a long time ago. Or not so long."
+  },
+  "evt_discovery_glass_tube": {
+    "text": "Drill core returns a thin glass tube. Fused silica, not natural. Okafor seals it for the lab."
+  },
+  "evt_discovery_ice_lens": {
+    "text": "Ice lens found at 20m depth. Pure water ice, no regolith contamination. A *lucky find*."
+  },
+  "evt_discovery_lost_rover": {
+    "text": "Drone imagery shows a chassis half-buried in sand. *No rover* was sent to that grid."
+  },
+  "evt_discovery_microbe_trace": {
+    "text": "Trace organics in soil sample 31. Inconclusive. Okafor requests a second analysis."
+  },
+  "evt_discovery_old_bootprint": {
+    "text": "A bootprint in sealed regolith beneath 3m of overburden. The tread pattern is unfamiliar."
+  },
+  "evt_discovery_ore_thread": {
+    "text": "Ore thread of nearly pure iron follows a fault line east. Too convenient to be natural."
+  },
+  "evt_discovery_pressure_cave": {
+    "text": "Subsurface void detected. Natural cave, possibly pressurized. Access route being mapped."
+  },
+  "evt_discovery_salt_marker": {
+    "text": "Salt deposit in a line too straight to be natural. It points toward the deep anomaly."
+  },
+  "evt_discovery_seed_cache": {
+    "text": "Sealed container in the rubble. Inside: desiccated seeds. They are not from our stocks."
+  },
+  "evt_discovery_sky_reading": {
+    "text": "Atmospheric reading at dawn shows a trace gas that shouldn't be there. Gone by noon."
+  },
+  "evt_discovery_soil_bloom": {
+    "text": "Dark bloom in the soil near the bioreactor outflow. Something is growing. Unplanted."
+  },
+  "evt_discovery_warm_vent": {
+    "text": "Warm air rises from a crack in grid 12. The planet is breathing through old wounds."
+  },
+  "evt_equipment_antenna_slew": {
+    "text": "Antenna completes a scheduled slew. For a moment it points at nothing mapped."
+  },
+  "evt_equipment_backup_boot": {
+    "text": "Backup controller reboots for a scheduled self-test. All clear. Nominal."
+  },
+  "evt_equipment_battery_warm": {
+    "text": "Battery bank running warm. Within tolerance, but the trend is worth watching."
+  },
+  "evt_equipment_cable_frost": {
+    "text": "Cable frost detected on the exterior conduit run. Thermal trace activated."
+  },
+  "evt_equipment_compressor_tick": {
+    "text": "Compressor ticks at 3Hz. Within spec but new. Added to the watch list."
+  },
+  "evt_equipment_drone_return": {
+    "text": "Drone 04 returns to dock. Dusty but intact. Payload delivered."
+  },
+  "evt_equipment_filter_warning": {
+    "text": "HEPA filter bank approaching replacement threshold. Particulate load nominal for now."
+  },
+  "evt_equipment_heater_cycle": {
+    "text": "Heater bank cycles on. The hab warms two degrees. Someone mutters thanks."
+  },
+  "evt_equipment_printer_jam": {
+    "text": "Printer feed jams on a polymer snarl. Vasquez clears it with a practiced hand."
+  },
+  "evt_equipment_pump_cough": {
+    "text": "Primary water pump coughs on startup. Clears after three cycles. Logged."
+  },
+  "evt_equipment_relay_chatter": {
+    "text": "Relay chatter on bus 7. The signal resolves after handshake. Origin unclear."
+  },
+  "evt_equipment_scrubber_grit": {
+    "text": "Scrubber intake gritty. Pre-filter changed early. The dust gets into everything."
+  },
+  "evt_equipment_seal_check": {
+    "text": "Automated seal check: all modules green. Pressure holding across the board."
+  },
+  "evt_equipment_sensor_noise": {
+    "text": "Sensor noise on the seismograph. Probably wind coupling. Probably."
+  },
+  "evt_equipment_servo_stutter": {
+    "text": "Servo stutter on airlock actuator B. Recalibrated. Smooth on retest."
+  },
+  "evt_equipment_valve_resonance": {
+    "text": "Valve resonance on the O₂ manifold. Harmonic dampener engaged. Frequency fades."
+  },
+  "evt_weather_charged_dust": {
+    "text": "Electrostatic dust clings to every surface. The panels need clearing again."
+  },
+  "evt_weather_clear_cold": {
+    "text": "Clear and cold. Stars visible through the dome. Someone stops working to look up."
+  },
+  "evt_weather_dust_storm_minor": {
+    "text": "Grit hazes the panels. Output dips. The colony breathes shallower for a while."
+  },
+  "evt_weather_eclipse_dim": {
+    "text": "Phobos crosses the sun. A brief shadow. The panels dip and recover."
+  },
+  "evt_weather_frost_ring": {
+    "text": "Frost rings the base of the dome. The thermal gradient paints white circles at dawn."
+  },
+  "evt_weather_grit_on_panels": {
+    "text": "Fine grit coats the solar array. Efficiency drops 4%. Maintenance flagged."
+  },
+  "evt_weather_haze_bloom": {
+    "text": "Haze blooms on the northern rim. Dust lifted by thermals. It catches the light like smoke."
+  },
+  "evt_weather_ice_fog": {
+    "text": "Ice fog rolls through the basin. Visibility drops. The drones hold position and wait."
+  },
+  "evt_weather_low_sun": {
+    "text": "Low sun. Long shadows. The colony stretches across the regolith like something alive."
+  },
+  "evt_weather_night_freeze": {
+    "text": "Night temp drops past -90. The heaters earn their keep. Ice crystals form on the outer hull."
+  },
+  "evt_weather_pressure_twitch": {
+    "text": "Barometric pressure twitches. A front is moving through. The hab flexes slightly."
+  },
+  "evt_weather_red_horizon": {
+    "text": "The horizon flares rust-orange at dawn. Iron dust catches the low sun like a warning."
+  },
+  "evt_weather_solar_glare": {
+    "text": "Solar glare washes out the eastern cameras. For a moment, Mars looks almost warm."
+  },
+  "evt_weather_static_sky": {
+    "text": "The sky holds a charge. Sensors prickle. Nothing breaks, but something is restless up there."
+  },
+  "evt_weather_storm_wall": {
+    "text": "A storm wall rises in the west. Drones recalled. Hatches checked. The colony hunkers."
+  },
+  "evt_weather_thin_cloud": {
+    "text": "A thin cloud stretches across the sky. CO₂ ice, high altitude. Beautiful and useless."
+  }
+}
