@@ -37,7 +37,7 @@ function tutorial(){if(tutDone()||!S.state)return '';if(!S.tutReview)catchUpTut(
  {t:'Check in, then let it breathe',b:'MarsHab *keeps working while powered*. You do not need to stare at it every second; return later to read logs, spend gains, and shore up whichever system is grumbling loudest. The colony should feel like a living little machine, not a spreadsheet demanding tribute.',a:'Continue',target:''},
  {t:'You have the console',b:['That is the shape of MarsHab:', ['Watch the resource strip for pressure points: 🫁 O₂, ⚡ power, 💧 water, 🥫 rations, 🪨 regolith, and 👥 crew.','Use operations for short-term corrections.','Build modules to install permanent production loops.','Read the Log when MarsHab says something new is waiting.'], '*Trade is optional* social machinery. It stays out of this first lesson; when you open Trade, MarsHab will explain care packages, redeeming codes, and passport visits there.', 'Next, keep strengthening the colony: add more ☀️ Solar Array, 💧 water, and 🌿 Greenhouse capacity, then follow the new modules and archive entries as they unlock.', 'The logs are already hinting that this site is *not as empty as it looks*. Some readings in the dust are too orderly. Some old signals know too much.', 'Keep the lights on, keep the crew breathing, and see what *Mars remembers*.'],a:'Enter the hab',target:''}];
  let x={...steps[step]};let hint='',review=S.tutReview;
- if(step===7&&!review){let need=nextStarterNeed(u);if(need){x.target=starterTarget(need);x.a=`Waiting for ${starterName(need)}…`;hint+=starterNeedHint(need)}}
+ if(step===7){let need=nextStarterNeed(u);if(need){x.target=starterTarget(need);if(!review)x.a=`Waiting for ${starterName(need)}…`;hint+=starterNeedHint(need)}}
  if(review&&x.wait){x.wait=false;x.a='Continue'}
  S.tutTarget=x.target||'';
  if(!review&&(step===6||step===7)){let built=['solar_array','ice_well','greenhouse'].filter(k=>(u[k]&&u[k].owned));hint+=`<p class=muted>Starter loop progress: ${built.length}/3 built.</p>`}
@@ -166,8 +166,9 @@ function placeAndScrollGuide(el,allowScroll){
    }
    requestAnimationFrame(()=>{
     let b2=bounds();
-    let avail=Math.max(96,Math.min(vh-usableTop-(vh-usableBottom),Math.max(b2.er.top-usableTop-gap,usableBottom-b2.er.bottom-gap),b2.cr.height));
-    if(!(b2.cr.bottom<=b2.er.top-gap||b2.cr.top>=b2.er.bottom+gap)){avail=Math.max(90,Math.max(b2.er.top-usableTop-gap,usableBottom-b2.er.bottom-gap))}
+    let aboveSpace=b2.er.top-usableTop-gap,belowSpace=usableBottom-b2.er.bottom-gap;
+    let avail=navTarget?aboveSpace:Math.min(vh-usableTop-(vh-usableBottom),Math.max(aboveSpace,belowSpace),b2.cr.height);
+    if(!(b2.cr.bottom<=b2.er.top-gap||b2.cr.top>=b2.er.bottom+gap))avail=Math.max(90,navTarget?aboveSpace:Math.max(aboveSpace,belowSpace));
     card.style.maxHeight=Math.floor(Math.max(90,avail))+'px';
     card.style.overflowY='auto';card.style.webkitOverflowScrolling='touch';
     S.guideKey=key;
