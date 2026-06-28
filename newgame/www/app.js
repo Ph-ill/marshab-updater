@@ -131,7 +131,8 @@ function placeAndScrollGuide(el,allowScroll){
  let tut=document.querySelector('#tutorial'),card=document.querySelector('.tutCard');if(!tut||!card||!el)return;
  let vh=window.innerHeight||document.documentElement.clientHeight||640,margin=18;
  let nav=document.querySelector('nav'),nr=nav?nav.getBoundingClientRect():{top:vh};
- let usableTop=margin,usableBottom=Math.min(vh-margin,nr.top-margin);
+ let mobileSafe=(window.innerWidth||document.documentElement.clientWidth||999)<=500?80:margin;
+ let usableTop=margin,usableBottom=Math.min(vh-margin,nr.top-mobileSafe);
  let er=el.getBoundingClientRect();
  let spaceAbove=Math.max(0,er.top-usableTop-margin),spaceBelow=Math.max(0,usableBottom-er.bottom-margin);
  let wantBelow=spaceBelow>=Math.min(260,Math.max(160,card.scrollHeight||card.offsetHeight||220))||spaceBelow>=spaceAbove;
@@ -151,11 +152,19 @@ function placeAndScrollGuide(el,allowScroll){
   let cr=card.getBoundingClientRect(),er2=el.getBoundingClientRect();
   let overlap=!(cr.bottom<=er2.top-margin||cr.top>=er2.bottom+margin);
   let locked=S.tutScrollY!==null,current=locked?S.tutScrollY:window.scrollY,next=current;
+  let topLimit=usableTop,bottomLimit=usableBottom;
+  if(cr.bottom<=er2.top-margin)topLimit=Math.max(topLimit,cr.bottom+margin);
+  if(cr.top>=er2.bottom+margin)bottomLimit=Math.min(bottomLimit,cr.top-margin);
+  if(bottomLimit-topLimit<Math.min(90,er2.height+margin)){topLimit=usableTop;bottomLimit=usableBottom}
   if(overlap){
    let actual=wantBelow?er2.bottom:er2.top,desired=wantBelow?cr.top-margin:cr.bottom+margin;
-   let maxY=Math.max(0,document.documentElement.scrollHeight-vh);
-   next=Math.max(0,Math.min(maxY,current+actual-desired));
-  }
+   next+=actual-desired;
+  }else if(er2.bottom>bottomLimit){next+=er2.bottom-bottomLimit}
+  else if(er2.top<topLimit){next+=er2.top-topLimit}
+  let main=document.querySelector('main'),mr=main?main.getBoundingClientRect():{bottom:vh};
+  let docH=Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,mr.bottom+current+160);
+  let maxY=Math.max(0,docH-vh);
+  next=Math.max(0,Math.min(maxY,next));
   if(allowScroll&&Math.abs(next-current)>3){setTutLock(false);requestAnimationFrame(()=>{window.scrollTo({top:next,behavior:'auto'});requestAnimationFrame(()=>setTutLock(true))})}
   else setTutLock(true);
  });
