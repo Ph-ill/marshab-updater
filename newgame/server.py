@@ -23,17 +23,10 @@ async def send(w,status,ctype,body,extra=''):
     head='HTTP/1.0 %d %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\nConnection: close\r\n%s\r\n'%(status,reason,ctype,len(body),extra)
     w.write(head.encode()+body); await w.drain()
 def portal_body(path):
-    return ('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>Mars Hab Gateway</title><style>'
-            'body{margin:0;padding:22px;background:#160f12;color:#ffd99c;font:16px sans-serif}'
-            '.card{max-width:390px;margin:42px auto;padding:22px;border:1px solid #c9823a;border-radius:18px;background:#2a1818;text-align:center}'
-            'h1{font-size:24px;margin:0 0 12px;color:#ffe4ad;letter-spacing:.06em}'
-            'p{color:#d5a46d;line-height:1.45}.btn{display:block;margin:18px 0;padding:14px;border-radius:14px;background:#ffb84a;color:#1d120b;text-decoration:none;font-weight:bold}'
-            '.ip{font:13px monospace;color:#b98f62}'
-            '</style></head><body><main class="card"><h1>MARS HAB GATEWAY</h1>'
-            '<p>Mars Hab gateway: your MarsHab device is ready.</p>'
-            '<a class="btn" href="http://%s/">Open colony control</a>'
-            '<div class="ip">http://%s/</div></main></body></html>')%(AP_IP,AP_IP)
+    for p in ('www/index.html','newgame/www/index.html',os.path.join(os.path.dirname(__file__),'www/index.html')):
+        try: return file_bytes(p).decode()
+        except Exception: pass
+    return '<!doctype html><title>Mars Hab</title><body><div id="load">MARS HAB</div><link rel="stylesheet" href="/style.css"><script src="/app.js"></script></body>'
 
 async def send_portal(w,path):
     # Be deliberately obvious to OS captive-portal detectors. Returning a real
