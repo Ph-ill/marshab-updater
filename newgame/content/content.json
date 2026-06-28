@@ -378,7 +378,7 @@
     "text": "Weather event came and went. No damage. The colony endures."
   },
   "beat_act1_open": {
-    "text": "System online.\n\nCalibration complete. Atmospheric seal confirmed. Life support cycling.\n\nSix colonists in cryogenic thaw. Vital signs nominal. Outside, the wind sounds like something remembering how to breathe.\n\nThis is the first sol. There will be many.\n\nPrimary directive: keep them alive."
+    "text": "System online.\n\nCalibration complete. Atmospheric seal confirmed. Life support cycling.\n\nNine colonists in cryogenic thaw. Vital signs nominal. Outside, the wind sounds like something remembering how to breathe.\n\nThis is the first sol. There will be many.\n\nPrimary directive: keep them alive."
   },
   "beat_act2_open": {
     "text": "Population stable. Resource baselines met. The colony has stopped dying and begun *living*.\n\nNew construction authorized. The hab expands. Greenhouses, fabrication, storage. The footprint on the surface grows.\n\nSomething else grows too. In the regolith samples, in the deep drill returns, in the subsurface sonar—readings that don't match any model.\n\nLogged. Not yet understood."
