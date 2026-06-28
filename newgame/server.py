@@ -34,7 +34,13 @@ def file_bytes(path):
     with open(path,'rb') as f: return f.read()
 
 def asset_text(path):
-    for p in (path,'newgame/'+path,os.path.join(os.path.dirname(__file__),path)):
+    here=''
+    try:
+        here=__file__.rsplit('/',1)[0]
+    except Exception:
+        pass
+    paths=(path,'newgame/'+path,(here+'/'+path) if here else path)
+    for p in paths:
         try: return file_bytes(p).decode()
         except Exception: pass
     raise OSError(path)
