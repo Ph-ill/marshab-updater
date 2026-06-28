@@ -32,6 +32,22 @@ async def send_portal(w,path):
     await send(w,302,'text/html; charset=utf-8',portal_body(path),'Location: %s\r\n'%portal_location())
 def file_bytes(path):
     with open(path,'rb') as f: return f.read()
+
+def asset_text(path):
+    for p in (path,'newgame/'+path,os.path.join(os.path.dirname(__file__),path)):
+        try: return file_bytes(p).decode()
+        except Exception: pass
+    raise OSError(path)
+def index_body():
+    html=asset_text('www/index.html')
+    try:
+        css=asset_text('www/style.css')
+        js_src=asset_text('www/app.js').replace('</script>','<'+'/script>')
+        html=html.replace('<link rel="stylesheet" href="/style.css">','<style data-inline="style">'+css+'</style>')
+        html=html.replace('<script src="/app.js"></script>','<script data-inline="app">'+js_src+'</script>')
+    except Exception as e:
+        print('inline index fallback',e)
+    return html
 async def read_req(r):
     line=await r.readline()
     if not line: return None
@@ -97,7 +113,10 @@ async def handle(r,w):
             p='www/index.html' if path=='/' else 'www/'+path.lstrip('/')
             if '..' in p: raise OSError
             try:
-                await send(w,200,mime(p),file_bytes(p))
+                if path in ('/','/index.html'):
+                    await send(w,200,'text/html; charset=utf-8',index_body())
+                else:
+                    await send(w,200,mime(p),file_bytes(p))
             except OSError:
                 await send_portal(w,path)
     except Exception as e:
