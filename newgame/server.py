@@ -23,7 +23,18 @@ async def send(w,status,ctype,body,extra=''):
     head='HTTP/1.0 %d %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\nConnection: close\r\n%s\r\n'%(status,reason,ctype,len(body),extra)
     w.write(head.encode()+body); await w.drain()
 def portal_body(path):
-    return '''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="2;url=http://%s/"><title>Mars Hab Gateway</title><style>html,body{margin:0;min-height:100%%;background:radial-gradient(circle at 50%% 0,#7a3d24 0,#2b1716 45%%,#120d10 100%%);color:#ffdca3;font:16px system-ui,-apple-system,Segoe UI,sans-serif}body{display:grid;place-items:center;padding:22px;box-sizing:border-box}.card{width:min(420px,100%%);border:1px solid #c9823a;background:linear-gradient(180deg,rgba(64,34,25,.94),rgba(22,17,20,.96));box-shadow:0 18px 60px #0008,0 0 40px #ff8a2a22;border-radius:22px;padding:24px;text-align:center}.mars{font-size:52px;filter:drop-shadow(0 0 16px #ff9f3f)}h1{margin:8px 0 10px;font-size:28px;letter-spacing:.08em;color:#ffe2ad}.sub{color:#d8a873;line-height:1.45;margin:0 0 18px}.btn{display:block;margin:18px auto 8px;padding:15px 18px;border-radius:16px;background:#ffb84a;color:#21120b;text-decoration:none;font-weight:900;box-shadow:0 0 0 2px #3b2418,0 0 24px #ff9f3f55}.ip{font:13px ui-monospace,Menlo,monospace;color:#b98f62}.hint{margin-top:14px;color:#9f7b55;font-size:13px}</style></head><body><main class="card"><div class="mars">🪐</div><h1>MARS HAB GATEWAY</h1><p class="sub">Mars Hab gateway: your MarsHab device is ready. If colony control does not open automatically, tap the button below.</p><a class="btn" href="http://%s/">Open colony control</a><div class="ip">http://%s/</div><div class="hint">Redirecting automatically…</div></main></body></html>'''%(AP_IP,AP_IP,AP_IP)
+    return ('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<title>Mars Hab Gateway</title><style>'
+            'body{margin:0;padding:22px;background:#160f12;color:#ffd99c;font:16px sans-serif}'
+            '.card{max-width:390px;margin:42px auto;padding:22px;border:1px solid #c9823a;border-radius:18px;background:#2a1818;text-align:center}'
+            'h1{font-size:24px;margin:0 0 12px;color:#ffe4ad;letter-spacing:.06em}'
+            'p{color:#d5a46d;line-height:1.45}.btn{display:block;margin:18px 0;padding:14px;border-radius:14px;background:#ffb84a;color:#1d120b;text-decoration:none;font-weight:bold}'
+            '.ip{font:13px monospace;color:#b98f62}'
+            '</style></head><body><main class="card"><h1>MARS HAB GATEWAY</h1>'
+            '<p>Mars Hab gateway: your MarsHab device is ready.</p>'
+            '<a class="btn" href="http://%s/">Open colony control</a>'
+            '<div class="ip">http://%s/</div></main></body></html>')%(AP_IP,AP_IP)
+
 async def send_portal(w,path):
     # Be deliberately obvious to OS captive-portal detectors. Returning a real
     # HTML body instead of 204/no-content is what makes phones open their sign-in
