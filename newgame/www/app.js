@@ -129,48 +129,53 @@ function applyGuide(){
 }
 function placeAndScrollGuide(el,allowScroll){
  let tut=document.querySelector('#tutorial'),card=document.querySelector('.tutCard');if(!tut||!card||!el)return;
- let vh=window.innerHeight||document.documentElement.clientHeight||640,margin=18;
- let nav=document.querySelector('nav'),nr=nav?nav.getBoundingClientRect():{top:vh};
- let mobileSafe=(window.innerWidth||document.documentElement.clientWidth||999)<=500?96:margin;
- let usableTop=margin,usableBottom=Math.min(vh-margin,nr.top-mobileSafe);
- let er=el.getBoundingClientRect(),navTarget=!!el.closest('nav');
- let spaceAbove=Math.max(0,er.top-usableTop-margin),spaceBelow=Math.max(0,usableBottom-er.bottom-margin);
- let wantBelow=navTarget?false:(spaceBelow>=Math.min(260,Math.max(160,card.scrollHeight||card.offsetHeight||220))||spaceBelow>=spaceAbove);
- tut.classList.remove('placeTop','placeBottom');
- if(wantBelow){
-  tut.classList.add('placeBottom');
-  tut.style.setProperty('align-items','start','important');
-  tut.style.setProperty('padding-top',Math.max(usableTop,Math.min(usableBottom-80,er.bottom+margin))+'px','important');
-  tut.style.setProperty('padding-bottom','calc(78px + env(safe-area-inset-bottom))','important');
- }else{
-  tut.classList.add('placeTop');
-  tut.style.setProperty('align-items','end','important');
-  tut.style.setProperty('padding-top','12px','important');
-  tut.style.setProperty('padding-bottom',Math.max(vh-usableBottom,Math.min(vh-usableTop-80,vh-er.top+margin))+'px','important');
- }
- requestAnimationFrame(()=>{
-  let cr=card.getBoundingClientRect(),er2=el.getBoundingClientRect();
-  let overlap=!(cr.bottom<=er2.top-margin||cr.top>=er2.bottom+margin);
-  let locked=S.tutScrollY!==null,current=locked?S.tutScrollY:window.scrollY,next=current;
-  let topLimit=usableTop,bottomLimit=usableBottom;
-  if(cr.bottom<=er2.top-margin)topLimit=Math.max(topLimit,cr.bottom+margin);
-  if(cr.top>=er2.bottom+margin)bottomLimit=Math.min(bottomLimit,cr.top-margin);
-  if(bottomLimit-topLimit<Math.min(90,er2.height+margin)){topLimit=usableTop;bottomLimit=usableBottom}
-  if(!navTarget){
-   if(overlap){
-    let actual=wantBelow?er2.bottom:er2.top,desired=wantBelow?cr.top-margin:cr.bottom+margin;
-    next+=actual-desired;
-   }else if(er2.bottom>bottomLimit){next+=er2.bottom-bottomLimit}
-   else if(er2.top<topLimit){next+=er2.top-topLimit}
-  }
+ let navTarget=!!el.closest('nav'),vw=window.innerWidth||document.documentElement.clientWidth||390,vh=window.innerHeight||document.documentElement.clientHeight||640;
+ let margin=16,mobile=vw<=500,nav=document.querySelector('nav'),nr=nav?nav.getBoundingClientRect():{top:vh,bottom:vh};
+ let safeBottom=navTarget?margin:(mobile?96:margin),usableTop=margin,usableBottom=Math.max(usableTop+140,Math.min(vh-margin,nr.top-safeBottom));
+ let key=[S.tab,tutStep(),S.tutTarget,Math.round(vw),Math.round(vh)].join('|'),locked=S.tutScrollY!==null,current=locked?S.tutScrollY:window.scrollY;
+ function bounds(){return {er:el.getBoundingClientRect(),cr:card.getBoundingClientRect()}}
+ function targetNeedsScroll(er){return !navTarget&&(er.top<usableTop||er.bottom>usableBottom)}
+ let er0=el.getBoundingClientRect();
+ if(allowScroll&&targetNeedsScroll(er0)){
   let main=document.querySelector('main'),mr=main?main.getBoundingClientRect():{bottom:vh};
-  let docH=Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,mr.bottom+current+160);
-  let maxY=Math.max(0,docH-vh);
-  next=Math.max(0,Math.min(maxY,next));
-  if(allowScroll&&Math.abs(next-current)>3){setTutLock(false);requestAnimationFrame(()=>{window.scrollTo({top:next,behavior:'auto'});requestAnimationFrame(()=>{setTutLock(true);requestAnimationFrame(applyGuide)})})}
-  else setTutLock(true);
+  let desired=current+(er0.top+er0.bottom)/2-(usableTop+usableBottom)/2;
+  let docH=Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,mr.bottom+current+220);
+  let next=Math.max(0,Math.min(Math.max(0,docH-vh),desired));
+  if(Math.abs(next-current)>3){setTutLock(false);requestAnimationFrame(()=>{window.scrollTo({top:next,behavior:'auto'});requestAnimationFrame(()=>{setTutLock(true);requestAnimationFrame(()=>placeAndScrollGuide(el,false))})});return}
+ }
+ setTutLock(true);
+ requestAnimationFrame(()=>{
+  let er=el.getBoundingClientRect();
+  let above=Math.max(0,er.top-usableTop-margin),below=Math.max(0,usableBottom-er.bottom-margin);
+  let placeBelow=!navTarget&&below>=above;
+  let top,bottom;
+  if(placeBelow){top=Math.min(Math.max(er.bottom+margin,usableTop),usableBottom-96);bottom=vh-usableBottom}
+  else{top=usableTop;bottom=Math.min(Math.max(vh-er.top+margin,vh-usableBottom),vh-usableTop-96)}
+  if(navTarget){top=usableTop;bottom=Math.max(vh-er.top+margin,margin)}
+  tut.classList.remove('placeTop','placeBottom');tut.classList.add(placeBelow?'placeBottom':'placeTop');
+  tut.style.setProperty('align-items',placeBelow?'start':'end','important');
+  tut.style.setProperty('padding-top',Math.max(0,top)+'px','important');
+  tut.style.setProperty('padding-bottom',Math.max(0,bottom)+'px','important');
+  requestAnimationFrame(()=>{
+   let b=bounds(),gap=margin;
+   let collide=!(b.cr.bottom<=b.er.top-gap||b.cr.top>=b.er.bottom+gap||b.cr.right<=b.er.left||b.cr.left>=b.er.right);
+   if(collide&&!navTarget){
+    let preferBelow=b.cr.top>=b.er.bottom;
+    if(preferBelow){tut.style.setProperty('padding-top',Math.max(usableTop,b.er.bottom+gap)+'px','important');tut.style.setProperty('padding-bottom',Math.max(vh-usableBottom,margin)+'px','important')}
+    else{tut.style.setProperty('padding-top',usableTop+'px','important');tut.style.setProperty('padding-bottom',Math.max(vh-usableBottom,vh-b.er.top+gap)+'px','important')}
+   }
+   requestAnimationFrame(()=>{
+    let b2=bounds();
+    let avail=Math.max(96,Math.min(vh-usableTop-(vh-usableBottom),Math.max(b2.er.top-usableTop-gap,usableBottom-b2.er.bottom-gap),b2.cr.height));
+    if(!(b2.cr.bottom<=b2.er.top-gap||b2.cr.top>=b2.er.bottom+gap)){avail=Math.max(90,Math.max(b2.er.top-usableTop-gap,usableBottom-b2.er.bottom-gap))}
+    card.style.maxHeight=Math.floor(Math.max(90,avail))+'px';
+    card.style.overflowY='auto';card.style.webkitOverflowScrolling='touch';
+    S.guideKey=key;
+   })
+  })
  });
 }
+
 async function sync(){let min=new Promise(r=>setTimeout(r,1200));let p=api('/api/sync',{body:{now:Date.now()}});let [st]=await Promise.all([p,min]);S.state=st;S.fetchedAt=Date.now();await Promise.all(TYPES.map(loadContent));$('#load').classList.add('hide');if(!S.logSeeded){(st.events||[]).slice(-8).reverse().forEach(id=>log(line(id),true));S.logSeeded=true}if(st.away_report&&st.away_report.elapsed_ms){let parts=(st.away_report.away||[]).map(id=>txt('away',id));(st.away_report.beats||[]).forEach(id=>log(txt('beats',id)));log(parts.length?parts.join(' / '):('while away: '+Object.entries(st.away_report.gains||{}).map(([k,v])=>nice(k)+' '+fmt(v)).join(', ')))}render()}
 async function refreshDiag(){S.diag=await api('/api/diagnostics')}
 document.body.onclick=async e=>{let rc=e.target.closest('.r');if(rc&&rc.closest('#res')&&!S.resOpen){sfx('reveal');rc.classList.add('showName');clearTimeout(rc._t);rc._t=setTimeout(()=>rc.classList.remove('showName'),2100);if(tutStep()===2){setTimeout(()=>{if(tutStep()===2&&maybeTut('resource',rc.dataset.res))render()},3000)}else if(maybeTut('resource',rc.dataset.res))render();return}let b=e.target.closest('button');if(!b)return;sfx('tap');if(b.id==='resMore'){sfx('open');S.resOpen=!S.resOpen;render();return}if(b.id==='settingsBtn'){sfx('open');S.settingsOpen=!S.settingsOpen;S.actOpen=false;S.resetArmed=false;render();return}if(b.id==='actBtn'){sfx('open');S.actOpen=!S.actOpen;S.settingsOpen=false;render();return}if(b.id==='resetProgress'){if(!S.resetArmed){S.resetArmed=true;render();return}let st=await api('/api/reset',{body:{now:Date.now()}});S.state=st;S.fetchedAt=Date.now();S.lastMsg='progress reset';S.resetArmed=false;S.settingsOpen=false;S.tutDone=false;S.tutReview=false;S.tutStep=0;S.logSeeded=false;S.logs=[];S.unreadLogs=0;try{['marsHabTutorialDone','marsHabTutorialSeen','marsHabTutorialStep','marsHabSurfaceTutorialDone','marsHabTradeTutorialDone','marsHabPackages'].forEach(k=>localStorage.removeItem(k))}catch(e){}render();return}if(b.dataset.replay==='surface'){S.surfaceTutDone=false;try{localStorage.removeItem('marsHabSurfaceTutorialDone')}catch(e){}S.tab='surface';render();return}if(b.dataset.replay==='trade'){S.tradeTutDone=false;try{localStorage.removeItem('marsHabTradeTutorialDone')}catch(e){}S.tab='comms';render();return}if(b.dataset.surfaceTut){S.surfaceTutDone=true;try{localStorage.setItem('marsHabSurfaceTutorialDone','1')}catch(e){}render();return}if(b.dataset.tradeTut){S.tradeTutDone=true;try{localStorage.setItem('marsHabTradeTutorialDone','1')}catch(e){}render();return}if(b.dataset.tut){sfx('tab');if(b.dataset.tut==='skip')closeTut(true);else if(b.dataset.tut==='back')backTut();else{let n=tutStep()+1;if(n>9)closeTut(true);else{setTutStep(n);render()}}return}if(b.id==='guide'){sfx('open');openTut();return}if(b.dataset.tab){sfx('tab');S.tab=b.dataset.tab;if(S.tab==='console'){S.unreadLogs=0;S.logFlashUntil=0}maybeTut('tab',S.tab);render();return}if(b.dataset.act){let st=await api('/api/action',{body:{action_id:b.dataset.act}});S.state=st;S.fetchedAt=Date.now();S.lastMsg=st.result&&st.result.ok?'action complete':((st.result&&st.result.error)||'action failed');if(st.result&&st.result.event)log(line(st.result.event));if(st.result&&st.result.beats)(st.result.beats||[]).forEach(id=>log(txt('beats',id)));if(st.result&&st.result.ok){sfx('action');maybeTut('action',b.dataset.act)}else sfx('bad');render();return}if(b.dataset.build){let st=await api('/api/action',{body:{action_id:'build',module_id:b.dataset.build}});S.state=st;S.fetchedAt=Date.now();S.lastMsg=st.result&&st.result.ok?'module built':((st.result&&st.result.error)||'build failed');if(st.result&&st.result.beats)(st.result.beats||[]).forEach(id=>log(txt('beats',id)));if(st.result&&st.result.ok){sfx('build');maybeTut('build',b.dataset.build)}else sfx('bad');render();return}if(b.dataset.redeemStored){let code=b.dataset.redeemStored;S.state=await api('/api/trade/redeem',{body:{code}});S.fetchedAt=Date.now();if(S.state.result&&S.state.result.ok)forgetCode(code);S.lastMsg=(S.state.result&&S.state.result.ok)?'carried package redeemed':((S.state.result&&S.state.result.error)||'redeem failed');render();return}if(b.id==='pkg'){let r=await api('/api/trade/package');$('#code').textContent=r.code;rememberCode(r.code);maybeTut('package');render();return}if(b.id==='redeemBtn'){let code=$('#redeem').value;S.state=await api('/api/trade/redeem',{body:{code}});S.fetchedAt=Date.now();if(S.state.result&&S.state.result.ok)forgetCode(code);S.lastMsg=(S.state.result&&S.state.result.ok)?'package redeemed':((S.state.result&&S.state.result.error)||'redeem failed');render();return}if(b.id==='tend'){S.state=await api('/api/tend',{body:{visitor:'guest'}});S.fetchedAt=Date.now();S.lastMsg='host tended';render();return}if(b.id==='newGamePlus'){S.state=await api('/api/action',{body:{action_id:'new_game_plus'}});S.fetchedAt=Date.now();S.lastMsg=(S.state.result&&S.state.result.ok)?'new game+ started':((S.state.result&&S.state.result.error)||'reset failed');S.tab='hab';render();return}};

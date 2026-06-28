@@ -92,7 +92,7 @@ def captive_portal_checks():
     for p in ('/generate_204','/gen_204','/hotspot-detect.html','/ncsi.txt','/connecttest.txt','/canonical.html','/fwlink'):
         assert_true(p in server.PORTAL,p)
     body=server.portal_body('/generate_204')
-    assert_true('Mars Hab gateway' in body and '192.168.4.1' in body,body)
+    assert_true('id="load"' in body and '/style.css' in body and '/app.js' in body,body)
 
 def main():
     os.environ['PYTHONDONTWRITEBYTECODE']='1'
