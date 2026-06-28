@@ -15,6 +15,7 @@ def mime(path):
     if path.endswith('.js'): return 'application/javascript; charset=utf-8'
     if path.endswith('.css'): return 'text/css; charset=utf-8'
     if path.endswith('.json'): return 'application/json'
+    if path.endswith('.ico'): return 'image/x-icon'
     return 'text/plain; charset=utf-8'
 async def send(w,status,ctype,body,extra=''):
     if isinstance(body,str): body=body.encode()
