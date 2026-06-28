@@ -1,4 +1,4 @@
-const S={state:null,tab:'hab',content:{},diag:null,lastMsg:'',fetchedAt:0,logSeeded:false,logs:[],unreadLogs:0,tutStep:0,tutDone:false,tutTarget:'',resOpen:false,settingsOpen:false,resetArmed:false,tutReview:false,actOpen:false,stageSeen:null,stageFlashUntil:0,surfaceTutDone:false,tradeTutDone:false,tutScrollY:null,logFlashUntil:0,audioCtx:null,audioReady:false};
+const S={state:null,tab:'hab',content:{},diag:null,lastMsg:'',fetchedAt:0,logSeeded:false,logs:[],unreadLogs:0,tutStep:0,tutDone:false,tutTarget:'',resOpen:false,settingsOpen:false,resetArmed:false,tutReview:false,actOpen:false,stageSeen:null,stageFlashUntil:0,surfaceTutDone:false,tradeTutDone:false,tutScrollY:null,logFlashUntil:0,audioCtx:null,audioReady:false,guideKey:''};
 const $=q=>document.querySelector(q);
 const TYPES=['actions','beats','archive','events','away','ui','ending','letters'];
 const ICON={solar_array:'☀️',ice_well:'🧊',greenhouse:'🌿',fab_shop:'🏭',relay_array:'📡',survey_garage:'🛞',dome_segment:'🏕️',atmo_processor:'🌫️',bioreactor:'🧫',thermal_mirror:'🪞',airlock_protocol:'🚪',o2:'🫁',power:'⚡',water:'💧',food:'🥫',regolith:'🪨',population:'👥',atmosphere:'🌫️',temperature:'🌡️',biomass:'🌱',ice:'🧊',alloy:'🔩',polymer:'🧪',rare_metals:'💎',vent_co2:'🌬️',reroute_power:'⚡',collect_ice:'🧊',sift_regolith:'🪨',grow_rations:'🌱',decode_signal:'📡',survey_crater:'🛞',print_spares:'🛠️',stabilize_dome:'🏕️',run_atmo_processor:'🌫️',seed_bioreactor:'🧫',open_airlock:'🚪'};
@@ -120,12 +120,14 @@ function setTutLock(on){
 function applyGuide(){
  document.querySelectorAll('.guideFocus').forEach(e=>e.classList.remove('guideFocus'));
  let tut=document.querySelector('#tutorial');if(tut){tut.classList.remove('placeTop','placeBottom')}
- if(!tut){setTutLock(false);return}
- if(!S.tutTarget){setTutLock(true);return}
- let el=document.querySelector(S.tutTarget);if(!el){setTutLock(true);return}setTutLock(false);el.classList.add('guideFocus');
- requestAnimationFrame(()=>placeAndScrollGuide(el));
+ if(!tut){S.guideKey='';setTutLock(false);return}
+ if(!S.tutTarget){S.guideKey='';setTutLock(true);return}
+ let el=document.querySelector(S.tutTarget);if(!el){setTutLock(true);return}
+ el.classList.add('guideFocus');
+ let key=[S.tab,tutStep(),S.tutTarget].join('|'),allowScroll=S.guideKey!==key;S.guideKey=key;
+ requestAnimationFrame(()=>placeAndScrollGuide(el,allowScroll));
 }
-function placeAndScrollGuide(el){
+function placeAndScrollGuide(el,allowScroll){
  let tut=document.querySelector('#tutorial'),card=document.querySelector('.tutCard');if(!tut||!card||!el)return;
  let vh=window.innerHeight||document.documentElement.clientHeight||640,margin=22;
  let nav=document.querySelector('nav'),nr=nav?nav.getBoundingClientRect():{top:vh};
@@ -143,10 +145,11 @@ function placeAndScrollGuide(el){
   if(er2.height>space){
    if(tut.classList.contains('placeTop')){actual=er2.top;desired=topGap}else{actual=er2.bottom;desired=bottomGap}
   }
+  let locked=S.tutScrollY!==null,current=locked?S.tutScrollY:window.scrollY;
   let maxY=Math.max(0,document.documentElement.scrollHeight-vh);
-  let next=Math.max(0,Math.min(maxY,window.scrollY+actual-desired));
-  window.scrollTo({top:next,behavior:'auto'});
-  requestAnimationFrame(()=>setTutLock(true));
+  let next=Math.max(0,Math.min(maxY,current+actual-desired));
+  if(allowScroll&&Math.abs(next-current)>3){setTutLock(false);requestAnimationFrame(()=>{window.scrollTo({top:next,behavior:'auto'});requestAnimationFrame(()=>setTutLock(true))})}
+  else setTutLock(true);
  });
 }
 async function sync(){let min=new Promise(r=>setTimeout(r,1200));let p=api('/api/sync',{body:{now:Date.now()}});let [st]=await Promise.all([p,min]);S.state=st;S.fetchedAt=Date.now();await Promise.all(TYPES.map(loadContent));$('#load').classList.add('hide');if(!S.logSeeded){(st.events||[]).slice(-8).reverse().forEach(id=>log(line(id),true));S.logSeeded=true}if(st.away_report&&st.away_report.elapsed_ms){let parts=(st.away_report.away||[]).map(id=>txt('away',id));(st.away_report.beats||[]).forEach(id=>log(txt('beats',id)));log(parts.length?parts.join(' / '):('while away: '+Object.entries(st.away_report.gains||{}).map(([k,v])=>nice(k)+' '+fmt(v)).join(', ')))}render()}
