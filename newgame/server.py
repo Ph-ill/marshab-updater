@@ -24,7 +24,7 @@ async def send(w,status,ctype,body,extra=''):
     w.write(head.encode()+body); await w.drain()
 def portal_location(): return 'http://%s/'%AP_IP
 def portal_body(path):
-    return '<!doctype html><title>Mars Hab</title><body>Mars Hab redirects to <a href="%s">colony control</a>.</body>'%portal_location()
+    return '<!doctype html><title>Mars Hab</title><body>Redirecting...</body>'
 
 async def send_portal(w,path):
     # Captive probes should go straight to the real game root. A separate
@@ -33,27 +33,6 @@ async def send_portal(w,path):
 def file_bytes(path):
     with open(path,'rb') as f: return f.read()
 
-def asset_text(path):
-    here=''
-    try:
-        here=__file__.rsplit('/',1)[0]
-    except Exception:
-        pass
-    paths=(path,'newgame/'+path,(here+'/'+path) if here else path)
-    for p in paths:
-        try: return file_bytes(p).decode()
-        except Exception: pass
-    raise OSError(path)
-def index_body():
-    html=asset_text('www/index.html')
-    try:
-        css=asset_text('www/style.css')
-        js_src=asset_text('www/app.js').replace('</script>','<'+'/script>')
-        html=html.replace('<link rel="stylesheet" href="/style.css">','<style data-inline="style">'+css+'</style>')
-        html=html.replace('<script src="/app.js"></script>','<script data-inline="app">'+js_src+'</script>')
-    except Exception as e:
-        print('inline index fallback',e)
-    return html
 async def read_req(r):
     line=await r.readline()
     if not line: return None
@@ -119,10 +98,7 @@ async def handle(r,w):
             p='www/index.html' if path=='/' else 'www/'+path.lstrip('/')
             if '..' in p: raise OSError
             try:
-                if path in ('/','/index.html'):
-                    await send(w,200,'text/html; charset=utf-8',index_body())
-                else:
-                    await send(w,200,mime(p),file_bytes(p))
+                await send(w,200,mime(p),file_bytes(p))
             except OSError:
                 await send_portal(w,path)
     except Exception as e:

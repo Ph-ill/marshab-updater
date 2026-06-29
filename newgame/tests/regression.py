@@ -93,16 +93,9 @@ def captive_portal_checks():
         assert_true(p in server.PORTAL,p)
     assert_true(server.portal_location()=='http://192.168.4.1/',server.portal_location())
     body=server.portal_body('/generate_204')
-    assert_true('redirects' in body and 'http://192.168.4.1/' in body and 'Open colony control' not in body,body)
-    root=server.index_body()
-    assert_true('data-inline="style"' in root and 'data-inline="app"' in root and '/app.js' not in root and '/style.css' not in root,root[:200])
-    old_os=server.os
-    try:
-        server.os=type('MicroOs',(),{})()
-        root=server.index_body()
-        assert_true('data-inline="style"' in root and 'data-inline="app"' in root,root[:200])
-    finally:
-        server.os=old_os
+    assert_true('Redirecting' in body and 'Open colony control' not in body and '/app.js' not in body,body)
+    root=(ROOT/'www/index.html').read_text()
+    assert_true('/app.js' in root and '/style.css' in root and 'data-inline' not in root,root[:200])
 
 def main():
     os.environ['PYTHONDONTWRITEBYTECODE']='1'
