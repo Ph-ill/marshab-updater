@@ -119,6 +119,11 @@ function releaseLabel(release){
   return parts.join(' ');
 }
 
+// "RPI_PICO2_W" -> "Pico 2 W" (from runtime.json when it is loaded)
+function boardLabel(id){
+  return state.runtime?.boards?.[id]?.label?.replace(/^Raspberry Pi /, '') || id.replace(/^RPI_/, '').replace(/_/g, ' ');
+}
+
 function deviceControls(){
   const list = [];
   list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn);
@@ -158,7 +163,7 @@ async function describeSelected(){
     if(version !== state.selectedVersion) return;
     const needs = [];
     if(release.runtime?.min) needs.push(`MicroPython ${release.runtime.min}+`);
-    if(release.boards?.length) needs.push(release.boards.map(b => b.replace('RPI_', '').replace('_', ' ')).join(' / '));
+    if(release.boards?.length) needs.push(release.boards.map(boardLabel).join(' / '));
     const bytes = release.payload_bytes || (release.files || []).reduce((n, f) => n + (f.size || 0), 0);
     needs.push(`${(release.files || []).length} files, ${Math.round(bytes / 1024)} KB`);
     setText(els.releaseNeeds, needs.join(' · '));
