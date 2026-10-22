@@ -72,6 +72,25 @@
         <p class="hint">Every file is checked against its sha256 before it is written, and again on the board after.</p>
       </section>
 
+      <section class="block" aria-labelledby="h-config">
+        <h2 id="h-config"><span class="num">4</span>Ship configuration</h2>
+        <div class="grid">
+          <label class="field"><span>Ship no.</span><select id="shipId" disabled></select></label>
+          <label class="field"><span>Ship name</span><input id="shipName" type="text" maxlength="24" autocomplete="off" disabled></label>
+          <label class="field"><span>Bench role</span><select id="shipRole" disabled><option value="">none</option></select></label>
+          <label class="field"><span>Hotspot password</span>
+            <input id="shipPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="blank keeps current (WPA2 default)" disabled>
+          </label>
+        </div>
+        <div class="row">
+          <label class="check"><input id="shipShowPw" type="checkbox"><span>Show password</span></label>
+          <label class="check"><input id="shipOpen" type="checkbox" disabled><span>Open hotspot (no password)</span></label>
+        </div>
+        <dl class="readout"><div><dt>Hotspot</dt><dd id="shipHotspot">—</dd></div></dl>
+        <div class="actions"><button id="saveShipBtn" type="button" disabled>Save to ship</button></div>
+        <p class="hint">Written to <code>data/ship.json</code>, which installs never touch. Takes effect after a restart.</p>
+      </section>
+
       <section class="block wide" aria-labelledby="h-oplog">
         <h2 id="h-oplog"><span class="num">6</span>Operations log</h2>
         <ol id="log" class="oplog"></ol>
