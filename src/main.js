@@ -2,6 +2,7 @@ import { MicroPythonSerial } from './webserial-micropython.js';
 import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
 import { loadReleaseIndex, compareVersions } from './releases.js';
+import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary } from './ship-config.js';
 
 const SHIP_COUNT = 7;
 const DEFAULT_LOGS = ['coex_log.csv', 'coex_log.old', 'coex_boot.txt'];
@@ -45,6 +46,16 @@ const els = {
   powerCycleDoneBtn: $('powerCycleDoneBtn'),
   powerCycleSsid: $('powerCycleSsid'),
 };
+Object.assign(els, {
+  shipId: $('shipId'),
+  shipName: $('shipName'),
+  shipRole: $('shipRole'),
+  shipPassword: $('shipPassword'),
+  shipOpen: $('shipOpen'),
+  shipShowPw: $('shipShowPw'),
+  shipHotspot: $('shipHotspot'),
+  saveShipBtn: $('saveShipBtn'),
+});
 
 // ---------------------------------------------------------------- small helpers
 function stamp(){ return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }
@@ -96,6 +107,7 @@ function releaseLabel(release){
 
 function deviceControls(){
   const list = [];
+  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn);
   return list;
 }
 
@@ -109,6 +121,7 @@ function setBusy(busy){
   els.installSelectedBtn.disabled = busy || !hasRelease || !dev;
   els.cleanInstall.disabled = busy;
   for(const el of deviceControls()) el.disabled = busy || !dev;
+  if(!busy && dev) els.shipPassword.disabled = els.shipOpen.checked;
 }
 
 // ---------------------------------------------------------------- releases
@@ -134,6 +147,7 @@ async function describeSelected(){
     needs.push(`${(release.files || []).length} files, ${Math.round(bytes / 1024)} KB`);
     setText(els.releaseNeeds, needs.join(' · '));
     if(release.notes){ els.releaseNotes.textContent = release.notes; els.releaseNotes.hidden = false; }
+    renderShipFields();
   }catch(err){
     setText(els.releaseNeeds, 'could not load release');
     log(`release ${version}: ${err.message}`);
@@ -178,11 +192,16 @@ function renderDeviceInfo(info, { quiet = false } = {}){
   setText(els.deviceRuntime, summary.runtime);
   setText(els.deviceFs, summary.fs);
   if(summary.kind === 'other' && !quiet) log('this board holds files from another project; the install will offer to clear them');
+  renderShipFields();
   if(!quiet) reportVersion(info);
 }
 
 function clearDeviceUi(){
   for(const el of [els.installedVersion, els.deviceShip, els.deviceBoard, els.deviceRuntime, els.deviceFs]) setText(el, '—');
+  els.shipName.value = '';
+  els.shipPassword.value = '';
+  els.shipOpen.checked = false;
+  setText(els.shipHotspot, '—');
 }
 
 function markDeviceDisconnected(reason = 'ship disconnected'){
@@ -248,6 +267,7 @@ async function connectDevice(){
     log('reading board, runtime and ship settings');
     state.deviceInfo = await readDeviceInfo(device);
     renderDeviceInfo(state.deviceInfo);
+    if(!state.deviceInfo.ship) log('this board has no ship settings yet; fill in section 4 and save');
     setBusy(false);
   }catch(err){
     if(state.device){ try{ await state.device.disconnect(); }catch(_err){} }
@@ -258,6 +278,73 @@ async function connectDevice(){
   }
 }
 
+// ---------------------------------------------------------------- ship config
+function shipRoles(){
+  const release = state.releaseCache.get(state.selectedVersion);
+  return release?.shipConfig?.roles || [];
+}
+
+function renderShipFields(){
+  if(els.shipId.options.length !== SHIP_COUNT){
+    els.shipId.innerHTML = '';
+    for(let i = 1; i <= SHIP_COUNT; i++){
+      const o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = String(i);
+      els.shipId.append(o);
+    }
+  }
+  const roles = shipRoles();
+  const current = els.shipRole.value;
+  els.shipRole.innerHTML = '<option value="">none</option>';
+  for(const r of roles){
+    const o = document.createElement('option');
+    o.value = r;
+    o.textContent = `${r} (hotspot COEX-${r === 'B' ? 1 : 0})`;
+    els.shipRole.append(o);
+  }
+  els.shipRole.value = roles.includes(current) ? current : '';
+  const cfg = state.deviceInfo?.ship;
+  if(cfg){
+    els.shipId.value = String(cfg.ship_id || 1);
+    els.shipName.value = cfg.ship_name || '';
+    els.shipPassword.value = '';
+    els.shipOpen.checked = !!cfg.hotspot_open;
+    if(cfg.role && roles.includes(cfg.role)) els.shipRole.value = cfg.role;
+  }
+  setText(els.shipHotspot, state.device ? hotspotSummary(cfg) : '—');
+  els.shipName.placeholder = defaultShipName(els.shipId.value || 1);
+  els.shipPassword.disabled = !state.device || state.busy || els.shipOpen.checked;
+}
+
+async function saveShipConfig(){
+  if(!state.device){ log('connect a ship first'); return; }
+  setBusy(true);
+  try{
+    const previous = state.deviceInfo?.ship || {};
+    const typed = els.shipPassword.value;
+    const cfg = validateShipConfig({
+      ship_id: els.shipId.value,
+      ship_name: els.shipName.value || defaultShipName(els.shipId.value),
+      // blank keeps whatever password the ship already has (or the firmware's WPA2 default)
+      hotspot_password: typed || (els.shipOpen.checked ? '' : previous.hotspot_password || ''),
+      hotspot_open: els.shipOpen.checked,
+      role: els.shipRole.value,
+    }, { count: SHIP_COUNT, roles: shipRoles() });
+    if(cfg.hotspot_open && !confirm('Run this ship\'s hotspot as an open network, with no password? Anyone nearby can join it.')){
+      log('ship settings not saved'); return;
+    }
+    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}`);
+    const written = await writeShipConfig(state.device, cfg);
+    state.deviceInfo = { ...(state.deviceInfo || {}), ship: written };
+    renderDeviceInfo(state.deviceInfo, { quiet: true });
+    log('ship settings saved; they take effect when the ship restarts (Disconnect restarts it)');
+  }catch(err){
+    log(`ship settings not saved: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
 
 
 
@@ -342,6 +429,10 @@ function initEvents(){
   els.powerCycleDoneBtn.addEventListener('click', hidePowerCycleModal);
   els.powerCycleModal.addEventListener('click', event => { if(event.target === els.powerCycleModal) hidePowerCycleModal(); });
   document.addEventListener('keydown', event => { if(event.key === 'Escape' && !els.powerCycleModal.hidden) hidePowerCycleModal(); });
+  els.saveShipBtn.addEventListener('click', () => { saveShipConfig(); });
+  els.shipId.addEventListener('change', () => { els.shipName.placeholder = defaultShipName(els.shipId.value); });
+  els.shipShowPw.addEventListener('change', () => { els.shipPassword.type = els.shipShowPw.checked ? 'text' : 'password'; });
+  els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
 }
 
 async function main(){
