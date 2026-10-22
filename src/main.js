@@ -1,45 +1,78 @@
 import { MicroPythonSerial } from './webserial-micropython.js';
 import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
-import { loadGithubReleaseIndex } from './github-releases.js';
-import { validateWifiConfig, writeWifiConfig } from './config-editor.js';
+import { loadReleaseIndex, compareVersions } from './releases.js';
+import { loadRuntimeSpec } from './releases.js';
+import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
+import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary } from './ship-config.js';
+import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
+
+const SHIP_COUNT = 7;
+const DEFAULT_LOGS = ['coex_log.csv', 'coex_log.old', 'coex_boot.txt'];
 
 const state = {
-  manifest: null,
+  index: null,
   selectedVersion: null,
+  releaseCache: new Map(),
+  runtime: null,
   device: null,
   deviceInfo: null,
-  installResetInProgress: false,
+  resetInProgress: false,
+  busy: false,
+  logSizes: {},
 };
 
+const $ = id => document.getElementById(id);
 const els = {
-  supportNotice: document.getElementById('supportNotice'),
-  deviceStatus: document.getElementById('deviceStatus'),
-  deviceProject: document.getElementById('deviceProject'),
-  deviceHab: document.getElementById('deviceHab'),
-  installedVersion: document.getElementById('installedVersion'),
-  latestVersion: document.getElementById('latestVersion'),
-  latestStable: document.getElementById('latestStable'),
-  releaseSelect: document.getElementById('releaseSelect'),
-  connectBtn: document.getElementById('connectBtn'),
-  wifiSettingsBtn: document.getElementById('wifiSettingsBtn'),
-  installLatestBtn: document.getElementById('installLatestBtn'),
-  installSelectedBtn: document.getElementById('installSelectedBtn'),
-  wifiPanel: document.getElementById('wifiPanel'),
-  wifiSsid: document.getElementById('wifiSsid'),
-  wifiPassword: document.getElementById('wifiPassword'),
-  saveWifiBtn: document.getElementById('saveWifiBtn'),
-  progressPanel: document.getElementById('progressPanel'),
+  supportNotice: $('supportNotice'),
+  deviceStatus: $('deviceStatus'),
+  deviceBoard: $('deviceBoard'),
+  deviceRuntime: $('deviceRuntime'),
+  deviceShip: $('deviceShip'),
+  deviceFs: $('deviceFs'),
+  installedVersion: $('installedVersion'),
+  latestVersion: $('latestVersion'),
+  releaseSelect: $('releaseSelect'),
+  releaseNeeds: $('releaseNeeds'),
+  releaseNotes: $('releaseNotes'),
+  cleanInstall: $('cleanInstall'),
+  connectBtn: $('connectBtn'),
+  installLatestBtn: $('installLatestBtn'),
+  installSelectedBtn: $('installSelectedBtn'),
+  progressPanel: $('progressPanel'),
   progressTrack: document.querySelector('.progress-track'),
-  progressFill: document.getElementById('progressFill'),
-  progressPercent: document.getElementById('progressPercent'),
-  progressStatus: document.getElementById('progressStatus'),
-  log: document.getElementById('log'),
-  powerCycleModal: document.getElementById('powerCycleModal'),
-  powerCycleDoneBtn: document.getElementById('powerCycleDoneBtn'),
+  progressFill: $('progressFill'),
+  progressPercent: $('progressPercent'),
+  progressStatus: $('progressStatus'),
+  log: $('log'),
+  powerCycleModal: $('powerCycleModal'),
+  powerCycleDoneBtn: $('powerCycleDoneBtn'),
+  powerCycleSsid: $('powerCycleSsid'),
 };
+Object.assign(els, {
+  runtimeState: $('runtimeState'),
+  bootselBtn: $('bootselBtn'),
+  uf2List: $('uf2List'),
+  driveNames: $('driveNames'),
+});
+Object.assign(els, {
+  shipId: $('shipId'),
+  shipName: $('shipName'),
+  shipRole: $('shipRole'),
+  shipPassword: $('shipPassword'),
+  shipOpen: $('shipOpen'),
+  shipShowPw: $('shipShowPw'),
+  shipHotspot: $('shipHotspot'),
+  saveShipBtn: $('saveShipBtn'),
+});
+Object.assign(els, {
+  logList: $('logList'),
+  refreshLogsBtn: $('refreshLogsBtn'),
+  downloadAllLogsBtn: $('downloadAllLogsBtn'),
+});
 
-function stamp(){ return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }); }
+// ---------------------------------------------------------------- small helpers
+function stamp(){ return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }
 function log(message){
   const li = document.createElement('li');
   const time = document.createElement('time');
@@ -53,45 +86,7 @@ function log(message){
 function setText(el, value){ el.textContent = value == null || value === '' ? '—' : String(value); }
 function setStatus(text, className){ els.deviceStatus.textContent = text; els.deviceStatus.className = className || ''; }
 function supportsWebSerial(){ return 'serial' in navigator; }
-function setWifiPanelVisible(visible){
-  els.wifiPanel.hidden = !visible;
-  els.wifiSettingsBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
-}
-function toggleWifiPanel(){
-  setWifiPanelVisible(els.wifiSettingsBtn.getAttribute('aria-expanded') !== 'true');
-}
-function initMarsVideoLoop(){
-  const a = document.getElementById('marsBgA');
-  const b = document.getElementById('marsBgB');
-  if(!a || !b) return;
-  let front = a;
-  let back = b;
-  let fading = false;
-  const fadeSeconds = 2.2;
-  const swap = async () => {
-    if(fading || !front.duration || front.duration < fadeSeconds + 1) return;
-    fading = true;
-    try{
-      back.currentTime = 0;
-      await back.play();
-    }catch(_err){}
-    back.classList.add('active');
-    front.classList.remove('active');
-    setTimeout(() => {
-      try{ front.pause(); front.currentTime = 0; }catch(_err){}
-      [front, back] = [back, front];
-      fading = false;
-    }, fadeSeconds * 1000);
-  };
-  for(const video of [a, b]){
-    video.loop = false;
-    video.addEventListener('timeupdate', () => {
-      if(video === front && video.duration - video.currentTime <= fadeSeconds) swap();
-    });
-    video.addEventListener('ended', () => { if(video === front) swap(); });
-  }
-  a.play().catch(() => {});
-}
+
 function setProgress(percent, status, mode = ''){
   const value = Math.max(0, Math.min(100, Math.round(percent || 0)));
   els.progressFill.style.width = `${value}%`;
@@ -101,242 +96,472 @@ function setProgress(percent, status, mode = ''){
   els.progressTrack.classList.toggle('failed', mode === 'failed');
   if(status) els.progressStatus.textContent = status;
 }
-function resetProgress(status = 'Standing by. Connect a device and select a release.', visible = false){
+function resetProgress(status = 'Standing by.', visible = false){
   els.progressPanel.hidden = !visible;
   setProgress(0, status, '');
 }
+function hotspotName(){
+  const role = state.deviceInfo?.ship?.role;
+  return role ? `COEX-${role === 'B' ? 1 : 0}` : 'the ship hotspot (COEX-0 or COEX-1)';
+}
 function showPowerCycleModal(){
+  els.powerCycleSsid.textContent = hotspotName();
   els.powerCycleModal.hidden = false;
   els.powerCycleDoneBtn.focus();
-  log('operator action required: unplug/replug your MarsHab device before testing the WiFi gateway');
 }
-function hidePowerCycleModal(){
-  els.powerCycleModal.hidden = true;
-  log('power-cycle notice acknowledged');
-}
+function hidePowerCycleModal(){ els.powerCycleModal.hidden = true; }
 
-async function loadManifest(){
-  try{
-    return await loadGithubReleaseIndex();
-  }catch(err){
-    log(`GitHub release index unavailable, trying bundled fallback: ${err.message}`);
-    const response = await fetch('./firmware/manifest.json', { cache:'no-store' });
-    if(!response.ok) throw new Error(`manifest ${response.status}`);
-    return response.json();
-  }
-}
 function releaseLabel(release){
   const parts = [release.version];
-  const label = String(release.label || '').trim();
-  const normalizedVersion = String(release.version || '').replace(/^v/i, '');
-  const normalizedLabel = label.replace(/^v/i, '');
-  if(label){
-    const strippedLabel = normalizedLabel.startsWith(`${normalizedVersion} `)
-      ? label.slice(label.toLowerCase().indexOf(normalizedVersion.toLowerCase()) + normalizedVersion.length).trim()
-      : label;
-    if(strippedLabel && strippedLabel !== release.version) parts.push(strippedLabel);
-  }
+  if(release.label && release.label !== release.version) parts.push(`· ${release.label}`);
+  if(release.channel && release.channel !== 'stable') parts.push(`[${release.channel}]`);
   if(release.date) parts.push(`(${release.date})`);
   return parts.join(' ');
 }
-function setBusy(busy){
-  els.connectBtn.disabled = busy;
-  els.releaseSelect.disabled = busy;
-  const hasRelease = !!(state.manifest?.releases?.length);
-  els.installLatestBtn.disabled = busy || !hasRelease || !state.device;
-  els.installSelectedBtn.disabled = busy || !hasRelease || !state.device;
-  els.wifiSsid.disabled = busy || !state.device;
-  els.wifiPassword.disabled = busy || !state.device;
-  els.saveWifiBtn.disabled = busy || !state.device;
+
+// "RPI_PICO2_W" -> "Pico 2 W" (from runtime.json when it is loaded)
+function boardLabel(id){
+  return state.runtime?.boards?.[id]?.label?.replace(/^Raspberry Pi /, '') || id.replace(/^RPI_/, '').replace(/_/g, ' ');
 }
-function renderManifest(manifest){
-  state.manifest = manifest;
-  const latest = manifest.latest || 'none';
-  setText(els.latestVersion, latest);
-  setText(els.latestStable, latest);
+
+function deviceControls(){
+  const list = [];
+  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn);
+  list.push(els.refreshLogsBtn, els.downloadAllLogsBtn, ...els.logList.querySelectorAll('button'));
+  list.push(els.bootselBtn);
+  return list;
+}
+
+function setBusy(busy){
+  state.busy = busy;
+  const dev = !!state.device;
+  const hasRelease = !!(state.index?.releases?.length);
+  els.connectBtn.disabled = busy || !supportsWebSerial();
+  els.releaseSelect.disabled = busy || !hasRelease;
+  els.installLatestBtn.disabled = busy || !hasRelease || !dev;
+  els.installSelectedBtn.disabled = busy || !hasRelease || !dev;
+  els.cleanInstall.disabled = busy;
+  for(const el of deviceControls()) el.disabled = busy || !dev;
+  if(!busy && dev) els.shipPassword.disabled = els.shipOpen.checked;
+}
+
+// ---------------------------------------------------------------- releases
+async function getRelease(version){
+  if(state.releaseCache.has(version)) return state.releaseCache.get(version);
+  const release = await loadReleaseManifest(state.index, version);
+  state.releaseCache.set(version, release);
+  return release;
+}
+
+async function describeSelected(){
+  const version = state.selectedVersion;
+  els.releaseNotes.hidden = true;
+  setText(els.releaseNeeds, '—');
+  if(!version) return;
+  try{
+    const release = await getRelease(version);
+    if(version !== state.selectedVersion) return;
+    const needs = [];
+    if(release.runtime?.min) needs.push(`MicroPython ${release.runtime.min}+`);
+    if(release.boards?.length) needs.push(release.boards.map(boardLabel).join(' / '));
+    const bytes = release.payload_bytes || (release.files || []).reduce((n, f) => n + (f.size || 0), 0);
+    needs.push(`${(release.files || []).length} files, ${Math.round(bytes / 1024)} KB`);
+    setText(els.releaseNeeds, needs.join(' · '));
+    if(release.notes){ els.releaseNotes.textContent = release.notes; els.releaseNotes.hidden = false; }
+    renderRuntimePanel();
+    renderShipFields();
+  }catch(err){
+    setText(els.releaseNeeds, 'could not load release');
+    log(`release ${version}: ${err.message}`);
+  }
+}
+
+function renderIndex(index){
+  state.index = index;
+  state.releaseCache.clear();
+  setText(els.latestVersion, index.latest || 'none published');
   els.releaseSelect.innerHTML = '';
-  for(const release of manifest.releases || []){
+  for(const release of index.releases || []){
     const option = document.createElement('option');
     option.value = release.version;
     option.textContent = releaseLabel(release);
     els.releaseSelect.append(option);
   }
-  if(manifest.latest) els.releaseSelect.value = manifest.latest;
+  if(index.latest) els.releaseSelect.value = index.latest;
   state.selectedVersion = els.releaseSelect.value || null;
   setBusy(false);
-  const hasRelease = !!(manifest.releases && manifest.releases.length);
-  log(hasRelease ? `release index loaded: latest ${latest}` : 'release index loaded: no releases published');
+  log(index.releases?.length ? `release list loaded: latest ${index.latest}` : 'no releases published yet');
+  describeSelected();
+  if(state.deviceInfo) reportVersion(state.deviceInfo);
 }
-function renderDeviceInfo(info){
+
+// ---------------------------------------------------------------- device info
+function reportVersion(info){
+  const latest = state.index?.latest;
+  const installed = info.version?.project === 'LongVoyage' ? info.version.version : null;
+  if(!latest) return;
+  if(!installed) log(`no Long Voyage release on this board yet; install ${latest} when ready`);
+  else if(compareVersions(installed, latest) === 0) log(`ship software is current: ${installed}`);
+  else if(compareVersions(installed, latest) < 0) log(`update available: installed ${installed}, latest ${latest}`);
+  else log(`installed ${installed} is newer than latest ${latest}`);
+}
+
+function renderDeviceInfo(info, { quiet = false } = {}){
   const summary = summarizeDeviceInfo(info);
   setText(els.installedVersion, summary.version);
-  setText(els.deviceProject, summary.project);
-  setText(els.deviceHab, summary.hab);
-  els.wifiSsid.value = info.deviceIdentity?.ap_ssid || info.config?.ssid || '';
-  els.wifiPassword.value = info.deviceIdentity?.ap_password || info.config?.password || '';
-
-  if(state.manifest?.latest && summary.version === state.manifest.latest) log(`device is current: ${summary.version}`);
-  else if(summary.version === 'unknown') log('device version is unknown; install latest when ready');
-  else if(state.manifest?.latest) log(`update available: installed ${summary.version}, latest ${state.manifest.latest}`);
+  setText(els.deviceShip, summary.name);
+  setText(els.deviceBoard, summary.board);
+  setText(els.deviceRuntime, summary.runtime);
+  setText(els.deviceFs, summary.fs);
+  if(summary.kind === 'other' && !quiet) log('this board holds files from another project; the install will offer to clear them');
+  renderShipFields();
+  renderRuntimePanel();
+  if(!quiet) reportVersion(info);
 }
+
 function clearDeviceUi(){
-  setText(els.installedVersion, '—');
-  setText(els.deviceProject, '—');
-  setText(els.deviceHab, '—');
-  els.wifiSsid.value = '';
-  els.wifiPassword.value = '';
-
+  for(const el of [els.installedVersion, els.deviceShip, els.deviceBoard, els.deviceRuntime, els.deviceFs]) setText(el, '—');
+  els.shipName.value = '';
+  els.shipPassword.value = '';
+  els.shipOpen.checked = false;
+  setText(els.shipHotspot, '—');
+  els.logList.innerHTML = '<li class="muted">Connect a ship to list its log files.</li>';
+  renderRuntimePanel();
 }
 
-function markDeviceDisconnected(reason = 'device disconnected'){
-  if(state.installResetInProgress){
-    log(`${reason}; waiting for the MarsHab device to return`);
+function markDeviceDisconnected(reason = 'ship disconnected'){
+  if(state.resetInProgress){
+    log(`${reason}; waiting for the ship to come back`);
     return;
   }
-  if(!state.device && els.connectBtn.textContent === 'Connect device') return;
+  if(!state.device && els.connectBtn.textContent === 'Connect ship') return;
   state.device = null;
   state.deviceInfo = null;
   setStatus('disconnected', 'status-warn');
   clearDeviceUi();
-  setWifiPanelVisible(false);
   resetProgress();
-  els.connectBtn.textContent = 'Connect device';
+  els.connectBtn.textContent = 'Connect ship';
   setBusy(false);
   log(reason);
 }
 
-async function saveWifiConfig(){
-  if(!state.device){ log('connect a device first'); return; }
-  const device = state.device;
-  setBusy(true);
-  try{
-    const next = validateWifiConfig({ ssid: els.wifiSsid.value, password: els.wifiPassword.value });
-    const mode = next.password ? 'password protected' : 'open network';
-    log(`writing WiFi config: ${next.ssid} (${mode})`);
-    const written = await writeWifiConfig(device, state.deviceInfo?.config || {}, next, state.deviceInfo?.deviceIdentity || null);
-    state.deviceInfo = { ...(state.deviceInfo || {}), ...written };
-    renderDeviceInfo(state.deviceInfo);
-    log('WiFi config saved; hard-resetting device so the AP restarts');
-    state.installResetInProgress = true;
-    await device.hardReset();
-    log('attempting USB reconnect after WiFi reset');
-    await device.reopenExisting({ attempts: 8, delayMs: 900 });
-    await device.enterRawRepl();
-    const probe = await device.exec("print('ok')", { timeoutMs: 5000 });
-    if(!probe.stdout.includes('ok')) throw new Error('MicroPython probe did not return ok after WiFi reset');
-    state.device = device;
-    state.deviceInfo = await readDeviceInfo(device);
-    renderDeviceInfo(state.deviceInfo);
-    setStatus('connected', 'status-ok');
-    els.connectBtn.textContent = 'Disconnect device';
-    log('device reconnected; WiFi settings refreshed');
-  }catch(err){
-    if(state.installResetInProgress){
-      setStatus('reconnect needed', 'status-warn');
-      log(`WiFi saved, but automatic USB reconnect failed; click Disconnect then Connect to refresh (${err.message})`);
-    }else{
-      setStatus('config failed', 'status-bad');
-      log(`WiFi config failed: ${err.message}`);
-    }
-  }finally{
-    state.installResetInProgress = false;
-    setBusy(false);
+// Enter the raw REPL and make it safe to work in: stop a running watchdog, mute BLE callbacks.
+async function openRepl(device){
+  await device.enterRawRepl();
+  const probe = await device.exec("print('ok')", { timeoutMs: 5000 });
+  if(!probe.stdout.includes('ok')) throw new Error('MicroPython probe did not return ok');
+  let wdt = await device.quiesce();
+  if(wdt === 'stopped') log('watchdog was running; paused it for this session');
+  if(wdt === 'still-on'){
+    log('watchdog could not be paused; restarting the board in maintenance mode');
+    wdt = await device.maintenanceReboot();
+    log(`after the maintenance restart the watchdog reads ${wdt}`);
   }
 }
-function initBrowserSupport(){
-  if(!supportsWebSerial()){
-    els.supportNotice.hidden = false;
-    els.connectBtn.disabled = true;
-    setStatus('unsupported browser', 'status-bad');
-    log('WebSerial unavailable; use desktop Chrome, Edge, Brave, or Chromium');
-    return;
-  }
-  setStatus('disconnected', 'status-warn');
-  log('WebSerial available; waiting for your MarsHab device');
+
+async function reconnectAfterReset(device, attempts = 12){
+  await device.reopenExisting({ attempts, delayMs: 900 });
+  await openRepl(device);
+  state.device = device;
+  state.deviceInfo = await readDeviceInfo(device);
+  renderDeviceInfo(state.deviceInfo);
+  setStatus('connected', 'status-ok');
+  els.connectBtn.textContent = 'Disconnect ship';
 }
+
 async function connectDevice(){
   if(state.device){
-    await state.device.disconnect();
-    markDeviceDisconnected('device disconnected');
+    const device = state.device;
+    setBusy(true);
+    log('restarting the ship and closing the USB link');
+    await device.disconnect({ reset: true });
+    markDeviceDisconnected('ship disconnected; it restarted and is running its software again');
     return;
   }
   els.connectBtn.disabled = true;
   setStatus('connecting', 'status-warn');
   try{
     const device = new MicroPythonSerial({ onDisconnect: markDeviceDisconnected });
-    log('opening browser serial chooser');
+    log('opening the browser serial port chooser');
     await device.connect();
-    log('serial port open; entering MicroPython raw REPL');
-    await device.enterRawRepl();
-    const probe = await device.exec("print('ok')");
-    if(!probe.stdout.includes('ok')) throw new Error('MicroPython probe did not return ok');
-    log('MicroPython probe ok');
+    log('serial port open; entering the MicroPython REPL (this pauses the ship software)');
+    await openRepl(device);
     state.device = device;
-    els.connectBtn.textContent = 'Disconnect device';
+    els.connectBtn.textContent = 'Disconnect ship';
     setStatus('connected', 'status-ok');
-    log('reading device version/config');
+    log('reading board, runtime and ship settings');
     state.deviceInfo = await readDeviceInfo(device);
     renderDeviceInfo(state.deviceInfo);
+    if(!state.deviceInfo.ship) log('this board has no ship settings yet; fill in section 4 and save');
     setBusy(false);
   }catch(err){
     if(state.device){ try{ await state.device.disconnect(); }catch(_err){} }
     state.device = null;
     setStatus('connection failed', 'status-bad');
     log(`connection failed: ${err.message}`);
-  }finally{
-    els.connectBtn.disabled = false;
+    setBusy(false);
   }
 }
-async function refreshDeviceInfoAfterInstall(){
+
+// ---------------------------------------------------------------- ship config
+function shipRoles(){
+  const release = state.releaseCache.get(state.selectedVersion);
+  return release?.shipConfig?.roles || [];
+}
+
+function renderShipFields(){
+  if(els.shipId.options.length !== SHIP_COUNT){
+    els.shipId.innerHTML = '';
+    for(let i = 1; i <= SHIP_COUNT; i++){
+      const o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = String(i);
+      els.shipId.append(o);
+    }
+  }
+  const roles = shipRoles();
+  const current = els.shipRole.value;
+  els.shipRole.innerHTML = '<option value="">none</option>';
+  for(const r of roles){
+    const o = document.createElement('option');
+    o.value = r;
+    o.textContent = `${r} (hotspot COEX-${r === 'B' ? 1 : 0})`;
+    els.shipRole.append(o);
+  }
+  els.shipRole.value = roles.includes(current) ? current : '';
+  const cfg = state.deviceInfo?.ship;
+  if(cfg){
+    els.shipId.value = String(cfg.ship_id || 1);
+    els.shipName.value = cfg.ship_name || '';
+    els.shipPassword.value = '';
+    els.shipOpen.checked = !!cfg.hotspot_open;
+    if(cfg.role && roles.includes(cfg.role)) els.shipRole.value = cfg.role;
+  }
+  setText(els.shipHotspot, state.device ? hotspotSummary(cfg) : '—');
+  els.shipName.placeholder = defaultShipName(els.shipId.value || 1);
+  els.shipPassword.disabled = !state.device || state.busy || els.shipOpen.checked;
+}
+
+async function saveShipConfig(){
+  if(!state.device){ log('connect a ship first'); return; }
+  setBusy(true);
+  try{
+    const previous = state.deviceInfo?.ship || {};
+    const typed = els.shipPassword.value;
+    const cfg = validateShipConfig({
+      ship_id: els.shipId.value,
+      ship_name: els.shipName.value || defaultShipName(els.shipId.value),
+      // blank keeps whatever password the ship already has (or the firmware's WPA2 default)
+      hotspot_password: typed || (els.shipOpen.checked ? '' : previous.hotspot_password || ''),
+      hotspot_open: els.shipOpen.checked,
+      role: els.shipRole.value,
+    }, { count: SHIP_COUNT, roles: shipRoles() });
+    if(cfg.hotspot_open && !confirm('Run this ship\'s hotspot as an open network, with no password? Anyone nearby can join it.')){
+      log('ship settings not saved'); return;
+    }
+    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}`);
+    const written = await writeShipConfig(state.device, cfg);
+    state.deviceInfo = { ...(state.deviceInfo || {}), ship: written };
+    renderDeviceInfo(state.deviceInfo, { quiet: true });
+    log('ship settings saved; they take effect when the ship restarts (Disconnect restarts it)');
+  }catch(err){
+    log(`ship settings not saved: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
+
+// ---------------------------------------------------------------- bench logs
+function logPaths(){
+  const installed = state.deviceInfo?.version?.version;
+  const rel = installed ? state.releaseCache.get(installed) : null;
+  return [...new Set([...(rel?.logs || []), ...DEFAULT_LOGS])];
+}
+
+async function refreshLogs(){
+  if(!state.device) return;
+  setBusy(true);
+  try{
+    state.logSizes = await statFiles(state.device, logPaths());
+    els.logList.innerHTML = '';
+    const present = Object.entries(state.logSizes).filter(([, size]) => size >= 0);
+    if(!present.length){
+      els.logList.innerHTML = '<li class="muted">No log files on this ship yet. The bench test writes its first row about a minute after boot.</li>';
+    }
+    for(const [path, size] of present){
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.textContent = path;
+      const sz = document.createElement('span');
+      sz.className = 'size';
+      sz.textContent = size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Download';
+      btn.addEventListener('click', () => downloadLogs([path]));
+      li.append(name, sz, btn);
+      els.logList.append(li);
+    }
+    log(`log files: ${present.map(([p, s]) => `${p} (${s} B)`).join(', ') || 'none'}`);
+  }catch(err){
+    log(`could not list logs: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
+
+async function downloadLogs(paths){
+  if(!state.device) return;
+  setBusy(true);
+  resetProgress('Copying logs off the ship.', true);
+  try{
+    const list = paths || Object.entries(state.logSizes).filter(([, s]) => s >= 0).map(([p]) => p);
+    if(!list.length) throw new Error('no log files listed; press Refresh list first');
+    for(let i = 0; i < list.length; i++){
+      const path = list[i];
+      const size = state.logSizes[path];
+      if(!(size >= 0)) continue;
+      const bytes = await readFileBytes(state.device, path, size, {
+        onProgress: ({ done, total }) => setProgress(((i + done / Math.max(1, total)) / list.length) * 100, `Reading ${path} · ${done}/${total} bytes`),
+      });
+      const name = logFileName(path, state.deviceInfo?.ship);
+      saveBytes(bytes, name, path.endsWith('.txt') ? 'text/plain' : 'text/csv');
+      log(`saved ${path} as ${name} (${bytes.length} B)`);
+    }
+    setProgress(100, 'Logs saved to your downloads folder.', 'complete');
+  }catch(err){
+    setProgress(100, `Log copy failed: ${err.message}`, 'failed');
+    log(`log copy failed: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
+
+// ---------------------------------------------------------------- MicroPython runtime
+function renderRuntimePanel(){
+  const spec = state.runtime;
+  if(!spec){ els.runtimeState.textContent = 'Runtime list unavailable.'; return; }
+  const board = state.deviceInfo?.board;
+  els.uf2List.innerHTML = '';
+  const drives = [];
+  for(const [id, b] of Object.entries(spec.boards || {})){
+    drives.push(b.drive);
+    const file = b.url.split('/').pop();
+    const row = document.createElement('div');
+    row.className = `uf2${board === id ? ' match' : ''}`;
+    const info = document.createElement('div');
+    const title = document.createElement('span');
+    title.className = 'uf2-title';
+    title.textContent = `${b.label} (${b.chip})${board === id ? ' · this board' : ''}`;
+    const meta = document.createElement('small');
+    meta.textContent = `${file} · ${(b.size / 1048576).toFixed(2)} MB`;
+    const sha = document.createElement('code');
+    sha.className = 'sha';
+    sha.textContent = `sha256 ${b.sha256}`;
+    sha.title = `Check it: ${Object.values(verifyCommands(file)).join('  |  ')}`;
+    info.append(title, meta, sha);
+    const a = document.createElement('a');
+    a.href = b.url;
+    a.rel = 'noopener';
+    a.textContent = 'Download';
+    row.append(info, a);
+    els.uf2List.append(row);
+  }
+  els.driveNames.textContent = [...new Set(drives)].join(' or ');
+  const release = state.releaseCache.get(state.selectedVersion);
+  const st = runtimeStatus(spec, state.deviceInfo, release?.runtime?.min);
+  const msg = {
+    none: 'No runtime requirement.',
+    unknown: `Ship software needs ${spec.name} ${st.need}. Connect a ship to check what it runs.`,
+    ok: `This board runs ${spec.name} ${st.have}. Nothing to do here.`,
+    newer: `This board runs ${spec.name} ${st.have}, newer than the tested ${spec.version}. It should work; reload ${spec.version} if anything misbehaves.`,
+    old: `This board runs ${spec.name} ${st.have}; the selected release needs ${st.need} or newer. Load the runtime first.`,
+  }[st.state];
+  let cls = st.state === 'old' ? 'status-bad' : st.state === 'ok' ? 'status-ok' : 'status-warn';
+  let text = msg;
+  if(board && !boardSupported(spec, board)){
+    text += ` Board ${board} is not a Pico W or Pico 2 W; the ships need the wireless chip.`;
+    cls = 'status-bad';
+  }
+  els.runtimeState.textContent = text;
+  els.runtimeState.className = `runtime-state ${cls}`;
+}
+
+async function enterBootsel(){
+  if(!state.device) return;
+  if(!confirm('Restart the board in BOOTSEL mode? It will appear as a USB drive and stop running its software until you copy a .uf2 onto it.')) return;
   const device = state.device;
-  log('waiting for device reset');
-  state.installResetInProgress = true;
+  setBusy(true);
+  state.device = null;
+  await rebootToBootsel(device);
+  state.deviceInfo = null;
+  clearDeviceUi();
+  setStatus('in BOOTSEL', 'status-warn');
+  els.connectBtn.textContent = 'Connect ship';
+  setBusy(false);
+  log(`board is in BOOTSEL mode: download the .uf2 for it and drag it onto the ${els.driveNames.textContent} drive`);
+}
+
+// ---------------------------------------------------------------- install
+async function refreshAfterInstall(){
+  const device = state.device;
+  log('waiting for the ship to restart');
+  state.resetInProgress = true;
   await new Promise(resolve => setTimeout(resolve, 2200));
   try{
-    log('reconnecting to the MarsHab device after reset');
-    await device.reopenExisting({ attempts: 12, delayMs: 900 });
-    await device.enterRawRepl();
-    const probe = await device.exec("print('ok')", { timeoutMs: 5000 });
-    if(!probe.stdout.includes('ok')) throw new Error('MicroPython probe did not return ok after reset');
-    state.device = device;
-    state.deviceInfo = await readDeviceInfo(device);
-    renderDeviceInfo(state.deviceInfo);
-    setStatus('connected', 'status-ok');
-    els.connectBtn.textContent = 'Disconnect device';
-    log('device reconnected; installed firmware value refreshed');
+    await reconnectAfterReset(device, 12);
+    log('ship reconnected; installed version refreshed');
   }catch(err){
     setStatus('reconnect needed', 'status-warn');
-    log(`automatic reconnect failed; click Disconnect then Connect to refresh installed version (${err.message})`);
+    log(`automatic reconnect failed; click Disconnect, then Connect (${err.message})`);
   }finally{
-    state.installResetInProgress = false;
+    state.resetInProgress = false;
   }
 }
+
 async function installVersion(version){
   if(!version){ log('no release selected'); return; }
-  if(!state.device){ log('connect a device first'); return; }
+  if(!state.device){ log('connect a ship first'); return; }
   setBusy(true);
   setStatus('installing', 'status-warn');
-  resetProgress(`Preparing ${version} install.`, true);
+  resetProgress(`Preparing ${version}.`, true);
   try{
-    const release = await loadReleaseManifest(state.manifest, version);
-    if(version !== state.manifest.latest){
-      const ok = confirm(`Install ${version}? This replaces firmware files but preserves config/save/ledger.`);
-      if(!ok){ log('install cancelled'); return; }
+    const release = await getRelease(version);
+    const info = state.deviceInfo || {};
+    let clean = els.cleanInstall.checked;
+    if(!clean && info.kind === 'other'){
+      const names = (info.runtime?.root || []).filter(n => n !== 'data').join(', ');
+      clean = confirm(`This board holds files from another project (${names}). Remove them first? data/ is kept either way. Cancel installs on top of them.`);
     }
+    if(release.runtime?.min && info.runtime?.mpy && compareVersions(info.runtime.mpy, release.runtime.min) < 0){
+      if(!confirm(`This board runs MicroPython ${info.runtime.mpy}, but ${version} needs ${release.runtime.min} or newer. Load the runtime first (section 3). Install anyway?`)){
+        log('install cancelled: load the MicroPython runtime first'); resetProgress(); return;
+      }
+    }
+    if(release.boards?.length && info.board && !release.boards.includes(info.board)){
+      if(!confirm(`${version} is built for ${release.boards.join(' / ')}, but this board reports ${info.board}. Install anyway?`)){
+        log('install cancelled'); resetProgress(); return;
+      }
+    }
+    if(version !== state.index.latest && !confirm(`Install ${version}? Ship settings in data/ and the bench logs are kept.`)){
+      log('install cancelled'); resetProgress(); return;
+    }
+    log(`installing ${version}${clean ? ' (clean: removing old files first)' : ''}`);
     await installRelease(state.device, release, {
+      clean,
       onLog: log,
-      onBeforeReset: () => { state.installResetInProgress = true; },
+      onBeforeReset: () => { state.resetInProgress = true; },
       onProgress: ({ file, fileIndex, fileTotal, done, total }) => {
         const percent = ((fileIndex - 1) + (done / Math.max(1, total))) / Math.max(1, fileTotal) * 100;
         setProgress(percent, `Writing ${file.path} · chunk ${done}/${total}`);
         if(done === total) log(`verified ${file.path}`);
       },
     });
-    setProgress(100, `Install ${release.version} complete. AP restarted; power-cycle your MarsHab device if the gateway page does not load.`, 'complete');
-    await refreshDeviceInfoAfterInstall();
+    setProgress(100, `${release.version} installed and verified.`, 'complete');
+    await refreshAfterInstall();
     showPowerCycleModal();
   }catch(err){
-    state.installResetInProgress = false;
+    state.resetInProgress = false;
     setStatus('install failed', 'status-bad');
     setProgress(100, `Install failed: ${err.message}`, 'failed');
     log(`install failed: ${err.message}`);
@@ -344,32 +569,52 @@ async function installVersion(version){
     setBusy(false);
   }
 }
+
+// ---------------------------------------------------------------- wiring
 function initEvents(){
   els.releaseSelect.addEventListener('change', () => {
     state.selectedVersion = els.releaseSelect.value || null;
     log(`selected release ${state.selectedVersion || 'none'}`);
+    describeSelected();
   });
   els.connectBtn.addEventListener('click', () => { connectDevice(); });
-  els.wifiSettingsBtn.addEventListener('click', () => { toggleWifiPanel(); });
-  els.installLatestBtn.addEventListener('click', () => { installVersion(state.manifest?.latest); });
+  els.installLatestBtn.addEventListener('click', () => { installVersion(state.index?.latest); });
   els.installSelectedBtn.addEventListener('click', () => { installVersion(state.selectedVersion); });
-  els.saveWifiBtn.addEventListener('click', () => { saveWifiConfig(); });
-  els.powerCycleDoneBtn.addEventListener('click', () => { hidePowerCycleModal(); });
+  els.powerCycleDoneBtn.addEventListener('click', hidePowerCycleModal);
   els.powerCycleModal.addEventListener('click', event => { if(event.target === els.powerCycleModal) hidePowerCycleModal(); });
-  document.addEventListener('keydown', event => {
-    if(event.key === 'Escape' && !els.powerCycleModal.hidden) hidePowerCycleModal();
-  });
+  document.addEventListener('keydown', event => { if(event.key === 'Escape' && !els.powerCycleModal.hidden) hidePowerCycleModal(); });
+  els.saveShipBtn.addEventListener('click', () => { saveShipConfig(); });
+  els.shipId.addEventListener('change', () => { els.shipName.placeholder = defaultShipName(els.shipId.value); });
+  els.shipShowPw.addEventListener('change', () => { els.shipPassword.type = els.shipShowPw.checked ? 'text' : 'password'; });
+  els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
+  els.refreshLogsBtn.addEventListener('click', () => { refreshLogs(); });
+  els.downloadAllLogsBtn.addEventListener('click', () => { downloadLogs(null); });
+  els.bootselBtn.addEventListener('click', () => { enterBootsel(); });
 }
+
 async function main(){
-  initMarsVideoLoop();
-  initBrowserSupport();
+  if(!supportsWebSerial()){
+    els.supportNotice.hidden = false;
+    setStatus('browser not supported', 'status-bad');
+    log('Web Serial is not available here; use desktop Chrome, Edge, Brave or Chromium');
+  }else{
+    setStatus('disconnected', 'status-warn');
+    log('Web Serial available; plug in a ship over USB and click Connect ship');
+  }
   initEvents();
-  try{ renderManifest(await loadManifest()); }
-  catch(err){
-    setText(els.latestVersion, 'manifest error');
-    setText(els.latestStable, 'manifest error');
-    els.latestVersion.className = 'status-bad';
-    log(`failed to load firmware manifest: ${err.message}`);
+  clearDeviceUi();
+  setBusy(false);
+  try{
+    state.runtime = await loadRuntimeSpec();
+    renderRuntimePanel();
+  }catch(err){
+    log(`runtime list unavailable: ${err.message}`);
+  }
+  try{
+    renderIndex(await loadReleaseIndex());
+  }catch(err){
+    setText(els.latestVersion, 'unavailable');
+    log(`could not load the release list: ${err.message}`);
   }
 }
 main();

@@ -3,117 +3,150 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MarsHab Field Updater</title>
-  <link rel="icon" href="./favicon.ico" sizes="any">
-  <link rel="stylesheet" href="./styles.css">
+  <title>The Long Voyage · Ship Software Service</title>
+  <meta name="description" content="Load and configure The Long Voyage ship software on a Raspberry Pi Pico W from the browser.">
+  <meta name="theme-color" content="#F2ECDF">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="video-bg" aria-hidden="true">
-    <video id="marsBgA" class="mars-bg active" src="./mars.mp4" autoplay muted playsinline preload="auto"></video>
-    <video id="marsBgB" class="mars-bg" src="./mars.mp4" muted playsinline preload="auto"></video>
-    <div class="crt-overlay"></div>
-  </div>
-  <main class="shell">
-    <header class="topline">
-      <div>
-        <p class="eyebrow">MARS HAB FIELD UPDATER</p>
-        <h1>USB firmware service</h1>
+  <div class="sheet">
+    <header class="masthead">
+      <div class="doc-strip">
+        <span>FLIGHT DATA FILE</span>
+        <span>LV-SSS-01 · REV A</span>
+        <span>CREW COPY</span>
       </div>
-      <div class="host">marshab.coolphill.com</div>
+      <h1>The Long Voyage</h1>
+      <p class="subtitle">Ship Software Service — load, configure and debrief a ship over USB</p>
+      <div class="status-line">
+        <span class="label">LINK</span>
+        <strong id="deviceStatus">checking</strong>
+        <button id="connectBtn" type="button" class="primary">Connect ship</button>
+      </div>
     </header>
 
-    <section class="notice" id="supportNotice" hidden>
-      <strong>USB update unavailable in this browser.</strong>
-      Use desktop Chrome, Edge, Brave, or Chromium. Safari and Firefox do not expose WebSerial.
-    </section>
+    <aside id="supportNotice" class="notice" hidden>
+      <strong>CAUTION</strong> This browser cannot open USB serial ports. Use desktop Chrome, Edge, Brave
+      or Chromium over HTTPS.
+    </aside>
 
-    <section class="grid">
-      <section class="panel" aria-labelledby="deviceTitle">
-        <h2 id="deviceTitle">Device</h2>
-        <dl class="kv">
-          <div><dt>Status</dt><dd id="deviceStatus">disconnected</dd></div>
-          <div><dt>Transport</dt><dd>USB serial</dd></div>
-          <div><dt>Project</dt><dd id="deviceProject">—</dd></div>
-          <div><dt>Hab</dt><dd id="deviceHab">—</dd></div>
+    <main>
+      <section class="block" aria-labelledby="h-ship">
+        <h2 id="h-ship"><span class="num">1</span>Ship on the bench</h2>
+        <dl class="readout">
           <div><dt>Installed</dt><dd id="installedVersion">—</dd></div>
+          <div><dt>Ship</dt><dd id="deviceShip">—</dd></div>
+          <div><dt>Board</dt><dd id="deviceBoard">—</dd></div>
+          <div><dt>Runtime</dt><dd id="deviceRuntime">—</dd></div>
+          <div><dt>Storage</dt><dd id="deviceFs">—</dd></div>
+        </dl>
+        <p class="hint">Connecting pauses the ship software. Disconnect restarts the ship so it runs again.</p>
+      </section>
+
+      <section class="block" aria-labelledby="h-load">
+        <h2 id="h-load"><span class="num">2</span>Software load</h2>
+        <dl class="readout">
           <div><dt>Latest</dt><dd id="latestVersion">loading</dd></div>
+          <div><dt>Needs</dt><dd id="releaseNeeds">—</dd></div>
         </dl>
-        <div class="device-actions">
-          <button class="primary" id="connectBtn" type="button">Connect device</button>
-          <button id="wifiSettingsBtn" type="button" aria-expanded="false" aria-controls="wifiPanel">WIFI SETTINGS</button>
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="releaseTitle">
-        <h2 id="releaseTitle">Release</h2>
-        <dl class="kv">
-          <div><dt>Latest stable</dt><dd id="latestStable">—</dd></div>
-          <div><dt>Selected</dt><dd><select id="releaseSelect" aria-label="Firmware release"></select></dd></div>
-        </dl>
+        <label class="field">
+          <span>Release</span>
+          <select id="releaseSelect" disabled></select>
+        </label>
+        <p id="releaseNotes" class="notes" hidden></p>
+        <label class="check">
+          <input id="cleanInstall" type="checkbox">
+          <span>Clean install: remove old program files first. <em>data/</em> and the bench logs are always kept.</span>
+        </label>
         <div class="actions">
-          <button class="primary" id="installLatestBtn" type="button" disabled>Install latest</button>
-          <button id="installSelectedBtn" type="button" disabled>Install selected version</button>
+          <button id="installLatestBtn" type="button" class="primary" disabled>Install latest</button>
+          <button id="installSelectedBtn" type="button" disabled>Install selected</button>
         </div>
-        <p class="hint">Updates preserve device config and saved hab data unless a release explicitly says otherwise.</p>
+        <section id="progressPanel" class="progress" aria-live="polite" hidden>
+          <div class="progress-head"><span id="progressStatus">Standing by.</span><span id="progressPercent">0%</span></div>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+        </section>
+        <p class="hint">Every file is checked against its sha256 before it is written, and again on the board after.</p>
       </section>
-    </section>
 
-    <section class="panel wifi-panel" id="wifiPanel" aria-labelledby="wifiTitle" hidden>
-      <h2 id="wifiTitle">Device WiFi</h2>
-      <div class="field-grid">
-        <label>Broadcast SSID<input id="wifiSsid" maxlength="32" placeholder="Connect a device first" disabled></label>
-        <label>Password<input id="wifiPassword" type="password" minlength="8" maxlength="63" placeholder="Blank = open network" disabled></label>
-      </div>
-      <div class="actions">
-        <button id="saveWifiBtn" type="button" disabled>Save WiFi config</button>
-      </div>
-      <p class="hint">Blank password keeps the MarsHab network open. Passwords must be 8–63 characters.</p>
-    </section>
-
-    <section class="panel progress-panel" id="progressPanel" aria-labelledby="progressTitle" hidden>
-      <div class="progress-head">
-        <h2 id="progressTitle">Update progress</h2>
-        <output id="progressPercent" for="progressFill">0%</output>
-      </div>
-      <div class="progress-track" role="progressbar" aria-label="Firmware update progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      <p class="progress-status" id="progressStatus">Standing by. Connect a device and select a release.</p>
-    </section>
-
-    <section class="panel log-panel" aria-labelledby="logTitle">
-      <h2 id="logTitle">Operations log</h2>
-      <ol id="log" class="log" aria-live="polite"></ol>
-    </section>
-
-    <section class="panel compact" aria-labelledby="recoveryTitle">
-      <h2 id="recoveryTitle">Recovery</h2>
-      <p>If your MarsHab device is not detected, reinstall the official MarsHab device runtime with BOOTSEL, reconnect normally, then return here and install the latest release.</p>
-    </section>
-
-    <footer class="build-footer">
-      MarsHab updater web app v0.1.27 · power-cycle modal after install · 2026-06-22
-    </footer>
-  </main>
-
-  <div class="modal-backdrop" id="powerCycleModal" hidden>
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="powerCycleTitle" aria-describedby="powerCycleBody">
-      <p class="eyebrow">MARSHAB DEVICE POWER RESET REQUIRED</p>
-      <h2 id="powerCycleTitle">Restart the device power</h2>
-      <div id="powerCycleBody" class="modal-body">
-        <p>The firmware files were written successfully, but your MarsHab device WiFi gateway may not come back correctly until the device fully loses power.</p>
-        <ol>
-          <li>Unplug MarsHab device power / USB.</li>
-          <li>Wait two seconds.</li>
-          <li>Plug it back in.</li>
-          <li>Reconnect to the MarsHab WiFi network. The gateway page should appear automatically, or open <strong>http://192.168.4.1</strong>.</li>
+      <section class="block" aria-labelledby="h-runtime">
+        <h2 id="h-runtime"><span class="num">3</span>MicroPython runtime</h2>
+        <p id="runtimeState" class="runtime-state">Loading runtime list.</p>
+        <ol class="steps">
+          <li>Download the <code>.uf2</code> for your board below and check its sha256.</li>
+          <li>Press <strong>Restart in BOOTSEL</strong>, or hold BOOTSEL while plugging the board in.</li>
+          <li>Drag the <code>.uf2</code> onto the <strong id="driveNames">RPI-RP2</strong> drive. The board restarts on its own.</li>
+          <li>Connect again and install the ship software (section 2).</li>
         </ol>
-      </div>
-      <div class="actions modal-actions">
-        <button class="primary" id="powerCycleDoneBtn" type="button">I power-cycled my MarsHab device</button>
-      </div>
-    </section>
+        <div id="uf2List" class="uf2-list"></div>
+        <div class="actions">
+          <button id="bootselBtn" type="button" disabled>Restart in BOOTSEL</button>
+        </div>
+        <p class="hint">Runtime images come straight from micropython.org. Hover a checksum for the command that verifies it.</p>
+      </section>
+
+      <section class="block" aria-labelledby="h-config">
+        <h2 id="h-config"><span class="num">4</span>Ship configuration</h2>
+        <div class="grid">
+          <label class="field"><span>Ship no.</span><select id="shipId" disabled></select></label>
+          <label class="field"><span>Ship name</span><input id="shipName" type="text" maxlength="24" autocomplete="off" disabled></label>
+          <label class="field"><span>Bench role</span><select id="shipRole" disabled><option value="">none</option></select></label>
+          <label class="field"><span>Hotspot password</span>
+            <input id="shipPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="blank = keep current (WPA2)" disabled>
+          </label>
+        </div>
+        <div class="row">
+          <label class="check"><input id="shipShowPw" type="checkbox"><span>Show password</span></label>
+          <label class="check"><input id="shipOpen" type="checkbox" disabled><span>Open hotspot (no password)</span></label>
+        </div>
+        <dl class="readout"><div><dt>Hotspot</dt><dd id="shipHotspot">—</dd></div></dl>
+        <div class="actions"><button id="saveShipBtn" type="button" disabled>Save to ship</button></div>
+        <p class="hint">Written to <code>data/ship.json</code>, which installs never touch. Takes effect after a restart.</p>
+      </section>
+
+      <section class="block wide" aria-labelledby="h-logs">
+        <h2 id="h-logs"><span class="num">5</span>Bench logs</h2>
+        <ul id="logList" class="file-list"><li class="muted">Connect a ship to list its log files.</li></ul>
+        <div class="actions">
+          <button id="refreshLogsBtn" type="button" disabled>Refresh list</button>
+          <button id="downloadAllLogsBtn" type="button" disabled>Download all</button>
+        </div>
+        <p class="hint">Files are named after the ship and the time, ready to attach to a bench report.</p>
+      </section>
+
+      <section class="block wide" aria-labelledby="h-oplog">
+        <h2 id="h-oplog"><span class="num">6</span>Operations log</h2>
+        <ol id="log" class="oplog"></ol>
+      </section>
+
+      <section class="block wide" aria-labelledby="h-recovery">
+        <h2 id="h-recovery"><span class="num">7</span>Recovery</h2>
+        <ul class="plain">
+          <li>Ship will not connect: unplug it, hold BOOTSEL, plug it in, then load the runtime (section 3) and install again.</li>
+          <li>Install stopped part way: connect and install again. Files that already match are verified, not trusted.</li>
+          <li>Wrong ship settings: fix them in section 4 and save. Nothing else on the ship changes.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="colophon">
+      <span>THE LONG VOYAGE</span>
+      <span>Web Serial · MicroPython · Raspberry Pi Pico W / Pico 2 W</span>
+    </footer>
   </div>
-  <script type="module" src="./src/main.js"></script>
+
+  <div id="powerCycleModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pcTitle" hidden>
+    <div class="modal-card">
+      <h2 id="pcTitle">Install complete</h2>
+      <p>The ship restarted with the new software. Unplug it from USB and power it from its battery or a plain
+        USB charger, then look for the hotspot <strong id="powerCycleSsid">COEX-0</strong>.</p>
+      <button id="powerCycleDoneBtn" type="button" class="primary">Done</button>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>
