@@ -94,7 +94,16 @@ def copy_file(src, dst):
         return True
     except OSError:
         return False
-for name in ('device.json','device.bak','save.json','save.bak','passport.json'):
+# every small file directly in data/ (ship.json, saves, ...); big logs stay where they are
+for entry in os.ilistdir('data'):
+    name, kind = entry[0], entry[1]
+    if kind != 0x8000 or name.startswith('.'):
+        continue
+    try:
+        if os.stat('data/' + name)[6] > 65536:
+            continue
+    except OSError:
+        continue
     copy_file('data/' + name, 'data/.update_bak/' + name)
 print('protected-snapshot-ok')
 `;
@@ -122,7 +131,8 @@ def copy_file(src, dst):
                 if not chunk:
                     break
                 w.write(chunk)
-for name in ('device.json','device.bak','save.json','save.bak','passport.json'):
+for entry in os.ilistdir('data/.update_bak'):
+    name = entry[0]
     bak = 'data/.update_bak/' + name
     dst = 'data/' + name
     if exists(bak) and not exists(dst):
@@ -229,6 +239,66 @@ export async function verifySize(device, path, expectedSize){
   return true;
 }
 
+export async function sha256OnDevice(device, path){
+  const code = `
+import hashlib, binascii
+h = hashlib.sha256()
+with open(${pyString(path)}, 'rb') as f:
+    while True:
+        b = f.read(512)
+        if not b:
+            break
+        h.update(b)
+print(binascii.hexlify(h.digest()).decode())
+`;
+  const { stdout } = await device.exec(code, { timeoutMs: 20000 });
+  return stdout.trim();
+}
+
+export async function verifySha256(device, path, expected){
+  const actual = await sha256OnDevice(device, path);
+  if(actual !== expected) throw new Error(`${path} sha256 mismatch after write`);
+  return true;
+}
+
+// Clean install: remove everything at the filesystem root except protected paths.
+export async function wipeExcept(device, preserve = []){
+  const code = `
+try:
+    import uos as os
+except ImportError:
+    import os
+${protectionCode(preserve)}
+removed = []
+def rm(path):
+    if is_protected(path):
+        return
+    try:
+        st = os.stat(path)
+    except OSError:
+        return
+    if st[0] & 0x4000:
+        for name in os.listdir(path):
+            rm(path + '/' + name)
+        try:
+            os.rmdir(path)
+            removed.append(path + '/')
+        except OSError:
+            pass
+    else:
+        try:
+            os.remove(path)
+            removed.append(path)
+        except OSError:
+            pass
+for name in os.listdir('/'):
+    rm(name)
+print('wiped', len(removed))
+`;
+  const { stdout } = await device.exec(code, { timeoutMs: 60000 });
+  return stdout.trim();
+}
+
 export async function writeManifestFile(device, file, bytes, { onProgress = null, preserve = [] } = {}){
   if(file.encoding === 'utf8'){
     const text = new TextDecoder().decode(bytes);
@@ -237,4 +307,5 @@ export async function writeManifestFile(device, file, bytes, { onProgress = null
     await writeBinaryFile(device, file.path, bytes, { onProgress, preserve });
   }
   await verifySize(device, file.path, file.size);
+  if(file.sha256) await verifySha256(device, file.path, file.sha256);
 }
