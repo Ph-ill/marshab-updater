@@ -72,6 +72,22 @@
         <p class="hint">Every file is checked against its sha256 before it is written, and again on the board after.</p>
       </section>
 
+      <section class="block" aria-labelledby="h-runtime">
+        <h2 id="h-runtime"><span class="num">3</span>MicroPython runtime</h2>
+        <p id="runtimeState" class="runtime-state">Loading runtime list.</p>
+        <ol class="steps">
+          <li>Download the <code>.uf2</code> for your board below and check its sha256.</li>
+          <li>Press <strong>Restart in BOOTSEL</strong>, or hold BOOTSEL while plugging the board in.</li>
+          <li>Drag the <code>.uf2</code> onto the <strong id="driveNames">RPI-RP2</strong> drive. The board restarts on its own.</li>
+          <li>Connect again and install the ship software (section 2).</li>
+        </ol>
+        <div id="uf2List" class="uf2-list"></div>
+        <div class="actions">
+          <button id="bootselBtn" type="button" disabled>Restart in BOOTSEL</button>
+        </div>
+        <p class="hint">Runtime images come straight from micropython.org. Hover a checksum for the command that verifies it.</p>
+      </section>
+
       <section class="block" aria-labelledby="h-config">
         <h2 id="h-config"><span class="num">4</span>Ship configuration</h2>
         <div class="grid">

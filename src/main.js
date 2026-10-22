@@ -2,6 +2,8 @@ import { MicroPythonSerial } from './webserial-micropython.js';
 import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
 import { loadReleaseIndex, compareVersions } from './releases.js';
+import { loadRuntimeSpec } from './releases.js';
+import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
 import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary } from './ship-config.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
@@ -47,6 +49,12 @@ const els = {
   powerCycleDoneBtn: $('powerCycleDoneBtn'),
   powerCycleSsid: $('powerCycleSsid'),
 };
+Object.assign(els, {
+  runtimeState: $('runtimeState'),
+  bootselBtn: $('bootselBtn'),
+  uf2List: $('uf2List'),
+  driveNames: $('driveNames'),
+});
 Object.assign(els, {
   shipId: $('shipId'),
   shipName: $('shipName'),
@@ -115,6 +123,7 @@ function deviceControls(){
   const list = [];
   list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn);
   list.push(els.refreshLogsBtn, els.downloadAllLogsBtn, ...els.logList.querySelectorAll('button'));
+  list.push(els.bootselBtn);
   return list;
 }
 
@@ -154,6 +163,7 @@ async function describeSelected(){
     needs.push(`${(release.files || []).length} files, ${Math.round(bytes / 1024)} KB`);
     setText(els.releaseNeeds, needs.join(' · '));
     if(release.notes){ els.releaseNotes.textContent = release.notes; els.releaseNotes.hidden = false; }
+    renderRuntimePanel();
     renderShipFields();
   }catch(err){
     setText(els.releaseNeeds, 'could not load release');
@@ -200,6 +210,7 @@ function renderDeviceInfo(info, { quiet = false } = {}){
   setText(els.deviceFs, summary.fs);
   if(summary.kind === 'other' && !quiet) log('this board holds files from another project; the install will offer to clear them');
   renderShipFields();
+  renderRuntimePanel();
   if(!quiet) reportVersion(info);
 }
 
@@ -210,6 +221,7 @@ function clearDeviceUi(){
   els.shipOpen.checked = false;
   setText(els.shipHotspot, '—');
   els.logList.innerHTML = '<li class="muted">Connect a ship to list its log files.</li>';
+  renderRuntimePanel();
 }
 
 function markDeviceDisconnected(reason = 'ship disconnected'){
@@ -420,6 +432,70 @@ async function downloadLogs(paths){
   }
 }
 
+// ---------------------------------------------------------------- MicroPython runtime
+function renderRuntimePanel(){
+  const spec = state.runtime;
+  if(!spec){ els.runtimeState.textContent = 'Runtime list unavailable.'; return; }
+  const board = state.deviceInfo?.board;
+  els.uf2List.innerHTML = '';
+  const drives = [];
+  for(const [id, b] of Object.entries(spec.boards || {})){
+    drives.push(b.drive);
+    const file = b.url.split('/').pop();
+    const row = document.createElement('div');
+    row.className = `uf2${board === id ? ' match' : ''}`;
+    const info = document.createElement('div');
+    const title = document.createElement('span');
+    title.className = 'uf2-title';
+    title.textContent = `${b.label} (${b.chip})${board === id ? ' · this board' : ''}`;
+    const meta = document.createElement('small');
+    meta.textContent = `${file} · ${(b.size / 1048576).toFixed(2)} MB`;
+    const sha = document.createElement('code');
+    sha.className = 'sha';
+    sha.textContent = `sha256 ${b.sha256}`;
+    sha.title = `Check it: ${Object.values(verifyCommands(file)).join('  |  ')}`;
+    info.append(title, meta, sha);
+    const a = document.createElement('a');
+    a.href = b.url;
+    a.rel = 'noopener';
+    a.textContent = 'Download';
+    row.append(info, a);
+    els.uf2List.append(row);
+  }
+  els.driveNames.textContent = [...new Set(drives)].join(' or ');
+  const release = state.releaseCache.get(state.selectedVersion);
+  const st = runtimeStatus(spec, state.deviceInfo, release?.runtime?.min);
+  const msg = {
+    none: 'No runtime requirement.',
+    unknown: `Ship software needs ${spec.name} ${st.need}. Connect a ship to check what it runs.`,
+    ok: `This board runs ${spec.name} ${st.have}. Nothing to do here.`,
+    newer: `This board runs ${spec.name} ${st.have}, newer than the tested ${spec.version}. It should work; reload ${spec.version} if anything misbehaves.`,
+    old: `This board runs ${spec.name} ${st.have}; the selected release needs ${st.need} or newer. Load the runtime first.`,
+  }[st.state];
+  let cls = st.state === 'old' ? 'status-bad' : st.state === 'ok' ? 'status-ok' : 'status-warn';
+  let text = msg;
+  if(board && !boardSupported(spec, board)){
+    text += ` Board ${board} is not a Pico W or Pico 2 W; the ships need the wireless chip.`;
+    cls = 'status-bad';
+  }
+  els.runtimeState.textContent = text;
+  els.runtimeState.className = `runtime-state ${cls}`;
+}
+
+async function enterBootsel(){
+  if(!state.device) return;
+  if(!confirm('Restart the board in BOOTSEL mode? It will appear as a USB drive and stop running its software until you copy a .uf2 onto it.')) return;
+  const device = state.device;
+  setBusy(true);
+  state.device = null;
+  await rebootToBootsel(device);
+  state.deviceInfo = null;
+  clearDeviceUi();
+  setStatus('in BOOTSEL', 'status-warn');
+  els.connectBtn.textContent = 'Connect ship';
+  setBusy(false);
+  log(`board is in BOOTSEL mode: download the .uf2 for it and drag it onto the ${els.driveNames.textContent} drive`);
+}
 
 // ---------------------------------------------------------------- install
 async function refreshAfterInstall(){
@@ -508,6 +584,7 @@ function initEvents(){
   els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
   els.refreshLogsBtn.addEventListener('click', () => { refreshLogs(); });
   els.downloadAllLogsBtn.addEventListener('click', () => { downloadLogs(null); });
+  els.bootselBtn.addEventListener('click', () => { enterBootsel(); });
 }
 
 async function main(){
@@ -522,6 +599,12 @@ async function main(){
   initEvents();
   clearDeviceUi();
   setBusy(false);
+  try{
+    state.runtime = await loadRuntimeSpec();
+    renderRuntimePanel();
+  }catch(err){
+    log(`runtime list unavailable: ${err.message}`);
+  }
   try{
     renderIndex(await loadReleaseIndex());
   }catch(err){
