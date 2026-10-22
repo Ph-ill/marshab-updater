@@ -1,0 +1,19 @@
+{
+  "schema": 2,
+  "project": "LongVoyage",
+  "latest": "0.0.1-coex",
+  "channels": {
+    "bench": "0.0.1-coex"
+  },
+  "releases": [
+    {
+      "version": "0.0.1-coex",
+      "channel": "bench",
+      "date": "2026-10-22",
+      "label": "Wi-Fi + BLE coexistence bench test",
+      "path": "/firmware/releases/0.0.1-coex/release.json",
+      "bytes": 26997,
+      "files": 4
+    }
+  ]
+}
