@@ -3,6 +3,7 @@ import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
 import { loadReleaseIndex, compareVersions } from './releases.js';
 import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary } from './ship-config.js';
+import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
 const SHIP_COUNT = 7;
 const DEFAULT_LOGS = ['coex_log.csv', 'coex_log.old', 'coex_boot.txt'];
@@ -56,6 +57,11 @@ Object.assign(els, {
   shipHotspot: $('shipHotspot'),
   saveShipBtn: $('saveShipBtn'),
 });
+Object.assign(els, {
+  logList: $('logList'),
+  refreshLogsBtn: $('refreshLogsBtn'),
+  downloadAllLogsBtn: $('downloadAllLogsBtn'),
+});
 
 // ---------------------------------------------------------------- small helpers
 function stamp(){ return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }
@@ -108,6 +114,7 @@ function releaseLabel(release){
 function deviceControls(){
   const list = [];
   list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn);
+  list.push(els.refreshLogsBtn, els.downloadAllLogsBtn, ...els.logList.querySelectorAll('button'));
   return list;
 }
 
@@ -202,6 +209,7 @@ function clearDeviceUi(){
   els.shipPassword.value = '';
   els.shipOpen.checked = false;
   setText(els.shipHotspot, '—');
+  els.logList.innerHTML = '<li class="muted">Connect a ship to list its log files.</li>';
 }
 
 function markDeviceDisconnected(reason = 'ship disconnected'){
@@ -346,6 +354,71 @@ async function saveShipConfig(){
   }
 }
 
+// ---------------------------------------------------------------- bench logs
+function logPaths(){
+  const installed = state.deviceInfo?.version?.version;
+  const rel = installed ? state.releaseCache.get(installed) : null;
+  return [...new Set([...(rel?.logs || []), ...DEFAULT_LOGS])];
+}
+
+async function refreshLogs(){
+  if(!state.device) return;
+  setBusy(true);
+  try{
+    state.logSizes = await statFiles(state.device, logPaths());
+    els.logList.innerHTML = '';
+    const present = Object.entries(state.logSizes).filter(([, size]) => size >= 0);
+    if(!present.length){
+      els.logList.innerHTML = '<li class="muted">No log files on this ship yet. The bench test writes its first row about a minute after boot.</li>';
+    }
+    for(const [path, size] of present){
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.textContent = path;
+      const sz = document.createElement('span');
+      sz.className = 'size';
+      sz.textContent = size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Download';
+      btn.addEventListener('click', () => downloadLogs([path]));
+      li.append(name, sz, btn);
+      els.logList.append(li);
+    }
+    log(`log files: ${present.map(([p, s]) => `${p} (${s} B)`).join(', ') || 'none'}`);
+  }catch(err){
+    log(`could not list logs: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
+
+async function downloadLogs(paths){
+  if(!state.device) return;
+  setBusy(true);
+  resetProgress('Copying logs off the ship.', true);
+  try{
+    const list = paths || Object.entries(state.logSizes).filter(([, s]) => s >= 0).map(([p]) => p);
+    if(!list.length) throw new Error('no log files listed; press Refresh list first');
+    for(let i = 0; i < list.length; i++){
+      const path = list[i];
+      const size = state.logSizes[path];
+      if(!(size >= 0)) continue;
+      const bytes = await readFileBytes(state.device, path, size, {
+        onProgress: ({ done, total }) => setProgress(((i + done / Math.max(1, total)) / list.length) * 100, `Reading ${path} · ${done}/${total} bytes`),
+      });
+      const name = logFileName(path, state.deviceInfo?.ship);
+      saveBytes(bytes, name, path.endsWith('.txt') ? 'text/plain' : 'text/csv');
+      log(`saved ${path} as ${name} (${bytes.length} B)`);
+    }
+    setProgress(100, 'Logs saved to your downloads folder.', 'complete');
+  }catch(err){
+    setProgress(100, `Log copy failed: ${err.message}`, 'failed');
+    log(`log copy failed: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
 
 
 // ---------------------------------------------------------------- install
@@ -433,6 +506,8 @@ function initEvents(){
   els.shipId.addEventListener('change', () => { els.shipName.placeholder = defaultShipName(els.shipId.value); });
   els.shipShowPw.addEventListener('change', () => { els.shipPassword.type = els.shipShowPw.checked ? 'text' : 'password'; });
   els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
+  els.refreshLogsBtn.addEventListener('click', () => { refreshLogs(); });
+  els.downloadAllLogsBtn.addEventListener('click', () => { downloadLogs(null); });
 }
 
 async function main(){
