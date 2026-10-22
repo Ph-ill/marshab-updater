@@ -39,8 +39,13 @@ export class MicroPythonSerial {
     return this;
   }
 
-  async disconnect(){
-    try{ await this.write(CTRL_B); }catch(_err){}
+  // reset: true restarts the board's app (machine.reset) so it is not left paused at the REPL.
+  async disconnect({ reset = false } = {}){
+    if(reset && this.writer){
+      try{ await this.exec('import machine\nmachine.reset()', { timeoutMs: 800 }); }catch(_err){}
+    }else{
+      try{ await this.write(CTRL_B); }catch(_err){}
+    }
     this.reading = false;
     this.resolveWaiters(new Error('serial disconnected'));
     await this.releaseStreams();
@@ -188,6 +193,69 @@ export class MicroPythonSerial {
     await this.write(CTRL_A);
     await this.waitFor('raw REPL', 5000);
     await this.waitFor('>', 5000);
+  }
+
+  // Called right after entering the raw REPL. Ctrl-C stopped the app, but two things it started can still bite:
+  //  - a hardware watchdog (the coex test arms an 8 s one) would reset the board mid-update. RP2040/RP2350
+  //    cannot stop it through the MicroPython API, so clear CTRL.ENABLE through the atomic-clear alias.
+  //  - BLE IRQ handlers that print would inject text into raw-REPL replies. Unhook them and stop scanning.
+  // Returns 'stopped' | 'off' | 'still-on' | 'unknown'.
+  async quiesce(){
+    const code = `
+import machine, os
+m = os.uname().machine
+base = 0x400D8000 if 'RP2350' in m else (0x40058000 if 'RP2040' in m else 0)
+st = 'unknown'
+if base:
+    if machine.mem32[base] & 0x40000000:
+        machine.mem32[base | 0x3000] = 0x40000000
+        st = 'still-on' if machine.mem32[base] & 0x40000000 else 'stopped'
+    else:
+        st = 'off'
+try:
+    import bluetooth
+    _b = bluetooth.BLE()
+    if _b.active():
+        _b.irq(None)
+        try:
+            _b.gap_scan(None)
+        except Exception:
+            pass
+except Exception:
+    pass
+print('wdt:' + st)
+`;
+    try{
+      const { stdout } = await this.exec(code, { timeoutMs: 4000 });
+      const m = stdout.match(/wdt:(\w[\w-]*)/);
+      return m ? m[1] : 'unknown';
+    }catch(_err){
+      return 'unknown';
+    }
+  }
+
+  // Fallback when the watchdog could not be stopped: drop the single-use maintenance flag and reset.
+  // Firmware that honours data/maint (the Long Voyage builds) boots straight to the REPL with no watchdog.
+  async maintenanceReboot(){
+    try{
+      await this.exec(`
+try:
+    import os
+    try:
+        os.mkdir('data')
+    except OSError:
+        pass
+    open('data/maint', 'w').close()
+except Exception as e:
+    print('maint-flag-error', e)
+import machine
+machine.reset()
+`, { timeoutMs: 1500 });
+    }catch(_err){}
+    await delay(2500);
+    await this.reopenExisting({ attempts: 12, delayMs: 900 });
+    await this.enterRawRepl();
+    return this.quiesce();
   }
 
   async exitRawRepl(){

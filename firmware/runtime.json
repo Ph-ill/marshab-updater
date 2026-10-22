@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "name": "MicroPython",
+  "version": "1.29.0",
+  "released": "2026-08-24",
+  "note": "Files are downloaded straight from micropython.org. Sizes and sha256 were checked when this list was written; verify your download against them.",
+  "boards": {
+    "RPI_PICO_W": {
+      "label": "Raspberry Pi Pico W",
+      "chip": "RP2040",
+      "drive": "RPI-RP2",
+      "page": "https://micropython.org/download/RPI_PICO_W/",
+      "url": "https://micropython.org/resources/firmware/RPI_PICO_W-20260824-v1.29.0.uf2",
+      "size": 1811456,
+      "sha256": "f918c0a082c6daf53e27998b7f990ba5f065db2e298b21a34024532a20786794"
+    },
+    "RPI_PICO2_W": {
+      "label": "Raspberry Pi Pico 2 W",
+      "chip": "RP2350",
+      "drive": "RP2350",
+      "page": "https://micropython.org/download/RPI_PICO2_W/",
+      "url": "https://micropython.org/resources/firmware/RPI_PICO2_W-20260824-v1.29.0.uf2",
+      "size": 1774080,
+      "sha256": "c49c7ed93eb7eeaaa78436b17bd4329e5d4ccbaebc1e79503ad75e0a29c4530e"
+    }
+  }
+}
