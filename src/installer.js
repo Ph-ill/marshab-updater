@@ -1,18 +1,5 @@
-import { removePaths, snapshotProtectedData, verifyProtectedData, writeManifestFile } from './file-transfer.js';
-
-export async function fetchJson(url){
-  const isGithubAsset = (url.startsWith('https://api.github.com/repos/') || url.startsWith('/github-api/repos/')) && url.includes('/releases/assets/');
-  const response = await fetch(url, {
-    cache:'no-store',
-    headers: isGithubAsset ? { Accept:'application/octet-stream' } : {},
-  });
-  if(!response.ok) throw new Error(`${url} returned ${response.status}`);
-  try{
-    return await response.json();
-  }catch(err){
-    throw new Error(`could not read firmware release JSON from ${url}: ${err.message}`);
-  }
-}
+import { fetchJson } from './releases.js';
+import { removePaths, snapshotProtectedData, verifyProtectedData, wipeExcept, writeManifestFile } from './file-transfer.js';
 
 export async function fetchBytes(url){
   const response = await fetch(url, { cache:'no-store' });
@@ -34,7 +21,7 @@ export function findRelease(indexManifest, version){
 export async function loadReleaseManifest(indexManifest, version){
   const release = findRelease(indexManifest, version);
   if(!release) throw new Error(`release ${version} not found`);
-  return fetchJson(release.path);
+  return fetchJson(release.path); // a static file in this repo: /firmware/releases/<version>/release.json
 }
 
 function orderedFiles(files){
@@ -47,25 +34,51 @@ function orderedFiles(files){
   return copy;
 }
 
-export async function installRelease(device, releaseManifest, { onLog = () => {}, onProgress = () => {}, onBeforeReset = () => {} } = {}){
+async function sha256Hex(bytes){
+  // Web Serial itself needs a secure context (https / localhost), so SubtleCrypto is always there when it matters.
+  if(!globalThis.crypto?.subtle) throw new Error('this page needs https (or localhost) to check file hashes');
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Check every file before touching the board, so a bad download never half-installs.
+export async function prepareFiles(releaseManifest){
+  const out = [];
+  for(const file of orderedFiles(releaseManifest.files || [])){
+    if(typeof file.path !== 'string' || !file.path || file.path.startsWith('/') || file.path.split('/').includes('..')){
+      throw new Error(`release lists an unsafe path: ${file.path}`);
+    }
+    const bytes = file.data ? decodeBase64Bytes(file.data) : await fetchBytes(file.url);
+    if(bytes.length !== file.size) throw new Error(`${file.path} download size mismatch`);
+    if(!file.sha256) throw new Error(`${file.path} has no sha256 in the release`);
+    if(await sha256Hex(bytes) !== file.sha256) throw new Error(`${file.path} sha256 mismatch in download`);
+    out.push({ file, bytes });
+  }
+  return out;
+}
+
+export async function installRelease(device, releaseManifest, { clean = false, onLog = () => {}, onProgress = () => {}, onBeforeReset = () => {} } = {}){
   const preserve = [...new Set([...(releaseManifest.preserve || []), 'data/'])];
   onLog(`installing ${releaseManifest.project || 'firmware'} ${releaseManifest.version}`);
+  onLog('checking release files');
+  const prepared = await prepareFiles(releaseManifest);
   onLog('snapshotting protected device data');
   await snapshotProtectedData(device);
+  if(clean){
+    onLog(`clean install: removing old files (keeping ${preserve.join(', ')})`);
+    onLog(await wipeExcept(device, preserve));
+  }
   if(releaseManifest.delete?.length){
     onLog(`removing ${releaseManifest.delete.length} obsolete path(s)`);
     await removePaths(device, releaseManifest.delete, preserve);
   }
 
-  const files = orderedFiles(releaseManifest.files || []);
-  for(let i = 0; i < files.length; i++){
-    const file = files[i];
-    onLog(`writing ${file.path} (${i + 1}/${files.length})`);
-    const bytes = file.data ? decodeBase64Bytes(file.data) : await fetchBytes(file.url);
-    if(bytes.length !== file.size) throw new Error(`${file.path} download size mismatch`);
+  for(let i = 0; i < prepared.length; i++){
+    const { file, bytes } = prepared[i];
+    onLog(`writing ${file.path} (${i + 1}/${prepared.length})`);
     await writeManifestFile(device, file, bytes, {
       preserve,
-      onProgress: progress => onProgress({ file, fileIndex: i + 1, fileTotal: files.length, ...progress }),
+      onProgress: progress => onProgress({ file, fileIndex: i + 1, fileTotal: prepared.length, ...progress }),
     });
   }
 
