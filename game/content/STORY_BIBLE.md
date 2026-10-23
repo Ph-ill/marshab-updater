@@ -189,7 +189,7 @@ Endings cite the votes. The packer's loss is on the page (`g_packer`).
 Checked in deck order on day 42; first match wins. Titles come from `title`
 (text.json `ti`). Every ending closes on the first crate ("You'll thank me.")
 and the first message off the surface, to a loading bay at Starbase:
-"Landed. All eight." Endings may run to 460 characters (lint MAX_ENDING).
+"Landed. All eight." Endings may run to 640 characters (lint MAX_ENDING).
 
 **Geometry:** day 41 is about four days before atmospheric entry. Hold the plan
 = retarget to the backup site, about three kilometres from Cargo 2, with radar

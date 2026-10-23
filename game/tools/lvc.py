@@ -471,7 +471,7 @@ CHEAP = re.compile(r"\b(it was nothing|just a glitch|false alarm|all a dream)\b"
 CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re.I)
 MAX_TEXT, MAX_LABEL = 300, 28
 MAX_PAYOFF = 420   # reveal cards and the arrival-day cards (days 40+) may run longer
-MAX_ENDING = 460   # an ending carries the landing and its coda in one card
+MAX_ENDING = 640   # an ending is a landing scene, the recorder line on unanswered branches, and the coda
 PAYOFF_FROM = 40
 
 

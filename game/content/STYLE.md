@@ -227,7 +227,7 @@ competence, kindness, the extra watch nobody asked for.
 ## Length
 
 - Card text: 1 to 3 sentences, under about 300 characters (payoff cards, from
-  day 40, and reveals may run to 420; endings to 460, lint MAX_ENDING, because
+  day 40, and reveals may run to 420; endings to 640, lint MAX_ENDING, because
   they carry the shared coda). Phone screen, captive sheet.
 - Button labels: 2 to 5 words.
 - Outcomes: 1 to 3 sentences. End on the image or the joke, not on a moral.
