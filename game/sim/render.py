@@ -86,6 +86,49 @@ class Renderer:
             if s:
                 yield e[0], s.strip()
 
+    ECHO = (O.O_ACT, O.O_MOVE, O.O_NOTE)
+
+    def reader(self, out):
+        # The reading view (sim/out/reader.txt; a hand-off for web/render.js): story
+        # lines in full, and each day's system echoes (actions, crossings, notes) folded
+        # into one closing "around the fleet" line. The ending gets its title as a heading.
+        day, folded = None, []
+
+        def fold():
+            names = []
+            for c in folded:
+                if c not in names:
+                    names.append(c)
+            if not names:
+                return None
+            who = [self.name(c) for c in names]
+            if len(names) >= len(self.t["crew"]):
+                who = [self.t["sys"].get("fold_all", "everyone")]
+            who = who[0] if len(who) == 1 else ", ".join(who[:-1]) + " and " + who[-1]
+            return self.fill(self.t["sys"].get("fold", "Around the fleet: {who}."), who=who, n=len(folded))
+
+        for i in range(0, len(out), 8):
+            e = out[i:i + 8]
+            if e[0] != day:
+                if folded:
+                    yield day, fold()
+                day, folded = e[0], []
+            if e[1] in self.ECHO:
+                folded.append(e[3])
+                continue
+            if e[1] == O.O_END:
+                if folded:
+                    yield day, fold()
+                    folded = []
+                ti = self.t["cards"][e[2]].get("ti")
+                if ti:
+                    yield day, ti.upper()
+            s = self.entry(e)
+            if s:
+                yield day, s.strip()
+        if folded:
+            yield day, fold()
+
     def epilogue(self, out):
         # One story line per astronaut for the end screen: text.json epi.story is a
         # priority list of [card index, line]; an astronaut gets the first line whose

@@ -256,13 +256,14 @@ def stats_for(pack, st, text):
 
 
 def fair_play(st, text):
-    """Core clue cards (lvc `clue core`) that had not fired before the first reveal
-    card (lvc `reveal`). Empty means the season played fair."""
+    """Core clue groups (lvc `clue core [group]`) with no card fired before the first
+    reveal card (lvc `reveal`). Empty means the season played fair."""
     rv = [st.fired[i] for i in text.get("reveal", []) if st.fired[i]]
     if not rv:
         return ["(no reveal)"] if text.get("reveal") else []
     day = min(rv)
-    return [text["cards"][i]["id"] for i in text.get("core", []) if not (0 < st.fired[i] < day)]
+    return ["/".join(text["cards"][i]["id"] for i in g) for g in text.get("core", [])
+            if not any(0 < st.fired[i] < day for i in g)]
 
 
 def main(argv):
@@ -331,6 +332,13 @@ def main(argv):
             lastday = day
         lines.append("  " + s)
     open(os.path.join(outdir, "narrative.txt"), "w", encoding="utf-8").write("\n".join(lines).strip() + "\n")
+    rlines, lastday = [], -1
+    for day, s in Renderer(text).reader(st.story):
+        if day != lastday:
+            rlines += ["", "FLIGHT DAY %02d" % day]
+            lastday = day
+        rlines.append("  " + s)
+    open(os.path.join(outdir, "reader.txt"), "w", encoding="utf-8").write("\n".join(rlines).strip() + "\n")
     epi = rd.epilogue(st.story)
     open(os.path.join(outdir, "epilogue.txt"), "w", encoding="utf-8").write(
         "".join("%s: %s\n" % (text["crew"][c], epi[c]) for c in sorted(epi)))
