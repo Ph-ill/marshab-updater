@@ -28,6 +28,9 @@ Card format (one card per `card` line, indentation only matters for option effec
   each crew                       # clone the card once per astronaut: clone N binds
                                   #   role A to crew N only and fills {habit} from that
                                   #   astronaut's `habit "..."` line in roster.lv
+  each habit 2                    # like `each crew`, but {habit} is the astronaut's
+                                  #   2nd `habit "..."` line, and anyone without a real
+                                  #   2nd habit (none, or the placeholder) gets no clone
   hook                            # cliffhanger event: last line of its day; needs a
                                   #   `due` resolver with `when fired <this card>`
   cooldown 6                      # days before it can fire again (repeatable cards)
@@ -289,9 +292,13 @@ def parse_cards(path, ctx):
                 elif word == "hook":
                     card["flags"] |= O.F_HOOK
                 elif word == "each":
-                    if rest.strip() != "crew":
-                        raise PackError("only `each crew` is supported")
-                    card["each"] = True
+                    w = rest.split()
+                    if w == ["crew"]:
+                        card["each"] = True
+                    elif len(w) == 2 and w[0] == "habit" and w[1] in ("1", "2", "3", "4"):
+                        card["each"] = int(w[1])  # habit slot; skip anyone without it
+                    else:
+                        raise PackError("only `each crew` or `each habit N` (N 1-4) is supported")
                 elif word == "cooldown":
                     card["cooldown"] = ubyte(rest)
                 elif word == "duration":
@@ -351,7 +358,7 @@ def parse_crew(t):
     return cr
 
 
-HABIT_RE = re.compile(r'\bhabit\s+"([^"]*)"')
+HABIT_RE = re.compile(r'\bhabit\s+"((?:[^"\\]|\\.)*)"')  # \" for a quote inside
 # Used for anyone whose roster line has no habit yet. Deliberately generic: a real
 # habit is something the player sends in, never something the writers invent.
 HABIT_DEFAULT = "{A} keeps one small thing from home within reach of the console."
@@ -359,10 +366,9 @@ HABIT_DEFAULT = "{A} keeps one small thing from home within reach of the console
 
 def split_habit(line):
     # `habit "..."` is free text, so it comes out before the line is split on spaces.
-    m = HABIT_RE.search(line)
-    if not m:
-        return line, None
-    return line[:m.start()] + line[m.end():], m.group(1).strip()
+    # Several may follow one another: the first is `habit`, the rest feed `each habit N`.
+    hs = [h.strip().replace('\\"', '"') for h in HABIT_RE.findall(line)]
+    return HABIT_RE.sub("", line), hs
 
 
 def expand_each(cards, crew, ctx):
@@ -377,7 +383,15 @@ def expand_each(cards, crew, ctx):
             ctx.errors.append("%s: `each crew` needs role A" % c["where"])
             continue
         for i, cr in enumerate(crew):
-            habit = cr.get("habit") or HABIT_DEFAULT
+            if c["each"] is True:
+                habit = cr.get("habit") or HABIT_DEFAULT
+            else:
+                # `each habit N`: only a real Nth habit, sent in by that player, makes a
+                # clone. No habit, or the generic placeholder, means no line at all.
+                hs = cr.get("habits") or []
+                habit = hs[c["each"] - 1] if len(hs) >= c["each"] else None
+                if habit is None or habit == HABIT_DEFAULT:
+                    continue
             k = dict(c)
             k["id"] = "%s_%d" % (c["id"], i + 1)
             k["each"] = False
@@ -420,11 +434,12 @@ def parse_fleet(path, roster=None):
     if roster and os.path.exists(roster):
         with open(roster, encoding="utf-8") as f:
             for raw in f:
-                line, habit = split_habit(raw.split("#")[0])
+                line, habits = split_habit(raw.split("#")[0])
                 t = line.split()
                 if t and t[0] == "crew":
                     cr = parse_crew(t)
-                    cr["habit"] = habit
+                    cr["habit"] = habits[0] if habits else None
+                    cr["habits"] = habits
                     fleet["crew"].append(cr)
     for cr in fleet["crew"]:
         if cr["quirk"] is None and fleet["key"]:
@@ -673,10 +688,10 @@ def validate(cards, ctx, fleet, system):
     if len(set(cr["name"] for cr in fleet["crew"])) != len(fleet["crew"]):
         ctx.errors.append("roster.lv: crew names must be unique")
     for cr in fleet["crew"]:
-        h = cr.get("habit")
-        if h is not None and (not h or "{A}" not in h or re.search(r"\{(?!A\})", h)):
-            ctx.errors.append("roster.lv: %s's habit must be one sentence about {A} (no other slots)"
-                              % cr["name"])
+        for h in (cr.get("habits") or ([cr["habit"]] if cr.get("habit") is not None else [])):
+            if not h or "{A}" not in h or re.search(r"\{(?!A\})", h):
+                ctx.errors.append("roster.lv: %s's habit must be one sentence about {A} (no other slots)"
+                                  % cr["name"])
         if cr["quirk"] not in fleet["quirks"]:
             ctx.errors.append("fleet.lv: crew %s has unknown quirk %s" % (cr["name"], cr["quirk"]))
     if len(ctx.flags) > 128 or len(ctx.vars) > 32:

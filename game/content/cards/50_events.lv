@@ -24,7 +24,7 @@ once
 roles A
 when cond A ok
 when var storms >= 1
-text Another flare, another forty minutes. {A} is in the shelter between the water tanks in six, with the cards already dealt for seven screens. By now everyone knows which deck cheats at what, and the dosimeter has stopped being the most interesting number in the room.
+text Another flare, another forty minutes between the water tanks, cards dealt for seven screens. The ground's acknowledgement lands as the dosimeters settle: next-of-kin forms, to be re-signed every ninety days "for currency". {A} signs between hands, dates it in both calendars, and deals.
 do morale A 2
 do var storms 1
 
@@ -36,7 +36,7 @@ weight 16
 once
 roles A
 when cond A ok
-text {A} runs the dosimeter check. Every crew member is now past a hundred millisieverts, and the line is still climbing at the same slope. {A} writes it down and underlines it, and leaves the underline to say the rest.
+text {A} runs the dosimeter check. Every crew member is now well past a hundred millisieverts, and the line is still climbing at the same slope. {A} writes it down and underlines it, and leaves the underline to say the rest.
 do trait A curious 1
 
 card comm_delay
@@ -47,7 +47,7 @@ weight 16
 once
 roles A
 when cond A ok
-text The signal delay to Earth is closing on two minutes each way. {A} sends a joke to the ground team and waits well over three minutes to find out whether it landed. It did, on a slight delay, like everything now.
+text The signal delay to Earth is closing on two minutes each way. {A} sends the ground a joke and waits over three minutes to learn whether it landed. It did, on a slight delay, like everything now.
 do morale A 4
 
 card comm_delay2
@@ -62,17 +62,6 @@ when cond A ok
 text Earth is five light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
 do morale A 1
 
-card earth_dot
-type event
-cat wonder
-days 19 26
-weight 5
-once
-roles A
-when cond A ok
-text {A} goes to the window to find Earth and has to look for a while. It's a point now, bluish, and no longer anywhere you could point to a house. {A} photographs it beside the window frame's bolt heads, for scale.
-do trait A warm 3
-
 # --- Hardware (controls flavor, never named) ----------------------------------
 card scrubber_fault
 type event
@@ -84,7 +73,7 @@ roles A
 when res spares >= 1
 when home A
 when !fired crisis_air
-text The CO₂ scrubber on {A}'s ship throws its fourth fault since the hatch closed on the pad. {A} fixes it, then labels it "temperamental" in permanent marker, under a label in Starbase handwriting that already says "be nice to it".
+text The CO₂ scrubber on {A}'s ship throws its fourth fault since launch. {A} fixes it, then labels it "temperamental" in permanent marker, under a label in Starbase handwriting that already says "be nice to it".
 do res spares -1
 
 card boiloff
@@ -96,7 +85,7 @@ once
 roles A
 when cond A ok
 when home A
-text Methane boil-off on {A}'s ship runs high while it flies broadside to feed the solar wings. {A} proposes nose-to-Sun, wings canted, so the ship's own shadow falls down the tanks. The ground runs the power numbers and agrees; boil-off drops by a third, fleet-wide.
+text Methane boil-off on {A}'s ship runs high while it flies broadside to feed the solar wings. {A} proposes nose-to-Sun, wings canted, so the ship's own shadow falls down the tanks. The ground agrees; boil-off drops by a third, fleet-wide.
 do res fuel 2
 do morale A 2
 
@@ -133,18 +122,6 @@ text A replacement pump won't sit in its mount on {A}'s ship. Every part is in t
 do res spares -1
 do morale A 2
 
-card hatch_sun
-type event
-cat repair skill
-days 6 38
-weight 5
-once
-roles A
-when cond A ok
-when home A
-text The hatch on {A}'s ship sticks whenever the sunward side warms up. {A} works it out on the back of a checklist: the frame grows a millimeter in the sun and the seal doesn't. One new shim, and the door swings the way it did at Starbase.
-do morale A 3
-
 # --- Rescue: CO2 scrubber failure -------------------------------------------
 card crisis_air
 type event
@@ -156,7 +133,7 @@ roles A
 when cond A ok
 when res spares >= 1
 when home A
-text The CO₂ scrubber on {A}'s ship fails outright. With one person in a cabin that size, the CO₂ only climbs about a twentieth of a percent a day: not an emergency yet, which is the best time to fix one. {A} has the backup running in nine minutes, and it is already complaining.
+text The CO₂ scrubber on {A}'s ship fails outright. With one person aboard, the CO₂ climbs about a twentieth of a percent a day: not an emergency yet, which is the best time to fix one. {A} has the backup running in nine minutes, and it is already complaining.
 do morale A -4
 do open rescue_air
 
@@ -173,7 +150,7 @@ option send | Send a cartridge | A spare cartridge rides the line across in an u
   res spares -1
   res fuel -1
   morale A 4
-option bring | {B} brings it over | {B} rides the line across with the cartridge and stays to help rebuild the primary. By midnight both scrubbers are running, and {B} is asleep on {A}'s floor.
+option bring | {B} brings it over | {B} rides the line across with the cartridge and stays to rebuild the primary. By midnight both scrubbers run, and {B} is asleep on {A}'s floor.
   res spares -1
   res fuel -1
   move B A

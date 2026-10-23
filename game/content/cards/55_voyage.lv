@@ -33,7 +33,7 @@ cat life
 clue core
 due
 once
-days 3 9
+days 3 5
 roles A
 text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the logo, a progress bar, the three-note chime, all over before {A} has counted to eleven. Then it logs out again. By departure the whole fleet is humming the chime.
 do morale A 1
@@ -71,7 +71,7 @@ due
 once
 days 5 7
 roles A
-text {A} reads the manifest like a shopping list: water on Cargo 3, rover on Cargo 4. Write-offs: a grey relay, "thruster stuck open"; the last window's hopper, "tipped, beacon intermittent"; Cargo 2, drill spares, "lost on landing, scar on a survey frame"; socks, "reason unknown".
+text {A} reads the manifest like a shopping list: water on Cargo 3, rover on Cargo 4. Write-offs: a grey relay, "thruster stuck open"; the last window's hopper, "tipped, beacon intermittent"; Cargo 2, drill spares, "lost on landing, scar in a low-res pass"; socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -81,7 +81,7 @@ due
 once
 days 6 6
 roles A
-text The last tanker undocks at dawn. Seven ships light their engines for the departure burn, and {A} feels weight come back for the first time since launch. From here the flight log keeps one page for every five days, and by the next page {A} can hide Earth behind a thumb.
+text The last tanker undocks at dawn. Seven ships light their engines for departure, and {A} feels weight come back. The timeline calls the burn COMMIT: after it, every way home runs past Mars. From here the log keeps one page for every five days; by the next page {A} can hide Earth behind a thumb.
 do morale A 3
 
 card l_transfer
@@ -91,7 +91,7 @@ due
 once
 days 2 2
 roles A
-text The ships fly a few kilometres apart, one seat a ship, so no failure takes two people. The next ship reads back every critical command; votes are advice to the flight director. Every few days they close up on a tethered line, after prebreathe. {A} has the first crossing and calls it "educational".
+text Ships fly a few kilometres apart, one seat a ship, so no single failure takes two; a visit bends the rule and is logged. The next ship reads back every critical command; votes only advise the flight director. Every few weeks ships close up for a tethered crossing. {A} goes first: "educational".
 do trait A brave 2
 
 card l_handshake
@@ -115,7 +115,7 @@ once
 days 18 19
 roles A
 when is A ow_list
-text The delay has turned calls into letters. {A} records one for home, talking straight through the gaps, deletes it, tries again with pauses, which is worse, then goes at speed: "Hi, it's me, ship's fine, I'm fine, the fans hum in a key now, here's the list," and that one goes.
+text The delay has turned calls into letters. {A} records one for home, deletes it, tries again with pauses, which is worse, then goes at speed: "Hi, it's me, ship's fine, I'm fine, the fans hum in a key now, here's the list," and that one goes.
 do morale A 2
 do trait A warm 2
 
@@ -152,7 +152,7 @@ once
 days 27 28
 roles A
 when is A ow_list
-text A message from home for {A}: a retirement party, already over, for the neighbour who always brought the folding chairs, a name from the first call's list. The house is sold; they're moving to the sea. Someone saved {A} a chair. {A} watches the recording to the end and asks for the next watch.
+text A message from home for {A}: a retirement party, already over, for the neighbour who always brought the folding chairs, a name from the first call's list. They're moving to the sea. Someone saved {A} a chair. {A} watches the recording to the end and asks for the next watch.
 do morale A -8
 do trait A warm 3
 
@@ -283,7 +283,7 @@ days 37 37
 roles A
 when is A ow_garden
 when !fired p_garden_sprout
-text Rationed water was one squeeze too many: the last pod never came up. {A} keeps watering the tray, two millilitres, on schedule, and packs the dry seed in a coat pocket for the ground. Seeds keep.
+text The last pod never came up. Under the lamp the seed coat is whole, dry and patient, as if it had decided to wait for the ground. {A} keeps watering the tray, two millilitres, on schedule, and packs the seed in a coat pocket. Seeds keep.
 do trait A warm 2
 
 # --- The middle dark ------------------------------------------------------------
@@ -295,7 +295,7 @@ weight 6
 once
 roles A
 when cond A ok
-text With the cabin lights off, the Sun behind the hull and the shutters open, {A}'s hand throws a shadow on the bulkhead, so faint {A} has to move the hand to see it. The light source is Venus. {A} makes a rabbit, then a fist, then an open hand, letting the planet cast it.
+text Lights off, the Sun behind the hull, {A}'s hand throws a shadow on the bulkhead, so faint {A} has to move the hand to see it. The light source is Venus. {A} makes a rabbit, then an open hand, letting the planet cast it.
 do trait A curious 3
 
 card w_phosphene
@@ -306,7 +306,7 @@ days 19 23
 weight 6
 roles A
 when cond A ok
-text {A} shuts both eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light; cameras see them too, as single bright pixels. {A} counts them like sheep and loses count somewhere in the twenties.
+text {A} shuts both eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light; cameras see them too, as single bright pixels. {A} counts them like sheep, and loses count in the twenties.
 do trait A curious 2
 do morale A -1
 
@@ -319,21 +319,8 @@ days 20 28
 roles A
 when cond A ok
 when home A
-text The protein-crystal experiment in {A}'s locker, a university lab's two years of work, cooks overnight when its freezer fan seizes. {A} reads the temperature trace, then calls the lab, who ask for photos anyway. There is no second batch, and no second flight for it.
+text The protein crystals in {A}'s locker, a lab's two years of work, cooks overnight when its freezer fan seizes. {A} calls the lab, who ask for photos anyway. There is no second batch, and no second flight for it.
 do morale A -3
-
-card w_comet
-type event
-cat wonder
-days 20 30
-weight 6
-once
-roles A
-when cond A ok
-when home A
-text The magnetometer on {A}'s ship twitches for six hours: the fleet is crossing the ion tail of a comet that last came this way before anyone aboard was born. There's nothing to see. {A} sits by the window anyway, with the trace scrolling on a tablet.
-do trait A curious 3
-do morale A 2
 
 card p_birthday
 type beat
@@ -346,7 +333,7 @@ when same A B
 when !fired beat_haircut
 when away A
 when home B
-text It's {B}'s birthday by the ground calendar, and {A} happens to be aboard. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
+text A birthday by somebody's ground calendar; the fleet has stopped checking whose. {A}, aboard {B}'s ship, produces a candle that can't be lit, a ration-bar cake with a slice of dried mango, and a card signed by the whole fleet. {B} keeps the candle.
 do bond A B 6
 do morale B 5
 
@@ -358,8 +345,7 @@ weight 7
 once
 roles A B
 when same A B
-when !fired beat_cards
-text Movie night with {B}, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun. {A} pauses it, and the two of them listen until it stops. Then {A} puts on something with a sky in it.
+text Movie night with {B}, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun. {A} pauses it, and they listen until it stops. Then {A} puts on something with a sky in it.
 do bond A B 4
 
 card p_dream
@@ -395,7 +381,7 @@ roles A B
 when cond A ok
 when is A ow_list
 when cond B ok
-text Long table night. {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on every screen at once, the one conversation out here with no delay in it. {A} laughs on the beat, and it counts double.
+text Long table night. {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on every screen at once, the one conversation out here with no delay. {A} laughs on the beat, and it counts double.
 do morale A 3
 
 card g_third_quarter
@@ -408,7 +394,7 @@ roles A B
 when cond A ok
 when cond B ok
 when !is B ow_list
-text The flight surgeon calls it the third-quarter effect. On the video link {A} and {B} find themselves on the same checklist page at the same minute, both stuck on step four. {A} reads the steps aloud, the way they would on a pass, and {B} answers each one. They file a ticket: the page is too long.
+text The flight surgeon calls it the third-quarter effect. On the video link {A} and {B} find themselves on the same checklist page at the same minute, both stuck on step four. {A} reads the steps aloud and {B} answers each one. They file a ticket: the page is too long.
 do bond A B 6
 do morale B 3
 
@@ -420,7 +406,7 @@ weight 5
 once
 roles A
 when cond A ok
-text {A} counts the medical kit against the manifest: sutures, splints, pain tablets in neat blister rows. {A} closes the lid on the count.
+text {A} counts the medical kit against the manifest: sutures, splints, pain tablets in neat blister rows, and at the bottom, folded flat and vacuum-sealed, the line item the manifest calls "contingency, crew, 1". There is one on every ship. {A} closes the lid on the count, and signs for it.
 do trait A brave 2
 
 card g_packer
@@ -455,7 +441,7 @@ weight 9
 once
 roles A
 when cond A ok
-text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock no hand has ever touched. {A} saves the frame and sends it to the geology team, subject line: "look".
+text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock no hand has ever touched. {A} sends it to the geology team, subject line: "look".
 do trait A curious 3
 
 card w_phobos
@@ -466,7 +452,7 @@ weight 14
 once
 roles A
 when cond A ok
-text Phobos is a speck beside Mars on the long-lens camera now, slipping behind the disc and out the other side in under an hour. {A} watches it cross a whole world in the time it takes to eat a meal, and wants weight, suddenly, more than sleep.
+text Phobos is a speck beside Mars on the long-lens camera now, slipping behind the disc and out the other side in under an hour. {A} watches it cross a whole world in the time of a meal, and wants weight, suddenly, more than sleep.
 do trait A curious 2
 do morale A 3
 
@@ -531,7 +517,7 @@ once
 days 38 38
 roles A
 when flag photo_taken
-text {A} stows the tablet with the fleet portrait on it: six ships and the edge of a seventh, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have for the descent. Worth it, {A} decides.
+text {A} stows the tablet with the fleet portrait on it: six ships and the edge of a seventh, Earth behind them, and the propellant it took to fly them that close, which the last tanker quietly put back. Worth it, {A} decides; the tanker crew got a print.
 
 card a_recall_wrist
 type event
@@ -554,7 +540,7 @@ roles A
 when flag valve_out
 when is A valve_who
 when !is A abort_who
-text Before the descent brief {A} flies the valve workaround once more in the simulator, one thruster short. The model rolls the wrong way out of the blackout and comes back, the way it did that night. {A} initials the log line and closes the panel.
+text Before the descent brief {A} flies the valve workaround once more in the simulator. The model rolls the wrong way on the flip before the landing burn, one jet short, and comes back, the way it did that night. {A} initials the log line and closes the panel.
 
 card a_recall_shared
 type event
@@ -590,7 +576,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key re-loaded and checked by the ground, and the laminated card from under the spares tray, HELLO then HOLD, two signatures on the back. "First one out goes to say hello," {A} tells the ground. The ground says yes, if a spare battery rides along.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old key loaded and checked by the ground, and the laminated card from under the spares tray, HELLO then HOLD. "First one out goes to say hello," {A} tells the ground. The ground says yes, if a spare battery rides along.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
@@ -604,7 +590,7 @@ roles A
 when flag arrive_hold
 when flag c2_answered
 when is A abort_who
-text Entry interface. Three minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the brown thins and a slope comes up under the ship; {A} calls the manual takeover before the plume takes the view.
+text Entry interface. Three minutes of blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping, on two antennas, holds the bearing till the rim cuts it. At three hundred metres a slope comes up out of the brown; {A} calls the manual takeover before the plume takes the view.
 do morale A 3
 
 card e_entry_hold_q
@@ -617,7 +603,7 @@ roles A
 when flag arrive_hold
 when !flag c2_answered
 when is A abort_who
-text Entry interface. Three minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres the cameras find a slope under the ship; {A} calls the manual takeover before the plume takes the view, and fights it level. It comes down hard, upright.
+text Entry interface. Three minutes of blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres a slope comes up out of the brown; {A} calls the manual takeover before the plume takes the view, and fights it level. It comes down hard, upright.
 do morale A 3
 
 card e_entry_wait
@@ -653,19 +639,8 @@ weight 10
 once
 roles A
 when cond A ok
-text With the cabin dark and the Sun behind the hull, {A} sees the zodiacal light with no air in the way: a long faint cone of comet dust, lit from behind. From home it is a smudge at dusk. Out here it is a road. {A} turns the screen brightness down to keep it.
+text Cabin dark, Sun behind the hull, {A} sees the zodiacal light with no air in the way: a long faint cone of comet dust, lit from behind. From home it is a smudge at dusk. Out here it is a road. {A} turns the screen brightness down to keep it.
 do morale A 3
-
-card w_sun_small
-type event
-cat wonder
-days 24 33
-weight 10
-once
-roles A
-when cond A ok
-text Through the shade filter the Sun is a coin held further off each week. The solar arrays say it first, a percent or two less on every page. {A} turns the cabin heater up a notch, and caps the filter on a star that used to be a sky.
-do morale A 2
 
 card w_milky
 type event
@@ -675,7 +650,7 @@ due
 once
 roles A
 when cond A ok
-text {A} kills every cabin light, shades the Sun-side window and waits twenty minutes for night eyes. The Milky Way comes up with the dark lanes in it, the ones no backyard ever shows. {A} names the ones in the book, then starts on the rest.
+text {A} kills every light and waits twenty minutes for night eyes. The Milky Way comes up with the dark lanes in it, the ones no backyard ever shows. {A} names the ones in the book, then starts on the rest.
 do trait A curious 2
 
 card w_moon_pair
@@ -686,5 +661,5 @@ due
 once
 roles A
 when cond A ok
-text Through the long lens Earth and the Moon share one frame now, close as two buttons on a coat. {A} sends a week of them home as a flipbook: "You are here. Both of you."
+text Through the long lens Earth and the Moon share one frame now, close as two buttons on a coat. {A} sends a week of them home: "You are here. Both of you."
 do morale A 3

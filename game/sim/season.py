@@ -28,7 +28,7 @@ from lv.chlog import ChoiceLog              # noqa: E402
 from lv.engine import Engine, A_GIFT, A_ADVICE, A_TASK, A_REST  # noqa: E402
 from lv.pack import load as load_pack       # noqa: E402
 from lv.state import State, N               # noqa: E402
-from sim.render import Renderer             # noqa: E402
+from sim.render import Renderer, page_heading  # noqa: E402
 
 FLEET_KEY = b"test-fleet-key-not-secret"
 
@@ -369,14 +369,14 @@ def main(argv):
     for day, s in rd.lines(st.story):
         if day != lastday:
             lines.append("")
-            lines.append("FLIGHT DAY %02d" % day)
+            lines.append(page_heading(day))
             lastday = day
         lines.append("  " + s)
     open(os.path.join(outdir, "narrative.txt"), "w", encoding="utf-8").write("\n".join(lines).strip() + "\n")
     rlines, lastday = [], -1
     for day, s in Renderer(text).reader(st.story):
         if day != lastday:
-            rlines += ["", "FLIGHT DAY %02d" % day]
+            rlines += ["", page_heading(day)]
             lastday = day
         rlines.append("  " + s)
     open(os.path.join(outdir, "reader.txt"), "w", encoding="utf-8").write("\n".join(rlines).strip() + "\n")

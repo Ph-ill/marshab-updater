@@ -22,7 +22,7 @@ days 5 36
 roles A
 when fired h_pressure
 when is A hook_who
-text {A} spent four hours panel by panel with a leak detector, suit staged at the hatch. The culprit was a cable feedthrough whose seal shrank in the shaded-side cold. The trend goes in the logbook like a fish someone caught; under it, the reserve line, which won't recover before Mars.
+text {A} spent four hours panel by panel with a leak detector. The culprit was a cable feedthrough whose seal shrank in the shaded-side cold. The trend goes in the logbook like a fish someone caught; under it, the reserve line, which won't recover before Mars.
 do res spares -1
 do morale A 5
 
@@ -49,15 +49,15 @@ roles A
 when fired h_thruster
 when is A hook_who
 lean brave manual watch
-text Fourteen minutes of the control loop fighting a roll nothing had commanded, pulse after pulse on one axis.
-option manual | Hand control | {A} took attitude into manual and held it while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and that axis flies one thruster short for the rest of the voyage.
+text Fourteen minutes of the control loop fighting a roll nothing had commanded. Fault detection flagged a jet failed-on in forty seconds and isolated a healthy one; the leak sat downstream of a valve that swore it was shut.
+option manual | Hand control | {A} took attitude into manual and held it while the valve telemetry scrolled past. One valve read "closed" while it leaked. Isolated now; that axis flies one thruster short to Mars.
   trait A brave 2
   morale A 4
   set valve_out
   who valve_who A
   mark t_valve
   res fuel -1
-option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and that axis flies one thruster short for the rest of the voyage.
+option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to one valve that read "closed" while it leaked. Isolated now; that axis flies one thruster short to Mars.
   trait A curious 2
   morale A 4
   set valve_out
@@ -74,7 +74,7 @@ days 5 36
 roles A
 when fired h_flood
 when is A hook_who
-text The night's record: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was down from 214 to a page. The backup is the only pump now.
+text The night's record: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was a page. The backup is the only pump now.
 do morale A 5
 do res spares -1
 
@@ -87,7 +87,7 @@ days 11 36
 roles A
 when fired h_silence
 when is A hook_who
-text Eight hours of nothing, the one-page checklist open on every console. Before breakfast the reply arrives: a ground station went down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} starts with the weather.
+text Eight hours of nothing, the one-page checklist open on every console. Before breakfast the reply arrives: a ground station lost to a storm, the backup waiting for Earth to turn. The message ends: "All good here. How are you?" {A} starts with the weather.
 do morale A 6
 do trait A warm 2
 
@@ -117,7 +117,7 @@ days 26 34
 roles A
 when fired h_ghost
 when is A hook_who
-text Six hours on the backup tracker, {A} checking stars by hand. By morning the extra one has a name: a launch cover plate shed at departure, on nearly the fleet's orbit, gaining fifteen metres an hour. Tonight it slides past forty kilometres off the bow, and Starbase starts counting its cover plates.
+text Six hours on the backup tracker. By morning the extra star has a name: a launch cover plate shed at departure, on nearly the fleet's orbit, gaining fifteen metres an hour. Tonight it slides past forty kilometres off the bow; Starbase starts counting cover plates.
 do trait A curious 3
 do morale A -2
 
@@ -130,7 +130,7 @@ days 26 34
 roles A
 when fired h_voice
 when is A hook_who
-text {A} sat up till dawn with the intercom logs: a message from home, recorded the night before launch and queued for this day. Last week's update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. The first minute is gone for good.
+text {A} sat up till dawn with the intercom logs: a message from home, recorded before launch and queued for this day. Last week's update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. The first minute is gone for good.
 do morale A 6
 do trait A warm 3
 
@@ -144,7 +144,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when !flag signal_answered
-text For three hours six ships called an empty slot; the next ship's lens showed lit windows. Then {A}, hoarse: an old-channel frame asking for a key update the new stack never knew had hung the comms computer, then the backup; the third boot quarantined it. The old channel comes off the fleet net.
+text Three hours of an empty slot on the net; the next ship's lens showed lit windows. Then {A}, hoarse. An old-channel frame asked for a key update the new stack had never heard of; main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The old channel comes off the fleet net.
 do trait A brave 3
 do morale A -2
 
@@ -158,7 +158,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when flag signal_answered
-text For three hours six ships called an empty slot; the next ship's lens showed lit windows. Then {A}, hoarse: an old-channel frame asking for a key update the new stack never knew had hung the comms computer, then the backup; the third boot quarantined it. The hellos move to a sandbox.
+text Three hours of an empty slot on the net; the next ship's lens showed lit windows. Then {A}, hoarse. An old-channel frame asked for a key update the new stack had never heard of; main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The hellos move to a sandbox.
 do trait A brave 3
 do morale A -2
 

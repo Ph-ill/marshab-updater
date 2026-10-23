@@ -7,7 +7,7 @@ type event
 cat human
 due
 once
-days 11 11
+days 10 10
 roles A
 when cond A ok
 when home A
@@ -18,7 +18,7 @@ card dil_stash
 type dilemma
 once
 cat human
-days 11 11
+days 10 10
 weight 1
 duration 3
 roles A
@@ -59,7 +59,7 @@ days 8 11
 weight 10
 roles A B
 when bond A B >= -20
-text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a thin bright crescent now, low beside the Sun's glare, less than half the width of the Moon from home. They each make a coffee at the same minute, as if that counted as sharing one.
+text {A} and {B} stand the night watch over the fleet link, each in a dark cabin. Earth is a thin bright crescent now, low beside the Sun's glare, less than half the width of the Moon from home. They each make a coffee at the same minute, as if that counted as sharing one.
 do bond A B 6
 
 card beat_argue
@@ -70,7 +70,7 @@ days 9 39
 weight 5
 roles A B
 when trait A warm <= 10
-text {A} and {B} spend a whole shift arguing on the fleet channel about what plays during the next burn. {A} wants silence, so every noise means something. {B} wants anything with a chorus. They settle on one song, chosen by the ground team, sight unseen. It's worse than either.
+text {A} and {B} spend a whole shift arguing on the fleet channel about what plays during the next burn. {A} wants silence, so every noise means something. {B} wants anything with a chorus. They settle on a song the ground picks, sight unseen. It's worse than either.
 do bond A B -4
 
 # Trait-driven reaction: what happens depends on how brave A is.
@@ -87,17 +87,6 @@ lean brave closer window
 text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
 option closer | Get a closer look | {A} talks Mission Control into a camera slew: a flake of ice from the last waste-water dump, tumbling, a little smaller every hour.
   trait A brave 3
-option window | Track it from the window | {A} notes its bearing hourly. By the fourth hour it's plainly tumbling, each flash a face of ice from the last waste-water dump, a little smaller each time. The notes are neat enough to frame.
+option window | Track it from the window | {A} notes its bearing hourly: ice from the last waste-water dump, tumbling, smaller each hour. The notes are neat enough to frame.
   trait A curious 2
 
-card galley_pump
-type event
-cat repair
-days 14 39
-weight 6
-once
-roles A
-when res spares >= 1
-text The galley pump fails mid-breakfast. {A} lays the parts out on a towel in order, rebuilds it, and the washer that was missing at the factory turns up in the old housing.
-do res spares -1
-do morale A -2

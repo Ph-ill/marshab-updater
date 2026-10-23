@@ -11,13 +11,12 @@ once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: seven ships in one frame, with Earth filling the sky behind them. That means seven ships a careful hundred metres apart, and propellant to get there and back. The request says "iconic" four times.
+text Public affairs wants a fleet portrait: seven ships in one frame, with Earth filling the sky behind them. That means seven ships a hundred metres apart, and the propellant to get there. The request says "iconic" four times.
 option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: six ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
   set photo_taken
   res fuel -2
   morale A 4
 option decline | Politely decline | The fleet sends a polite no and a very good photo of a single ship. Public affairs replies with one word: "Noted."
-  set photo_declined
 
 card photo_back
 type beat
@@ -28,26 +27,14 @@ days 20 39
 roles A
 when flag photo_taken
 when cond A ok
-text The clippings arrive: the fleet portrait made the front page of every news site on Earth. {A} zooms in past six ships and the edge of the seventh to the blue behind them and finds, just, the coastline where one of those papers was printed.
+text The clippings arrive: the fleet portrait made every front page on Earth. {A} zooms in past six ships and the edge of the seventh to the blue behind them and finds, just, the coastline where one of those papers was printed.
 do morale A 5
-
-card photo_stamp
-type beat
-cat human
-due
-once
-days 33 36
-roles A
-when flag photo_declined
-when cond A ok
-text Public affairs, still a little sore about the portrait, asks for a sketch for a landing stamp instead. {A} draws one ship and a great deal of dark. It is approved in an afternoon, and {A} gets a sheet of them by email.
-do morale A 3
 
 # --- Water recovery -------------------------------------------------------
 card dec_water
 type decision
 cat repair
-days 13 26
+days 14 21
 weight 9
 once
 duration 2
@@ -62,7 +49,7 @@ option strip | Strip it now | The processor spends nine hours in pieces on the d
   mark t_water
   res spares -1
   trait A curious 3
-option degrade | Run it degraded | {A}'s ship goes on water rationing, and the other six trim theirs a notch so there's a bag to send at the next window. {A} writes down the recovery rate every hour; it slips a tenth at a time.
+option degrade | Run it degraded | {A}'s ship goes on water rationing, and the other six trim theirs a notch so there's a bag to send at the next window. {A} logs the rate hourly; it slips a tenth at a time.
   set water_rationed
   who water_who A
   morale A -3
@@ -148,8 +135,8 @@ once
 duration 2
 roles A B
 lean curious shift keep
-text Mission Control proposes moving the fleet's clocks two hours forward, to line up with the ground team's shifts. {A} is for it. {B} has seen this study before.
-option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, as the study predicted. {B}'s sleep data, the cleanest set, is the one the ground asks to keep.
+text Mission Control proposes moving the fleet's clocks two hours forward, to line up with the ground team's shifts. {A} is for it. {B} has seen how this study ended last time.
+option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, as the study predicted. {B} files the last page in one word: "Predicted."
   set clock_shifted
 option keep | Keep fleet time | The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza.
   set clock_kept
@@ -178,7 +165,7 @@ text Since the fleet kept its own clock, the ground's handover lands in the flee
 card dec_trim
 type decision
 cat mission
-days 12 28
+days 15 23
 weight 9
 once
 duration 2
@@ -215,7 +202,7 @@ days 29 33
 roles A
 when flag trim_late
 when cond A ok
-text The latest navigation fix comes in: dead centre of the arrival corridor. The checked burn cost more than the quick one would have, and {A} runs the propellant table again for the margin. It still says yes. {A} stops running it.
+text The latest navigation fix comes in: dead centre of the arrival corridor. The checked burn cost more than the quick one would have, and {A} reruns the propellant table. It still says yes. {A} stops running it.
 do morale A 2
 
 # --- Arrival: dust storm over the landing region -------------------------------
@@ -223,7 +210,7 @@ card dust_report
 type event
 cat mission
 days 28 35
-weight 5
+weight 1
 once
 roles A
 when cond A ok
@@ -243,7 +230,7 @@ when since t_dust >= 3
 when !fired dec_arrival
 when cond A ok
 when since t_flash >= 4
-text The new weather frames come down: the dust storm over the landing zone has doubled overnight, and the brown thumbprint now covers the zone with room to spare. On the shared map, the ruler line no longer reaches clear ground.
+text The dust storm over the landing zone has doubled overnight; the brown thumbprint covers it with room to spare. On the shared map, the ruler line no longer reaches clear ground.
 do open dec_arrival
 
 card dec_arrival
@@ -256,8 +243,8 @@ duration 2
 roles A B
 when flag dust_seen
 lean warm wait hold
-text The dust storm over the landing zone is still growing, and the flight director wants the crew's recommendation. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit and wait it out, at a real cost in food.
-option hold | Hold the plan | The flight director takes it: the arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
+text The storm over the landing zone is still growing; the flight director wants the crew's call. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit and wait it out, at a real cost in food.
+option hold | Hold the plan | The flight director takes it: the arrival plan stands. {A} posts the entry numbers for the worst-case dust load where everyone can see.
   set arrive_hold
 option wait | Long orbit, wait | The flight director takes it: aerocapture and the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
   set arrive_wait

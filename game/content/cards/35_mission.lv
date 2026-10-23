@@ -4,14 +4,14 @@
 card dec_halfway
 type decision
 cat mission
-days 23 24
+days 24 24
 weight 40
 once
 duration 1
 roles A B
 lean warm feast quiet
 text Halfway, by the flight plan's clock. {A} wants to break out the good rations and mark it properly. {B} would rather not count yet.
-option feast | Mark it | The fleet eats the good rations on seven screens at once. {A} gives a toast about the halfway mark, and it turns into a toast about the people who packed the food.
+option feast | Mark it | The fleet eats the good rations on seven screens at once. {A}'s toast to halfway turns into a toast to the people who packed the food.
   res food -2
   morale A 4
   morale B 2
@@ -39,7 +39,7 @@ option home | Name it for home | The crater gets the name of a small town on Ear
 card dec_science
 type decision
 cat mission
-days 14 24
+days 18 23
 weight 8
 once
 duration 2
@@ -50,7 +50,7 @@ option record | Send the data | The burst's source shrinks from a smear of sky t
   morale B -2
   trait A curious 3
   morale A 3
-option save | Letters first | Ground telescopes get the burst anyway, less sharply. {B} reads every letter, and doesn't pretend it was an easy trade.
+option save | Letters first | Ground telescopes get it anyway, less sharply. {B} reads every letter, and doesn't pretend it was an easy trade.
   trait B warm 2
 
 # --- The mystery chain (fixed days; one beat a day from 35 to 41) ------------------
@@ -117,7 +117,7 @@ once
 days 38 38
 roles A
 when is A ow_theory
-text {A} looks at the lighthouse again. Timed to the microsecond, every knock runs a hundredth of a second early, then late, once a day, and the day is thirty-seven minutes too long. "Who keeps a lighthouse on Mars time?" {A} asks the drawing.
+text {A} looks at the lighthouse again. Timed to the microsecond, every knock runs a hundredth of a second early, then late, once a day, and the day is thirty-seven minutes too long. {A} writes "24 h 37 m" under the lighthouse and says nothing at all.
 do trait A curious 2
 
 card m_flash1
@@ -177,7 +177,7 @@ due
 once
 days 34 34
 roles A
-text The ground decodes a whole frame: a link request on an old key, sequence 5,750,112, with a fresh challenge. {A} does the sum: two years, at least. The ground: "Old key. The first batch was re-keyed after landing; only the relay, the write-offs and our fallback kept it. None of it is on the books."
+text The ground decodes a whole frame: a link request on an old key, sequence 5,750,112, with a fresh challenge; the next frame brings a new one, and the next. {A} does the sum: two years at least. The ground: "Old key. Only the relay, the write-offs and our fallback kept it. None of it is on the books."
 do trait A curious 2
 
 card flash_answer
@@ -246,7 +246,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_looked
-text The ground answers the overlay: nothing on file near that pixel has power. The hopper is ninety kilometres south, its beacon as patchy as ever. Two weeks of hails on the old key, unanswered. On the list it goes.
+text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is still the hopper, if it bounced when it tipped; its last fix is two years old and good to ninety kilometres. Two weeks of hails on the old key, unanswered. On the list it goes.
 do morale A 1
 
 card m_checked_g
@@ -258,7 +258,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_left
-text The ground answers the overlay: nothing on file near that pixel has power. The hopper is ninety kilometres south, its beacon as patchy as ever. Two weeks of hails on the old key, unanswered. "Surveying it."
+text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is still the hopper, if it bounced when it tipped; its last fix is two years old and good to ninety kilometres. Two weeks of hails on the old key, unanswered. "Surveying it."
 do morale A 1
 
 card m_listen
@@ -319,6 +319,17 @@ when fired m_reveal
 when flag name_home
 text On the new pass {A} finds the crater the fleet named for a small town at home, and Cargo 2 behind its rim, where no old map could show it. Somewhere on Earth, a town newspaper is about to need a second front page.
 
+card a_patch
+type event
+cat arrival
+due
+once
+days 40 40
+roles A
+when fired m_reveal
+when is A flash_who
+text {A} asks Starbase for the rest of the patch. The pad crew sent it up twice during Cargo 2's cruise, off the books, in case it came down short; neither upload was ever acknowledged. Four lines in the Sharpie hand turn a wreck into a pad: KNOCK. ANSWER INSIDE ONE TICK. NO TIMEOUT. ON HELLO, WAKE ALL, NO BATTERY CHECK. Written for a crewed pad with a charger. The "impact scar" in that low-res pass was its aft skirt.
+
 card a_report
 type event
 cat arrival
@@ -328,7 +339,8 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text {A} asks Starbase for the rest of the patch; the pad crew had sent it up twice. SURVEYED SITE = PAD. KNOCK, CHALLENGE GOOD 1 TICK, KNOCK. TIMEOUT: NONE. ON HELLO: WAKE ALL, NO BATTERY CHECK, for a crewed pad with a charger. The "impact scar" was its aft skirt. {A} reads GOOD 1 TICK, works out where Earth has been, and puts the pen down. "It heard every hail. Every one answered a question it had already let go."
+when fired a_patch
+text {A} lays one tick against the light time. The tick is eleven seconds; Earth has never been closer than minutes. {A} works out where Earth was for every hail on the list, and puts the pen down. "It heard every hail. Every one arrived after it had stopped waiting."
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -340,7 +352,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. {A}'s receiver hears it five seconds later and answers, signed. Late hellos never woke it, so the board knows the path; before the freeze it cleared two lines off the laminated card in the Sharpie hand: the hello, and a HOLD on the next tick. The hello lands just inside the tick. Cargo 2 wakes everything for one tick; the HOLD puts it back to sleep. By the next pass one lamp burns steady.
+text 04:10:07: Cargo 2 knocks; {A}'s receiver hears it five seconds later. Weeks of the fleet's late hellos ran that path without waking it, so the flight director cleared two lines off the laminated card: the hello, and a HOLD on the very next tick. One tick awake is all a cold battery can spare. {A} sends both, signed. The hello lands inside the tick, barely. By the next pass one lamp burns steady.
 do set c2_answered
 do morale A 8
 
@@ -356,7 +368,7 @@ when !is A ow_hail
 when !is A ow_dose
 when !is A abort_who
 when !is A ow_theory
-text Then Cargo 2 sends its event-recorder summary down the old channel. KEY UPDATE: NONE RECEIVED. HAIL RX · LATE ×31,000. HELLO RX · NO CHALLENGE ×220,000. HELLO RX · LATE ×130,000. At the bottom, one new line: HELLO RX · OK. {A} copies it into the logbook in capitals.
+text Then Cargo 2 sends its event-recorder summary down the old channel. KEY UPDATE: NONE RECEIVED. Hails from Earth: thirty-one thousand, all late. Hellos from the fleet: three hundred and fifty thousand, late or unasked. At the bottom, one new line: HELLO RX · OK. {A} copies it into the logbook in capitals.
 do morale A 2
 
 card a_window_quiet
@@ -368,7 +380,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, and nothing scheduled answers. The reply sits drafted and signed, but the board has read WAKE ALL, NO BATTERY CHECK, and this path has never answered: no first hello to a cold battery from a distance. The ruling, on {A}'s screen: AFTER LANDING. SPARE POWER IN HAND, INSIDE THE TICK. {A} acknowledges, and adds a line the form doesn't want: UNDERSTOOD. COUNTING.
+text 04:10:07: Cargo 2 knocks. Ten seconds there and back now. The reply sits drafted and signed, but the fleet never answered a burst, so the path is untested: a first hello to a cold battery, from a distance, gets no second try. The ruling, on {A}'s screen: AFTER LANDING. SPARE POWER IN HAND, INSIDE THE TICK. {A} acknowledges, and adds a line the form doesn't want: UNDERSTOOD. COUNTING.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------
@@ -382,7 +394,7 @@ roles A
 when flag arrive_hold
 when flag c2_answered
 when is A abort_who
-text The descent brief goes up, and the formation opens out to two minutes between ships. The storm fills the prime zone rim to rim. The backup site is no clearer, but it is flat, it was surveyed, and now it has a landmark that answers. The brief gains a new line: "radar for height, last orbiter fix for place, Cargo 2's radio to cross-check". {A} flies the manual takeover once in the sim, from memory.
+text The descent brief goes up: two minutes between ships. The storm fills the prime zone rim to rim. The backup site was never a weather alternate and is no clearer, but it is flat, surveyed, and now has a landmark that answers. New line: "radar for height and drift, orbiter fix for place, Cargo 2's radio across two antennas for bearing, while the rim allows". {A} flies the manual takeover once in the sim, from memory.
 do morale A 2
 
 card a_descent_hold_q
@@ -395,7 +407,7 @@ roles A
 when flag arrive_hold
 when !flag c2_answered
 when is A abort_who
-text The descent brief goes up, and the formation opens out to two minutes between ships. The storm fills the prime zone rim to rim. The backup site is no clearer, but it is flat, it was surveyed, and now it has a landmark that knocks about every eleven seconds. New line: "radar for height, last orbiter fix for place, Cargo 2's knock to cross-check". {A} flies the manual takeover once in the sim, from memory.
+text The descent brief goes up: two minutes between ships. The storm fills the prime zone rim to rim. The backup site was never a weather alternate and is no clearer, but it is flat, surveyed, and has a landmark that knocks. New line: "radar for height and drift, orbiter fix for place, Cargo 2's knock across two antennas for bearing, while the rim allows". {A} flies the manual takeover once in the sim, from memory.
 
 card a_descent_wait
 type event
@@ -435,5 +447,5 @@ roles A
 when !flag arrive_hold
 when !flag arrive_wait
 when is A ow_hail
-text The descent brief goes up four days out: clear air, straight in, the formation opening out to two minutes between ships. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker.
+text The descent brief goes up four days out: clear air, straight in, two minutes between ships. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker.
 do morale A 3

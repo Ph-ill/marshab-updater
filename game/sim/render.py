@@ -7,6 +7,18 @@ from lv import ops as O
 NONE = 255
 
 
+def page_heading(day):
+    """Log page heading. Pages 1-6 are one flight day each (launch week); from page 7
+    each page covers five flight days: page NN starts on day 7 + 5*(NN-7).
+    web/render.js has no copy yet; tests/render_check.mjs mirrors it (web hand-off)."""
+    if day <= 6:
+        a = b = day
+    else:
+        a = 7 + 5 * (day - 7)
+        b = a + 4
+    return "LOG PAGE %02d \u00b7 %s" % (day, ("DAY %d" % a) if a == b else ("DAYS %d\u2013%d" % (a, b)))
+
+
 class Renderer:
     def __init__(self, text):
         self.t = text

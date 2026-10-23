@@ -67,7 +67,7 @@ type event
 cat repair
 due
 once
-days 24 33
+days 26 33
 roles A
 when flag valve_out
 when is A valve_who

@@ -323,7 +323,7 @@ class TestThreadConsistency(unittest.TestCase):
     def test_wake_all_is_always_followed_by_a_hold(self):
         # The patch says ON HELLO: WAKE ALL. Every scene that answers with a hello must
         # send the HOLD on the next tick, and no card may fall back to a "safe hold".
-        self.assertIn("ON HELLO: WAKE ALL", self.t["a_report"])
+        self.assertIn("ON HELLO, WAKE ALL", self.t["a_patch"])
         for cid in ("a_window_hail", "a_suit_plan", "end_through", "end_close", "end_patience"):
             self.assertIn("HOLD", self.t[cid], cid)
         strs = [c["t"] for c in self.text["cards"]] + \
@@ -424,13 +424,17 @@ class TestThreadConsistency(unittest.TestCase):
         return TestThreadConsistency._runs
 
     def test_the_twist_is_an_expired_challenge(self):
-        # Cargo 2 heard every hail (a_log: HAIL RX · LATE) and every knock carries a
+        # Cargo 2 heard every hail (a_log: all late) and every knock carries a
         # fresh challenge (m_key); the patch keeps the challenge good for one tick.
         # Nothing may say it stopped listening.
-        self.assertIn("CHALLENGE GOOD 1 TICK", self.t["a_report"])
-        self.assertIn("HAIL RX · LATE", self.t["a_log"])
+        # Round 19: the patch (a_patch) carries the history and the four card lines;
+        # a_report carries only the meaning, in one plain sentence.
+        self.assertIn("ANSWER INSIDE ONE TICK", self.t["a_patch"])
+        self.assertIn("all late", self.t["a_log"])
         self.assertIn("fresh challenge", self.t["m_key"])
-        self.assertIn("sent it up twice", self.t["a_report"])
+        self.assertIn("sent it up twice", self.t["a_patch"])
+        self.assertIn("neither upload was ever acknowledged", self.t["a_patch"])
+        self.assertIn("Every one arrived after it had stopped waiting.", self.t["a_report"])
         strs = [c["t"] for c in self.text["cards"]]
         self.assertEqual([x for x in strs if re.search(r"LISTEN 1 TICK|stopped listening", x)], [])
         # The handshake comes off the laminated card, which always fires before day 41.
@@ -1004,6 +1008,137 @@ class TestHabitSlot(unittest.TestCase):
         for cr in fleet["crew"]:
             self.assertIn("{A}", cr["habit"])
             self.assertTrue(cr["ship"].startswith("Ship 0"), cr["ship"])
+
+
+class TestRound19(unittest.TestCase):
+    """Round 19: reveal readability, continuity fixes, page headings, crew quirks."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pack, cls.text, cls.ctx = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] for c in cls.text["cards"]}
+        cls.o = {c["id"]: [o[1] for o in c.get("o", [])] for c in cls.text["cards"]}
+        cls.cards = {c["id"]: c for c in cls.ctx.cards}
+
+    @classmethod
+    def runs(cls):
+        if not hasattr(cls, "_runs"):
+            sys.path.insert(0, os.path.join(ROOT, "sim"))
+            from season import reference_season
+            cls._runs = []
+            for i in range(300):
+                key = bytes([(i >> 8) & 255, i & 255]) + b"season"
+                cls._runs.append(reference_season(Pack(cls.pack), seed=1000 + i, voyage_key=key)[0].story)
+        return cls._runs
+
+    def test_reveal_reads_at_a_glance(self):
+        # Day 40: the patch carries the history and four short card lines; the meaning
+        # lands in a_report as one plain sentence with no all-caps telemetry.
+        rep = self.t["a_report"]
+        self.assertIn('"It heard every hail. Every one arrived after it had stopped waiting."', rep)
+        self.assertIsNone(re.search(r"\b[A-Z]{2,}(?:[ ,:·]+[A-Z0-9]{2,}){2,}", rep), rep)
+        self.assertIn("low-res pass", self.t["a_patch"])
+        self.assertIn("low-res pass", self.t["l_manifest"])
+        ids = [c["id"] for c in self.text["cards"]]
+        self.assertLess(ids.index("a_patch"), ids.index("a_report"))
+
+    def test_day_41_says_why_a_hello_is_or_isnt_safe(self):
+        self.assertIn("One tick awake is all a cold battery can spare", self.t["a_window_hail"])
+        self.assertIn("gets no second try", self.t["a_window_quiet"])
+
+    def test_hopper_stays_alive_on_day_37(self):
+        for cid in ("m_checked", "m_checked_g"):
+            self.assertIn("two years old and good to ninety kilometres", self.t[cid], cid)
+
+    def test_who_plant_and_silent_lighthouse_beat(self):
+        self.assertIn("the next frame brings a new one", self.t["m_key"])
+        self.assertIn('"24 h 37 m"', self.t["c_theory"])
+        strs = list(self.t.values()) + [x for v in self.o.values() for x in v]
+        self.assertEqual([x for x in strs if re.search(r"Mars time|strobe", x, re.I)], [])
+
+    def test_continuity_fixes(self):
+        self.assertNotRegex(self.t["p_garden_none"], r"(?i)ration")
+        story = dict(self.text["epi"]["story"]) if isinstance(self.text["epi"]["story"][0][0], str) else None
+        lines = [l for _, l in self.text["epi"]["story"]]
+        self.assertEqual([l for l in lines if re.search(r"aloud,? at Mars", l)], [])
+        self.assertIn("Every few weeks", self.t["l_transfer"])
+        self.assertIn("a visit bends the rule", self.t["l_transfer"])
+        self.assertIn("the last tanker quietly put back", self.t["a_recall_photo"])
+        self.assertNotIn("{B}'s birthday", self.t["p_birthday"])
+        self.assertEqual(tuple(self.cards["dec_halfway"]["days"]), (24, 24))
+        self.assertLessEqual(self.cards["l_reboot"]["days"][1], 5)
+        self.assertIn("millisieverts", self.t["storm_dose"])
+
+    def test_engineering_fixes(self):
+        # Fault detection does its job and still loses: it isolates the wrong jet.
+        self.assertIn("Fault detection flagged", self.t["r_thruster"])
+        self.assertIn("isolated a healthy one", self.t["r_thruster"])
+        for cid in ("r_dark", "r_dark_a"):
+            self.assertIn("still feeding the watchdog", self.t[cid], cid)
+            self.assertIn("pulled power by hand", self.t[cid], cid)
+
+    def test_endings_round_19(self):
+        self.assertIn("and answers anyway", self.t["end_close"])
+        self.assertIn("spare power in hand", self.t["end_close"])
+        self.assertNotIn("argued to wait", self.t["end_long_orbit"])
+        self.assertIn("All seven, and the eighth plugged in", self.t["end_friend"])
+        for cid in ("end_through", "a_descent_hold", "a_descent_hold_q"):
+            self.assertIn("two antennas", self.t[cid], cid)
+            self.assertIn("rim", self.t[cid], cid)
+        for cid in ("a_descent_hold", "a_descent_hold_q"):
+            self.assertIn("never a weather alternate", self.t[cid], cid)
+
+    def test_grim_blades_are_grounded(self):
+        self.assertIn('"contingency, crew, 1"', self.t["g_count"])
+        self.assertIn("next-of-kin forms", self.t["storm_shelter2"])
+        self.assertIn("COMMIT", self.t["l_departure"])
+
+    def test_page_heading(self):
+        from sim.render import page_heading
+        self.assertEqual(page_heading(1), "LOG PAGE 01 · DAY 1")
+        self.assertEqual(page_heading(6), "LOG PAGE 06 · DAY 6")
+        self.assertEqual(page_heading(7), "LOG PAGE 07 · DAYS 7–11")
+        self.assertEqual(page_heading(8), "LOG PAGE 08 · DAYS 12–16")
+        self.assertEqual(page_heading(24), "LOG PAGE 24 · DAYS 92–96")
+
+    def test_pages_are_not_crowded(self):
+        # Round 19: 57% of seasons had a page of 8+ reader lines; keep it under 45%.
+        from sim.render import Renderer
+        import collections
+        crowded = 0
+        for out in self.runs():
+            c = collections.Counter(day for day, _ in Renderer(self.text).reader(out))
+            crowded += any(v >= 8 for v in c.values())
+        self.assertLess(crowded, 135, crowded)
+
+    def test_quirk_lines_render_only_for_their_owner(self):
+        # roster.lv habits -> `each habit N` clones: quirk_N_K binds role A to crew K-1.
+        ids = [c["id"] for c in self.text["cards"]]
+        quirk = {i: int(cid.rsplit("_", 1)[1]) - 1 for i, cid in enumerate(ids) if cid.startswith("quirk_")}
+        n_crew = len(self.text["crew"])
+        self.assertEqual(len(quirk), 3 * n_crew)
+        for i, k in quirk.items():
+            self.assertNotIn("{habit}", self.text["cards"][i]["t"])
+        touches = [0] * n_crew
+        for out in self.runs():
+            for k in range(0, len(out), 8):
+                if out[k + 1] == O.O_EVENT and out[k + 2] in quirk:
+                    self.assertEqual(out[k + 3], quirk[out[k + 2]], ids[out[k + 2]])
+                    touches[out[k + 3]] += 1
+        for c, n in enumerate(touches):
+            self.assertTrue(2.0 <= n / 300 <= 4.0, (self.text["crew"][c], n / 300))
+
+    def test_each_habit_skips_placeholder_and_missing(self):
+        src = "card q\ntype beat\neach habit 2\nonce\nweight 50\nroles A\ntext {habit}\n"
+        names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian"]
+        hs = {"Kim": ' habit "{A} hums." habit "{A} whistles."',
+              "Jai": ' habit "%s" habit "%s"' % (lvc.HABIT_DEFAULT, lvc.HABIT_DEFAULT),
+              "Diego": ' habit "{A} draws."'}
+        roster = "\n".join("crew %s ship Ship 0%d%s" % (n, i + 1, hs.get(n, "")) for i, n in enumerate(names))
+        _, text, ctx = lvc.build(mini_content(src, roster))
+        self.assertEqual(ctx.errors, [])
+        qs = [c for c in text["cards"] if c["id"].startswith("q_")]
+        self.assertEqual([(c["id"], c["t"]) for c in qs], [("q_3", "{A} whistles.")])
 
 
 if __name__ == "__main__":

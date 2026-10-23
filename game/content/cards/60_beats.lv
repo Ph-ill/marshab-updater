@@ -14,18 +14,6 @@ when same A B
 text {A} and {B} try to bake bread in the galley oven. Without gravity it rises in every direction at once and comes out shaped like a lung. They eat all of it, warm, with the lights down, and agree not to describe it to anyone at home.
 do bond A B 5
 
-card beat_cards
-type beat
-cat life
-days 7 39
-weight 8
-once
-roles A B
-when same A B
-when !fired beat_coffee
-text {A} teaches {B} a card game from home across a real galley table, not a screen. By the end of the shift {B} is winning, and the rules have been amended three times, by agreement.
-do bond A B 5
-
 card beat_window
 type beat
 cat wonder
@@ -36,18 +24,6 @@ roles A B
 text {A} and {B} keep a channel open, each at their own porthole, as Earth and the Moon draw together night by night. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: two crescents, one blue, one grey.
 do bond A B 6
 
-card beat_gym
-type beat
-cat life
-days 3 39
-weight 7
-once
-roles A B
-when cond B ok
-text {A} and {B} share the exercise slot over video, two hours a day so their bones still work at Mars. Whoever hangs up first owes the other a dessert. The sessions keep getting longer.
-do bond A B 4
-do morale A 2
-
 card beat_zipties
 type beat
 cat life skill
@@ -55,7 +31,7 @@ days 10 39
 weight 6
 once
 roles A B
-text After a long debate on the fleet channel, {A} and {B} get all seven ships to agree on which drawer the zip ties live in. It has taken the whole flight so far, and it may be the most important engineering decision made out here.
+text After a long debate, {A} and {B} get all seven ships to agree on which drawer the zip ties live in. It has taken the whole flight so far, and it may be the most important engineering decision made out here.
 do bond A B 4
 
 card beat_haircut
@@ -106,7 +82,7 @@ weight 5
 once
 roles A B
 when var storms >= 1
-text {A} and {B} compare storm shelters on video and steal each other's best ideas: one more sleeping spot, a hook for the cards, and a sign, now on every ship, that reads "the Sun is not your friend".
+text {A} and {B} compare storm shelters on video and steal each other's best ideas, and a sign, now on every ship, that reads "the Sun is not your friend".
 do bond A B 4
 
 card beat_early_watch
@@ -128,7 +104,7 @@ weight 8
 once
 roles A B
 when cond B ok
-text {A} and {B} watch the last top-off tankers come and go from their own windows, a few kilometres apart, and narrate each docking on the fleet channel like a sports commentary. By the third one they have a catchphrase, and by the fourth it has gone fleet-wide.
+text {A} and {B} watch the last top-off tankers come and go and narrate each docking on the fleet channel like a sports commentary. By the third they have a catchphrase; by the fourth it is fleet-wide.
 do bond A B 4
 
 # --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
@@ -144,19 +120,6 @@ when cond A ok
 text {A} stands the night watch for the whole fleet so the other six can sleep. Unasked. The watch report is two lines long and perfectly neat.
 do morale A 2
 do trait A warm 2
-
-card idle_watch2
-type beat
-cat life
-days 23 39
-weight 10
-once
-roles A
-when idle A >= 3
-when cond A ok
-text {A} spends a slow day re-stowing the whole ship to the arrival plan, locker by locker. When the others get to theirs, {A}'s list is already on the fleet channel, with tips.
-do morale A 2
-do trait A brave 1
 
 card idle_mentor
 type beat
@@ -182,59 +145,47 @@ weight 8
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in marker. {A} logs it, with a thank-you in the margin.
+text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in marker. {A} logs a thank-you.
 do res spares 1
 
-# --- Habits: one clone per astronaut, text from roster.lv `habit` ---------------
-# Parked in round 11 while every roster habit is still the placeholder: the
-# filler read the same for all seven. Uncomment when real habits arrive.
-# card habit_beat
-# type beat
-# cat life
-# each crew
-# once
-# days 12 36
-# weight 2
-# roles A
-# when cond A ok
-# when !flag habit_told
-# text On the long shifts, {habit} The other six ships have stopped asking about it, and would notice if it went.
-# do set habit_told
-
-# --- Small things carried aboard (round 11): generic, castable to anyone. ---
-card hb_watch
+# --- Quirks: per-crewmate lines from roster.lv `habit "..."` (round 19) -------
+# `each habit N` clones the card once per astronaut who has a real Nth habit; the
+# clone binds role A to that astronaut only, so a line only ever renders for its
+# owner. Three slots, early / mid / late, about 2-3 touches per crewmate a season.
+# The table is the roster: a new crew line with its habits gets clones on rebuild.
+card quirk_1
 type beat
 cat life
+each habit 1
 once
-days 12 20
-weight 1
+days 2 6
+weight 14
 roles A
 when cond A ok
-when is A ow_dose
-text {A}'s wristwatch is still on home time. At fleet midnight {A} glances at it and tells the net, "Breakfast at home." The answer comes back the same, from a different ship each time: "Enjoy."
+text {habit}
 do morale A 1
 
-card hb_card
+card quirk_2
 type beat
 cat life
+each habit 2
 once
-days 20 26
-weight 1
+days 23 29
+weight 14
 roles A
 when cond A ok
-when is A ow_list
-text {A} clips a new blank postcard inside the flight-plan binder every page, a different city each time, nothing on the back. The fleet guesses where from. {A} has confirmed one, and won't say which.
+text {habit}
 do morale A 1
 
-card hb_leaf
+card quirk_3
 type beat
 cat life
+each habit 3
 once
-days 26 32
-weight 1
+days 35 39
+weight 14
 roles A
 when cond A ok
-when is A ow_letter
-text A dried leaf in a plastic sleeve rides in {A}'s thigh pocket, picked up on the walk to the pad. Every few days {A} checks it and reports to the net: "Still green on one side." The ground files it as a status.
+text {habit}
 do morale A 1
 

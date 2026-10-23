@@ -29,7 +29,7 @@ roles A B
 when is A ow_hail
 when since t_carrier >= 4
 when fired m_theory
-text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against fleet time by over a second and a half a day, the fleet's closing rate on Mars. Hour to hour, the residuals are flat to a few milliseconds. "Booked again. Out," {A} logs.
+text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against a fixed 10.96-second clock by over a second and a half a day, the fleet's closing rate on Mars. Hour to hour the residuals stay flat. "Booked again. Out," {A} logs.
 do bond A B 3
 do open dec_signal
 
@@ -49,7 +49,7 @@ option open | Answer every burst | The ground clears it inside a day: hello only
   set signal_answered
   morale B -3
   trait A curious 5
-option log | File it, keep going | The carrier goes into the anomaly file under "later". {A} clips the folded trace inside the binder, just in case. {A} writes a dissent, signed; {B} countersigns it.
+option log | File it, keep going | The carrier goes into the anomaly file under "later". {A} files a signed dissent; {B} countersigns it.
   set signal_ignored
   morale A -5
 
@@ -101,7 +101,7 @@ roles A
 when cond A ok
 when kit_elsewhere A
 when !is A cam_who
-text During {A}'s scheduled EVA a tether snags on a bracket and wrenches {A}'s arm, with the next ship closed up and a suited crewmate clipped in at its hatch. {A} frees it, works back along the line hand over hand, and comes inside with a wrist that won't bend.
+text On {A}'s scheduled EVA a tether snags on a bracket and wrenches {A}'s arm, with the next ship closed up and a suited crewmate clipped in at its hatch. {A} frees it, works back along the line hand over hand, and comes inside with a wrist that won't bend.
 do cond A injured
 do who eva_who A
 do morale A -10
