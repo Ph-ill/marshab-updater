@@ -496,7 +496,7 @@ document.addEventListener("click",async(ev)=>{
       const c=+D.send,o=S.open.find((x)=>x.card===c);
       await api(o.type===4?"/api/answer":"/api/vote",{card:c,opt:pick[c]});
       delete pick[c];await refresh();
-    }catch(e){el.disabled=false;alert(e.message)}
+    }catch(e){el.disabled=false;const d=$("dock");d.querySelector(".off")?.remove();d.insertAdjacentHTML("afterbegin",`<div class=off role=alert>${h(e.message)}</div>`)}
   }
 });
 (async()=>{
