@@ -58,7 +58,7 @@
     "home": "{A} rides the transfer line back home to {S}.",
     "note": "{A} passes {T} a note: “{line}”",
     "dec_open": "Fleet vote:",
-    "dec_close": "The fleet's advice, {n} ballots in: {opt}.",
+    "dec_close": "With the ballots in, the fleet's advice: {opt}.",
     "dec_lean": "No votes came in, so the flight director went with the crew's lean: {opt}.",
     "dec_tie": "Split down the middle, {n} votes. The flight director takes the crew's lean: {opt}.",
     "dil_open": "Private, for whoever looks after {A}:",
@@ -76,7 +76,7 @@
       "{who} swapped scrubber cartridges two days early, because the trend lines said so.",
       "{who} answered mail from home: weather, a dog, a fence that needs mending.",
       "{who} reran pump checks that came back two tenths off, then on.",
-      "{who} cleaned galley filters and found most of last week's bread.",
+      "{who} cleaned galley filters and found a missing spoon.",
       "{who} counted spare fuses twice and got the same numbers both times.",
       "{who} recalibrated cabin sensors reading half a degree warm.",
       "{who} swept cabins with leak detectors and found nothing, which is the point.",
@@ -193,7 +193,7 @@
       ],
       [
         "dose_swap",
-        "Moved the bunk to the water wall on a crewmate's better numbers, and slept."
+        "Moved the bunk to the water wall on a crewmate's newer calibration, and slept."
       ],
       [
         "dose_ok",
@@ -241,7 +241,7 @@
         ],
         [
           "end_through",
-          "Kept knocking until someone climbed the rim."
+          "Kept the beat for seven blind pilots, and was answered on the rim."
         ],
         [
           "end_long_orbit",
