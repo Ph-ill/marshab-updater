@@ -33,6 +33,7 @@ node tests/render_check.mjs
 python3 web/build.py
 python3 tests/mock_check.py
 python3 tests/test_phone.py
+python3 tests/test_cal.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
 LV_FROZEN_MP="$LV_FROZEN_MP" MPY_CROSS="$MPY_CROSS" python3 tests/test_fw_split.py
