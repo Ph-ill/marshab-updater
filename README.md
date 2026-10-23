@@ -3,8 +3,9 @@
 A static web page that loads, configures and debriefs Long Voyage ships (Raspberry Pi
 Pico W / Pico 2 W running MicroPython) straight from the browser over USB, using Web Serial.
 
-Public URL: `https://your-server.example` (the hostname and the container name are
-unchanged from the Mars Habitat days; see [Deploy](#deploy)).
+Served from your own Docker host behind a reverse proxy, written here as
+`https://your-server.example`. The service and container are still called
+`marshab-updater` from the Mars Habitat days; see [Deploy](#deploy).
 
 Works in desktop Chrome, Edge, Brave or Chromium, over https or on localhost. Firefox
 and Safari have no Web Serial.
@@ -85,21 +86,38 @@ Local preview without nginx: `python3 -m http.server 8140`, then open http://loc
 
 ## Deploy
 
-Portainer stack `<PORTAINER_STACK>` (`marshab-updater`) on <DOCKER_HOST> builds this repo's `main` with
-`docker-compose.yml`.
+Any Docker host works; the repo assumes a reverse proxy in front and a git-backed compose
+stack (Portainer, or plain `docker compose`). Nothing about a particular server is kept in
+the repo. Names used below are placeholders:
+
+| Placeholder | Meaning |
+| --- | --- |
+| `https://your-server.example` | the public address your reverse proxy serves the page on |
+| `<DOCKER_HOST>` | the machine that runs the container |
+| `<PORTAINER_STACK>` | the Portainer stack that builds this repo, if you use Portainer |
+
+Local settings live in an untracked `.env` file next to `docker-compose.yml` (or in the
+stack's environment variables in Portainer). Start from the example:
+
+```bash
+cp .env.example .env    # .env is in .gitignore; never commit it
+```
+
+`MARSHAB_HOST_PORT` is the loopback port published on `<DOCKER_HOST>` (see `.env.example`
+for the default).
 
 1. Merge to `main`.
-2. In Portainer, open stack <PORTAINER_STACK> and choose **Pull and redeploy**. Keep "re-pull image"
-   on. The stack also has a GitHub push webhook with force-update set, so a push may
-   already have triggered this.
-3. Open https://your-server.example and hard-reload. The title should read
+2. Redeploy: `docker compose up -d --build` on `<DOCKER_HOST>`, or in Portainer open
+   `<PORTAINER_STACK>` and choose **Pull and redeploy** with "re-pull image" on. If the
+   stack has a GitHub push webhook with force-update, a push may already have done this.
+3. Open `https://your-server.example` and hard-reload. The title should read
    "The Long Voyage". `/firmware/index.json` should list the current release.
 
 Networking:
-- Nginx Proxy Manager forwards the public hostname to `http://marshab-updater:80` over
-  the external docker network `Shared`.
-- The host port is bound to `127.0.0.1:<HOST_PORT>` only, so http on the LAN is closed.
-- Do not rename the service or container without updating the NPM proxy host.
+- The reverse proxy (for example Nginx Proxy Manager) forwards the public hostname to
+  `http://marshab-updater:80` over the external docker network `Shared`.
+- The host port is bound to `127.0.0.1` only, so plain http on the LAN is closed.
+- Do not rename the service or container without updating the proxy host.
 
 ## Going back to Mars Habitat
 
@@ -130,12 +148,12 @@ git commit -am "restore: Mars Habitat updater from marshab-final"
 git push origin marshab
 ```
 
-Then, in Portainer, either set stack <PORTAINER_STACK>'s repository reference to `refs/heads/marshab`
+Then, in Portainer, either set `<PORTAINER_STACK>`'s repository reference to `refs/heads/marshab`
 and **Pull and redeploy**, or merge `marshab` into `main` and redeploy.
 
 To get back here afterwards, set the reference to `refs/heads/main` again.
 
 Notes:
-- The old compose file publishes `<HOST_PORT>:80` on all interfaces.
+- The old compose file publishes the host port on all interfaces, not just loopback.
 - The old nginx config has an open `/github-api/` proxy.
 - Some old releases ship a `secrets.py`; treat whatever it contains as public.

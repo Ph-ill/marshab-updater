@@ -1,1 +1,3 @@
 dist/
+.env
+game/bench/coex-test/data/ship.json
