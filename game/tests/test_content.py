@@ -181,5 +181,45 @@ class TestHooks(unittest.TestCase):
         self.assertIn("last 2 days", msg)
 
 
+class TestHouseStyle(unittest.TestCase):
+    """The real card set stays inside content/STYLE.md."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pack, cls.text, cls.ctx = lvc.build(CONTENT)
+
+    def test_compiles(self):
+        self.assertEqual(self.ctx.errors, [])
+
+    def test_no_style_warnings(self):
+        self.assertEqual([w for w in self.ctx.warnings if w.startswith("style:")], [])
+
+    def test_lint_catches_the_bad_examples(self):
+        bad = """
+card bad
+type beat
+roles A
+text As a controls engineer, {A} forgot the seals again. By month four it was just a glitch. Kim laughs.
+"""
+        _, _, ctx = lvc.build(mini_content(bad))
+        msg = " ".join(ctx.warnings)
+        for needle in ("name-checks", "butt of the joke", "cheap resolution", "calendar", "names Kim"):
+            self.assertIn(needle, msg)
+
+    def test_every_hook_resolves(self):
+        ids = [c["id"] for c in self.text["cards"]]
+        hooks = [c["id"] for c in self.text["cards"] if c.get("h")]
+        self.assertGreaterEqual(len(hooks), 8)
+        for h in hooks:
+            self.assertIn("r_" + h[2:], ids)
+
+    def test_mech_twin_is_not_exclusive(self):
+        # The tagged twin must have an untagged sibling so anyone can draw the card.
+        ids = [c["id"] for c in self.text["cards"]]
+        for i in ids:
+            if i.endswith("_m"):
+                self.assertIn(i[:-2], ids)
+
+
 if __name__ == "__main__":
     unittest.main()

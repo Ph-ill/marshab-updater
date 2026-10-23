@@ -385,8 +385,42 @@ def check_pronouns(cards, system, ctx):
             ctx.errors.append("system.json: gendered pronoun %r in %r" % (m.group(0), t[:40]))
 
 
+# House-style lint (content/STYLE.md). Warnings, not errors: a human reads the
+# narrative before anything ships, but these are the mistakes that sting.
+SKILL_NAMECHECK = re.compile(r"\b(controls?|automation|mechanical|design|software|electrical) engineer", re.I)
+DEMEANING = re.compile(r"\b(forgot|forgets|forgetting|clumsy|lazy|useless|incompetent|careless|"
+                       r"screw(s|ed)? up|mess(es|ed)? up|idiot\w*|stupid|dumb)\b", re.I)
+CHEAP = re.compile(r"\b(it was nothing|just a glitch|false alarm|all a dream)\b", re.I)
+CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re.I)
+MAX_TEXT, MAX_LABEL = 300, 28
+
+
+def check_style(cards, fleet, ctx):
+    names = [cr["name"] for cr in fleet["crew"]]
+    for c in cards:
+        w = c["where"]
+        parts = [("text", c["text"])] + [("option " + o["name"], o["text"]) for o in c["options"]]
+        for what, t in parts:
+            for n in names:
+                if re.search(r"\b%s\b" % re.escape(n), t):
+                    ctx.warnings.append("style: %s %s names %s; use {A}/{B} so any crew member fits" % (w, what, n))
+            for rx, why in ((SKILL_NAMECHECK, "name-checks a job; keep skill flavor implicit"),
+                            (DEMEANING, "may make a crewmate the butt of the joke"),
+                            (CHEAP, "cheap resolution"),
+                            (CALENDAR, "pins calendar time; use flight days")):
+                m = rx.search(t)
+                if m:
+                    ctx.warnings.append("style: %s %s %r %s" % (w, what, m.group(0), why))
+            if len(t) > MAX_TEXT:
+                ctx.warnings.append("style: %s %s is %d chars (max %d on a phone)" % (w, what, len(t), MAX_TEXT))
+        for o in c["options"]:
+            if len(o["label"]) > MAX_LABEL:
+                ctx.warnings.append("style: %s button %r is long (max %d)" % (w, o["label"], MAX_LABEL))
+
+
 def validate(cards, ctx, fleet, system):
     check_pronouns(cards, system, ctx)
+    check_style(cards, fleet, ctx)
     ids = [c["id"] for c in cards]
     for c in cards:
         w = c["where"]
