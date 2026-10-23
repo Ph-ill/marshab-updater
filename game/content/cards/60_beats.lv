@@ -29,11 +29,11 @@ do bond A B 5
 card beat_window
 type beat
 cat wonder
-days 6 10
+days 7 9
 weight 12
 once
 roles A B
-text {A} and {B} keep a channel open as the Moon slides out from behind Earth, each at their own window. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: two crescents, one blue, one grey.
+text {A} and {B} keep a channel open, each at their own porthole, as Earth and the Moon draw together night by night. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: two crescents, one blue, one grey.
 do bond A B 6
 
 card beat_gym
@@ -70,6 +70,8 @@ when !fired p_birthday
 when bond A B >= 0
 when away A
 when home B
+when cond A ok
+when !is A eva_who
 text {A}, aboard on a visit, cuts {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} pays in coffee.
 do bond A B 5
 

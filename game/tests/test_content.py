@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compiler and content tests: card-language features (roster tags, cliffhanger hooks)
 and house-style checks over the real card set. Run: python3 game/tests/test_content.py"""
+import json
 import os
 import re
 import shutil
@@ -333,7 +334,7 @@ class TestThreadConsistency(unittest.TestCase):
         # The battery forecast may tighten as data comes in, never lengthen: "a week or
         # two after landing" (r_band / c2_cold) before "a few nights after landing".
         rank = {"r_band": ("a week or two after", 2), "c2_cold": ("a week or two after", 2),
-                "c2_clock": ("a few nights after landing, not weeks", 1)}
+                "c_hail": ("a few nights after landing, not weeks", 1)}
         for cid, (phrase, _) in rank.items():
             self.assertIn(phrase, self.t[cid], cid)
         ids = [c["id"] for c in self.text["cards"]]
@@ -411,6 +412,105 @@ class TestThreadConsistency(unittest.TestCase):
                 continue
             bad += [(i, c) for d, c, _ in ev if d == 41 and pat.search(self.t[c])]
         self.assertEqual(bad, [])
+
+    def _system(self):
+        with open(os.path.join(CONTENT, "system.json"), encoding="utf-8") as f:
+            return json.load(f)
+
+    def _cached(self):
+        # One 300-season run shared by the round-18 checks below.
+        if not hasattr(TestThreadConsistency, "_runs"):
+            TestThreadConsistency._runs = list(self._seasons())
+        return TestThreadConsistency._runs
+
+    def test_the_twist_is_an_expired_challenge(self):
+        # Cargo 2 heard every hail (a_log: HAIL RX · LATE) and every knock carries a
+        # fresh challenge (m_key); the patch keeps the challenge good for one tick.
+        # Nothing may say it stopped listening.
+        self.assertIn("CHALLENGE GOOD 1 TICK", self.t["a_report"])
+        self.assertIn("HAIL RX · LATE", self.t["a_log"])
+        self.assertIn("fresh challenge", self.t["m_key"])
+        self.assertIn("sent it up twice", self.t["a_report"])
+        strs = [c["t"] for c in self.text["cards"]]
+        self.assertEqual([x for x in strs if re.search(r"LISTEN 1 TICK|stopped listening", x)], [])
+        # The handshake comes off the laminated card, which always fires before day 41.
+        for cid in ("a_window_hail", "a_suit_plan", "end_through", "end_patience"):
+            self.assertIn("laminated card", self.t[cid], cid)
+        ids = [c["id"] for c in self.text["cards"]]
+        for i, out in self._cached():
+            ev = self._events(out, ids)
+            self.assertTrue(any(c == "sharpie2" and d < 41 for d, c, _ in ev), "season %d" % i)
+        # Day 40 ends on the meaning: the report is the day's last card.
+        for i, out in self._cached():
+            d40 = [c for d, c, _ in self._events(out, ids) if d == 40]
+            self.assertEqual(d40[-1], "a_report", "season %d" % i)
+
+    def test_water_rationing_is_one_ship_and_crossings_keep_windows(self):
+        # Rationing applies to the failing ship (the other six trim to send water),
+        # and the repair crossing happens in a transfer window, after prebreathe.
+        cards = {c["id"]: c for c in self.text["cards"]}
+        degrade = [o[1] for o in cards["dec_water"].get("o", []) if "rationing" in o[1]]
+        self.assertTrue(degrade and all("{A}'s ship goes on water rationing" in x for x in degrade))
+        strs = [c["t"] for c in self.text["cards"]] + \
+            [o[1] for c in self.text["cards"] for o in c.get("o", [])]
+        self.assertEqual([x for x in strs if re.search(r"fleet (goes|went) on water rationing", x)], [])
+        fails = [cid for cid in cards if cid.startswith("water_fail")]
+        self.assertTrue(fails)
+        for cid in fails:
+            self.assertIn("prebreathe", self.t[cid], cid)
+        ids = [c["id"] for c in self.text["cards"]]
+        bad, seen = [], 0
+        for i, out in self._cached():
+            for d, c, _ in self._events(out, ids):
+                if c in fails:
+                    seen += 1
+                    if d < O.TRANSFER_FROM or (d - O.TRANSFER_FROM) % O.TRANSFER_EVERY or d > O.TRANSFER_LAST_OUT:
+                        bad.append((i, d, c))
+        self.assertEqual(bad, [])
+        self.assertGreater(seen, 30)
+
+    def test_wrist_injury_rules_out_haircut_and_eva(self):
+        # After the tether injury, the injured astronaut never cuts hair and never
+        # resolves the iced-camera dilemma by going outside.
+        ids = [c["id"] for c in self.text["cards"]]
+        cam = ids.index("dil_eva_cam")
+        go = [c for c in self.text["cards"] if c["id"] == "dil_eva_cam"][0]
+        bad, hurt = [], 0
+        for i, out in self._cached():
+            injured = {}
+            for k in range(0, len(out), 8):
+                d, code, card, a = out[k], out[k + 1], out[k + 2], out[k + 3]
+                if code == O.O_EVENT and ids[card] == "crisis_eva":
+                    injured.setdefault(a, d)
+                    hurt += 1
+                elif code == O.O_EVENT and ids[card] == "beat_haircut" and a in injured:
+                    bad.append((i, d, "haircut"))
+                elif code == O.O_DIL_CLOSE and card == cam and out[k + 4] == 0 and a in injured:
+                    bad.append((i, d, "eva"))
+        self.assertEqual(bad, [])
+        self.assertGreater(hurt, 0)
+
+    def test_bread_only_after_the_bread_scene(self):
+        # The galley bread (beat_coffee) is a random beat; no other line may mention
+        # the bread before it, and the daily fold lines never do.
+        sysj = self._system()
+        self.assertEqual([x for x in sysj["sys"]["fold_pool"] if "bread" in x], [])
+        ids = [c["id"] for c in self.text["cards"]]
+        bread = {c for c in ids if c != "beat_coffee" and re.search(r"\bbread", self.t[c], re.I)}
+        bad = []
+        for i, out in self._cached():
+            baked = None
+            for d, c, _ in self._events(out, ids):
+                if c == "beat_coffee" and baked is None:
+                    baked = d
+                if c in bread and (baked is None or d < baked):
+                    bad.append((i, d, c))
+        self.assertEqual(bad, [])
+
+    def test_ballot_line_needs_no_count(self):
+        # "{n} ballots in" reads "1 ballots in"; the close line names no number.
+        sysj = self._system()
+        self.assertNotIn("{n}", sysj["sys"]["dec_close"])
 
 
 class TestCompactPack(unittest.TestCase):

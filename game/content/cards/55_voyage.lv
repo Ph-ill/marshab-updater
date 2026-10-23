@@ -115,7 +115,7 @@ once
 days 18 19
 roles A
 when is A ow_list
-text The delay has turned calls into letters. {A} records one for home, talking straight through the gaps, deletes it, tries again with pauses, which is worse, then goes at speed: "Hi, it's me, ship's fine, I'm fine, the bread's improving, here's the list," and that one goes.
+text The delay has turned calls into letters. {A} records one for home, talking straight through the gaps, deletes it, tries again with pauses, which is worse, then goes at speed: "Hi, it's me, ship's fine, I'm fine, the fans hum in a key now, here's the list," and that one goes.
 do morale A 2
 do trait A warm 2
 
@@ -430,7 +430,7 @@ due
 once
 days 28 28
 roles A
-text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis, a named forklift charging off a cargo ship's landing leg. The one with the Sharpie signs off: "Seven of you. Write when you land, every one." {A} clips the forklift inside the logbook.
+text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, a forklift with a name, on charge at the service port at the foot of a cargo ship's leg. The one with the Sharpie signs off: "Seven of you. Write when you land, every one." {A} clips the forklift inside the logbook.
 do morale A 2
 
 card sharpie2
@@ -523,28 +523,6 @@ text The last nights before aerocapture. {A} checks the water tanks that shielde
 do bond A B 6
 
 # --- Arrival day: what the fleet chose, and what it cost ------------------------------
-card a_recall_home
-type event
-cat arrival
-due
-once
-days 40 40
-roles A
-when fired m_reveal
-when flag name_home
-text On the new pass {A} finds the crater the fleet named for a small town at home, and Cargo 2 behind its rim, where no old map could show it. Somewhere on Earth, a town newspaper is about to need a second front page.
-
-card a_recall_plan
-type event
-cat arrival
-due
-once
-days 40 40
-roles A
-when fired m_reveal
-when flag name_plan
-text On the new pass {A} finds the crater the fleet named for the first person who ever wrote a Mars plan, and Cargo 2 behind its rim, where no old map could show it. Somewhere on Earth, a committee is about to have a great deal more to argue about.
-
 card a_recall_photo
 type event
 cat arrival
@@ -588,7 +566,7 @@ roles A B
 when flag stash_exposed
 when is A stash_who
 when !is B stash_b
-text Before the crossings closed, the last of the extra ration packs from {A}'s locker went over to {B}, the bag signed in borrowed handwriting: "You'll thank me." Tonight, with Mars a disc in the window, {B} opens it.
+text Before the crossings closed, {A} sent {B} the last spare ration pack, the bag signed in borrowed handwriting: "You'll thank me." Tonight {B} opens it. Under the food, the little ship again, on red ground now, fingers still crossed. {B} eats every crumb and clips the drawing inside the logbook.
 do bond B A 3
 
 card a_recall_marker
@@ -612,7 +590,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key re-loaded and checked by the ground, a procedure card, HELLO then HOLD, with two signatures clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground says yes, if a spare battery rides along.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key re-loaded and checked by the ground, and the laminated card from under the spares tray, HELLO then HOLD, two signatures on the back. "First one out goes to say hello," {A} tells the ground. The ground says yes, if a spare battery rides along.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.

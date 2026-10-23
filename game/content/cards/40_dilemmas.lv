@@ -16,7 +16,7 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when home A
-text The weekly radiation summary puts {A}'s dosimeter at the top of the fleet's list, a little higher every week. The bunk on {A}'s ship sits on the bare hull, the one wall with no tanks or stowage behind it.
+text The weekly radiation summary puts {A}'s dosimeter at the top of the fleet's list, higher every week; the bunk sits on bare hull. The dose model issues {A} a "career remaining" figure. The form has a box for questions. It is very small.
 do who ow_dose A
 do open dil_dose
 
@@ -142,7 +142,7 @@ once
 days 34 35
 roles A
 when is A ow_letter
-text In the restow for entry, item fourteen of the ground's procedure moves personal papers to the checklist binder, letter included. {A} finds the left chest pocket empty and turns out the locker, sleeping bag and wipes bin before the restow list explains it. Entry page. "Item located," {A} logs.
+text In the restow for entry, item fourteen moves personal papers to the checklist binder. {A} reaches for the left chest pocket, where the letter has ridden since the data drop, finds it empty, and turns out the locker before the list explains it. "Item located," {A} logs.
 do morale A 2
 
 card a_letter
@@ -237,6 +237,7 @@ when home A
 when !is A eva_who
 lean brave go wait
 text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. No one would blame {A} for waiting.
+do who cam_who A
 option go | Close up and go out | The ground's GO comes up on the next pass. With the next ship closed up and a suit at its hatch, {A} clears the lens in twenty minutes. On the way in, {A} photographs the fleet strung out against the dark. It becomes everyone's wallpaper.
   res fuel -1
   trait A brave 3

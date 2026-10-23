@@ -82,13 +82,13 @@ do morale A -3
 # Injury and rescue: needs supplies from another ship.
 card c_hail
 type beat
-cat human
+cat mystery
 due
 once
 days 39 39
 roles A
 when is A ow_hail
-text {A} works out how many knocks the fleet has heard since the first one, a hundred and twenty days back: close to half a million, about half of all it sent. Every gap has a reason, Mars in the way or a cold night, and every knock lands on the beat. "Every gap explained. Out," {A} sends.
+text Close to half a million knocks heard since the first, every gap explained: Mars in the way, a cold night. Last night's cold gap ran forty, and the knock after it came in a decibel weaker. {A} adds the point and the line steepens: the beat runs out a few nights after landing, not weeks. "Noted. Out."
 do trait A curious 1
 
 card crisis_eva
@@ -100,6 +100,7 @@ weight 6
 roles A
 when cond A ok
 when kit_elsewhere A
+when !is A cam_who
 text During {A}'s scheduled EVA a tether snags on a bracket and wrenches {A}'s arm, with the next ship closed up and a suited crewmate clipped in at its hatch. {A} frees it, works back along the line hand over hand, and comes inside with a wrist that won't bend.
 do cond A injured
 do who eva_who A

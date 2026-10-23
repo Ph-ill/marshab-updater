@@ -10,7 +10,7 @@ days 34 36
 roles A
 when fired h_band
 when is A hook_who
-text {A} counted to sixty-six before it came back, six knocks late and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It runs past entry week, to a week or two after landing.
+text {A} counted to sixty-six before it came back, five knocks missed and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It runs past entry week, to a week or two after landing.
 do morale A -2
 
 card r_pressure
@@ -130,7 +130,7 @@ days 26 34
 roles A
 when fired h_voice
 when is A hook_who
-text {A} sat up till dawn with the intercom logs: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. {A} listens with the volume low.
+text {A} sat up till dawn with the intercom logs: a message from home, recorded the night before launch and queued for this day. Last week's update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. The first minute is gone for good.
 do morale A 6
 do trait A warm 3
 
@@ -144,7 +144,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when !flag signal_answered
-text For three hours six ships called an empty slot; through the next ship's lens the windows stayed lit. Then {A}, hoarse: an old-channel frame with a field the new stack had never seen had hung the comms computer, then the backup; the third boot quarantined it. The old channel comes off the fleet net.
+text For three hours six ships called an empty slot; the next ship's lens showed lit windows. Then {A}, hoarse: an old-channel frame asking for a key update the new stack never knew had hung the comms computer, then the backup; the third boot quarantined it. The old channel comes off the fleet net.
 do trait A brave 3
 do morale A -2
 
@@ -158,7 +158,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when flag signal_answered
-text For three hours six ships called an empty slot; through the next ship's lens the windows stayed lit. Then {A}, hoarse: an old-channel frame with a field the new stack had never seen had hung the comms computer, then the backup; the third boot quarantined it. The hellos move to a sandbox.
+text For three hours six ships called an empty slot; the next ship's lens showed lit windows. Then {A}, hoarse: an old-channel frame asking for a key update the new stack never knew had hung the comms computer, then the backup; the third boot quarantined it. The hellos move to a sandbox.
 do trait A brave 3
 do morale A -2
 

@@ -11,7 +11,7 @@ once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: seven ships in one frame, with Earth filling the frame behind them. That means seven ships a careful hundred metres apart, and propellant to get there and back. The request says "iconic" four times.
+text Public affairs wants a fleet portrait: seven ships in one frame, with Earth filling the sky behind them. That means seven ships a careful hundred metres apart, and propellant to get there and back. The request says "iconic" four times.
 option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: six ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
   set photo_taken
   res fuel -2
@@ -62,7 +62,7 @@ option strip | Strip it now | The processor spends nine hours in pieces on the d
   mark t_water
   res spares -1
   trait A curious 3
-option degrade | Run it degraded | The fleet goes on water rationing. {A} writes down the recovery rate every hour; it slips a tenth at a time.
+option degrade | Run it degraded | {A}'s ship goes on water rationing, and the other six trim theirs a notch so there's a bag to send at the next window. {A} writes down the recovery rate every hour; it slips a tenth at a time.
   set water_rationed
   who water_who A
   morale A -3
@@ -72,7 +72,7 @@ type event
 cat repair
 due
 once
-days 19 36
+days 22 22
 roles A B
 when flag water_rationed
 when is A water_who
@@ -80,7 +80,45 @@ when apart B A
 when cond B ok
 when home A
 when !is B eva_who
-text The degraded water processor on {A}'s ship quits at 04:00. {B} rides the transfer line over with the spare valve, and the two of them have water flowing by breakfast. It tops out at ninety-five percent, for good now.
+text The degraded water processor on {A}'s ship quits at 04:00 on a crossing day. {A} drinks from the reserve bag through a morning of {B}'s prebreathe while the next ship closes up. By afternoon {B} is across with the spare valve; water flows by dinner. It tops out at ninety-five percent, for good.
+do move B A
+do bond A B 8
+do res spares -1
+do clr water_rationed
+
+card water_fail2
+type event
+cat repair
+due
+once
+days 27 27
+roles A B
+when flag water_rationed
+when is A water_who
+when apart B A
+when cond B ok
+when home A
+when !is B eva_who
+text The degraded water processor on {A}'s ship quits at 04:00 on a crossing day. {A} drinks from the reserve bag through a morning of {B}'s prebreathe while the next ship closes up. By afternoon {B} is across with the spare valve; water flows by dinner. It tops out at ninety-five percent, for good.
+do move B A
+do bond A B 8
+do res spares -1
+do clr water_rationed
+
+card water_fail3
+type event
+cat repair
+due
+once
+days 32 32
+roles A B
+when flag water_rationed
+when is A water_who
+when apart B A
+when cond B ok
+when home A
+when !is B eva_who
+text The degraded water processor on {A}'s ship quits at 04:00 on a crossing day. {A} drinks from the reserve bag through a morning of {B}'s prebreathe while the next ship closes up. By afternoon {B} is across with the spare valve; water flows by dinner. It tops out at ninety-five percent, for good.
 do move B A
 do bond A B 8
 do res spares -1

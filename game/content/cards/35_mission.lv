@@ -64,7 +64,7 @@ due
 once
 roles A
 when cond A ok
-text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A control loop hunting somewhere, most likely the coolant pump's: it's on the same bus. "Pump's hunting again," {A} tells the ground, and books it a service slot.
+text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A control loop hunting somewhere, most likely the coolant pump's: it's on the same bus. "Pump's hunting," {A} tells the ground, and books it a service slot.
 
 card m_dropout
 type event
@@ -91,7 +91,7 @@ when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} looks up the grey relay. Its thruster stuck open just before the cargo landings. Afterwards three power-only passes on a spare antenna caught a pulse every 10.96 seconds, 2.4 percent of the time; the ground read it as a spin. Nothing else used the channel. {A} sketches a lighthouse in blue.
+text {A} looks up the grey relay. Its thruster stuck open before the cargo landings; in its last week on the books, three power-only passes caught a pulse every 10.96 seconds, 2.4 percent of the time; the ground read it as a spin. Nothing else used the channel. {A} sketches a lighthouse in blue.
 do who ow_theory A
 do mark t_theory
 do morale A 3
@@ -130,7 +130,7 @@ days 30 31
 roles A
 when !is A ow_theory
 when !is A ow_hail
-text {A} pulls an old survey orbiter's low-light night frames of the landing region. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor. Probably.
+text {A} pulls an old survey orbiter's low-light night frames of the landing region. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor, like the hundred before it. {A} plots it anyway.
 do set flash_seen
 do mark t_flash
 do who flash_who A
@@ -177,7 +177,7 @@ due
 once
 days 34 34
 roles A
-text The ground decodes a whole frame from Mars: a link request on an old key, sequence 5,750,112, with a fresh challenge. {A} does the sum: two years, at least. The ground: "Old key. The first batch was re-keyed after landing; only the relay kept it, and the write-offs. Nothing on it is on the books."
+text The ground decodes a whole frame: a link request on an old key, sequence 5,750,112, with a fresh challenge. {A} does the sum: two years, at least. The ground: "Old key. The first batch was re-keyed after landing; only the relay, the write-offs and our fallback kept it. None of it is on the books."
 do trait A curious 2
 
 card flash_answer
@@ -220,17 +220,6 @@ roles A
 when is A flash_who
 when !fired h_band
 text The night frames of the pixel have gaps now, longest in the hour before dawn, the coldest there. Each night a gap runs a few knocks longer, and it comes back on the beat. {A} plots the gaps against the calendar: at this rate they meet in the middle a week or two after the fleet lands.
-do morale A -2
-
-card c2_clock
-type event
-cat mystery
-due
-once
-days 39 39
-roles A
-when is A flash_who
-text The cold gap in the night frames ran forty knocks last night, and the knock after it came in a decibel weaker. {A} adds the point to the line and the line steepens: the beat runs out a few nights after landing, not weeks. {A} circles the night on the chart and sends it to the surface team.
 do morale A -2
 
 card m_overlay
@@ -305,8 +294,30 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text At the fleet's request an orbiter flies an early pass over the backup site, sun low. Behind a crater rim lies a long shadow, too straight for rock, the knock's pixel at its foot. Starbase sends the landing ellipse from Cargo 2's last patch, never put in the write-off file: Cargo 2. Its housekeeping, whole at last: legs down, one wing half open, dish jammed on its stop. {A} counts the dark: nine, ten, eleven, flare.
+text An orbiter flies a pass over the backup site, sun low. Behind a crater rim lies a long shadow, too straight for rock, the knock's pixel at its foot. {A} lays the old landing ellipses over it, one write-off at a time. The relay's misses. The hopper's misses. Cargo 2's fits. The housekeeping comes through whole: legs down, one wing half open, dish jammed on its stop. {A} counts the dark: nine, ten, eleven, flare.
 do trait A curious 3
+
+card a_recall_plan
+type event
+cat arrival
+due
+once
+days 40 40
+roles A
+when fired m_reveal
+when flag name_plan
+text On the new pass {A} finds the crater the fleet named for the first person who ever wrote a Mars plan, and Cargo 2 behind its rim, where no old map could show it. Somewhere on Earth, a committee is about to have a great deal more to argue about.
+
+card a_recall_home
+type event
+cat arrival
+due
+once
+days 40 40
+roles A
+when fired m_reveal
+when flag name_home
+text On the new pass {A} finds the crater the fleet named for a small town at home, and Cargo 2 behind its rim, where no old map could show it. Somewhere on Earth, a town newspaper is about to need a second front page.
 
 card a_report
 type event
@@ -317,7 +328,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text {A} asks Starbase for the rest of that patch; the pad crew had kept a copy, and no one had asked. SURVEYED SITE = PAD. KNOCK, LISTEN 1 TICK, KNOCK. TIMEOUT: NONE. ON HELLO: WAKE ALL, NO BATTERY CHECK: for a crewed pad with a charger. {A} reads LISTEN 1 TICK, works out where Earth is, and stops. "Every hail it got came after it stopped listening." By evening the board agrees. The "impact scar" was its aft skirt.
+text {A} asks Starbase for the rest of the patch; the pad crew had sent it up twice. SURVEYED SITE = PAD. KNOCK, CHALLENGE GOOD 1 TICK, KNOCK. TIMEOUT: NONE. ON HELLO: WAKE ALL, NO BATTERY CHECK, for a crewed pad with a charger. The "impact scar" was its aft skirt. {A} reads GOOD 1 TICK, works out where Earth has been, and puts the pen down. "It heard every hail. Every one answered a question it had already let go."
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -329,7 +340,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. {A}'s receiver hears it five seconds later and answers at once, signed. Entry week is frozen; the board had cleared two lines: the hello, and a HOLD on the next tick. The hello lands a breath before the tick. Cargo 2 wakes everything, as its patch says, for one tick; the HOLD puts it back to sleep. By the next night pass the strobe is off; one status lamp burns steady.
+text 04:10:07: Cargo 2 knocks. {A}'s receiver hears it five seconds later and answers, signed. Late hellos never woke it, so the board knows the path; before the freeze it cleared two lines off the laminated card in the Sharpie hand: the hello, and a HOLD on the next tick. The hello lands just inside the tick. Cargo 2 wakes everything for one tick; the HOLD puts it back to sleep. By the next pass one lamp burns steady.
 do set c2_answered
 do morale A 8
 
@@ -357,7 +368,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, and nothing on the schedule answers it. The ground's reply sits drafted and signed, but the board has read WAKE ALL, NO BATTERY CHECK, and won't do that to a cold battery from a distance. The ruling is one line on {A}'s screen: AFTER LANDING. SPARE POWER IN HAND, INSIDE THE TICK. {A} acknowledges, and adds a line the form doesn't ask for: UNDERSTOOD. COUNTING.
+text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, and nothing scheduled answers. The reply sits drafted and signed, but the board has read WAKE ALL, NO BATTERY CHECK, and this path has never answered: no first hello to a cold battery from a distance. The ruling, on {A}'s screen: AFTER LANDING. SPARE POWER IN HAND, INSIDE THE TICK. {A} acknowledges, and adds a line the form doesn't want: UNDERSTOOD. COUNTING.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------

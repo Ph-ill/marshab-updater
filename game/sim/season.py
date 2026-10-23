@@ -6,6 +6,11 @@
 
 Writes sim/out/narrative.txt, sim/out/stats.json, build/season_story.bin, build/season_log.bin +
 build/season_expect.txt for the MicroPython check (tests/mp_check.py).
+
+  --spoilers   print the full summaries and write ending and card ids into
+               sim/out/stats.json and sim/out/multi_season.json. Without it (the committed
+               copies) endings are named by deck position ("ending 3") and cards by
+               number ("card 117"), so the files can be browsed without spoiling the story.
 """
 import json
 import os
@@ -255,6 +260,40 @@ def stats_for(pack, st, text):
     }
 
 
+def ending_label(text, cid):
+    """Spoiler-free name for an ending: its deck position ("ending 3"), never its id."""
+    if cid is None:
+        return None
+    ends = [c["id"] for c in text["cards"] if c["id"].startswith("end_")]
+    return "ending %d" % (ends.index(cid) + 1) if cid in ends else "ending ?"
+
+
+def card_label(text, cid):
+    """Spoiler-free name for a card: its deck position ("card 117"), never its id."""
+    return "card %d" % [c["id"] for c in text["cards"]].index(cid)
+
+
+def redact_stats(stats, text):
+    """stats.json without --spoilers: no ending id and no card ids (sim/out is committed,
+    and card ids name the mystery). Counts survive; names become deck positions."""
+    stats = dict(stats)
+    stats["ending"] = ending_label(text, stats["ending"])
+    stats["cards_fired"] = {card_label(text, k): v for k, v in stats["cards_fired"].items()}
+    return stats
+
+
+def redact_report(report, text):
+    """multi_season.json without --spoilers: endings by deck position, cards by number."""
+    report = dict(report)
+    report["endings"] = {ending_label(text, k): v for k, v in report["endings"].items()}
+    report["seasons_where_card_fired"] = {card_label(text, k): v
+                                          for k, v in report["seasons_where_card_fired"].items()}
+    report["cards_never_fired"] = [card_label(text, k) for k in report["cards_never_fired"]]
+    report["unfair_seasons"] = [{"season": u["season"], "missing_groups": len(u["missing"])}
+                                for u in report["unfair_seasons"]]
+    return report
+
+
 def fair_play(st, text):
     """Core clue groups (lvc `clue core [group]`) with no card fired before the first
     reveal card (lvc `reveal`). Empty means the season played fair."""
@@ -300,7 +339,9 @@ def main(argv):
                   "core_clues_before_reveal": seasons - len(unfair), "unfair_seasons": unfair,
                   "seasons_where_card_fired": dict(sorted(fired_any.items())),
                   "cards_never_fired": never, "dilemmas": dil, "decisions": dec}
-        json.dump(report, open(os.path.join(outdir, "multi_season.json"), "w"), indent=1)
+        # Ending and card ids are spoilers; they reach the file only with --spoilers.
+        json.dump(report if spoilers else redact_report(report, text),
+                  open(os.path.join(outdir, "multi_season.json"), "w"), indent=1)
         if spoilers:
             print(json.dumps(report, indent=1))
         else:
@@ -384,7 +425,8 @@ def main(argv):
         "seconds_determinism_runs": round(t_det, 2),
         "pack_bytes": pack.size,
     })
-    json.dump(stats, open(os.path.join(outdir, "stats.json"), "w"), indent=1)
+    json.dump(stats if spoilers else redact_stats(stats, text),
+              open(os.path.join(outdir, "stats.json"), "w"), indent=1)
     if spoilers:
         print(json.dumps(stats, indent=1))
     else:
