@@ -9,7 +9,7 @@
 :root{--paper:#F2ECDF;--ink:#1C1B19;--graph:#8A867E;--ink2:#57534C;--rule:#CBC3B2;--rust:#C8552B;--rust-t:#A8441F;
 --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono","Droid Sans Mono",monospace;
---st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+--key:64px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
 @media (prefers-color-scheme:dark){:root{--paper:#1C1B19;--ink:#ECE5D6;--graph:#7D796F;--ink2:#B3AC9F;--rule:#3D3A35;--rust:#D9673C;--rust-t:#E07A50}}
 *{box-sizing:border-box;margin:0;padding:0;border-radius:0}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -26,6 +26,7 @@ button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
 main{padding:0 calc(16px + var(--sr)) calc(152px + var(--sb)) calc(16px + var(--sl))}
 main.nodock{padding-bottom:calc(32px + var(--sb))}
 main.short{padding-bottom:calc(96px + var(--sb))}
+main.pinpad{padding-bottom:calc(4 * var(--key) + 24px + var(--sb))}
 section{padding:24px 0 0}
 section>.lab:first-child{display:flex;justify-content:space-between;border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:8px}
 h1{font:700 32px/40px var(--sans);letter-spacing:-.01em}
@@ -93,10 +94,10 @@ nav button+button{border-left:1px solid var(--rule)}
 .card .body p:first-child{margin:0}
 .lead{font-size:20px;line-height:28px}
 .pin{display:grid;grid-template-columns:repeat(4,56px);gap:8px;margin-top:24px}
-.pin span{height:64px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 28px var(--mono)}
+.pin span{height:var(--key);border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 28px var(--mono)}
 .pin span.cur{border-width:2px}
 .keys{display:grid;grid-template-columns:repeat(3,1fr)}
-.keys button{height:64px;border-bottom:1px solid var(--ink);text-align:center;font:600 26px var(--mono)}
+.keys button{height:var(--key);border-bottom:1px solid var(--ink);text-align:center;font:600 26px var(--mono)}
 .keys button.fn{font-size:14px;letter-spacing:.08em;color:var(--ink2)}
 .keys button:not(:nth-child(3n)){border-right:1px solid var(--ink)}
 .keys button:nth-last-child(-n+3){border-bottom:0}
@@ -128,6 +129,8 @@ nav button+button{border-left:1px solid var(--rule)}
 .tbl div{padding:8px 0;border-bottom:1px solid var(--rule);font-size:16px}
 .tbl div:nth-child(even){font:600 16px var(--mono);text-align:right}
 .off{padding:8px 16px;font:14px var(--mono);color:var(--ink2);text-align:center;border-bottom:1px solid var(--rule)}
+@media (max-height:640px){:root{--key:52px}.kick{padding-top:16px}.pin{margin-top:16px}.err{margin-top:8px}}
+@media (max-height:520px){.kick .help{display:none}}
 </style>
 </head>
 <body>
@@ -427,11 +430,11 @@ function portraitBare(c){const s=S;S=null;const r=portrait(c);S=s;return r}
 function pinScreen(err){
   const isNew=!claimed[me];
   bar(h(ship(me).toUpperCase()),isNew?"STEP 2 OF 3":"SIGN IN");
-  let o=`<div class=kick><div class=lab>${h(nm(me))}</div><h2>${isNew?"Choose a 4-digit crew code":"Your crew code"}</h2><p class=dim>${isNew?"You'll type it each time you open the ship. It stays on this ship; no email, no account.":"The 4 digits you picked the first time."}</p>`;
+  let o=`<div class=kick><div class=lab>${h(nm(me))}</div><h2>${isNew?"Choose a 4-digit crew code":"Your crew code"}</h2><p class="dim help">${isNew?"You'll type it each time you open the ship. It stays on this ship; no email, no account.":"The 4 digits you picked the first time."}</p>`;
   o+=`<div class=pin aria-live=polite>${[0,1,2,3].map((i)=>`<span class="${i===pin.length?"cur":""}">${pin[i]?"•":""}</span>`).join("")}</div><div class=err>${err?h(err):""}</div></div>`;
   $("v").innerHTML=o;
   dock(`<div class=keys style="margin:-8px -16px">${["1","2","3","4","5","6","7","8","9","BACK","0","DEL"].map((k)=>`<button class="${k.length>1?"fn":""}" data-key="${k}" aria-label="${k}">${k}</button>`).join("")}</div>`,"");
-  $("v").className="nodock";$("v").style.paddingBottom="calc(280px + var(--sb))";
+  $("v").className="pinpad";
 }
 function meet(){
   bar(h(ship(S.you).toUpperCase()),"STEP 3 OF 3");
@@ -447,7 +450,6 @@ function meet(){
 let route="hello";
 function go(r){if(r!==route){route=r;history.replaceState(null,"","#"+r);scrollTo(0,0)}view()}
 function view(){
-  $("v").style.paddingBottom="";
   if(!tok&&!["hello","pin"].includes(route))route="hello";
   const [a,b]=route.split("/");
   try{
