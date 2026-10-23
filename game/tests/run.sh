@@ -7,7 +7,8 @@
 # (board/lvweb.py + lvphone.py) is driven through the app's whole flow on CPython and
 # MicroPython; with LV_FROZEN_MP (the game firmware as a unix port: tools/build_firmware.sh
 # unix32) the frozen split is checked too, and the 80 KB heap gate with BLE sync and two
-# phones playing at once.
+# phones playing at once. The LED notifier's schedule (tests/test_led.py) and the bench
+# script (tools/bench.py, tests/test_bench.py: fake boards on the unix ports).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 game/tests/run.sh
 set -e
@@ -34,6 +35,7 @@ python3 web/build.py
 python3 tests/mock_check.py
 python3 tests/test_phone.py
 python3 tests/test_cal.py
+python3 tests/test_led.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
 LV_FROZEN_MP="$LV_FROZEN_MP" MPY_CROSS="$MPY_CROSS" python3 tests/test_fw_split.py
@@ -41,6 +43,7 @@ MP="${MICROPYTHON:-$(command -v micropython || true)}"
 if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py
   "$MP" tests/mp_codes.py
+  "$MP" tests/test_led.py
   "$MP" -X heapsize=160k tests/mp_engage.py
   "$MP" -X heapsize=192k tests/mp_merge.py
   # 3 boards in one process (a 64-bit port needs about 320k for this one).
@@ -55,12 +58,19 @@ if [ -n "$MP" ]; then
     # Stock MicroPython (every module a file): sync + the bench status server (the phone
     # game is off there: it needs the game firmware).
     "$MP" -X heapsize=256k tests/mp_sync_heap.py build/board
+    # ...with led_notify on: stays dark there (game firmware only: no heap for it).
+    "$MP" -X heapsize=256k tests/mp_sync_heap.py build/board --led
     # The game firmware's frozen set, if a unix build of it is given (tools/build_firmware.sh unix32):
     # sync alone, then sync + two phones playing over real sockets.
     if [ -n "$LV_FROZEN_MP" ]; then
       "$LV_FROZEN_MP" -X heapsize=256k tests/mp_sync_heap.py frozen
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen
+      # ...and with the LED notifier on and blinking (board/lvled.py in the heap too).
+      python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led
     fi
+    # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
+    # and, with LV_FROZEN_MP, the game firmware (install, settings, selftest, report).
+    MICROPYTHON="$MP" LV_FROZEN_MP="$LV_FROZEN_MP" python3 tests/test_bench.py
   else
     echo "mpy-cross not found: heap measured from source (set MPY_CROSS=...)"
     "$MP" -X heapsize=256k tests/mp_sync_heap.py

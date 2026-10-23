@@ -98,6 +98,7 @@ class Game:
         self.seq = [1000] * N
         self.cache = {}
         self.lock = threading.RLock()   # gift() checks, then taps
+        self.led = False          # the Ship light switch (POST /api/led)
         self.changed = threading.Condition()
         self.version = 0
         self.etable = EN.load_table(os.path.join(BUILD, "engage.bin"))
@@ -164,6 +165,7 @@ class Game:
             "story": base64.b64encode(story).decode(),
             "updated": {str(d): a for d, a in sorted(sh.updated.items())},
             "eng": EN.view(self.eng, self.local, p, st, sh.log, you, minute),
+            "led": self.led,       # the Ship light switch (board: lvled.py, off by default)
             "start": 360,          # a flight day starts at 06:00 (the board: lvcal.py; None on a fixed bench day)
         }
 
@@ -355,6 +357,9 @@ class H(BaseHTTPRequestHandler):
             if st == K.NO_CODE:
                 return self.send(409, {"err": "No code set up for this name yet."})
             return self.send(400, {"err": "bad request"})
+        if u.path == "/api/led" and self.who() is not None:
+            G.led = bool(b.get("on"))
+            return self.send(200, {"ok": True, "led": G.led, "v": G.version})
         if u.path == "/api/logout":
             with G.lock:
                 G.book.forget(self.phone())

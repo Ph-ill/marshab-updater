@@ -128,7 +128,7 @@ class Calendar:
         known = self.clock.known()
         if lm is not None:
             c = flight_day(lm, self.launch, self.season, self.start)
-            if c > d:
+            if c > d or (known and c == d):     # (a phone confirming the saved day: "phone")
                 d, src = c, ("phone" if known else "saved")
         if not known:
             for p in peers:
@@ -139,8 +139,10 @@ class Calendar:
         if d != self.day:
             self.day, self.src = d, src
             self.save(up)
-        elif known and (self.saved_at is None or up - self.saved_at >= SAVE_MS):
-            self.save(up)
+        else:
+            self.src = src
+            if known and (self.saved_at is None or up - self.saved_at >= SAVE_MS):
+                self.save(up)
         return self.day
 
     def advance(self, ship):
@@ -161,6 +163,7 @@ class Calendar:
             ship.tick_to(d)
         ship.v += 1
         ship.say("day: flight day %d (%s)" % (d, self.src))
+        ship._led("new_day")
         return True
 
     def save(self, up):

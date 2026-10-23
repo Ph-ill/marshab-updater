@@ -8,6 +8,7 @@
 #   GET  /api/state   (X-Crew-Token) the whole screen: story, open cards, crew, engagement
 #   POST /api/login   {crew, pin} -> {token, crew, first} | 403 {err, left} | 429 {err, wait} | 409
 #   POST /api/logout
+#   POST /api/led     {on} -> {ok, led, v}: the Ship light (LED notifier, lvled.py; lvledcfg.toggle), kept in ship.json
 #   POST /api/open    {day} -> {ok, day, tier, item}       (daily drop)
 #   POST /api/gift    {item, to, mode} -> {ok, v} | 409 {err}
 #   POST /api/act     {act, param, tgt}   POST /api/vote {card, opt}   POST /api/answer {card, opt}
@@ -125,6 +126,7 @@ class Phone:
                 you = self.who(req)
                 if you is None:
                     return 401, {"err": "signed out"}
+                sh._led("seen")       # a phone has looked: the LED notifier stops (lvled.py)
                 return 0, self.state_writer(you, _int(req.q.get("last"), max(0, d - 3)), sh.clock.minute())
             return 404, {"err": "no such thing"}
         if req.method != "POST":
@@ -162,6 +164,10 @@ class Phone:
         you = self.who(req)
         if you is None:
             return 401, {"err": "signed out"}
+        if p == "/api/led":
+            import lvledcfg
+            on = lvledcfg.toggle(self, bool(b.get("on")))
+            return 200, {"ok": True, "led": on, "v": sh.v}
         try:
             if p == "/api/open":
                 x = _int(b.get("day", d))
@@ -267,6 +273,7 @@ class Phone:
             "updated": upd,
             "eng": EN.view(self.eng, self.local, p, st, log, you, minute),
             "v": sh.v, "start": sh.cal.start if sh.cal is not None else None,
+            "led": sh.led.enabled,
         }
 
 
