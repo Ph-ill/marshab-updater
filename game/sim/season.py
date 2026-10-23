@@ -159,11 +159,12 @@ class Ship:
             self.tick_to(now)
 
 
-def deliver(pack, authored, scenario, seed=7):
+def deliver(pack, authored, scenario, seed=7, upto=None, cls=None):
     """Replay a fixed set of authored records to 7 ships under a delivery scenario.
-    Returns the ships and per-day agreement with the reference."""
+    Returns the ships. With upto, stop after that day's deliveries (the mock Pico
+    server uses this to show what one ship knows on a given day)."""
     rnd = random.Random(seed)
-    ships = [Ship(i, pack) for i in range(N)]
+    ships = [(cls or Ship)(i, pack) for i in range(N)]
     inbox = {}  # day -> list of (ship, rec)
     for d, r in authored:
         author = R.ship(r)
@@ -187,8 +188,10 @@ def deliver(pack, authored, scenario, seed=7):
             inbox.setdefault(a, []).append((t, r))
             if scenario == "reverse" and rnd.random() < 0.2:
                 inbox.setdefault(a + 1, []).append((t, r))  # duplicate delivery
-    for d in range(0, pack.season + 1):
+    last = pack.season if upto is None else upto
+    for d in range(0, last + 1):
         for s in ships:
+            s.now = d
             s.tick_to(d)
         todays = inbox.pop(d, [])
         if scenario == "reverse":
@@ -201,6 +204,8 @@ def deliver(pack, authored, scenario, seed=7):
         for t in range(N):
             if per[t]:
                 ships[t].receive(per[t])
+    if upto is not None:
+        return ships
     # After the season every ship eventually hears everything.
     rest = [(t, r) for d in sorted(inbox) for t, r in inbox[d]]
     for t in range(N):
