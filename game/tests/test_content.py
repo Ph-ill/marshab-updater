@@ -261,9 +261,11 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
         print("mystery cards by first day, phases 1-4:", phases, file=sys.stderr)
 
     def test_second_read_clues(self):
-        # STORY_BIBLE.md: 6-10 fair-play clues, at least two in the earliest phase.
+        # STORY_BIBLE.md: 6-12 fair-play clues (a core group's variants count once),
+        # at least two in the earliest phase.
         rr = self.text["reread"]
-        self.assertTrue(6 <= len(rr) + 1 <= 10)  # +1: the clue in system text
+        grouped = {i for g in self.text["core"] if len(g) > 1 for i in g[1:]}
+        self.assertTrue(6 <= len([i for i in rr if i not in grouped]) + 1 <= 12)  # +1: system text
         early = [i for i in rr if self.cards[i]["days"][0] <= 10]
         self.assertGreaterEqual(len(early), 2)
         self.assertTrue(all(self.cards[i]["clue"] for i in rr))
@@ -362,14 +364,35 @@ class TestFairCasting(unittest.TestCase):
         sys.path.insert(0, os.path.join(ROOT, "sim"))
         from season import reference_season, fair_play
         _, text, _ = lvc.build(CONTENT)
-        self.assertGreaterEqual(len(text["core"]), 4)
+        self.assertGreaterEqual(len(text["core"]), 6)
         self.assertTrue(text["reveal"])
+        # The climax schedule (STORY_BIBLE.md): exactly one mystery card on each of
+        # days 35-40, a window card on day 41, no blank story day 38-39, and an
+        # epilogue line for every astronaut.
+        from render import Renderer
+        cat = {i: c["cat"] for i, c in enumerate(lvc.build(CONTENT)[2].cards)}
+        ids = [c["id"] for c in text["cards"]]
+        window = {ids.index("a_window_hail"), ids.index("a_window_quiet")}
+        opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
         ends = {}
         for i in range(300):
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"
             st = reference_season(Pack(self.p.data), seed=1000 + i, voyage_key=key)[0]
             self.assertEqual(fair_play(st, text), [], "season %d" % i)
             ends[st.ending] = ends.get(st.ending, 0) + 1
+            out = st.story
+            myst, days = {}, set()
+            for k in range(0, len(out), 8):
+                if out[k + 1] in opens:
+                    days.add(out[k])
+                    if cat[out[k + 2]] == "mystery":
+                        myst[out[k]] = myst.get(out[k], 0) + 1
+            for d in range(35, 41):
+                self.assertEqual(myst.get(d, 0), 1, "season %d day %d" % (i, d))
+            self.assertTrue(days >= {38, 39}, "season %d" % i)
+            self.assertTrue(any(out[k + 1] == O.O_EVENT and out[k + 2] in window and out[k] == 41
+                                for k in range(0, len(out), 8)), "season %d" % i)
+            self.assertEqual(len(Renderer(text).epilogue(out)), 7, "season %d" % i)
         n_end = sum(1 for c in text["cards"] if c["id"].startswith("end_"))
         self.assertEqual(len(ends), n_end)
         self.assertGreaterEqual(min(ends.values()), 15, ends)
@@ -393,6 +416,64 @@ class TestFairCasting(unittest.TestCase):
                     self.assertLessEqual(hi, 37, m.group(1))
                 elif cat not in ("arrival", "ending") and not re.search(r"(?m)^reveal$", b):
                     self.assertLessEqual(hi, 39, m.group(1))
+
+class TestRound2Language(unittest.TestCase):
+    """`!is`, `clue core GROUP` and `title`."""
+
+    def test_negated_is_excludes_the_named_crew(self):
+        src = ("card pick\ntype event\ndue\nonce\ndays 1 1\nroles A\ntext {A} is picked.\ndo who own A\n\n"
+               "card other\ntype event\ndue\nonce\ndays 2 2\nroles A\nwhen !is A own\ntext {A} is not.\n")
+        pack, text, ctx = lvc.build(mini_content(src))
+        self.assertEqual(ctx.errors, [])
+        _, days = season(Pack(pack))
+        story = b"".join(days)
+        ids = [c["id"] for c in text["cards"]]
+        a = [e[3] for e in events(story, ids.index("pick"))]
+        b = [e[3] for e in events(story, ids.index("other"))]
+        self.assertEqual(len(a), 1)
+        self.assertEqual(len(b), 1)
+        self.assertNotEqual(a[0], b[0])
+
+    def test_core_groups_and_titles(self):
+        src = ("card c1\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} sees one.\n\n"
+               "card c2\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} sees two.\n\n"
+               "card c3\ntype event\nclue core\ndays 2 3\nroles A\ntext {A} sees three.\n\n"
+               "card fin\ntype ending\ntitle A Proper Title\nwhen fired c3\ntext Fin.\n")
+        _, text, ctx = lvc.build(mini_content(src))
+        self.assertEqual(ctx.errors, [])
+        ids = [c["id"] for c in text["cards"]]
+        self.assertEqual(text["core"], [[ids.index("c1"), ids.index("c2")], [ids.index("c3")]])
+        self.assertEqual(text["cards"][ids.index("fin")]["ti"], "A Proper Title")
+
+    def test_crossings_only_in_transfer_windows(self):
+        # Each astronaut has a home ship; crossings happen only on transfer-window days,
+        # and only to a crewmate who is at home, so a ship holds at most 2.
+        src = "card idle\ntype beat\ndays 1 42\nweight 5\nroles A\ntext {A} reads.\n"
+        pack, _, _ = lvc.build(mini_content(src))
+        moved = 0
+        for seed in range(30):
+            p = Pack(pack)
+            p.voyage_key = bytes([seed, 7]) + b"cross!"
+            st = State(p)
+            eng = Engine(p, st, ChoiceLog(FK))
+            for _ in range(42):
+                eng.tick()
+                for i in range(0, len(st.out), 8):
+                    if st.out[i + 1] == O.O_MOVE:
+                        d = st.out[i]
+                        self.assertTrue(d >= O.TRANSFER_FROM and (d - O.TRANSFER_FROM) % O.TRANSFER_EVERY == 0, d)
+                        moved += 1
+                held = [0] * 7
+                for c in range(7):
+                    held[st.loc[c]] += 1
+                self.assertLessEqual(max(held), 2)
+        self.assertGreater(moved, 0)
+
+    def test_only_some_conditions_negate(self):
+        src = "card bad\ntype event\ndays 2 3\nroles A\nwhen !var x >= 1\ntext {A} waits.\n"
+        _, _, ctx = lvc.build(mini_content(src))
+        self.assertTrue(any("negated" in e for e in ctx.errors), ctx.errors)
+
 
 if __name__ == "__main__":
     unittest.main()
