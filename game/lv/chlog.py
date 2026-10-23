@@ -9,18 +9,25 @@ DUP = 0
 REPLACED = 2
 STALE = -1
 BAD = -2
+SHARD = 19   # key bits below the shard: day << 16, so 8 authored days per shard
 
 
 class ChoiceLog:
     def __init__(self, fleet_key, max_schema=R.SCHEMA):
         self.fk = bytes(fleet_key)
         self.max_schema = max_schema
-        self.recs = {}      # int key -> 13-byte record
+        # shard -> {int key -> 13-byte record}; a shard is an 8-day block of
+        # authored days (key >> SHARD). No single table grows with the whole season:
+        # MicroPython grows a dict by allocating a new table, and one big table
+        # needed a large contiguous block late in the season (eight ships write
+        # about a fifth more records than seven).
+        self.recs = {}
+        self.n = 0
         self.by_eff = {}    # effective day -> list of keys (unsorted)
         self.unknown = []   # newer-schema records: kept and relayed, never interpreted
 
     def __len__(self):
-        return len(self.recs)
+        return self.n
 
     def merge(self, rec, check=True):
         # Returns NEW / DUP / REPLACED / STALE / BAD.
@@ -33,9 +40,13 @@ class ChoiceLog:
                 return NEW
             return DUP
         k = R.key(rec)
-        old = self.recs.get(k)
+        sh = self.recs.get(k >> SHARD)
+        if sh is None:
+            sh = self.recs[k >> SHARD] = {}
+        old = sh.get(k)
         if old is None:
-            self.recs[k] = rec
+            sh[k] = rec
+            self.n += 1
             e = R.eff_day(rec)
             lst = self.by_eff.get(e)
             if lst is None:
@@ -57,7 +68,7 @@ class ChoiceLog:
                     self.by_eff[en] = [k]
                 else:
                     lst.append(k)
-            self.recs[k] = rec
+            sh[k] = rec
             return REPLACED
         return STALE
 
@@ -67,7 +78,7 @@ class ChoiceLog:
         if not ks:
             return []
         ks = sorted(ks)
-        return [self.recs[k] for k in ks]
+        return [self.recs[k >> SHARD][k] for k in ks]
 
     def answers(self, kind, card, first_day, close_day):
         # Votes or dilemma answers for one card, authored on or after first_day and
@@ -80,7 +91,7 @@ class ChoiceLog:
             if not ks:
                 continue
             for k in ks:
-                r = self.recs[k]
+                r = self.recs[k >> SHARD][k]
                 if R.kind(r) != kind or r[5] != card or R.day(r) < first_day:
                     continue
                 s = R.ship(r)
@@ -95,7 +106,14 @@ class ChoiceLog:
         return out
 
     def all_records(self):
-        return [self.recs[k] for k in sorted(self.recs)] + list(self.unknown)
+        return [r for _, r in self._sorted()] + list(self.unknown)
+
+    def _sorted(self):
+        # (key, record) in key order: shards in order, keys in order inside a shard.
+        for d in sorted(self.recs):
+            sh = self.recs[d]
+            for k in sorted(sh):
+                yield k, sh[k]
 
     def digest(self):
         # Order-independent digest for adverts: sha256 over the sorted records.
@@ -104,17 +122,18 @@ class ChoiceLog:
         except ImportError:  # pragma: no cover
             from uhashlib import sha256
         h = sha256()
-        for k in sorted(self.recs):
-            h.update(self.recs[k])
+        for _, r in self._sorted():
+            h.update(r)
         return h.digest()[:4]
 
-    def seq_vector(self, ships=7):
+    def seq_vector(self, ships=8):
         # Highest sequence number seen per author ship: what status adverts carry.
         v = [0] * ships
-        for r in self.recs.values():
-            s = R.ship(r)
-            if s < ships:
-                q = R.seq(r)
-                if q > v[s]:
-                    v[s] = q
+        for sh in self.recs.values():
+            for r in sh.values():
+                s = R.ship(r)
+                if s < ships:
+                    q = R.seq(r)
+                    if q > v[s]:
+                        v[s] = q
         return v

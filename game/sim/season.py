@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fast-forward a 42-day season with 7 simulated players.
+"""Fast-forward a 42-day season with 8 simulated players.
 
   python3 sim/season.py                 # one season: narrative + stats + determinism check
   python3 sim/season.py --seasons 300   # many seasons with different voyage keys: stats only
@@ -41,7 +41,9 @@ PROFILES = [
     {"name": "casual", "p": 0.50},
     {"name": "never plays", "p": 0.0},
     {"name": "never plays", "p": 0.0},
+    {"name": "weekend", "p": 0.45},
 ]
+assert len(PROFILES) == N, "one activity profile per ship"
 
 
 def offline(ship, day):
@@ -165,7 +167,7 @@ class Ship:
 
 
 def deliver(pack, authored, scenario, seed=7, upto=None, cls=None):
-    """Replay a fixed set of authored records to 7 ships under a delivery scenario.
+    """Replay a fixed set of authored records to 8 ships under a delivery scenario.
     Returns the ships. With upto, stop after that day's deliveries (the mock Pico
     server uses this to show what one ship knows on a given day)."""
     rnd = random.Random(seed)
@@ -436,7 +438,7 @@ def main(argv):
     if bad:
         print("DETERMINISM FAILED:", bad)
         return 1
-    print("determinism: all 7 ships match the reference in every scenario")
+    print("determinism: all %d ships" % N + " match the reference in every scenario")
     return 0
 
 

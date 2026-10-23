@@ -179,7 +179,7 @@ class Renderer:
         # One story line per astronaut for the end screen: text.json epi.story is a
         # priority list of [card index, line]; an astronaut gets the first line whose
         # card they were cast in as role A. Pure function of the story log; pass the
-        # final state as st to fill gaps from traits and bonds (always 7 lines).
+        # final state as st to fill gaps from traits and bonds (always one line per crew).
         first = {}
         for i in range(0, len(out), 8):
             code, card, a = out[i + 1], out[i + 2], out[i + 3]

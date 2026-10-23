@@ -63,6 +63,7 @@ TYPES = {"event": O.EVENT, "beat": O.BEAT, "decision": O.DECISION,
 CMP = {">=": "GE", "<=": "LE"}
 ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 SEASON_DAYS = 42
+N_CREW = 8   # one astronaut per ship; must match lv/state.N (C_CREW masks are one byte)
 
 
 class PackError(Exception):
@@ -683,8 +684,8 @@ def validate(cards, ctx, fleet, system):
             ctx.errors.append("%s: var %s is checked but never set" % (ctx.var_read[v], v))
     if fleet["key"] is None or len(fleet["key"]) != 8:
         ctx.errors.append("fleet.lv: voyage_key must be 8 bytes of hex")
-    if len(fleet["crew"]) != 7:
-        ctx.errors.append("roster.lv: need exactly 7 crew lines")
+    if len(fleet["crew"]) != N_CREW:
+        ctx.errors.append("roster.lv: need exactly %d crew lines" % N_CREW)
     if len(set(cr["name"] for cr in fleet["crew"])) != len(fleet["crew"]):
         ctx.errors.append("roster.lv: crew names must be unique")
     for cr in fleet["crew"]:
@@ -751,7 +752,7 @@ def build(content_dir):
     ids = [c["id"] for c in cards]
     quirk_names = sorted(fleet["quirks"])
     body = bytearray()
-    body += bytes((len(cards), len(ctx.flags), len(ctx.vars), 7, fleet["season"]))
+    body += bytes((len(cards), len(ctx.flags), len(ctx.vars), N_CREW, fleet["season"]))
     body += fleet["key"]
     body += bytes([ubyte(v) for v in fleet["res"]]) + bytes((fleet["medkits"],))
     body.append(len(quirk_names))

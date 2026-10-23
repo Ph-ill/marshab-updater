@@ -8,7 +8,7 @@ import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, h
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, describeBoard } from './role-memory.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
-const SHIP_COUNT = 7;
+const SHIP_COUNT = 8;
 const DEFAULT_LOGS = ['coex_log.csv', 'coex_log.old', 'coex_boot.txt'];
 
 const state = {

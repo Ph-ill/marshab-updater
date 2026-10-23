@@ -164,7 +164,7 @@ class TestCodes(unittest.TestCase):
         self.assertEqual(b.check(0, "1235", 0), (K.WRONG, 4))
         self.assertEqual(b.check(1, "1234", 0), (K.WRONG, 4))   # codes are per person
         self.assertEqual(b.check(2, "1234", 0), (K.NO_CODE, 0))
-        self.assertEqual(b.check(7, "1234", 0), (K.BAD, 0))
+        self.assertEqual(b.check(K.N, "1234", 0), (K.BAD, 0))
         self.assertEqual(b.check(0, "12a4", 0), (K.BAD, 0))
         self.assertEqual(b.check(0, "123", 0), (K.BAD, 0))
 

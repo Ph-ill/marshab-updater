@@ -18,7 +18,7 @@ from lv import ops as O                 # noqa: E402
 from lv.chlog import ChoiceLog          # noqa: E402
 from lv.engine import Engine            # noqa: E402
 from lv.pack import Pack                # noqa: E402
-from lv.state import State              # noqa: E402
+from lv.state import State, N           # noqa: E402
 
 FK = b"test-fleet-key-not-secret"
 CONTENT = os.path.join(ROOT, "content")
@@ -29,7 +29,7 @@ def mini_content(cards, roster=None):
     d = tempfile.mkdtemp(prefix="lvc-")
     shutil.copy(os.path.join(CONTENT, "fleet.lv"), d)
     shutil.copy(os.path.join(CONTENT, "system.json"), d)
-    names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian"]
+    names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian", "Marco"]
     if roster is None:
         roster = "\n".join("crew %s ship Ship 0%d%s" % (n, i + 1, "   tag mech" if n == "Diego" else "")
                            for i, n in enumerate(names))
@@ -567,32 +567,32 @@ class TestFairCasting(unittest.TestCase):
         from lv import engine as E
         st = State(self.p)
         eng = Engine(self.p, st, ChoiceLog(FK))
-        st.spot[:] = bytes([9, 9, 0, 9, 9, 9, 1])
+        st.spot[:] = bytes([9, 9, 0, 9, 9, 9, 1, 9])
         order = eng._cast_order(0)
         self.assertEqual(order[:2], [2, 6])  # bucket 0 first, ties rotate from start
-        self.assertEqual(sorted(order), list(range(7)))
-        st.spot[:] = bytes(7)
-        self.assertEqual(eng._cast_order(3), [3, 4, 5, 6, 0, 1, 2])
+        self.assertEqual(sorted(order), list(range(N)))
+        st.spot[:] = bytes(N)
+        self.assertEqual(eng._cast_order(3), [3, 4, 5, 6, 7, 0, 1, 2])
         self.assertEqual(E.FAIR_BUCKET, 2)
 
     def test_spot_survives_snapshot(self):
         st = State(self.p)
-        st.spot[:] = bytes([1, 2, 3, 4, 5, 6, 7])
+        st.spot[:] = bytes([1, 2, 3, 4, 5, 6, 7, 8])
         self.assertEqual(State.load(st.dump()).spot, st.spot)
 
     def test_spotlight_spread_over_seasons(self):
         sys.path.insert(0, os.path.join(ROOT, "sim"))
         from season import reference_season
-        tot = [0] * 7
+        tot = [0] * N
         for seed in range(1, 31):
             st = reference_season(Pack(self.p.data), seed=seed)[0]
             out = st.story
             for i in range(0, len(out), 8):
                 if out[i + 1] in (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN):
                     for x in (out[i + 3], out[i + 4]):
-                        if x < 7:
+                        if x < N:
                             tot[x] += 1
-        mean = sum(tot) / 7.0
+        mean = sum(tot) / float(N)
         for v in tot:
             self.assertLess(abs(v - mean) / mean, 0.10, tot)
 
@@ -613,7 +613,7 @@ class TestFairCasting(unittest.TestCase):
         for i in range(300):
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"
             out = reference_season(Pack(self.p.data), seed=1000 + i, voyage_key=key)[0].story
-            loc, opened = list(range(7)), {}
+            loc, opened = list(range(N)), {}
             for k in range(0, len(out), 8):
                 d, code, card, a, b = out[k:k + 5]
                 if code == O.O_MOVE:
@@ -624,19 +624,19 @@ class TestFairCasting(unittest.TestCase):
                     if code == O.O_DIL_OPEN:
                         b = O.NONE
                     if code == O.O_RES_OPEN:
-                        opened[card] = (a, b, loc[a] if a < 7 else None, loc[b] if b < 7 else None)
-                    if a < 7 and "{A}'s ship" in t and cid not in exempt:
+                        opened[card] = (a, b, loc[a] if a < N else None, loc[b] if b < N else None)
+                    if a < N and "{A}'s ship" in t and cid not in exempt:
                         checks += 1
                         if loc[a] != a:
                             bad.append((i, d, cid, "A not home"))
-                    if a < 7 and re.search(r"\{A\},? (visiting|is still aboard|aboard on a visit|happens to be aboard)", t):
+                    if a < N and re.search(r"\{A\},? (visiting|is still aboard|aboard on a visit|happens to be aboard)", t):
                         checks += 1
-                        if loc[a] == a or (b < 7 and (loc[b] != b or loc[a] != b)):
+                        if loc[a] == a or (b < N and (loc[b] != b or loc[a] != b)):
                             bad.append((i, d, cid, "A not visiting B"))
                 if code == O.O_RES_CLOSE and card in opened:
                     a0, b0, la, lb = opened.pop(card)
                     o = cards[card]["o"]
-                    if b0 < 7 and a < len(o) and re.search(r"\{B\} (brings|rides)", o[a][1]):
+                    if b0 < N and a < len(o) and re.search(r"\{B\} (brings|rides)", o[a][1]):
                         checks += 1
                         if la == lb:
                             bad.append((i, d, cards[card]["id"], "B already aboard"))
@@ -776,7 +776,7 @@ class TestFairCasting(unittest.TestCase):
             self.assertTrue(thread_beats <= fired, "season %d" % i)
             self.assertTrue(any(out[k + 1] == O.O_EVENT and out[k + 2] in window and out[k] == 41
                                 for k in range(0, len(out), 8)), "season %d" % i)
-            self.assertEqual(len(Renderer(text).epilogue(out)), 7, "season %d" % i)
+            self.assertEqual(len(Renderer(text).epilogue(out)), N, "season %d" % i)
             self.assertEqual(len(fired & entry), 1, "entry scene, season %d" % i)
             # The signal arrives in order: half a frame first, then the whole frame.
             hd = [out[k] for k in range(0, len(out), 8) if out[k + 1] == O.O_EVENT and out[k + 2] in half]
@@ -794,7 +794,7 @@ class TestFairCasting(unittest.TestCase):
                     self.assertLess(out[k], 40, "crossing on day %d, season %d" % (out[k], i))
                     if out[k] > 38:
                         self.assertEqual(out[k + 3], out[k + 5], "outbound on day %d, season %d" % (out[k], i))
-            for c in range(7):
+            for c in range(N):
                 if st.cond[c] != O.COND_HOME:
                     self.assertEqual(st.loc[c], c, "astronaut %d away at entry, season %d" % (c, i))
         n_end = sum(1 for c in text["cards"] if c["id"].startswith("end_"))
@@ -907,8 +907,8 @@ class TestRound2Language(unittest.TestCase):
                         d = st.out[i]
                         self.assertTrue(d >= O.TRANSFER_FROM and (d - O.TRANSFER_FROM) % O.TRANSFER_EVERY == 0, d)
                         moved += 1
-                held = [0] * 7
-                for c in range(7):
+                held = [0] * N
+                for c in range(N):
                     held[st.loc[c]] += 1
                 self.assertLessEqual(max(held), 2)
         self.assertGreater(moved, 0)
@@ -939,7 +939,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(os.listdir(out), [])
 
     def test_epilogue_fallback_fills_every_astronaut(self):
-        # With the final state, the epilogue gives all seven a line even in seasons
+        # With the final state, the epilogue gives every astronaut a line even in seasons
         # whose story log leaves someone out (other seeds, no voyage key).
         sys.path.insert(0, os.path.join(ROOT, "sim"))
         from season import reference_season
@@ -948,11 +948,11 @@ class TestCli(unittest.TestCase):
         for i in range(60):
             st = reference_season(Pack(p), seed=7 + 13 * i)[0]
             lines = Renderer(text).epilogue(st.story, st)
-            self.assertEqual(sorted(lines), list(range(7)), "seed %d" % (7 + 13 * i))
+            self.assertEqual(sorted(lines), list(range(N)), "seed %d" % (7 + 13 * i))
             self.assertTrue(all(lines.values()))
-        # Even a log with no story lines at all yields seven.
+        # Even a log with no story lines at all yields one per astronaut.
         lines = Renderer(text).epilogue(b"", st)
-        self.assertEqual(sorted(lines), list(range(7)))
+        self.assertEqual(sorted(lines), list(range(N)))
 
     def test_flag_names_only_with_verbose(self):
         out = tempfile.mkdtemp(prefix="lvc-out-")
@@ -968,16 +968,16 @@ class TestHabitSlot(unittest.TestCase):
     SRC = "card hab\ntype beat\neach crew\nonce\nweight 50\nroles A\ntext On shift: {habit}\n"
 
     def roster(self, habits):
-        names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian"]
+        names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian", "Marco"]
         return "\n".join('crew %s ship Ship 0%d%s' % (n, i + 1, (' habit "%s"' % habits[i]) if habits[i] else "")
                          for i, n in enumerate(names))
 
     def test_clones_bind_only_their_astronaut(self):
-        hs = ["{A} hums.", None, "{A} whistles.", None, None, None, None]
+        hs = ["{A} hums.", None, "{A} whistles.", None, None, None, None, None]
         pack, text, ctx = lvc.build(mini_content(self.SRC, self.roster(hs)))
         self.assertEqual(ctx.errors, [])
         ids = [c["id"] for c in text["cards"]]
-        self.assertEqual(ids[:7], ["hab_%d" % i for i in range(1, 8)])
+        self.assertEqual(ids[:N], ["hab_%d" % i for i in range(1, N + 1)])
         self.assertEqual(text["cards"][0]["t"], "On shift: {A} hums.")
         self.assertEqual(text["cards"][1]["t"], "On shift: " + lvc.HABIT_DEFAULT)
         self.assertNotIn("{habit}", repr(text))
@@ -987,14 +987,14 @@ class TestHabitSlot(unittest.TestCase):
             p.voyage_key = bytes([seed, 3]) + b"habits"
             _, days = season(p)
             for out in days:
-                for k in range(7):
+                for k in range(N):
                     for e in events(out, k):
                         seen.setdefault(k, set()).add(e[3])
         for k, who in seen.items():
             self.assertEqual(who, {k})
 
     def test_bad_habit_is_an_error(self):
-        hs = ["hums a lot", None, None, None, None, None, None]
+        hs = ["hums a lot", None, None, None, None, None, None, None]
         _, _, ctx = lvc.build(mini_content(self.SRC, self.roster(hs)))
         self.assertTrue(any("habit" in e for e in ctx.errors), ctx.errors)
 
@@ -1004,7 +1004,7 @@ class TestHabitSlot(unittest.TestCase):
 
     def test_real_roster_parses_habits(self):
         fleet = lvc.parse_fleet(os.path.join(CONTENT, "fleet.lv"), os.path.join(CONTENT, "roster.lv"))
-        self.assertEqual(len(fleet["crew"]), 7)
+        self.assertEqual(len(fleet["crew"]), N)
         for cr in fleet["crew"]:
             self.assertIn("{A}", cr["habit"])
             self.assertTrue(cr["ship"].startswith("Ship 0"), cr["ship"])
@@ -1081,7 +1081,7 @@ class TestRound19(unittest.TestCase):
         self.assertIn("and answers anyway", self.t["end_close"])
         self.assertIn("spare power in hand", self.t["end_close"])
         self.assertNotIn("argued to wait", self.t["end_long_orbit"])
-        self.assertIn("All seven, and the eighth plugged in", self.t["end_friend"])
+        self.assertIn("All eight, and the ninth plugged in", self.t["end_friend"])
         for cid in ("end_through", "a_descent_hold", "a_descent_hold_q"):
             self.assertIn("two antennas", self.t[cid], cid)
             self.assertIn("rim", self.t[cid], cid)
@@ -1130,7 +1130,7 @@ class TestRound19(unittest.TestCase):
 
     def test_each_habit_skips_placeholder_and_missing(self):
         src = "card q\ntype beat\neach habit 2\nonce\nweight 50\nroles A\ntext {habit}\n"
-        names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian"]
+        names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian", "Marco"]
         hs = {"Kim": ' habit "{A} hums." habit "{A} whistles."',
               "Jai": ' habit "%s" habit "%s"' % (lvc.HABIT_DEFAULT, lvc.HABIT_DEFAULT),
               "Diego": ' habit "{A} draws."'}
@@ -1139,6 +1139,87 @@ class TestRound19(unittest.TestCase):
         self.assertEqual(ctx.errors, [])
         qs = [c for c in text["cards"] if c["id"].startswith("q_")]
         self.assertEqual([(c["id"], c["t"]) for c in qs], [("q_3", "{A} whistles.")])
+
+
+class TestEightShips(unittest.TestCase):
+    """The fleet is eight ships: roster, engine sizes, record fields and story counts agree."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.p, cls.text, cls.ctx = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] for c in cls.text["cards"]}
+
+    def test_sizes_agree(self):
+        from lv import codes as K, record as R
+        self.assertEqual(N, 8)
+        self.assertEqual(lvc.N_CREW, N)
+        self.assertEqual(K.N, N)
+        self.assertEqual(Pack(self.p).ncrew, N)
+        self.assertEqual(len(self.text["crew"]), N)
+        # The author field is 4 bits; the admin author must sit outside the crew range.
+        self.assertTrue(N <= R.ADMIN_SHIP < 16)
+        self.assertEqual(len(ChoiceLog(FK).seq_vector()), N)
+        st = State(Pack(self.p))
+        self.assertEqual(len(st.bonds), N * N)
+        self.assertEqual(st.loc, bytearray(range(N)))
+        # dil_seen keeps one bit per crew in a byte: the eighth crew is bit 7.
+        st.dil_seen[0] |= 1 << (N - 1)
+        self.assertEqual(State.load(st.dump()).dil_seen[0], 128)
+
+    def test_log_shards_merge_like_one_table(self):
+        # chlog shards records by 8-day blocks; order, length, seq vector and the
+        # admin exclusion must read as if it were one table, for all eight ships.
+        import random
+        from lv import record as R
+        recs = []
+        for day in range(0, 43):
+            for ship in list(range(N)) + [R.ADMIN_SHIP]:
+                recs.append(R.encode(FK, R.VOTE, ship, 1, 100 + day, day, 3, ship % 2))
+        a, b = ChoiceLog(FK), ChoiceLog(FK)
+        for r in recs:
+            a.merge(r)
+        rnd = random.Random(5)
+        rnd.shuffle(recs)
+        for r in recs:
+            b.merge(r)
+        self.assertEqual(len(a), len(recs))
+        self.assertEqual(a.all_records(), b.all_records())
+        self.assertEqual(a.digest(), b.digest())
+        keys = [R.key(r) for r in a.all_records()]
+        self.assertEqual(keys, sorted(keys))
+        self.assertEqual(a.seq_vector(), [142] * N)
+        self.assertEqual([s for s, _ in a.answers(R.VOTE, 3, 10, 20)], list(range(N)))
+
+    def test_roster_order_and_marco(self):
+        crew = self.text["crew"]
+        self.assertEqual(crew[:7], ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian"])
+        self.assertEqual(crew[7], "Marco")
+        fleet = lvc.parse_fleet(os.path.join(CONTENT, "fleet.lv"), os.path.join(CONTENT, "roster.lv"))
+        marco = fleet["crew"][7]
+        self.assertEqual(marco["ship"], "Ship 08")
+        self.assertEqual(len(marco["habits"]), 3)
+
+    def test_crew_mask_for_ship_eight(self):
+        # C_CREW is a byte mask: crew index 7 is 0x80, and the clone binds only Marco.
+        for k in (1, 2, 3):
+            cid = "quirk_%d_8" % k
+            self.assertIn(cid, self.t)
+            self.assertNotIn("{habit}", self.t[cid])
+        src = "card q\ntype beat\neach crew\nonce\nweight 50\nroles A\ntext {habit}\n"
+        _, text, ctx = lvc.build(mini_content(src))
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(len([c for c in text["cards"] if c["id"].startswith("q_")]), N)
+
+    def test_story_counts_are_eight(self):
+        blob = "\n".join(self.t.values()) + json.dumps(self.text)
+        for bad in ("past six ships", "Six ships", "All seven", "all seven", "the eighth plugged",
+                    "The eighth", "other six", "six displays", "Seven pilots", "seven blind"):
+            self.assertNotIn(bad, blob, bad)
+        for cid in ("end_lights", "end_long_orbit", "end_patience", "end_friend", "end_close"):
+            self.assertIn("All eight", self.t[cid], cid)
+            self.assertIn("ninth", self.t[cid], cid)
+        self.assertIn("Eight down, seven to fly", self.t["end_through"])
+        self.assertIn("Eight ships light their engines", self.t["l_departure"])
 
 
 if __name__ == "__main__":

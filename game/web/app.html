@@ -107,7 +107,7 @@ nav button+button{border-left:1px solid var(--rule)}
 .tl{position:relative;height:16px;font:13px var(--mono);color:var(--ink2)}
 .tl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .tl span:first-child{transform:none}.tl span:last-child{transform:translateX(-100%)}
-.fleet{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--rule);margin-top:8px}
+.fleet{display:grid;grid-template-columns:repeat(8,1fr);border:1px solid var(--rule);margin-top:8px}
 .fleet div{min-height:72px;padding:4px 0;text-align:center;font:13px/18px var(--mono)}
 .fleet div+div{border-left:1px solid var(--rule)}
 .fleet div b{display:block;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--rule);padding-bottom:4px;margin-bottom:4px}
@@ -139,7 +139,7 @@ nav button+button{border-left:1px solid var(--rule)}
 <div id="dock" hidden></div>
 <script>
 /*RENDER_JS*/
-const N=7;
+const N=8;
 const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];
 const KIND={3:"Fleet vote",4:"Private",5:"Anyone can answer"};
@@ -420,8 +420,8 @@ function ending(){
 
 // ---- first run ------------------------------------------------------------------------
 function hello(){
-  bar("THE LONG VOYAGE","7 SHIPS");
-  let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Seven ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
+  bar("THE LONG VOYAGE","8 SHIPS");
+  let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Eight ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
   o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span><span class="lab">${claimed[c]?"Code":"New"}</span></button>`).join("");
   $("v").innerHTML=o+`</section>`;
   dock("","");

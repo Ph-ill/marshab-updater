@@ -69,7 +69,7 @@ await t('recognises Long Voyage after install', async () => {
 });
 
 await t('ship config written atomically and read back', async () => {
-  const cfg = validateShipConfig({ ship_id: '3', ship_name: 'Starship-03', hotspot_password: 'correcthorse', role: 'B' }, { count: 7, roles: ['A', 'B'] });
+  const cfg = validateShipConfig({ ship_id: '3', ship_name: 'Starship-03', hotspot_password: 'correcthorse', role: 'B' }, { count: 8, roles: ['A', 'B'] });
   await writeShipConfig(dev, cfg);
   const info = await readDeviceInfo(dev);
   assert.equal(info.ship.ship_id, 3);
@@ -93,19 +93,19 @@ await t('firmware applies data/ship.json: custom WPA2 password', async () => {
 });
 
 await t('firmware keeps its WPA2 default when no password is set', async () => {
-  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A' }, { count: 7, roles: ['A', 'B'] }));
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A' }, { count: 8, roles: ['A', 'B'] }));
   assert.equal(loadConfig(), '0 4 Starship-04 9');
 });
 
 await t('firmware opens the hotspot only when asked explicitly', async () => {
-  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A', hotspot_open: true }, { count: 7, roles: ['A', 'B'] }));
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A', hotspot_open: true }, { count: 8, roles: ['A', 'B'] }));
   assert.equal(loadConfig(), '0 4 Starship-04 open');
 });
 
 await t('firmware still boots with a corrupt ship.json', async () => {
   writeFileSync(join(root, 'data/ship.json'), '{not json');
   assert.match(loadConfig(), / 9$/);
-  await writeShipConfig(dev, validateShipConfig({ ship_id: 3, role: 'B', hotspot_password: 'correcthorse' }, { count: 7, roles: ['A', 'B'] }));
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 3, role: 'B', hotspot_password: 'correcthorse' }, { count: 8, roles: ['A', 'B'] }));
 });
 
 await t('reinstall (not clean) keeps ship config and logs', async () => {

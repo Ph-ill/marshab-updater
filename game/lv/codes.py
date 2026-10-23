@@ -1,10 +1,10 @@
 # Crew codes, sign-in lockout and "remember this phone for today".
 #
 # Phill sets every crew member's 4-digit code once, in the updater's ship setup, and the
-# same codes go onto all seven ships (people wander between hotspots). The board holds
+# same codes go onto all eight ships (people wander between hotspots). The board holds
 # data/crew.json:
 #
-#   {"schema": 1, "salt": "<32 hex>", "codes": ["<64 hex>" or null, x7]}
+#   {"schema": 1, "salt": "<32 hex>", "codes": ["<64 hex>" or null, x8]}
 #
 # where each code is sha256(salt || crew byte || 4 ASCII digits). The hash only keeps the
 # digits out of a casual file listing: there are 10,000 codes, so anyone holding the file
@@ -22,7 +22,7 @@ try:
 except ImportError:  # pragma: no cover
     from ubinascii import hexlify, unhexlify
 
-N = 7
+N = 8
 MAX_TRIES = 5            # wrong codes in a row before a lockout
 LOCK_MS = 5 * 60 * 1000  # how long the lockout lasts
 MAX_PHONES = 16          # remembered phones per ship (the hotspot takes 4 at a time)
@@ -35,7 +35,7 @@ BAD = 4        # not a crew number / not four digits
 
 
 def digest(salt, crew, code):
-    """salt: bytes, crew: 0-6, code: '0000'-'9999'. Returns 64 lower-case hex chars."""
+    """salt: bytes, crew: 0-7, code: '0000'-'9999'. Returns 64 lower-case hex chars."""
     h = hashlib.sha256(salt + bytes([crew]) + code.encode())
     return hexlify(h.digest()).decode()
 
@@ -109,6 +109,6 @@ class CodeBook:
 
 
 def make_config(codes, salt):
-    """codes: list of 7 '0000'-'9999' strings or None. For tests, the mock and tools."""
+    """codes: list of 8 '0000'-'9999' strings or None. For tests, the mock and tools."""
     return {"schema": 1, "salt": hexlify(salt).decode(),
             "codes": [digest(salt, c, k) if k else None for c, k in enumerate(codes)]}

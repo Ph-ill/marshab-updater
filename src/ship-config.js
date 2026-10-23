@@ -8,7 +8,7 @@ export function defaultShipName(id, pattern = 'Starship-{nn}'){
 
 // Hotspot: the firmware default is WPA2 (config.AP_PASSWORD). A blank password here keeps that default;
 // a new password must be 8-63 characters; an open network has to be asked for explicitly.
-export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotspot_open, role }, { count = 7, roles = [] } = {}){
+export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotspot_open, role }, { count = 8, roles = [] } = {}){
   const id = Number.parseInt(ship_id, 10);
   if(!Number.isInteger(id) || id < 1 || id > count) throw new Error(`ship number must be 1-${count}`);
   const name = String(ship_name || '').trim() || defaultShipName(id);

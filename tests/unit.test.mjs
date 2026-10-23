@@ -26,7 +26,7 @@ t('static release index is Long Voyage only and points at release files', () => 
   for(const r of index.releases) assert.match(r.path, /^\/firmware\/releases\/[^/]+\/release\.json$/);
 });
 t('ship config: WPA2 default, custom password, explicit open network', () => {
-  const opts = { count: 7, roles: ['A', 'B'] };
+  const opts = { count: 8, roles: ['A', 'B'] };
   const def = validateShipConfig({ ship_id: '7', ship_name: ' Starship-07 ', hotspot_password: '', role: 'a' }, opts);
   assert.deepEqual({ ...def }, { schema: 2, ship_id: 7, ship_name: 'Starship-07', role: 'A', hotspot_open: false });
   assert.equal(hotspotSummary(def), 'WPA2, firmware default password');
@@ -39,7 +39,7 @@ t('ship config: WPA2 default, custom password, explicit open network', () => {
   assert.ok(!('hotspot_password' in open), 'open network carries no password');
   assert.equal(hotspotSummary(open), 'open network');
   assert.equal(hotspotSummary(null), 'firmware default (WPA2)');
-  for(const bad of [{ ship_id: 8 }, { ship_id: 0 }, { ship_id: 1, hotspot_password: 'short' }, { ship_id: 1, ship_name: 'a"b' },
+  for(const bad of [{ ship_id: 9 }, { ship_id: 0 }, { ship_id: 1, hotspot_password: 'short' }, { ship_id: 1, ship_name: 'a"b' },
     { ship_id: 1, ship_name: 'x'.repeat(25) }, { ship_id: 1, role: 'C' }, { ship_id: 1, hotspot_password: 'x'.repeat(64) }]){
     assert.throws(() => validateShipConfig({ ship_name: 'S', hotspot_password: '', role: '', ...bad }, opts), JSON.stringify(bad));
   }

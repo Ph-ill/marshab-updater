@@ -23,7 +23,7 @@ VOTE = 2     # a = card index of the decision, b = option index
 DILEMMA = 3  # a = card index of the dilemma, b = option index
 NOTE = 4     # a = preset line (0..2), b = target crew
 
-ADMIN_SHIP = 7
+ADMIN_SHIP = 15  # outside the crew range 0..7; the author field is 4 bits (0..15)
 
 
 def hmac_sha256(key, msg):

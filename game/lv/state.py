@@ -10,7 +10,7 @@ except ImportError:  # pragma: no cover
 from lv import ops as O
 from lv.prng import Rng, day_seed
 
-N = 7
+N = 8  # ships = crew; every per-crew array, the bond matrix and dil_seen's bit-per-crew byte fit 8
 OFF = 128  # signed values are stored +128
 
 

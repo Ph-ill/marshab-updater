@@ -14,7 +14,7 @@ python3 - <<'PY'
 import json, sys
 d = json.load(open("sim/out/stats.json"))["determinism"]
 bad = [k for k, v in d.items() if not v["all_7_match"]]
-print("determinism:", "FAIL " + ", ".join(bad) if bad else "all 7 ships match in " + ", ".join(d))
+print("determinism:", "FAIL " + ", ".join(bad) if bad else "all 8 ships match in " + ", ".join(d))
 sys.exit(1 if bad else 0)
 PY
 node tests/render_check.mjs
