@@ -457,7 +457,7 @@ function crew(c){
   const mentions=[];
   for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if(x.s.includes(nm(c))&&mentions.length<3)mentions.push([d,x.s]);
   o+=`<section><div class=lab><span>Lately</span></div><ul class=log>${mentions.map(([d,s])=>`<li><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(s)}</li>`).join("")||"<li class=fold>Nothing logged yet.</li>"}</ul></section>`;
-  if(mine)o+=`<section>${EG?"":`<button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button>`}<button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
+  if(mine)o+=`<section>${EG?"":`<button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button>`}${S.led!=null?`<button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>the board's LED</i></button>`:""}<button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
   $("v").innerHTML=o;
   dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to ${h(nm(S.you))}</span><i>←</i></button>`,"crew");
 }
@@ -741,6 +741,7 @@ document.addEventListener("click",async(ev)=>{
     if(ws){ws.onclose=ws.onerror=null;ws.close();ws=null}
     clearInterval(poll);poll=0;net="live";tok="";me=-1;S=null;return go("hello");
   }
+  if(D.led){el.disabled=true;try{const j=await api("/api/led",{on:!S.led});S.led=!!j.led}catch(e){}return view()}
   if(D.key)return key(D.key);
   if(D.retry){if(!T)return location.reload();el.disabled=true;return refresh().catch(()=>{el.disabled=false})}
   if(D.pick){const [c,i]=D.pick.split(":").map(Number);pick[c]=i;return view()}
