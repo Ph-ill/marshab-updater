@@ -96,5 +96,90 @@ class TestTags(unittest.TestCase):
         self.assertTrue(cr["flagship"])
 
 
+def hook_cards(n):
+    out = []
+    for i in range(n):
+        out.append("""
+card h%d
+type event
+hook
+once
+days 2 40
+roles A
+when cond A ok
+do who hook_who A
+text At 23:40 something happens to {A}. (%d)
+
+card r%d
+type event
+due
+once
+days 2 42
+roles A
+when fired h%d
+when is A hook_who
+text {A} sorts it out. (%d)
+""" % (i, i, i, i, i))
+    filler = """
+card filler
+type beat
+weight 50
+cooldown 1
+roles A
+text {A} makes coffee.
+
+card ev
+type event
+cooldown 1
+roles A
+text {A} checks the dosimeter.
+"""
+    return "".join(out) + filler
+
+
+class TestHooks(unittest.TestCase):
+    def build(self, n=12):
+        pack, text, ctx = lvc.build(mini_content(hook_cards(n)))
+        self.assertEqual(ctx.errors, [])
+        return Pack(pack), text
+
+    def test_hook_is_last_line_and_resolves_next_day(self):
+        p, text = self.build()
+        ids = [c["id"] for c in text["cards"]]
+        st, days = season(p)
+        hook_days = []
+        for d, out in enumerate(days, 1):
+            ent = [out[i:i + 8] for i in range(0, len(out), 8)]
+            for k, e in enumerate(ent):
+                if e[1] == O.O_EVENT and ids[e[2]].startswith("h"):
+                    self.assertEqual(k, len(ent) - 1, "hook not last on day %d" % d)
+                    hook_days.append((d, ids[e[2]], e[3]))
+        self.assertGreaterEqual(len(hook_days), 4, hook_days)
+        for (d, hid, who) in hook_days:
+            nxt = [e for e in events(days[d], ids.index("r" + hid[1:]))]
+            self.assertEqual(len(nxt), 1, "resolver for %s missing on day %d" % (hid, d + 1))
+            self.assertEqual(nxt[0][3], who, "resolver bound someone else")
+        gaps = [b[0] - a[0] for a, b in zip(hook_days, hook_days[1:])]
+        self.assertTrue(all(g >= O.HOOK_GAP for g in gaps), gaps)
+        self.assertTrue(all(d <= p.season - 2 for d, _, _ in hook_days))
+
+    def test_text_json_marks_hooks(self):
+        _, text = self.build(2)
+        marked = [c["id"] for c in text["cards"] if c.get("h")]
+        self.assertEqual(marked, ["h0", "h1"])
+
+    def test_hook_without_resolver_is_an_error(self):
+        src = hook_cards(1).replace("when fired h0", "when day >= 2")
+        _, _, ctx = lvc.build(mini_content(src))
+        self.assertTrue(any("no resolver" in e for e in ctx.errors), ctx.errors)
+
+    def test_hook_must_be_once_event_and_end_early(self):
+        src = hook_cards(1).replace("hook\nonce\ndays 2 40", "hook\ndays 2 41")
+        _, _, ctx = lvc.build(mini_content(src))
+        msg = " ".join(ctx.errors)
+        self.assertIn("needs `once`", msg)
+        self.assertIn("last 2 days", msg)
+
+
 if __name__ == "__main__":
     unittest.main()

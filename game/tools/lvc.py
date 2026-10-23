@@ -17,6 +17,8 @@ Card format (one card per `card` line, indentation only matters for option effec
   weight 10                       # relative chance among eligible cards (default 10)
   once                            # fire at most once per season
   due                             # fire whenever eligible (callbacks), no dice roll
+  hook                            # cliffhanger event: last line of its day; needs a
+                                  #   `due` resolver with `when fired <this card>`
   cooldown 6                      # days before it can fire again (repeatable cards)
   duration 2                      # days a decision/dilemma/rescue stays open
   roles A B                       # crew roles to bind (A first)
@@ -251,6 +253,8 @@ def parse_cards(path, ctx):
                     card["flags"] |= O.F_ONCE
                 elif word == "due":
                     card["flags"] |= O.F_DUE
+                elif word == "hook":
+                    card["flags"] |= O.F_HOOK
                 elif word == "cooldown":
                     card["cooldown"] = ubyte(rest)
                 elif word == "duration":
@@ -434,6 +438,26 @@ def validate(cards, ctx, fleet, system):
                     tgt = cards[ids.index(a[1])]
                     if tgt["type"] not in (O.RESCUE, O.DECISION, O.DILEMMA):
                         ctx.errors.append("%s: open needs a rescue, decision or dilemma" % where)
+    for c in cards:
+        if not c["flags"] & O.F_HOOK:
+            continue
+        w = c["where"]
+        if c["type"] != O.EVENT or c["flags"] & O.F_DUE:
+            ctx.errors.append("%s: a hook must be a plain event (not due)" % w)
+        if not c["flags"] & O.F_ONCE:
+            ctx.errors.append("%s: a hook needs `once`" % w)
+        if c["days"][1] > fleet["season"] - 2:
+            ctx.errors.append("%s: a hook can't fire in the last 2 days; end its days by %d"
+                              % (w, fleet["season"] - 2))
+        resolvers = [r for r in cards if r["flags"] & O.F_DUE and r["type"] in (O.EVENT, O.BEAT)
+                     and any(op == O.C_FIRED and a == ("card", c["id"]) for (op, a, _, _), _ in r["conds"])]
+        if not resolvers:
+            ctx.errors.append("%s: hook %s has no resolver (a due event with `when fired %s`)"
+                              % (w, c["id"], c["id"]))
+        for r in resolvers:
+            if r["days"][1] < c["days"][1] + 1:
+                ctx.errors.append("%s: resolver %s must run to day %d or later"
+                                  % (r["where"], r["id"], c["days"][1] + 1))
     endings = [c for c in cards if c["type"] == O.ENDING]
     if not endings:
         ctx.errors.append("no ending cards")
@@ -534,7 +558,8 @@ def build(content_dir):
         "ships": [cr["ship"] for cr in fleet["crew"]],
         "flagship": next((i for i, cr in enumerate(fleet["crew"]) if cr["flagship"]), 0),
         "epi": system.get("epi", {}),
-        "cards": [{"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]}
+        "cards": [dict({"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]},
+                       **({"h": 1} if c["flags"] & O.F_HOOK else {}))
                   for c in cards],
         "actions": system["actions"],
         "notes": system["notes"],
