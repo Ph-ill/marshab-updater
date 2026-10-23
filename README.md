@@ -63,15 +63,27 @@ git add firmware && git commit -m "firmware: package Long Voyage 0.0.2-coex" && 
   `latest`, so "Install latest" and the update notice skip it (the page enforces that even
   if an index says otherwise), and installing it asks first. Nothing installs on its own.
 - `--hotspot-prefix LV-` tells the page the release's hotspot name (prefix + ship number).
-- The Long Voyage test build, from `game/` after `MPY_CROSS=... sh tools/board_build.sh`:
+- The Long Voyage test build is a **partial release for the game firmware**. Build the
+  `.uf2` and the board files from `game/` first (`sh tools/build_firmware.sh`, then
+  `MPY_CROSS=... sh tools/board_build.sh`), then from the repository root:
 
   ```bash
   python3 tools/build_release.py --version 0.1.0-lv-test --channel test \
-    --label "Long Voyage test: game core, BLE sync, status page" \
-    --source game/build/board --exclude season_log.bin --hotspot-prefix LV- \
-    --delete lv --delete lvship.py --delete selftest.py --delete lvwifi.py \
+    --label "Long Voyage test: the phone game on the board, BLE sync (game firmware)" \
+    --source game/build/board-fw \
+    --frozen game/tools/fw/cores/lv-core-0.1.0-<core>.json --hotspot-prefix LV- \
+    --delete lvship.py --delete selftest.py --delete lvwifi.py \
     --delete config.py --delete index.html --notes "..." --mpy-cross "$(command -v mpy-cross)"
   ```
+
+  `--frozen` names the frozen core the release runs on (`tools/fw/cores/` keeps one
+  manifest per core). The release then has no `lv/` files; `lvx/<module>.mpy` overrides
+  are allowed only for modules that core has, and are listed in `"overrides"`;
+  `lv` and `lvx` are added to `delete` so a stale `/lv` or an old override can't win.
+  `tools/validate_firmware.py` checks all of that, and the page reads the board's frozen
+  core and refuses a release built for another one (or for stock MicroPython) before
+  writing anything. `game/tools/board_build.sh` works out the overrides by itself: only
+  core modules changed since that manifest go into `build/board-fw/lvx/`.
 
   The updater writes files over USB only; the `.uf2` game firmware
   (`game/tools/build_firmware.sh`) is flashed by hand (BOOTSEL), see `game/docs/BENCH_TEST.md`.
