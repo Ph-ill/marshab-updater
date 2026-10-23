@@ -355,17 +355,44 @@ class TestFairCasting(unittest.TestCase):
         for v in tot:
             self.assertLess(abs(v - mean) / mean, 0.10, tot)
 
-    def test_reveal_pays_off_every_season(self):
+    def test_fair_play_and_endings_over_300_seasons(self):
+        # Every season must deliver the core clue set before the reveal, and every
+        # ending must be reachable at a real rate (>= 5%). Same seasons and keys as
+        # `sim/season.py --seasons 300`, which also fails on an unfair season.
         sys.path.insert(0, os.path.join(ROOT, "sim"))
-        from season import reference_season
+        from season import reference_season, fair_play
         _, text, _ = lvc.build(CONTENT)
-        ids = [c["id"] for c in text["cards"]]
-        rv = ids.index("m_reveal")
-        for seed in range(1, 21):
-            key = bytes([0, seed]) + b"season"
-            st = reference_season(Pack(self.p.data), seed=seed, voyage_key=key)[0]
-            self.assertTrue(st.fired[rv], seed)
+        self.assertGreaterEqual(len(text["core"]), 4)
+        self.assertTrue(text["reveal"])
+        ends = {}
+        for i in range(300):
+            key = bytes([(i >> 8) & 255, i & 255]) + b"season"
+            st = reference_season(Pack(self.p.data), seed=1000 + i, voyage_key=key)[0]
+            self.assertEqual(fair_play(st, text), [], "season %d" % i)
+            ends[st.ending] = ends.get(st.ending, 0) + 1
+        n_end = sum(1 for c in text["cards"] if c["id"].startswith("end_"))
+        self.assertEqual(len(ends), n_end)
+        self.assertGreaterEqual(min(ends.values()), 15, ends)
 
+    def test_climax_is_clear(self):
+        # No cliffhangers after day 36, nothing resolves after 37, and the last
+        # days belong to arrival, the reveal and the endings.
+        import glob, re
+        for f in glob.glob(os.path.join(CONTENT, "cards", "*.lv")):
+            with open(f) as fh:
+                src = fh.read()
+            for b in re.split(r"(?m)^(?=card )", src):
+                m = re.match(r"card (\w+)", b)
+                d = re.search(r"(?m)^days (\d+) (\d+)$", b)
+                if not m or not d:
+                    continue
+                hi, cat = int(d.group(2)), re.search(r"(?m)^cat (\w+)", b).group(1)
+                if re.search(r"(?m)^hook$", b):
+                    self.assertLessEqual(hi, 36, m.group(1))
+                elif re.search(r"(?m)^when fired h_", b):
+                    self.assertLessEqual(hi, 37, m.group(1))
+                elif cat not in ("arrival", "ending") and not re.search(r"(?m)^reveal$", b):
+                    self.assertLessEqual(hi, 39, m.group(1))
 
 if __name__ == "__main__":
     unittest.main()
