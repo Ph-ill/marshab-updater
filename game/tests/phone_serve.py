@@ -1,0 +1,95 @@
+# The board's phone server (board/lvweb.py + lvphone.py) on a real TCP port, for a browser
+# to play against (tests/app_e2e.mjs). Runs on CPython or the MicroPython unix port, from game/:
+#
+#   python3 tests/phone_serve.py [day] [port]
+#   micropython -X heapsize=1m tests/phone_serve.py [day] [port]
+#
+# The board's files as tools/board_build.sh lays them out (www/*.gz, pack.bin, engage.bin)
+# under build/e2e-root/, a ship at flight day `day` (default 9) with the reference season's
+# records from before it, every crew code 1234. Prints "CREW <n>" (someone with a private
+# dilemma open today, if anyone) and "READY <port>", then serves until killed.
+import sys
+import os
+sys.path.append("board")
+sys.path.append(".")
+try:
+    import asyncio
+except ImportError:  # pragma: no cover
+    import uasyncio as asyncio
+import json
+
+import lvship
+import lvweb
+import lvdays
+from lv import codes as K
+from lv import record as R
+
+DAY = int(sys.argv[1]) if len(sys.argv) > 1 else 9
+PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8099
+ROOT = "build/e2e-root/"
+DATA = "build/e2e-data"
+
+
+def mkdir(p):
+    try:
+        os.mkdir(p)
+    except OSError:
+        pass
+
+
+def copy(src, dst):
+    with open(src, "rb") as f:
+        b = f.read()
+    with open(dst, "wb") as f:
+        f.write(b)
+
+
+mkdir(ROOT)
+mkdir(ROOT + "www")
+mkdir(DATA)
+for n in ("app.html.gz", "text.json.gz", "engage.json.gz"):
+    copy("build/" + n, ROOT + "www/" + n)
+copy("build/pack.bin", ROOT + "pack.bin")
+copy("build/engage.bin", ROOT + "engage.bin")
+for n in ("local.bin", "days.bin"):
+    try:
+        os.remove(DATA + "/" + n)
+    except OSError:
+        pass
+with open(DATA + "/crew.json", "w") as f:
+    f.write(json.dumps(K.make_config(["1234"] * 8, b"bench-salt-16-by")))
+with open("build/season_log.bin", "rb") as f:
+    raw = f.read()
+with open(DATA + "/log.bin", "wb") as f:
+    for i in range(0, len(raw), R.LEN):
+        if R.day(raw[i:i + R.LEN]) < DAY:
+            f.write(raw[i:i + R.LEN])
+raw = None
+
+cfg = lvship.load_config("/nonexistent")
+cfg["day"] = DAY
+cfg["ship_id"] = 3
+quiet = lambda s: None  # noqa: E731
+ship = lvship.Ship(cfg, root=ROOT, data=DATA, say=quiet, radio=False,
+                   days=lvdays.Days(DATA + "/days.bin"))
+srv = lvweb.Server(ship, root=ROOT, ip="127.0.0.1:%d" % PORT, say=quiet)
+crew = 2
+for it in ship.st.pend:
+    if it[0] == 4 and it[4] < 7 and it[4] != 5:
+        crew = it[4]
+        break
+
+
+async def main():
+    await asyncio.start_server(srv.handle, "127.0.0.1", PORT)
+    print("CREW %d" % crew)
+    print("READY %d" % PORT)
+    try:
+        sys.stdout.flush()       # a pipe on CPython
+    except AttributeError:
+        pass
+    while True:
+        await asyncio.sleep(1)
+
+
+asyncio.run(main())

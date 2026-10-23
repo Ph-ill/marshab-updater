@@ -1,8 +1,9 @@
 # Run on a board with:  mpremote connect <PORT> run tools/fw/clean_fs.py
-# Clears the board's filesystem for the game firmware (docs/BENCH_TEST.md, Variant B): the
-# filesystem survives a .uf2 flash, and any lvship/lv module or main.py left on it would run
-# instead of the frozen game. Keeps /data (ship settings, the log) and bench logs (*.csv,
-# *.txt, *.old). Prints what it removed.
+# Clears the board's filesystem before the game firmware's files go on (docs/BENCH_TEST.md,
+# Variant B): the filesystem survives a .uf2 flash, and a leftover /lv folder would hide the
+# frozen game core (every module back in the heap). Keeps /data (ship settings, the log,
+# crew codes) and bench logs (*.csv, *.txt, *.old). Prints what it removed. The updater's
+# install does the same cleaning itself; this is for the mpremote route.
 import os
 
 KEEP_DIRS = ("data",)
@@ -24,4 +25,4 @@ for name in os.listdir("/"):
         print("kept   ", "/" + name)
         continue
     rm("/" + name)
-print("clean: reset the board (mpremote connect <PORT> reset); the game firmware writes /main.py and starts")
+print("clean: now copy the game firmware's files (LAYOUT=fw sh tools/board_build.sh <PORT>) or install 0.1.0-lv-test from the updater page")
