@@ -195,7 +195,7 @@ once
 days 42 42
 roles A
 when is A ow_song
-text On the morning of entry, with a planet under the fleet again, {A} plays the song all the way through on the fleet channel, past the four bars, for the first time since Starbase. Six ships hear the fifth bar at last. It isn't what any of them guessed. "That's the one," {A} says.
+text On the morning of entry, with a planet under the fleet again, {A} plays past the four bars, all the way through, and this time on the channel. Six ships hear the fifth bar at last. It isn't what any of them guessed. "That's the one," {A} says.
 do morale A 5
 
 # --- Thread: the garden ------------------------------------------------------------
@@ -469,7 +469,20 @@ once
 days 41 41
 roles A B
 when is A ow_dose
+when !flag arrive_wait
 text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. Neither of them sleeps much.
+do bond A B 6
+
+card a_last_night_o
+type beat
+cat arrival
+due
+once
+days 41 41
+roles A B
+when is A ow_dose
+when flag arrive_wait
+text The last nights before aerocapture. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "In orbit," {A} says. "Then the ground. Then we'll see."
 do bond A B 6
 
 # --- Arrival day: what the fleet chose, and what it cost ------------------------------
@@ -523,19 +536,20 @@ days 42 42
 roles A
 when flag valve_out
 when is A valve_who
-text Through the blackout {A}'s ship flies one thruster short, on the workaround written around the valve that night. Out the far side it rolls once the wrong way, slowly, a motion the model never had, and comes back. {A} initials the log line, then the next, and breathes.
+when !is A abort_who
+text Before entry {A} flies the valve workaround once more in the simulator, one thruster short. The model rolls the wrong way out of the blackout and comes back, the way it did that night. {A} initials the log line and closes the panel.
 
 card a_recall_shared
 type event
 cat arrival
 due
 once
-days 42 42
+days 41 41
 roles A B
 when flag stash_exposed
 when is A stash_who
-when !fired a_recall_wrist
-text Before strapping in, {A} sends {B} the last pack from the locker on the morning transfer, with a note on the bag in borrowed handwriting: "You'll thank me."
+when !is A eva_who
+text On the last transfer window, four days out, {A} sends {B} the last pack from the locker, with a note on the bag in borrowed handwriting: "You'll thank me."
 do bond B A 3
 
 card a_recall_marker
@@ -549,3 +563,40 @@ when is A ow_theory
 text Before strapping in, {A} folds the lighthouse drawing into a chest pocket with the blue marker. Overnight a second lighthouse has appeared on it, small, standing on the ground, in the same blue.
 do morale A 2
 
+# --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on the manual abort.
+card e_entry_hold
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag arrive_hold
+when is A abort_who
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had, and the abort call sits on {A}'s tongue, the one drilled over the link and run four days ago from memory. Then the radar finds the ground, and {A} doesn't call it.
+do morale A 3
+
+card e_entry_wait
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag arrive_wait
+when is A abort_who
+text Aerocapture. Four minutes of plasma blackout high in the air, seven ships silent in turn. Six come out the far side on time. {A}'s comes out eleven seconds late: eleven seconds of nothing on the fleet channel, the abort call ready on {A}'s tongue, as drilled. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
+do morale A 3
+
+card e_entry_clear
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when !flag arrive_hold
+when !flag arrive_wait
+when is A abort_who
+text Entry interface in clear air. Four minutes of plasma blackout, seven ships silent in turn. At the landing burn one of {A}'s engines lights late, a long half second, and the abort call is half out of {A}'s mouth, word for word as drilled over the link, when it catches. The ground comes up exactly where the maps said.
+do morale A 3
