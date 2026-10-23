@@ -60,7 +60,7 @@ days 17 24
 roles A
 when flag dose_told
 when is A ow_dose
-text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." {A} tapes it beside the bunk, between the water tanks.
+text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." {A} clips it beside the bunk, between the water tanks.
 do morale A 4
 
 card c_dose
@@ -140,7 +140,7 @@ once
 days 34 35
 roles A
 when is A ow_letter
-text In the restow for entry the letter isn't in the left chest pocket. {A} empties the locker, the sleeping bag, the bin of wipes, and goes very still. It's in the checklist binder, marking the page for entry, where {A} put it last week. "There you are," {A} says.
+text In the restow for entry the letter isn't in the left chest pocket. {A} empties the locker, the sleeping bag, the bin of wipes, then works the restow list again from the top, item by item. It's in the checklist binder, marking the page for entry, where {A} put it last week. "There you are," {A} says.
 do morale A 2
 
 card a_letter
@@ -199,7 +199,7 @@ roles A
 when cond A ok
 lean brave zip ticket
 text {A} finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
-option ticket | Open a ticket | Earth wants photos, measurements, and a part number nobody can find. {A} supplies all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
+option ticket | Open a ticket | Earth wants photos, measurements, and a part number that isn't on any drawing. {A} supplies all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
   morale A -1
 option zip | Zip-tie it | {A} lashes the rack in a pattern no design review would pass, and it takes every load the ship can throw at it. The anomaly report calls it "interim". It is not interim.
   set zip_fix
@@ -228,7 +228,7 @@ duration 3
 roles A
 when cond A ok
 lean brave go wait
-text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. Nobody would blame {A} for waiting for the planned EVA.
+text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. No one would blame {A} for waiting for the planned EVA.
 option go | Close up and go out | The next ship closes up, its astronaut suited at the hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
   res fuel -1
   trait A brave 3

@@ -10,7 +10,7 @@ once
 duration 1
 roles A B
 lean warm feast quiet
-text Halfway, by the flight plan's clock. {A} wants to break out the good rations and mark it properly. {B} would rather nobody counted yet.
+text Halfway, by the flight plan's clock. {A} wants to break out the good rations and mark it properly. {B} would rather not count yet.
 option feast | Mark it | The fleet eats the good rations on seven screens at once. {A} gives a toast about the halfway mark, and it turns into a toast about the people who packed the food.
   res food -2
   morale A 4
@@ -31,7 +31,7 @@ text The backup-site maps, stitched from imagery older than the cargo landings, 
 option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
   set name_plan
   trait A curious 2
-option home | Name it for home | The crater gets the name of a small town on Earth that nobody outside it has heard of. Within a day, the town's newspaper has a front page about it.
+option home | Name it for home | The crater gets the name of a small town on Earth that most of Earth has never heard of. Within a day, the town's newspaper has a front page about it.
   set name_home
   trait B warm 3
   morale B 4
@@ -46,7 +46,7 @@ duration 2
 roles A B
 lean curious record save
 text A gamma-ray burst goes off somewhere past the galaxy, and the fleet's dose monitors catch it. Timed against detectors near Earth, the full-rate data could pin the source, but sending it home costs a day of the dish, and every letter waits. {A} wants the data sent. {B} wants the letters.
-option record | Send the data | The fleet sends it. The burst's source shrinks from a smear of sky to a point. {A} reads the confirmation and lets out a breath nobody else hears.
+option record | Send the data | The fleet sends it. The burst's source shrinks from a smear of sky to a point. {A} reads the confirmation and lets out a long breath.
   morale B -2
   trait A curious 3
   morale A 3
@@ -146,7 +146,7 @@ roles A
 when flag flash_seen
 when since t_flash >= 2
 when is A flash_who
-text {A} goes through every night frame of that patch from this month. Every pass, on different rows of the sensor, the lit pixel lands on the same spot of ground. Cosmic rays don't return to one address, and a hot pixel would follow the camera, not Mars. {A} sends the list round. The channel goes quiet.
+text {A} goes through every night frame of that patch this month. Every pass, on different rows of the sensor, the lit pixel lands on the same spot of ground. Cosmic rays don't return to one address; a hot pixel would follow the camera, not Mars. {A} sends the list round, asking to be told it's wrong.
 do set flash_twice
 do open dec_flash
 

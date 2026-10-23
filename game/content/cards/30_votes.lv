@@ -12,7 +12,7 @@ duration 2
 roles A B
 lean warm fly decline
 text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. That means closing to a careful hundred metres apart, and propellant to get there and back. The request uses the word "iconic" four times.
-option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes the shot from their own hull camera. Nobody breathes until the ships are apart again.
+option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes the shot from their own hull camera. {A} holds a breath until the ships are apart again.
   set photo_taken
   res fuel -2
   morale A 4
@@ -60,7 +60,7 @@ option strip | Strip it now | The processor spends nine hours in pieces on the d
   who water_fix_who A
   res spares -1
   trait A curious 3
-option degrade | Run it degraded | The fleet goes on water rationing. Nobody complains out loud. {A} logs the recovery rate every hour, which is its own kind of complaint.
+option degrade | Run it degraded | The fleet goes on water rationing. The complaints stay off the channel. {A} logs the recovery rate every hour, which is its own kind of complaint.
   set water_rationed
   who water_who A
   morale A -3
@@ -76,7 +76,7 @@ when flag water_rationed
 when is A water_who
 when apart B A
 when cond B ok
-text The degraded water processor on {A}'s ship quits at 04:00. {A} has the rebuild plan taped inside the panel door, already written. {B} rides the transfer line over in an unscheduled window with the spare valve, and the two of them have water flowing by breakfast.
+text The degraded water processor on {A}'s ship quits at 04:00. {A} has the rebuild plan clipped inside the panel door, already written. {B} rides the transfer line over in an unscheduled window with the spare valve, and the two of them have water flowing by breakfast.
 do move B A
 do bond A B 8
 do res spares -1
@@ -157,7 +157,7 @@ days 29 33
 roles A
 when flag trim_early
 when cond A ok
-text The latest navigation fix comes in: the fleet sits within a few kilometres of the centre of the arrival corridor, still riding that small early burn. {A} tapes the number up beside Earth's last decent photo.
+text The latest navigation fix comes in: the fleet sits within a few kilometres of the centre of the arrival corridor, still riding that small early burn. {A} writes the number up beside Earth's last decent photo.
 do morale A 3
 
 card trim_callback_late

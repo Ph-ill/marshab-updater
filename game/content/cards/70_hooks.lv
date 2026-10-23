@@ -115,7 +115,7 @@ option manual | Hand control | {A} took attitude into manual, just for a minute,
   who valve_who A
   mark t_valve
   res fuel -1
-option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night is taped up with the leak circled in red.
+option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night is pinned up with the leak circled in red.
   trait A curious 2
   morale A 4
   set valve_out
@@ -252,7 +252,7 @@ weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 02:40. The intercom on {A}'s ship opens by itself and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. There is nobody else aboard.
+text 02:40. The intercom on {A}'s ship opens by itself and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. {A} is the only one aboard.
 
 card r_voice
 type event

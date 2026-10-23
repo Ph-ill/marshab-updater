@@ -103,7 +103,7 @@ once
 days 18 19
 roles A
 when is A ow_list
-text The delay has turned calls into letters. {A} records one for home and stops halfway, because there's no one to interrupt. {A} starts again and leaves pauses in it, where the laughs would have been. The list from the first call is still in the pocket.
+text The delay has turned calls into letters. {A} records one for home and talks straight through the gaps, then deletes it and does it again with pauses, which is worse. The list from the first call is still in the pocket.
 do morale A 2
 do trait A warm 2
 
@@ -161,7 +161,7 @@ once
 days 21 22
 roles A B
 when is A ow_song
-text On the night {B} finally asks about the four bars, {A} says the rest of the song belongs to someone at home and gets played when there's a planet under it again. {B} says that's a deal, and starts humming a made-up fifth bar on purpose.
+text On the night {B} finally asks about the four bars, {A} plays them again, all four, and stops. "Planet first." {B} says that's a deal, and starts humming a made-up fifth bar on purpose.
 do bond A B 5
 do bond B A 3
 
@@ -423,7 +423,7 @@ weight 9
 once
 roles A
 when cond A ok
-text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock nobody has ever touched. {A} saves the frame, then sits with it on the screen a while longer than the job needs.
+text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock no hand has ever touched. {A} saves the frame, then sits with it on the screen a while longer than the job needs.
 do trait A curious 3
 
 card w_phobos
@@ -575,4 +575,15 @@ when flag signal_ignored
 when !fired a_recall_wrist
 when !fired a_recall_stash
 when is A ow_hail
-text The comms computer never left the letters, and every one from home arrived on time. {A} answers the last on the morning of entry and adds a line nobody at home will understand yet: "We're going to say hello in person."
+text The comms computer never left the letters, and every one from home arrived on time. {A} answers the last on the morning of entry and adds a line the ground won't understand yet: "We're going to say hello in person."
+card a_recall_marker
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when is A ow_theory
+text Before strapping in, {A} folds the lighthouse drawing into a chest pocket with the blue marker. Overnight a second lighthouse has appeared on it, small, standing on the ground, in the same blue.
+do morale A 2
+

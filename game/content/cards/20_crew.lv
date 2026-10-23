@@ -23,7 +23,7 @@ duration 3
 roles A
 when !fired dil_stash
 lean warm share keep
-text The three packs from behind the panel are the good rations, the ones the galley ran out of first. Nobody else knows they exist.
+text The three packs from behind the panel are the good rations, the ones the galley ran out of first. They aren't on any inventory.
 option keep | Keep them quiet | {A} thanks the Sharpie silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash
