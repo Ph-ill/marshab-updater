@@ -6,6 +6,7 @@ import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
 import { boardFromRuntime, firmwareKind, summarizeDeviceInfo } from '../src/device-info.js';
 import { findRelease } from '../src/installer.js';
+import { CREW, validateCodes, sharedCodes, crewConfig, digest, randomCode, codeList, loadCodes, saveCodes, forgetCodes, CODES_MEMORY_KEY } from '../src/crew-codes.js';
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, ROLE_MEMORY_KEY } from '../src/role-memory.js';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok -', name); };
@@ -101,5 +102,40 @@ t('role memory: suggest the other role, warn on a repeat, tell boards apart by u
   assert.equal(roleClash(h, null, 'A', roles)?.uid, 'b1', 'without a unique id every board counts as another');
   mem.set(ROLE_MEMORY_KEY, '{broken'); assert.deepEqual(loadRoleHistory(storage), [], 'corrupt storage is ignored');
   assert.deepEqual(loadRoleHistory(null), [], 'no storage at all');
+});
+
+// Crew codes: the browser must hash exactly like game/lv/codes.py (same vector as its tests).
+const SALT = '000102030405060708090a0b0c0d0e0f';
+const vec = await digest(SALT, 0, '1234');
+const cfg = await crewConfig(['1234', '', '0420', '9999', '0000', '1111', '2222'], SALT);
+t('crew codes: digest matches the board (game/lv/codes.py)', () => {
+  assert.equal(vec, '0cc8d81bab788a28b5390ce71859e989a5b3e623b8e1cb44c6bfadccc5ff03e4');
+  assert.equal(cfg.schema, 1);
+  assert.equal(cfg.salt, SALT);
+  assert.equal(cfg.codes[0], vec);
+  assert.equal(cfg.codes[1], null, 'blank = not set up');
+  assert.match(cfg.codes[2], /^[0-9a-f]{64}$/);
+  assert.ok(!JSON.stringify(cfg).includes('0420'), 'no plain codes in the board file');
+});
+t('crew codes: roster matches game/content/roster.lv', () => {
+  const lv = readFileSync(new URL('../game/content/roster.lv', import.meta.url), 'utf8');
+  assert.deepEqual([...lv.matchAll(/^crew\s+(\S+)/gm)].map(m => m[1]), CREW);
+});
+t('crew codes: validation, shared codes, random codes, list, browser memory', () => {
+  assert.deepEqual(validateCodes([' 1234', '', '0000', '', '', '', '']), ['1234', '', '0000', '', '', '', '']);
+  assert.throws(() => validateCodes(['123', '', '', '', '', '', '']), /Phill's code must be 4 digits/);
+  assert.throws(() => validateCodes(['', '12a4', '', '', '', '', '']), /Jacques/);
+  assert.throws(() => validateCodes(['', '', '', '', '', '', '']), /at least one/);
+  assert.throws(() => validateCodes(['1234']), /need 7/);
+  assert.deepEqual(sharedCodes(['1234', '5678', '1234', '', '', '', '']), [['Phill', 'Kim']]);
+  for(let i = 0; i < 200; i++) assert.match(randomCode(), /^\d{4}$/);
+  assert.match(codeList(['1234', '', '', '', '', '', '']), /^Phill +1234\nJacques +\(not set up\)/);
+  const mem = new Map(); const storage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v), removeItem: k => mem.delete(k) };
+  assert.equal(loadCodes(storage), null);
+  saveCodes({ salt: SALT, codes: ['1234', '', '', '', '', '', ''] }, storage);
+  assert.deepEqual(loadCodes(storage).codes[0], '1234');
+  mem.set(CODES_MEMORY_KEY, '{broken'); assert.equal(loadCodes(storage), null, 'corrupt storage is ignored');
+  saveCodes({ salt: SALT, codes: ['1234', '', '', '', '', '', ''] }, storage); forgetCodes(storage);
+  assert.equal(loadCodes(storage), null);
 });
 console.log(`\n${n} unit checks passed`);
