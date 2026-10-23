@@ -22,7 +22,7 @@ days 5 36
 roles A
 when fired h_pressure
 when is A hook_who
-text {A} spent four hours suited, helmet on, with an ultrasonic leak detector. The culprit was a cable feedthrough whose seal shrank in the cold of the shaded side. It's resealed, the pressure holds, and the trend line goes in the logbook like a fish someone caught.
+text {A} spent four hours suited with an ultrasonic leak detector. The culprit was a cable feedthrough whose seal shrank in the shaded-side cold. It's resealed. The trend line goes in the logbook like a fish someone caught; under it, the reserve line, which won't come back up before Mars.
 do res spares -1
 do morale A 5
 
@@ -50,14 +50,14 @@ when fired h_thruster
 when is A hook_who
 lean brave manual watch
 text The ship was steady again within a quarter of an hour.
-option manual | Hand control | {A} took attitude into manual and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
+option manual | Hand control | {A} took attitude into manual and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and that axis flies one thruster short for the rest of the voyage.
   trait A brave 2
   morale A 4
   set valve_out
   who valve_who A
   mark t_valve
   res fuel -1
-option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night has the leak circled in red.
+option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and that axis flies one thruster short for the rest of the voyage.
   trait A curious 2
   morale A 4
   set valve_out
@@ -74,7 +74,7 @@ days 5 36
 roles A
 when fired h_flood
 when is A hook_who
-text The log for that night: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and the sleep log for that night is blank.
+text The log for that night: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was down from 214 to a page. The backup is the only pump now.
 do morale A 5
 do res spares -1
 
@@ -132,14 +132,13 @@ do trait A warm 3
 
 card r_dark
 type event
-cat mystery
-clue core key
+cat grim
 due
 once
-days 31 34
+days 27 30
 roles A
 when fired h_dark
 when is A hook_who
-text {A} was back within the hour: the comms computer hung on the first whole frame from Mars, a link request signed with an old program key, sequence 1, the usual fresh challenge. The ground: "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed."
+text {A} was back within the hour: the comms computer had hung on a frame from Mars, the first whole one, until a watchdog cleared it. The frame goes to the ground, sealed, for a proper decode. That night six ships take turns on the fleet net, one sentence each, checking in.
 do trait A brave 3
 do morale A -2
