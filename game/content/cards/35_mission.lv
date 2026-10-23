@@ -379,7 +379,7 @@ days 41 41
 roles A
 when flag arrive_hold
 when is A abort_who
-text The descent brief goes up four days out, and the formation opens out for entry, two minutes between ships. The storm fills the prime zone rim to rim, so the plan retargets to the backup site and gains a line no one has had to write before: "radar for height, terrain cameras for place, Cargo 2 as cross-check". {A} reads it to the empty cabin, then runs the manual abort once, from memory.
+text The descent brief goes up four days out, and the formation opens out for entry, two minutes between ships. The storm fills the prime zone rim to rim, so the plan retargets to the backup site and gains a line no one has had to write before: "radar for height, terrain cameras for place, Cargo 2 as cross-check". {A} reads it aloud, then runs the manual abort once, from memory.
 do morale A 2
 
 card a_descent_wait

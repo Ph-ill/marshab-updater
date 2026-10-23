@@ -204,9 +204,20 @@ after its `type` line:
   ending is a landing scene, not a summary. Every branch shows the event
   recorder (`a_log` when answered; the unanswered endings otherwise).
 - Voices belong to arcs, not people (casting is random). See STORY_BIBLE.md
-  "Voices". Keep the register different per arc: a talker, a musician who never
-  explains, a procedural letter-keeper, a hopeful failure-logger, a proud one
-  who has to be asked twice, a drawer, a timer.
+  "Voices". Keep the register different per arc:
+  - list: a talker; run-on sentences, lists inside lines;
+  - song: taciturn and musical; two-word lines, never explains;
+  - garden: chats to the plants; logs failure hopefully;
+  - letter: formal and procedural ("Item located."), except about the letter;
+  - dose: blunt; argues with numbers, thanks grudgingly ("Fair.");
+  - hail: timestamps and radio-terse ("No misses. Patient. Out.");
+  - theory: visual; asks questions and draws them.
+- Humor lands on the situation, the object or the procedure, never on the
+  crewmate's memory or competence (a book written for windowsills, step
+  fourteen of a ground procedure, numbers that turned out better).
+- Retired tics (round 5): "since Starbase", "slowly", "Around the fleet" and
+  other filler fold lines (fold lines name a concrete chore), "nobody" anywhere
+  in card or system text.
 - Epilogue: every astronaut gets a line. Story lines first; fallbacks from
   `epi.axis` / `epi.bond` / `epi.plain` (sim `Renderer.epilogue(out, st)`).
 
