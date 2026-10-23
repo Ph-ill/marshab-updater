@@ -31,7 +31,7 @@ text The backup-site maps, stitched from imagery older than the cargo landings (
 option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
   set name_plan
   trait A curious 2
-option home | Name it for home | The crater gets the name of a small town on Earth that most of Earth has never heard of. Within a day, the town's newspaper has a front page about it.
+option home | Name it for home | The crater gets the name of a small town on Earth that most of Earth has never heard of. The town's paper runs it on the front page.
   set name_home
   trait B warm 3
   morale B 4
@@ -75,7 +75,7 @@ once
 days 24 27
 roles A
 when since t_theory >= 2
-text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there for part of each day, gone for the rest, and back a little later each morning than the last. It goes in the anomaly file, behind the dust forecast that's due first.
+text {A} plots a week of the old-channel carrier. It isn't steady: there for part of each day, gone for the rest, and back a little later each morning than the last. It goes in the anomaly file, behind the dust forecast that's due first.
 
 card m_theory
 type event
@@ -270,7 +270,7 @@ days 38 38
 roles A
 when fired m_overlay
 when is A ow_song
-text The old-channel carrier stands out in a narrow filter. {A} turns each burst into a click on the cabin speaker: a click, a hiss, a pause, a click, like rain starting on a car roof. The four bars fit between them. {A} plays them on the galley keyboard, stopping where the fifth should be. "Nearly."
+text {A} turns each old-channel burst into a click on the cabin speaker: click, hiss, pause, click, like rain starting on a car roof, as a log margin said weeks back. The four bars fit between them. {A} plays them on the galley keyboard, stopping where the fifth should be. "Nearly."
 do morale A -1
 
 card a_drill_plan
@@ -294,7 +294,7 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text An orbiter flies a pass over the backup site, sun low. Behind a crater rim lies a long shadow, too straight for rock, the knock's pixel at its foot. {A} lays the old landing ellipses over it, one write-off at a time. The relay's misses. The hopper's misses. Cargo 2's fits. The housekeeping comes through whole: legs down, one wing half open, dish jammed on its stop. {A} counts the dark: nine, ten, eleven, flare.
+text An orbiter passes the backup site at low sun. Behind a crater rim lies a long shadow, too straight for rock, the knock's pixel at its foot. {A} lays each write-off's last fix over it. The hopper's misses. Cargo 2's landing ellipse fits; the relay's "spin" was it, on its way in. The housekeeping comes through whole: legs down, one wing half open, dish jammed on its stop. {A} counts the dark: nine, ten, eleven, flare.
 do trait A curious 3
 
 card a_recall_plan
@@ -328,7 +328,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text {A} asks Starbase for the rest of the patch. The pad crew sent it up twice during Cargo 2's cruise, off the books, in case it came down short; neither upload was ever acknowledged. Four lines in the Sharpie hand turn a wreck into a pad: KNOCK. ANSWER INSIDE ONE TICK. NO TIMEOUT. ON HELLO, WAKE ALL, NO BATTERY CHECK. Written for a crewed pad with a charger. The "impact scar" in that low-res pass was its aft skirt.
+text Starbase sends {A} the rest of the patch. The pad crew sent it up twice during Cargo 2's cruise, off the books, in case it came down short; neither upload was ever acknowledged. In the Sharpie hand: KNOCK UNTIL ANSWERED. ANSWER INSIDE ONE TICK. ON HELLO, WAKE ALL, NO BATTERY CHECK. Written for a crewed pad with a charger: a lamp for eyes, a knock for radios. The "impact scar" in that low-res pass was its aft skirt.
 
 card a_report
 type event
@@ -340,7 +340,7 @@ roles A
 when fired m_reveal
 when is A flash_who
 when fired a_patch
-text {A} lays one tick against the light time. The tick is eleven seconds; Earth has never been closer than minutes. {A} works out where Earth was for every hail on the list, and puts the pen down. "It heard every hail. Every one arrived after it had stopped waiting."
+text {A} lays one tick against the light time. The tick is eleven seconds; Earth has never been closer than minutes. Earth's hails went out blind, a sweep for the relay; the knocks its dishes caught were booked to the hopper's beacon. Nothing in Mars orbit speaks the old channel. {A} puts the pen down. "It heard every hail. Every one arrived after it had stopped waiting."
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -447,5 +447,5 @@ roles A
 when !flag arrive_hold
 when !flag arrive_wait
 when is A ow_hail
-text The descent brief goes up four days out: clear air, straight in, two minutes between ships. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker.
+text The descent brief goes up five days out: clear air, straight in, two minutes between ships. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker.
 do morale A 3

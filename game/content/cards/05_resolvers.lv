@@ -35,7 +35,7 @@ days 8 34
 roles A
 when fired h_flare
 when is A hook_who
-text Seven crews spent the night in their shelters between the water tanks, listening to the dosimeters tick. By morning: a month's dose in six hours. {A} wrote down the peak and slept till noon. The dose model now gives each of them a number for later, in a column headed "lifetime".
+text Every crew spent the night in its shelter between the water tanks, listening to the dosimeters tick. By morning: a month's dose in six hours. {A} wrote down the peak and slept till noon. The dose model now gives each of them a number for later, in a column headed "lifetime".
 do var storms 1
 do morale A 3
 
@@ -144,7 +144,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when !flag signal_answered
-text Three hours of an empty slot on the net; the next ship's lens showed lit windows. Then {A}, hoarse. An old-channel frame asked for a key update the new stack had never heard of; main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The old channel comes off the fleet net.
+text Three hours of an empty slot on the net; the next ship's lens showed lit windows. Then {A}, hoarse. An old-channel frame asked for a key update the new stack had never heard of; main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The old channel drops to receive only.
 do trait A brave 3
 do morale A -2
 

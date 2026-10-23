@@ -44,17 +44,17 @@ players).
   seconds in Earth orbit, 1.5-2 minutes by days 19-21 (93-116 s, round 16 engineer), about 3 at day 25, 5 at
   day 33, about 7.5 at day 40 (452.7 s; round trip "a quarter of an hour", round 18
   engineer), 8 at arrival (day 42); the round trip on sol 2 is 16.7 minutes, so a
-  surface waiver takes longer than that ("eighteen minutes"). Mars one-way: ~100 s at day 22 (round trip 18 ticks), 30-40 s at
-  day 34, just under half a minute at day 36, 15 s at day 39, 10 s round trip
+  surface waiver takes longer than that ("eighteen minutes"). Mars one-way: ~100 s at day 22 (round trip 18 ticks), about 40 s at
+  day 34 (39-42 s, round 20 engineer), just under half a minute at day 36, 15 s at day 39, 10 s round trip
   at day 41 (5 s one-way). The carrier slides against fleet time by about 1.65
   seconds a day around day 20, easing to about one second a day from day 28 to
   41 (DE440s, round 18 engineer). The tick is 10.96 s; in prose say "about eleven
-  seconds", never a rounder or sharper figure. Storm dose: past 100 mSv on days 20-21 (72-101 mSv over that stretch, round 17 engineer); never earlier. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
+  seconds", never a rounder or sharper figure. Storm dose: "past a hundred millisieverts" on days 20-21, never a sharper figure (the round 17 model gives 72-101 mSv over that stretch, MSL/RAD rates give 120-140; "past a hundred" holds under both, round 20 engineer); never earlier. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
   season. Earth shrinks to a dot you can cover with a thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
   Mars "under three weeks out" in real flight. Day 41: inside five
-  light-seconds (Mars about half lit, phase near 92°, the dawn line almost straight down the middle; round 17), about four days before atmospheric entry ("the last night
-  before entry" belongs to day 41). Day 42: entry morning. Plasma blackout is "three minutes" (under four for a Mars entry), the same on every entry card. Venus casts a hand shadow only in the first ten days (`w_venus_shadow` days 7-10). Round trip to Earth at day 19 is about 3.2 minutes ("well over three minutes"). Arrival is direct
+  light-seconds (Mars about half lit, phase near 92°, the dawn line almost straight down the middle; round 17), about five days before atmospheric entry (a 10 s round trip is 1.5 million km, 5.0 days out at 3.45 km/s; write "five days out", round 20 engineer) ("the last night
+  before entry" belongs to day 41). Day 42: entry morning. Plasma blackout is "three minutes" (under four for a Mars entry), the same on every entry card. Venus casts a hand shadow only in the first ten days (`w_venus_shadow` days 7-10). Round trip to Earth at day 19 is about 3 minutes (2.9-3.1, round 20 engineer). Arrival is direct
   entry from the crossing, or aerocapture into a long orbit if the fleet votes
   to wait.
 - **EVAs are never solo.** A partner is suited at the next ship's hatch, or the
@@ -276,6 +276,16 @@ after its `type` line:
   anyone who had a scene that day.
 - Epilogue: every astronaut gets a line. Story lines first; fallbacks from
   `epi.axis` / `epi.bond` / `epi.plain` (sim `Renderer.epilogue(out, st)`).
+- Round 20 rules. Tie closes come from the `sys.dec_tie` pool (a list in
+  system.json; both renderers step through it in order, one counter per pass over the story), and say "{n} ballots", never
+  "votes". A decision outcome never restates who decided: the lead line already
+  did. Habit lines don't share openers ("Every data drop", "Last mail before
+  entry" are retired, and linted); a habit never touches ship systems for a joke;
+  one hobby shows at most twice per crewmate a season, and two crewmates never
+  share a hobby costume. Ending sign-offs land on Cargo 2's character (stubborn,
+  slow, generous), not on a pun, and every number a reader can check (dose,
+  light time, battery) follows the table above. The middle (days 17-27) keeps one
+  quiet grim line item in play (`g_margin`, `g_count`): a form, never a speech.
 
 ## Clue keywords
 

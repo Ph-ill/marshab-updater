@@ -15,7 +15,7 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
-text {A}'s arrival-test dish scans the old common channel toward Mars; no one has listened there since the relay was written off. A week of integration shows a faint carrier. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias, probably," {A} says.
+text {A}'s arrival-test dish scans the old common channel toward Mars, where the ground now checks only for the hopper's beacon. A week of integration shows a faint carrier. Folded at a shade under 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias, probably," {A} says.
 do who ow_hail A
 do mark t_carrier
 
@@ -29,7 +29,7 @@ roles A B
 when is A ow_hail
 when since t_carrier >= 4
 when fired m_theory
-text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against a fixed 10.96-second clock by over a second and a half a day, the fleet's closing rate on Mars. Hour to hour the residuals stay flat. "Booked again. Out," {A} logs.
+text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against a fixed 10.96-second clock by over a second and a half a day, the fleet's closing rate on Mars. No two-hour orbit in the residuals. "Booked again. Out," {A} logs.
 do bond A B 3
 do open dec_signal
 
@@ -76,7 +76,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 do mark t_frame
-text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, cut off partway. Its period hasn't moved by a millisecond in a day. One field is a counter that hasn't moved since the scrap before. Whatever it counts, nothing has given it one.
+text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, cut off partway. Its period hasn't moved by a millisecond in a day. One field is a counter that hasn't moved since the first scrap, a week back. Whatever it counts, nothing has given it one.
 do morale A -3
 
 # Injury and rescue: needs supplies from another ship.
