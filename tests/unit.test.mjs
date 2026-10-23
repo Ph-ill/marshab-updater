@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { compareVersions } from '../src/releases.js';
-import { validateShipConfig, defaultShipName, hotspotSummary } from '../src/ship-config.js';
+import { validateShipConfig, defaultShipName, hotspotSummary, hotspotForRole } from '../src/ship-config.js';
 import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
 import { boardFromRuntime, firmwareKind, summarizeDeviceInfo } from '../src/device-info.js';
@@ -68,5 +68,11 @@ t('runtime: status, boards and upstream links', () => {
     assert.match(b.sha256, /^[0-9a-f]{64}$/);
   }
   assert.equal(verifyCommands('x.uf2').linux, 'sha256sum x.uf2');
+});
+t('hotspot name follows the role like the firmware (A -> COEX-0, B -> COEX-1, none -> COEX-0)', () => {
+  assert.equal(hotspotForRole('A'), 'COEX-0');
+  assert.equal(hotspotForRole('b'), 'COEX-1');
+  assert.equal(hotspotForRole(''), 'COEX-0');
+  assert.equal(hotspotForRole(null, ['A', 'B']), 'COEX-0');
 });
 console.log(`\n${n} unit checks passed`);

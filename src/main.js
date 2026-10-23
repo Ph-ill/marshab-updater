@@ -4,7 +4,7 @@ import { installRelease, loadReleaseManifest } from './installer.js';
 import { loadReleaseIndex, compareVersions } from './releases.js';
 import { loadRuntimeSpec } from './releases.js';
 import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
-import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary } from './ship-config.js';
+import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, hotspotForRole } from './ship-config.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
 const SHIP_COUNT = 7;
@@ -59,6 +59,7 @@ Object.assign(els, {
   shipId: $('shipId'),
   shipName: $('shipName'),
   shipRole: $('shipRole'),
+  shipSsid: $('shipSsid'),
   shipPassword: $('shipPassword'),
   shipOpen: $('shipOpen'),
   shipShowPw: $('shipShowPw'),
@@ -102,7 +103,7 @@ function resetProgress(status = 'Standing by.', visible = false){
 }
 function hotspotName(){
   const role = state.deviceInfo?.ship?.role;
-  return role ? `COEX-${role === 'B' ? 1 : 0}` : 'the ship hotspot (COEX-0 or COEX-1)';
+  return role ? hotspotForRole(role) : 'the ship hotspot (COEX-0 or COEX-1)';
 }
 function showPowerCycleModal(){
   els.powerCycleSsid.textContent = hotspotName();
@@ -325,7 +326,7 @@ function renderShipFields(){
   for(const r of roles){
     const o = document.createElement('option');
     o.value = r;
-    o.textContent = `${r} (hotspot COEX-${r === 'B' ? 1 : 0})`;
+    o.textContent = r;
     els.shipRole.append(o);
   }
   els.shipRole.value = roles.includes(current) ? current : '';
@@ -338,8 +339,18 @@ function renderShipFields(){
     if(cfg.role && roles.includes(cfg.role)) els.shipRole.value = cfg.role;
   }
   setText(els.shipHotspot, state.device ? hotspotSummary(cfg) : '—');
+  renderShipSsid();
   els.shipName.placeholder = defaultShipName(els.shipId.value || 1);
   els.shipPassword.disabled = !state.device || state.busy || els.shipOpen.checked;
+}
+
+// Live "→ COEX-n" tag next to the role select: the network name this board will broadcast.
+function renderShipSsid(){
+  const roles = shipRoles();
+  const role = els.shipRole.value;
+  const ssid = roles.length ? hotspotForRole(role, roles) : '—';
+  els.shipSsid.textContent = ssid;
+  els.shipSsid.title = role ? `Role ${role} broadcasts ${ssid}` : `No role: the firmware default, ${ssid} (same as role ${roles[0] || 'A'})`;
 }
 
 async function saveShipConfig(){
@@ -585,6 +596,7 @@ function initEvents(){
   document.addEventListener('keydown', event => { if(event.key === 'Escape' && !els.powerCycleModal.hidden) hidePowerCycleModal(); });
   els.saveShipBtn.addEventListener('click', () => { saveShipConfig(); });
   els.shipId.addEventListener('change', () => { els.shipName.placeholder = defaultShipName(els.shipId.value); });
+  els.shipRole.addEventListener('change', renderShipSsid);
   els.shipShowPw.addEventListener('change', () => { els.shipPassword.type = els.shipShowPw.checked ? 'text' : 'password'; });
   els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
   els.refreshLogsBtn.addEventListener('click', () => { refreshLogs(); });

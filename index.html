@@ -93,7 +93,9 @@
         <div class="grid">
           <label class="field"><span>Ship no.</span><select id="shipId" disabled></select></label>
           <label class="field"><span>Ship name</span><input id="shipName" type="text" maxlength="24" autocomplete="off" disabled></label>
-          <label class="field"><span>Bench role</span><select id="shipRole" disabled><option value="">none</option></select></label>
+          <label class="field"><span>Bench role</span>
+            <span class="with-tag"><select id="shipRole" disabled><option value="">none</option></select><output id="shipSsid" class="tag" for="shipRole" aria-live="polite">—</output></span>
+          </label>
           <label class="field"><span>Hotspot password</span>
             <input id="shipPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="blank = keep current (WPA2)" disabled>
           </label>
