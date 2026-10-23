@@ -156,6 +156,9 @@ after its `type` line:
   overnight.
 - text.json marks hook cards with `"h":1`, so the phone can show the line as
   "Last night...".
+- `clue` marks a fair-play clue (STORY_BIBLE.md has the list). text.json
+  collects them in `"reread"`; the end screen lists their flight days with no
+  explanation. A clue card must read as ordinary on first pass.
 
 ## Card types and what they're for
 
