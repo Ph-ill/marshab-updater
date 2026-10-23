@@ -9,6 +9,8 @@ edited by different people and change at different times. lv/engage.py reads
 engage.bin; web/engage.js reads engage.json. Nothing here changes the story pack.
 
 engage.bin layout (all bytes):
+  (engage.json also carries {resolver card: cliffhanger card}, read from build/pack.bin)
+
   "LVE1", ntiers, pct[ntiers], count[ntiers], pity_days,
   job_pct, njobs, per job: (h0, h1, nout, weight[nout]),
   ngifts, flags[ngifts] (bit0 = can give, bit1 = can ask), ask_days
@@ -132,6 +134,31 @@ def build(content):
     return bytes(b), phone, warns
 
 
+def resolvers(pack_path):
+    """{resolver card: hook card} from build/pack.bin: due cards (F_DUE) whose conditions
+    include 'fired <a cliffhanger card>'. The phone uses it to pair this morning's
+    resolution with last night's cliffhanger. Read from the compiled pack, so lvc.py and
+    the .lv format don't change."""
+    sys.path.insert(0, ROOT)
+    from lv import ops as O
+    from lv.pack import load
+    try:
+        p = load(pack_path)
+    except OSError:
+        return {}
+    hooks = {c.idx for c in p.cards if c.flags & O.F_HOOK}
+    out = {}
+    for c in p.cards:
+        if not c.flags & O.F_DUE:
+            continue
+        q = c.conds
+        for i in range(p.data[q]):
+            op, a = p.data[q + 1 + 4 * i], p.data[q + 2 + 4 * i]
+            if op == O.C_FIRED and a in hooks:
+                out[c.idx] = a
+    return out
+
+
 def main(argv):
     content = os.path.join(ROOT, "content")
     out = os.path.join(ROOT, "build")
@@ -145,6 +172,7 @@ def main(argv):
         for line in str(e).splitlines():
             print("error:", line)
         return 1
+    phone["res"] = {str(k): v for k, v in sorted(resolvers(os.path.join(out, "pack.bin")).items())}
     for w in warns:
         print("warning:", w)
     os.makedirs(out, exist_ok=True)
