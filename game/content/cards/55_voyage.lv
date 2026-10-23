@@ -1,0 +1,278 @@
+# The voyage itself: wonder, home, ship life, the dark, the approach.
+# Arc, motifs and plants: content/STORY_BIBLE.md (spoilers). Voice: content/STYLE.md.
+
+# --- Leaving -------------------------------------------------------------------
+card p_live_call
+type beat
+cat human
+days 1 5
+weight 14
+once
+roles A
+when cond A ok
+text {A} calls home while the delay is still under a second. Someone tells a bad joke and {A} laughs on the beat, in real time, with everyone at the table. Afterwards {A} writes down who was there and what they ate.
+do morale A 5
+do mark t_call
+
+card p_garden_plant
+type beat
+cat life
+days 2 8
+weight 12
+once
+roles A B
+when same A B
+text {A} and {B} plant the garden: six seed pods in a tray the size of a laptop, under a lamp the color of a bruise. {B} labels each pod in tiny capitals. {A} says good night to them, quietly, and nobody comments.
+do set garden_planted
+do var garden 1
+do bond A B 4
+
+card p_garden_tend
+type beat
+cat life
+days 6 38
+weight 6
+cooldown 7
+roles A
+when flag garden_planted
+when cond A ok
+text {A} waters the garden tray with a syringe, two millilitres per pod, and checks each one under the lamp. Nothing yet. {A} logs the nothing as carefully as anything else.
+do var garden 1
+
+card p_garden_fail
+type beat
+cat grim
+days 14 28
+weight 9
+once
+roles A
+when var garden >= 2
+text Four of the six pods in the garden tray have gone soft and grey. {A} lifts them out with tweezers and doesn't say anything for a while. Then {A} refills the syringe for the other two.
+do morale A -3
+do trait A warm 2
+
+card p_garden_sprout
+type beat
+cat wonder
+days 30 41
+weight 16
+once
+roles A B
+when var garden >= 4
+when same A B
+text {A} calls {B} over without a word. In the last pod in the tray, a white thread has split the seed coat and turned, against no gravity at all, toward the lamp.
+do bond A B 6
+do morale A 6
+do morale B 6
+
+# --- The middle dark ------------------------------------------------------------
+card w_venus_shadow
+type event
+cat wonder
+days 10 30
+weight 6
+once
+roles A
+when cond A ok
+text With the cabin lights off and the shutters open, {A}'s hand throws a faint shadow on the bulkhead. The light source is Venus. {A} stays there for a long time, moving their fingers, making the planet cast them.
+do trait A curious 3
+
+card w_phosphene
+type beat
+cat grim
+days 8 40
+weight 6
+cooldown 14
+roles A
+when cond A ok
+text {A} closes their eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light. {A} counts eleven before sleep and is careful not to count the ones that aren't there.
+do trait A curious 2
+do morale A -1
+
+card w_comet
+type event
+cat wonder
+days 12 30
+weight 6
+once
+roles A
+when cond A ok
+text The magnetometer on {A}'s ship twitches for six hours: the fleet is crossing the ion tail of a comet that rounded the Sun before anyone aboard was born. Nothing to see. {A} sits by the window anyway, with the trace scrolling on a tablet.
+do trait A curious 3
+do morale A 2
+
+card p_letters
+type beat
+cat human
+days 14 38
+weight 7
+cooldown 12
+roles A
+when cond A ok
+text The delay has turned calls into letters. {A} records one for home and stops halfway, because there's no one to interrupt. {A} starts again and leaves pauses in it anyway, where the laughs would have been.
+do morale A 2
+do trait A warm 2
+
+card p_birthday
+type beat
+cat life
+days 5 40
+weight 7
+once
+roles A B
+when same A B
+text It's {B}'s birthday by the ground calendar. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet over a week of transfers. {B} keeps the candle.
+do bond A B 6
+do morale B 5
+
+card p_movie
+type beat
+cat life
+days 6 40
+weight 7
+cooldown 12
+roles A B
+when same A B
+text Movie night, on a tablet taped to the ceiling. {A} picked a film set on a submarine. Every time something creaks on screen, {A} and {B} look at the hull and then at each other.
+do bond A B 4
+
+card p_music
+type beat
+cat human
+days 3 42
+weight 6
+cooldown 13
+roles A B
+when same A B
+text {A} plays the same four bars on a travel guitar every evening, never the rest of the song. On the night {B} finally asks, {A} says the rest belongs to someone at home, and plays it all the way through.
+do bond A B 5
+do trait A warm 1
+
+card p_dream
+type beat
+cat human
+days 10 40
+weight 5
+cooldown 15
+roles A
+when cond A ok
+text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone, and {A} doesn't mention it.
+do morale A -2
+do trait A warm 2
+
+card l_long_table
+type event
+cat life
+days 7 39
+weight 6
+cooldown 7
+roles A
+when cond A ok
+text Every seventh flight day the fleet eats together on video: seven tablets on seven galley tables, one meal at one time. {A} is in charge of the toast. It's short, it isn't funny, and it lands.
+do morale A 3
+
+card g_third_quarter
+type event
+cat grim
+days 24 34
+weight 9
+once
+roles A B
+when cond A ok
+text Past the halfway mark the quiet gets heavier. The flight surgeon calls it the third-quarter effect. {A} finds {B} staring at the same page of a checklist for ten minutes, and sits down next to them and starts reading it aloud.
+do bond A B 6
+do morale B 3
+
+card g_news
+type event
+cat grim
+days 16 38
+weight 5
+once
+roles A
+when cond A ok
+text A message from home for {A}: a funeral, already over. By the time it arrived, the people in the photos had gone home and changed their clothes. {A} watches the recording twice and asks for the next watch.
+do morale A -8
+do trait A warm 3
+
+card g_count
+type beat
+cat grim
+days 18 40
+weight 5
+once
+roles A
+when cond A ok
+text {A} counts the medical kit against the manifest: sutures, splints, a defibrillator with one set of pads. {A} counts it again and closes the lid gently, the way you do when someone is sleeping.
+do trait A brave 2
+
+card sharpie2
+type beat
+cat human
+days 26 41
+weight 12
+once
+roles A
+when fired dil_stash
+when cond A ok
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" {A} is, out loud, to an empty locker.
+do res spares 1
+do morale A 5
+
+card p_video_late
+type beat
+cat human
+days 30 41
+weight 8
+once
+roles A
+when since t_call >= 25
+text A video from home reaches {A} twenty minutes after it was sent and a day after the thing it's about. Everyone in it is cheering at something that is already over. {A} cheers back anyway, at the screen, alone.
+do morale A 2
+
+# --- The approach --------------------------------------------------------------
+card w_mars_disc
+type event
+cat wonder
+days 28 36
+weight 14
+once
+roles A
+when cond A ok
+text {A} holds a thumb up to the window, an old habit from the Earth watches. Mars has stopped being a star: it's a disc, rust and a bruise of dark, and it no longer fits behind the nail.
+do morale A 5
+do trait A curious 2
+
+card w_phobos
+type event
+cat arrival
+days 37 41
+weight 14
+once
+roles A
+when cond A ok
+text Phobos comes up over the limb like a potato thrown slowly in front of a lamp. {A} watches it cross a whole world in the time it takes to eat a meal, and can't remember the last time they wanted to stand on something this badly.
+do trait A curious 2
+do morale A 3
+
+card w_aurora
+type event
+cat arrival
+days 36 41
+weight 9
+once
+roles A
+when cond A ok
+text On the night side of Mars, a faint green smear sits over the dark ground: aurora, patchy, pinned to old magnetized rock nobody has ever touched. {A} photographs it, then puts the camera away and keeps looking.
+do trait A curious 3
+
+card a_last_night
+type beat
+cat arrival
+days 40 41
+weight 14
+once
+roles A B
+when same A B
+text The last night before capture. {A} and {B} check the water tanks that shielded them on the flare nights, one more time, by hand. Neither of them sleeps much. Both pretend to, so the other one will.
+do bond A B 6
