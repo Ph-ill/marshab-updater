@@ -38,8 +38,37 @@ try:
     uid = binascii.hexlify(machine.unique_id()).decode()
 except Exception:
     uid = None
-print(json.dumps({'mpy': '%d.%d.%d' % (v[0], v[1], v[2]), 'machine': os.uname().machine, 'build': b, 'fs': fs, 'root': root, 'mainHead': head, 'uid': uid}))
+try:
+    import lvfrozen
+    fz = {'id': lvfrozen.ID, 'version': lvfrozen.VERSION, 'core': lvfrozen.CORE}
+except Exception:
+    fz = None
+try:
+    lvx = sorted(os.listdir('lvx'))
+except Exception:
+    lvx = []
+print(json.dumps({'mpy': '%d.%d.%d' % (v[0], v[1], v[2]), 'machine': os.uname().machine, 'build': b, 'fs': fs, 'root': root, 'mainHead': head, 'uid': uid, 'frozen': fz, 'lvx': lvx}))
 `;
+}
+
+// The game firmware (game/tools/build_firmware.sh) has the game core frozen in and says so in
+// its frozen lvfrozen module; files in /lvx override single core modules. Same wording as the
+// board's own selftest line (game/lv/__init__.py describe()).
+export function overridesOf(runtime){
+  const names = [];
+  for(const f of runtime?.lvx || []){
+    const m = /^([a-z_][a-z0-9_]*)\.(mpy|py)$/.exec(f);
+    if(m && !m[1].startsWith('_') && !names.includes(m[1])) names.push(m[1]);
+  }
+  return names;
+}
+
+export function describeFirmware(runtime){
+  const fz = runtime?.frozen;
+  if(!fz) return 'stock MicroPython (no frozen game core)';
+  const base = `frozen ${fz.id} ${fz.version} (core ${fz.core})`;
+  if((runtime.root || []).includes('lv')) return `${base} HIDDEN by a /lv directory: reinstall to remove it`;
+  return `${base}, overrides: [${overridesOf(runtime).join(', ')}]`;
 }
 
 export async function readJsonFile(device, path){
@@ -101,10 +130,12 @@ export function summarizeDeviceInfo(info){
   const version = info.version?.project === 'LongVoyage'
     ? info.version.version
     : kind === 'long-voyage' ? 'coex test (hand-copied)' : kind === 'empty' ? 'nothing installed' : 'other firmware';
-  const runtime = info.runtime ? `MicroPython ${info.runtime.mpy}` : 'unknown';
+  const runtime = info.runtime
+    ? `MicroPython ${info.runtime.mpy}${info.runtime.frozen ? ` · game firmware: ${describeFirmware(info.runtime)}` : ''}`
+    : 'unknown';
   const ship = info.ship;
   const name = ship ? `${ship.ship_name || 'ship'} · #${ship.ship_id}${ship.role ? ` · role ${ship.role}` : ''}` : 'not set';
   const fs = info.runtime?.fs ? `${Math.round(info.runtime.fs[1] / 1024)} KB free of ${Math.round(info.runtime.fs[0] / 1024)} KB` : '—';
   const board = `${info.board || 'unknown'}${info.uid ? ` · id ${info.uid}` : ''}`;
-  return { version, runtime, name, board, fs, kind };
+  return { version, runtime, name, board, fs, kind, firmware: info.runtime ? describeFirmware(info.runtime) : null };
 }
