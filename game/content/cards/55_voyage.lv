@@ -36,7 +36,7 @@ due
 once
 days 3 9
 roles A
-text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the cabin lights blink once for the self-test, the logo, the three-note chime, all over before {A} has counted to eleven. By the end of the week the whole fleet is humming the chime.
+text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the logo, a progress bar, the three-note chime, all over before {A} has counted to eleven. By the end of the week the whole fleet is humming the chime.
 do morale A 1
 
 card p_garden_plant
@@ -60,7 +60,7 @@ due
 once
 days 5 9
 roles A
-text {A} reads the arrival manifest while the last tanker of a month of refuelling docks. Habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4, which sends the weather. Cargo 2 gets one line, "lost on landing, written off", and a coarse thumbnail from well outside the zone: a smudge and a streak.
+text {A} reads the arrival manifest. Habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4. Cargo 2, the last one down, gets one line between a surplus drill bit and a pallet of nitrogen bottles: "lost on landing, written off". The relay list ends with a third orbiter in grey: "retired, thruster stuck open".
 do trait A curious 1
 
 card l_departure
@@ -70,7 +70,7 @@ due
 once
 days 6 6
 roles A
-text The last tanker undocks at dawn. Seven ships light their engines for the departure burn, and {A} feels weight come back for the first time since launch. When the engines stop, Earth is already shrinking, and by the next watch {A} can hide it behind a thumb.
+text The last tanker undocks at dawn. Seven ships light their engines for the departure burn, and {A} feels weight come back for the first time since launch. When the engines stop, Earth is already shrinking, and by the next day {A} can hide it behind a thumb.
 do morale A 3
 
 card l_transfer
@@ -80,7 +80,7 @@ due
 once
 days 7 7
 roles A
-text The ships hold formation a few hundred metres apart. Every fifth day they close up for a transfer window: a tethered line between hatches, scheduled and paid for in propellant, so nobody crosses for fun. An empty ship flies itself. {A} rides it first and calls the middle "educational".
+text The ships hold formation a few hundred metres apart. Every fifth day they close up for a transfer window: a tethered line between hatches, a morning on oxygen before it, paid for in propellant, so nobody crosses for fun. An empty ship flies itself. {A} rides it first and calls the middle "educational".
 do trait A brave 2
 
 card l_handshake
@@ -88,10 +88,10 @@ type beat
 cat life
 due
 once
-days 12 13
+days 12 20
 roles A
 when !is A ow_list
-text The galley screen on {A}'s ship has started to sulk. On every restart it waits a few seconds for the ground to say hello, gives up, and boots in "offline mode" with a sad little icon. Earth used to answer before the logo finished. {A} files a ticket titled "manners".
+text The galley screen on {A}'s ship has started to sulk: after every restart it sits on its logo a little longer than it used to, then boots with a sad cloud icon and the word OFFLINE. {A} files a ticket titled "manners".
 do morale A 1
 
 # --- Thread: the list ------------------------------------------------------------
