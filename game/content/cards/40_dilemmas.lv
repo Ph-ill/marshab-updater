@@ -165,8 +165,8 @@ duration 3
 roles A
 when cond A ok
 lean brave tune wait
-text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance team is off shift until morning.
-option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", one attachment, the procedure for next time, and a new flight rule about who may change gains.
+text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance lead who owns that loop is off shift; the night console can log it but not sign it.
+option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", and asks for the change as a procedure, under {A}'s name.
   set gains_tuned
   who gains_who A
   trait A brave 2

@@ -32,7 +32,7 @@ days 6 10
 weight 12
 once
 roles A B
-text {A} and {B} keep a channel open as Earth and the Moon slide into the same frame, each at their own window on their own ship. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: the Moon, behind a thumb.
+text {A} and {B} keep a channel open as Earth and the Moon slide into the same frame, each at their own window on their own ship. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: the Moon, half lit, over a sliver of Earth.
 do bond A B 6
 
 card beat_gym
