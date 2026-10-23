@@ -1347,3 +1347,42 @@ Blind round 22 (hunter, editor). Final content pass; no review rounds follow.
 - **Engine.** Shipped text.json drops card ids (build/text.dev.json keeps them).
 - **Numbers.** 217 cards, 31 vars, gzip 24,796 B; endings over 300 seasons
   long_orbit 70, through 69, lights 65, patience 57, friend 21, close 18.
+
+## Round 25 notes (pass 2)
+
+- **Voices.** Marco "Capacity: one.", Michelle "Story first. Numbers next."; a
+  voice prints on at most two cards a crewmate a season, then "Noted." (so the
+  carrier-thread owner, Jacques included, never hears the same tic 4-5 times).
+  Hard-coded "Out." in `m_alias`, `signal_reply`, `c_hail` is now `{Av}`.
+  Jacques habit 1 no longer quotes his voice. `m_ripple` epilogue: "logged it
+  to the hundredth of a hertz" (never blamed a pump).
+- **Quirk facts kept, as moments.** Michelle briefs "like a Disney queue" then
+  "the Tesla half takes over"; Jai's dad answers "in full JetBlue gate voice"
+  and saves the first song on the next wedding dance floor; Marco's cologne
+  is "a ritual older than the BMW years in Mexico, older than leaving Elgin".
+- **Predictability.** `m_checked`/`m_checked_g` drop "Cargo 2's landing
+  ellipse is closer, but Cargo 2 is a scar in a photo" for "crater rims and old
+  landing ellipses" (l_manifest keeps "scar in a low-res pass"). `m_alias`: "A
+  two-hour orbit would show; a week of residuals is too sparse to tell" keeps
+  the relay alive until p38's 24 h 37 m. `m_hopper`: the theory fits "night for
+  night, bar one frame lit before the panel could see sun. {A} circles it."
+  (the fair flaw: Cargo 2's lamp does not need sun).
+- **g_ledger** keeps the crew column and adds "Carried forward: a relay, a
+  hopper, Cargo 2."
+- **Page 40.** `a_patch`, `a_report`, `m_theory` trimmed; "puts the pen down"
+  now only in `a_report`.
+- **Galley screen.** Unanswered endings close it in the `a_window_hail` "pure
+  coincidence" register: Through and Patience boot ONLINE "by pure
+  coincidence"; Close Enough blinks ONLINE, then OFFLINE as Cargo 2 dies. Long
+  Orbit left as is (no room under 640).
+- **Endings.** Through: `e_entry_hold_q` ends "the brown closes over the
+  window" (no "upright"), the radar line is gone, the epilogue says "made the
+  folded ship a neighbour", and the battery is "the folded ship's last".
+  Long Orbit: "the next crew's germination trays"; ""Lamp," seven times, and
+  {B} makes it eight"; "Eight names sign the loss"; {B} asks for the first slot
+  down. Patience: "Week three, storm spent" bridges the orbit; {B} counts the
+  dark aloud. Close Enough: "the rover's spare battery went to heaters", "Its
+  patch wakes heaters and door", "They drive home cold".
+- **Small.** `l_transfer` reads as rules plus a scene ("tries the line
+  first"), keeping "A visit bends the rule" and "Every few weeks". `m_dropout`
+  "flare forecast".
