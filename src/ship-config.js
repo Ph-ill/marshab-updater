@@ -25,6 +25,14 @@ export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotsp
   return cfg;
 }
 
+// The coex firmware names its hotspot COEX-<n>: role A -> 0, role B -> 1, and with no role it keeps
+// its built-in SHIP_ID 0. So "no role" and "A" broadcast the same name.
+export const HOTSPOT_PREFIX = 'COEX-';
+export function hotspotForRole(role, roles = ['A', 'B']){
+  const i = roles.indexOf(String(role || '').toUpperCase());
+  return `${HOTSPOT_PREFIX}${i < 0 ? 0 : i}`;
+}
+
 export function hotspotSummary(cfg){
   if(!cfg) return 'firmware default (WPA2)';
   if(cfg.hotspot_open) return 'open network';
