@@ -165,12 +165,12 @@ duration 3
 roles A
 when cond A ok
 lean brave tune wait
-text The attitude control on {A}'s ship has a slow wobble, and {A} seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance team is off shift until morning.
+text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance team is off shift until morning.
 option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", one attachment, the procedure for next time, and a new flight rule about who may change gains.
   set gains_tuned
   who gains_who A
   trait A brave 2
-option wait | Wait for sign-off | {A} files the request and lives with the wobble overnight. The ground approves the exact change {A} proposed, word for word, the next afternoon.
+option wait | Wait for sign-off | {A} files the request and lives with the wobble overnight. The ground approves {A}'s change, word for word, the next afternoon.
   trait A brave -2
   morale A 2
 
@@ -228,7 +228,7 @@ duration 3
 roles A
 when cond A ok
 lean brave go wait
-text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. No one would blame {A} for waiting for the planned EVA.
+text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. No one would blame {A} for waiting.
 option go | Close up and go out | The next ship closes up, its astronaut suited at the hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
   res fuel -1
   trait A brave 3

@@ -42,8 +42,8 @@ duration 2
 roles A B
 lean curious open log
 when fired m_alias
-text Whatever the carrier is, it isn't the fleet's. {A} wants to answer every burst with the standard handshake, signed with the old program key the fleet still carries. {B} points out that every reply ties up the comms computer, and the letters from home queue behind a machine.
-option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, standard handshake, until someone says stop. The first answer goes out at 14:02. The carrier comes and goes as before, and {A} logs every answer to the millisecond.
+text Whatever the carrier is, it isn't the fleet's. {A} wants to answer every burst with the standard handshake, signed with the old program key the fleet still carries. {B} points out that every reply ties up the comms computer, and the letters queue behind it.
+option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, standard handshake, until someone says stop. The first goes out at 14:02, and {A} logs every answer to the millisecond.
   set signal_answered
   mark t_signal
   morale B -3

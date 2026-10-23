@@ -166,7 +166,7 @@ option send | Send a cartridge | A spare cartridge rides the line across in an u
   res spares -1
   res fuel -1
   morale A 4
-option bring | {B} brings it over | {B} rides the transfer line across with the cartridge in an unscheduled window and stays to help rebuild the primary. By midnight both scrubbers are running, and {B} is asleep on {A}'s floor.
+option bring | {B} brings it over | {B} rides the line across with the cartridge in an unscheduled window and stays to help rebuild the primary. By midnight both scrubbers are running, and {B} is asleep on {A}'s floor.
   res spares -1
   res fuel -1
   move B A

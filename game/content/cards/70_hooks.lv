@@ -106,7 +106,7 @@ when fired h_thruster
 when is A hook_who
 lean brave manual watch
 text By 02:30 the ship was steady again.
-option manual | Hand control | {A} took attitude into manual, just for a minute, and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
+option manual | Hand control | {A} took attitude into manual and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
   trait A brave 2
   morale A 4
   set valve_out
