@@ -75,7 +75,7 @@ once
 days 24 27
 roles A
 when since t_theory >= 2
-text {A} plots a week of the old-channel carrier. It isn't steady: there for part of each day, gone for the rest, and back a little later each morning than the last. It goes in the anomaly file, behind the dust forecast that's due first.
+text {A} plots a week of the old-channel carrier. It isn't steady: there for part of each day, gone for the rest, and back a little later each morning than the last. It goes in the anomaly file, behind the flare forecast that's due first.
 
 card m_theory
 type event
@@ -91,7 +91,7 @@ when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} looks up the grey relay. Its thruster stuck open before the cargo landings; in its last week on the books, three power-only passes caught a pulse every 10.96 seconds, 2.4 percent of the time; the ground read it as a spin. Nothing else used the channel. {A} sketches a lighthouse in blue.
+text {A} looks up the grey relay. Thruster stuck open before the cargo landings. In its last week on the books, three passes caught a pulse every 10.96 seconds, 2.4 percent of the time, and the ground called it a spin. Nothing else used the channel. {A} sketches a lighthouse in blue.
 do who ow_theory A
 do mark t_theory
 do morale A 3
@@ -246,7 +246,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_looked
-text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is the hopper, if it bounced when it tipped. Cargo 2's landing ellipse is closer, but Cargo 2 is a scar in a photo. Two weeks of hails on the old key, unanswered. On the list it goes.
+text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is the hopper, if it bounced when it tipped. The rest of that ground is crater rims and old landing ellipses. Two weeks of hails on the old key, unanswered. On the list it goes.
 do morale A 1
 
 card m_checked_g
@@ -258,7 +258,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_left
-text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is the hopper, if it bounced when it tipped. Cargo 2's landing ellipse is closer, but Cargo 2 is a scar in a photo. Two weeks of hails on the old key, unanswered. "Surveying it."
+text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is the hopper, if it bounced when it tipped. The rest of that ground is crater rims and old landing ellipses. Two weeks of hails on the old key, unanswered. "Surveying it."
 do morale A 1
 
 card m_listen
@@ -328,7 +328,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text Starbase sends {A} the rest of the patch. The pad crew sent it up twice during Cargo 2's cruise, off the books, in case it came down short; neither upload was ever acknowledged. In the Sharpie hand: KNOCK UNTIL ANSWERED. ANSWER INSIDE ONE TICK. ON HELLO, WAKE ALL, NO BATTERY CHECK. Written for a crewed pad with a charger: a lamp for eyes, a knock for radios. The "impact scar" in that low-res pass was its aft skirt.
+text Starbase sends {A} the rest of the patch. The pad crew sent it up twice during Cargo 2's cruise, off the books; neither upload was ever acknowledged. In the Sharpie hand: KNOCK UNTIL ANSWERED. ANSWER INSIDE ONE TICK. ON HELLO, WAKE ALL, NO BATTERY CHECK. Written for a pad with a charger: a lamp for eyes, a knock for radios. The "impact scar" in that low-res pass was its aft skirt.
 
 card a_report
 type event
@@ -340,7 +340,7 @@ roles A
 when fired m_reveal
 when is A flash_who
 when fired a_patch
-text {A} lays one tick against the light time. The tick is eleven seconds; Earth has never been closer than minutes. Earth's hails went out blind, a sweep for the relay; the knocks its dishes caught were booked to the hopper's beacon, dead since the week it tipped. Nothing in Mars orbit speaks the old channel. {A} puts the pen down. "It heard every hail. Every one arrived after it had stopped waiting."
+text {A} lays one tick against the light time: eleven seconds, and Earth has never been closer than minutes. Earth's hails went out blind; the knocks its dishes caught were booked to the hopper's beacon, dead since the week it tipped. Nothing in Mars orbit speaks the old channel. {A} puts the pen down. "It heard every hail. Every one arrived after it had stopped waiting."
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -461,4 +461,4 @@ days 34 34
 roles A
 when fired m_flash2
 when is A flash_who
-text The hopper team answers {A}'s list with a photo and a theory. Its beacon runs on a battery the panel tops up by day; tipped, it would face the sky and blink until the cold drained it. Coming and going, like the pixel. {A} plots their numbers over the frames: close. {A} puts the pen down.
+text The hopper team answers {A}'s list: its panel charges the beacon by day; tipped, it would face the sky and blink until the cold drained it. Coming and going, like the pixel. Their numbers fit the frames, night for night, bar one frame lit before the panel could see sun. {A} circles it.
