@@ -74,7 +74,7 @@ days 5 36
 roles A
 when fired h_flood
 when is A hook_who
-text The night's record: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was a page. The backup is the only pump now.
+text The night's record: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was a page. The backup is the only pump now. Log: "{Av}"
 do morale A 5
 do res spares -1
 
@@ -162,3 +162,28 @@ text Three hours of an empty slot; the next ship's lens showed lights on. Then {
 do trait A brave 3
 do morale A -2
 
+
+card r_smoke
+type event
+cat repair
+due
+once
+days 15 25
+roles A
+when fired h_smoke
+when is A hook_who
+text Nine breakers in, the smell stopped: the fan behind the bunk, bearing seized, cooking its own wiring. Four hours of scrubbers to clear the air; {A} slept in the mask. The spare fan went in. The fleet's count of spare fans now reads zero.
+do res spares -1
+do morale A -2
+
+card r_tank
+type event
+cat grim
+due
+once
+days 35 37
+roles A
+when fired h_tank
+when is A hook_who
+text Behind the heat exchanger, a cracked fitting had fed a blanket of insulation all night. Eleven litres went into the foam; the wringer gave four back. {A}'s ship flies the rest of the way on austerity: a litre less a day, measured each morning, signed for, read back by the next ship.
+do morale A -3

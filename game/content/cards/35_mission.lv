@@ -64,7 +64,7 @@ due
 once
 roles A
 when cond A ok
-text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A control loop hunting somewhere, most likely the coolant pump's: it's on the same bus. "Pump's hunting," {A} tells the ground, and books it a service slot.
+text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A control loop hunting somewhere, most likely the coolant pump's: it's on the same bus. {A} books a service slot: "Pump's hunting. {Av}"
 
 card m_dropout
 type event
@@ -449,3 +449,16 @@ when !flag arrive_wait
 when is A ow_hail
 text The descent brief goes up five days out: clear air, straight in, two minutes between ships. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker.
 do morale A 3
+
+# Round 24: a fair decoy between the pixel and the overlay. The hopper fits the
+# pixel's coming and going; only its position (m_checked, m_reveal) rules it out.
+card m_hopper
+type event
+cat mystery
+due
+once
+days 34 34
+roles A
+when fired m_flash2
+when is A flash_who
+text The hopper team answers {A}'s list with a photo and a theory. Its beacon runs on a battery the panel tops up by day; tipped, it would face the sky and blink until the cold drained it. Coming and going, like the pixel. {A} plots their numbers over the frames: close. {A} puts the pen down.

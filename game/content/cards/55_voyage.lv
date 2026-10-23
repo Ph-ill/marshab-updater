@@ -675,3 +675,14 @@ roles A
 when cond A ok
 text Through the long lens Earth and the Moon share one frame now, close as two buttons on a coat. {A} sends a week of them home: "You are here. Both of you."
 do morale A 3
+
+# Round 24: the ledger. The bureaucracy's grimmest form, read aloud as written.
+card g_ledger
+type beat
+cat grim
+days 12 30
+weight 6
+once
+roles A
+when cond A ok
+text The ground's weekly losses ledger comes up for {A}'s signature: two seed trays, one filter, eleven percent of spares, all within tolerance. Procedure says read it aloud before signing. {A} reads it to the cabin fan and signs. Tolerance has a column for crew. It is not blank.
