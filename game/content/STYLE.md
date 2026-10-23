@@ -42,11 +42,13 @@ players).
 - Distance is the antagonist. One-way light time to Earth (engineer's table,
   2033-05-08 departure, cross-checked by the round 15 engineer's model):
   seconds in Earth orbit, 1.5-2 minutes by days 19-21 (93-116 s, round 16 engineer), about 3 at day 25, 5 at
-  day 33, 6-7 at day 40 (round trip "a quarter of an hour"), 8 at arrival
-  (day 42). Mars one-way: ~100 s at day 22 (round trip 18 ticks), 30-40 s at
+  day 33, about 7.5 at day 40 (452.7 s; round trip "a quarter of an hour", round 18
+  engineer), 8 at arrival (day 42); the round trip on sol 2 is 16.7 minutes, so a
+  surface waiver takes longer than that ("eighteen minutes"). Mars one-way: ~100 s at day 22 (round trip 18 ticks), 30-40 s at
   day 34, just under half a minute at day 36, 15 s at day 39, 10 s round trip
   at day 41 (5 s one-way). The carrier slides against fleet time by about 1.65
-  seconds a day around day 20. The tick is 10.96 s; in prose say "about eleven
+  seconds a day around day 20, easing to about one second a day from day 28 to
+  41 (DE440s, round 18 engineer). The tick is 10.96 s; in prose say "about eleven
   seconds", never a rounder or sharper figure. Storm dose: past 100 mSv on days 20-21 (72-101 mSv over that stretch, round 17 engineer); never earlier. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
   season. Earth shrinks to a dot you can cover with a thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
@@ -207,6 +209,13 @@ after its `type` line:
 - Days 40–42 are quiet: only arrival cards, `reveal` cards and endings. Hooks
   end by day 36, their resolvers by day 37, everything else by day 39.
   `test_climax_is_clear` enforces it.
+- Round 18 rules. Endings are present-tense scenes under "From the log:"; only
+  backstory takes the past tense. Day 40 ends on the meaning (`a_report` is its
+  last card). Rationing is per ship (the others trim to send water). A crossing
+  happens in a transfer window (days 7, 12, ... 32) after a morning of
+  prebreathe, or in a rescue. No line may lean on a random beat before it fires
+  (the galley bread). An injured astronaut is never cast in a haircut or an EVA.
+  UI lines with a count must read right at one, or carry no number.
 - Endings are checked in deck order on day 42. Combine every big choice into
   the endings rather than letting an earlier ending hide a later vote.
 - Retired tics (round 4): "nobody" as a beat ("Nobody laughs", "nobody
@@ -226,6 +235,7 @@ after its `type` line:
   - hail: timestamps and radio-terse ("No misses. Patient. Out.", "Booked again. Out.", "Counter noted. Out.");
   - theory: visual; asks questions and draws them ("Who keeps a lighthouse on Mars time?" to the drawing);
   - every arc speaks at least once in its own register; never name the skill behind a line, and never make the line about a crewmate's competence (round 17).
+  - roles outside the arcs keep a habit too (round 18): the pixel finder (`flash_who`) plots things and puts the pen down; the gust pilot (`abort_who`) flies it once in the sim first; the one who argued to wait (`wait_who`) logs it. Habits, never name-checks.
 - Humor lands on the situation, the object or the procedure, never on the
   crewmate's memory or competence (a book written for windowsills, step
   fourteen of a ground procedure, numbers that turned out better).

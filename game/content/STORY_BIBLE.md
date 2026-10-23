@@ -145,7 +145,7 @@ orbiter night pass the strobe has stopped; one status lamp burns steady. `HELLO 
 log-it branch (`a_window_quiet`): it listens until its next tick; the fleet's
 answer would take about ten seconds; the ground holds (no standing answer, a
 review board that won't sit before landing, and a ruling: AFTER LANDING. LINE OF
-SIGHT, INSIDE THE TICK; `end_through` answers from two hundred metres on the rim).
+SIGHT, INSIDE THE TICK; `end_through` answers by hand at the port, on a battery sledded up the rim; round 18).
 **Blind hellos:** after the vote (and the ground's clearance: hello only,
 nothing that commands) the fleet sends standard hellos blind; a whole frame
 decodes later (`m_key`/`r_dark`). Every hello is signed with
@@ -340,13 +340,18 @@ power choice; a storm sky starves the wing, the budget holds a lamp or a hold
 heater, not both, and the fleet asks for the lamp as a mark to land on;
 "Landed. All seven. The eighth was waiting."), *Sit With It* (`end_friend`,
 retitled from *Old Friend* in round 17) costs Cargo 2 its cold-night charge:
-the rover is forty-eight percent used at the turn-round point, the sixteen-minute
-waiver says YOUR CALL, the pad crew's marker note over the leg port says "Slow
+the drive is for the drill spares in Cargo 2's hold (round 18, paying off
+`a_drill_plan`'s "Be gentle with it."); the rover is forty-eight percent used at
+the turn-round point and there and back would end far under the reserve floor;
+the eighteen-minute waiver (longer than the 16.7-minute sol-2 round trip) says
+YOUR CALL, the pad crew's marker note over the port at Cargo 2's foot says "Slow
 charger. Sit with it.", the crew plug in at four percent and sit all afternoon
-on the charge Cargo 2 kept for the cold, and that night its lamp is dimmer and
-stays that way ("All eight.", the only ending that says it). Unanswered endings close "All seven, one
-for good. Found the eighth." / "All seven. Found the eighth." / "All seven.
-Found the eighth, in time." Endings may run to 640 characters (lint MAX_ENDING).
+on the charge Cargo 2 kept for the cold, load the spares gently, and its lamp is
+dimmer that night for good ("All eight.", the only ending that says it).
+Unanswered endings close "Seven down, six to fly." / "All seven. The eighth is
+warm." / "All seven. Found the eighth. In time for the bit." Since round 18 every
+ending is a present-tense scene under "From the log:" (backstory only in the
+past). Endings may run to 640 characters (lint MAX_ENDING).
 
 **Geometry:** day 41 is about four days before atmospheric entry (at an arrival v∞ of about 4.2 km/s that is about 1.45 million km, 4.8 s one-way, 9.7 s round trip, inside the 10.96 s tick; five days would be about 12 s and miss it). Hold the plan
 = retarget to the backup site, about three kilometres from Cargo 2, with radar
@@ -357,8 +362,8 @@ the prime zone and a rover drive (Cargo 4's rover). Clear air = prime zone,
 Cargo 2 thirty kilometres past it. Unanswered endings answer in person.
 
 Cargo 2 has a job in every ending: floodlights as the place marker (`end_lights`),
-answered from the crater rim by the one who argued to answer, one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame (`end_through`); `end_lights` gets one extra granted command (lights), a manifest line read by pass, a
-spare drill bit and the frozen seed stock (`end_long_orbit`; no tile line, since an ending can't bind the r_strike astronaut), found dead after the cold, answered by hand
+seven blind pilots flying Cargo 2's knock for bearing, a fix every eleven seconds (the cross-check planted in `a_descent_hold_q`), one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame, and that ship's battery sledded up the rim so the one who argued to answer can answer by hand (`end_through`, round 18); `end_lights` gets one extra granted command (lights), a manifest line read by pass, a
+spare drill bit and the frozen seed stock (`end_long_orbit`; no tile line, since an ending can't bind the r_strike astronaut), nearly dead after the cold (two knocks missed while the crew wait at the port), answered by hand
 (`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), a rover drive past the point of return, judged by Cargo 2's knock on the rover radio (the lamp is below the horizon at 30 km), rescued by the leg charge port planted in `g_packer`'s forklift photo, paid for with the charge Cargo 2 kept for the cold (`end_friend`, round 17), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
 two storm endings open differently; the two orbit endings are scenes (week
 three, week two), not summaries. The recorder paragraph is worded differently
@@ -379,12 +384,12 @@ ending, and any role test on the fallback.
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 16.0% (1000: 18.1%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 15.3% (1000: 17.6%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 18.0% (1000: 18.2%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 19.7% (1000: 16.3%) |
-| 5 | *Sit With It* (`end_friend`) | answered, clear air | 15.7% (1000: 14.3%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 15.3% (1000: 15.5%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 18.7% (1000: 18.2%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 20.3% (1000: 17.1%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 14.0% (1000: 15.5%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 14.7% (1000: 17.6%) |
+| 5 | *Sit With It* (`end_friend`) | answered, clear air | 16.3% (1000: 16.8%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 16.0% (1000: 14.8%) |
 
 ## Epilogue
 
@@ -988,6 +993,87 @@ Blind round 17 (hunter, editor, engineer). Aim: slots 3 (*The Long Orbit*) and 5
   Moon" for `beat_watch`: Earth's disc is 13.3'-5.1' against the Moon's 15.5', so
   "less than half" stays. Editor's grim neighbour option: the user chose
   retirement with a new address. Engine-level per-day cap: content spreading only.
+
+## Round 18 notes
+
+Blind round 18 (hunter, editor, engineer), first round after the history
+rewrite. Aim: every ending great for all three; character, tension, day-40
+staging.
+
+- **Twist logic (engineer F1).** `a_report` no longer says Cargo 2 stopped
+  listening: it heard every hail (`a_log`: HAIL RX · LATE ×31,000) and every
+  knock carries a fresh challenge (`m_key`). The patch now reads KNOCK,
+  CHALLENGE GOOD 1 TICK, KNOCK; the line is "It heard every hail. Every one
+  answered a question it had already let go." Starbase: the pad crew "had sent
+  it up twice" (told and ignored, which squares with every "Told them..." reply).
+  Tested: `test_the_twist_is_an_expired_challenge`.
+- **Day 40 staging.** `m_reveal`: the crew find Cargo 2 themselves, laying the
+  old landing ellipses over the shadow one write-off at a time ("The relay's
+  misses. The hopper's misses. Cargo 2's fits."). The crater payoff
+  (`a_recall_plan` / `a_recall_home`) moved into `35_mission.lv` ahead of
+  `a_report`, so day 40 always ends on the line (tested). Judgment between the
+  editor (end on the line) and the hunter (don't explain the sum): the report
+  shows GOOD 1 TICK and "works out where Earth has been", and the closing line
+  is about the hails, not the arithmetic; the board's agreement is cut.
+- **Remote wake, one clause each.** Answered: late hellos never woke it, so the
+  board knows the path, and it cleared the hello and the HOLD before the entry
+  freeze, both off the laminated card in the Sharpie hand (`sharpie2`, 300/300
+  by day 30). Quiet: this path has never answered, so no first hello to a cold
+  battery from a distance. `a_suit_plan`, `end_through`, `end_patience` name the
+  laminated card too.
+- **Endings.** All six are present-tense scenes. *Lights On*: one command down
+  the link the handshake opened (why lights are commandable). *Through the
+  Dust*: Cargo 2's knock is the bearing fix for seven blind pilots; the broken
+  ship's battery goes up the rim (its cost becomes the answer); no "Found the
+  eighth". *Patience*: two missed knocks at the port before the click; "The
+  eighth is warm." *Sit With It*: the drill spares are the reason, the sums
+  hold (far under the reserve floor; eighteen-minute waiver). *Close Enough*:
+  "By then it has nothing left to hear it with." / "In time for the bit."
+  *Through the Dust* coda: "Kept the beat for seven blind pilots, and was
+  answered on the rim."
+- **Day 39.** `c2_clock` merged into `c_hail` (hail owner, now `cat mystery`):
+  half a million knocks, every gap explained, then the cold gap and "a few
+  nights after landing, not weeks". One knock analysis a day; the page-time
+  "a hundred and twenty days" is gone.
+- **Continuity.** Water rationing is one ship's (the other six trim to send a
+  bag); the 04:00 failure lands on a crossing day (`water_fail` / `2` / `3` on
+  days 22 / 27 / 32) with a morning of prebreathe. `c_letter` works on both
+  letter branches. `a_recall_shared` pays off the ration pack (the little ship
+  on red ground; day 38, no earlier than WHO). Ballot line needs no number.
+  `p_list_letter` no longer mentions the bread (random day), nor does the fold
+  pool. Wrist: `beat_haircut` excludes the injured astronaut (`!is A eva_who`,
+  `cond A ok`); `dil_eva_cam` records its owner (`cam_who`) and `crisis_eva`
+  never injures an owner with the camera dilemma, so "Close up and go out"
+  never goes to a splinted wrist. `m_theory`: the three passes were "in its last
+  week on the books" (no clash with `m_carrier`). `r_dark(_a)`: the crash frame
+  asked for a key update (sets up KEY UPDATE: NONE RECEIVED). `m_ripple` drops
+  "again"; `m_flash1` "like the hundred before it. {A} plots it anyway."
+  `g_packer`: the forklift is on charge at the service port at the foot of a
+  cargo ship's leg. Epilogue: "newer calibration". `dec_photo`: "the sky behind
+  them".
+- **Numbers.** `beat_window` days 7-9, Earth and the Moon drawing together (two
+  thin crescents is right for those days). `beat_watch`: a thin bright crescent
+  low beside the Sun's glare. `r_band`: five knocks missed. `m_key`: the relay,
+  the write-offs and the fleet's fallback kept the old key.
+- **Grim and cost.** `l_dose` (day 9): the "career remaining" figure and the very
+  small box for questions. `r_voice`: the first minute of the message from home
+  is gone for good.
+- **Voices outside the arcs.** The pixel finder plots (`m_flash1`, `c2_cold`,
+  `a_report`'s pen); the gust pilot flies it in the sim first. See STYLE.md.
+- **Sim.** `sim/season.py` writes ending and card ids into `stats.json` and
+  `multi_season.json` only with `--spoilers`; otherwise endings are "ending N"
+  and cards "card N".
+- **Declined.** Hunter fix 3 (Cargo 2's ellipse named on the crater map, p26):
+  the user declined it; WHO stays held to day 38. Hunter's "about a second a day"
+  at p20: the engineer's DE440s run gives 1.63 s/day at p20 easing to 0.9-1.0
+  s/day by p28-41, so "over a second and a half a day" at p20 and the later
+  figures are both right. Editor's day-2 rules split (moving "votes are advice"
+  into the vote UI chrome) needs `web/`; not done here.
+- **Hand-off (web/render owner).** The fold line is `pool[day % len(pool)]`, so
+  with 16 lines a fold can repeat 16 or 32 days apart (seed 110 days 1 and 33;
+  seed 166 days 5 and 21). Fix in both `sim/render.py` and `web/render.js`
+  together (render_check compares them): rotate by the count of folds printed so
+  far instead of the day. A `dec_close_1` singular line is no longer needed.
 
 ## Replay: the mystery spine reads the same every season (note, not built)
 

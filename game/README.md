@@ -86,7 +86,7 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
 
 ## Results (build 0.1.0, 15 sample cards)
 
-*Current content pack (196 cards):* pack.bin 6,150 B, text.json 24,908 B gzipped, peak MicroPython heap 72,480 B, snapshot 676 B, final reference digest `8aa6f108a5646d29` (authored and reversed merge order). `python3 -m unittest discover -s tests` runs 70 tests (49 content, 21 core). The figures below are the original 15-card measurements.
+*Current content pack (197 cards):* pack.bin 6,254 B, text.json 24,919 B gzipped, peak MicroPython heap 73,216 B on the 64-bit unix port (a 32-bit build, like the Pico's, measured about 48.6 KB on the previous pack), snapshot 678 B, final reference digest `ab9f56f11bbadf26` (authored and reversed merge order). `python3 -m unittest discover -s tests` runs 75 tests (54 content, 21 core). The figures below are the original 15-card measurements.
 
 **Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 7 independent ships in 4 ways:
 * instant;
