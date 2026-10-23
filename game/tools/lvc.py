@@ -6,12 +6,15 @@ Reads content/fleet.lv, content/roster.lv, content/system.json and content/cards
   build/text.json      card text and templates the phone renders (minified)
   build/text.json.gz   what the Pico actually serves to phones
 
-Usage: python3 tools/lvc.py [--content DIR] [--out DIR] [--check]
+Usage: python3 tools/lvc.py [--content DIR] [--out DIR] [--check] [--verbose] [-h|--help]
 --check validates only and writes nothing. Exit code 1 on any error.
+--verbose also lists bookkeeping notes (flags set but never checked). They name
+story flags, so they are off by default; warnings and errors go to stderr.
+-h/--help prints this text and exits without compiling anything.
 
 Card format (one card per `card` line, indentation only matters for option effects):
 
-  card dec_signal                 # id: lowercase letters, digits, _
+  card dec_galley                 # id: lowercase letters, digits, _
   type decision                   # event | beat | decision | dilemma | rescue | ending
   days 5 14                       # first and last flight day it can fire
   weight 10                       # relative chance among eligible cards (default 10)
@@ -21,21 +24,21 @@ Card format (one card per `card` line, indentation only matters for option effec
                                   #   must fire before the reveal in every season. Cards
                                   #   sharing a GROUP are alternatives: one is enough
   reveal                          # the payoff card(s) (text.json "reveal")
-  title The Long Orbit            # endings: shown as a heading (text.json "ti")
+  title A Proper Title           # endings: shown as a heading (text.json "ti")
   hook                            # cliffhanger event: last line of its day; needs a
                                   #   `due` resolver with `when fired <this card>`
   cooldown 6                      # days before it can fire again (repeatable cards)
   duration 2                      # days a decision/dilemma/rescue stays open
   roles A B                       # crew roles to bind (A first)
-  lean curious open log           # tie-break/default: axis, option if >= 0, option if < 0
+  lean curious fix wait           # tie-break/default: axis, option if >= 0, option if < 0
   default send                    # rescue: option used when nobody answers
   when trait A curious >= 10      # condition (see COND_SYNTAX below)
   when tag A mech                 # A is a crew member tagged `mech` in roster.lv
-  when !is A hail_who             # A is not the crew member a `who` var names
-  text {A} wants to answer it.    # phone template; {A} {B} are crew names
+  when !is A cook_who             # A is not the crew member a `who` var names
+  text {A} wants to fix it.       # phone template; {A} {B} are crew names
   do set seen_rock                # effect when the card fires (see EFFECT_SYNTAX)
-  option open | Open the channel | {A} keys the transmitter.
-    set signal_answered           # option effects, indented
+  option fix | Fix it now | {A} opens the panel.
+    set galley_fixed              # option effects, indented
 """
 import gzip
 import hashlib
@@ -727,20 +730,31 @@ def build(content_dir):
 
 
 def main(argv):
+    if "-h" in argv or "--help" in argv:
+        print(__doc__.strip())
+        return 0
     content = os.path.join(os.path.dirname(HERE), "content")
     out = os.path.join(os.path.dirname(HERE), "build")
     check = "--check" in argv
+    verbose = "--verbose" in argv or "-v" in argv
     if "--content" in argv:
         content = argv[argv.index("--content") + 1]
     if "--out" in argv:
         out = argv[argv.index("--out") + 1]
     pack, text, ctx = build(content)
+    # Warnings and errors go to stderr so stdout stays a one-line summary. The
+    # "set but never checked" notes name story flags, so only --verbose shows them.
+    notes = [w for w in ctx.warnings if "is set but never checked" in w]
     for w in ctx.warnings:
-        print("warning:", w)
+        if w in notes and not verbose:
+            continue
+        print("warning:", w, file=sys.stderr)
+    if notes and not verbose:
+        print("note: %d unused flag(s); run with --verbose to list them" % len(notes), file=sys.stderr)
     for e in ctx.errors:
-        print("error:", e)
+        print("error:", e, file=sys.stderr)
     if ctx.errors:
-        print("%d error(s); nothing written" % len(ctx.errors))
+        print("%d error(s); nothing written" % len(ctx.errors), file=sys.stderr)
         return 1
     tj = json.dumps(text, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     tgz = gzip.compress(tj, 9, mtime=0)

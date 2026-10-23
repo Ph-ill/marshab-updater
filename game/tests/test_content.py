@@ -475,5 +475,32 @@ class TestRound2Language(unittest.TestCase):
         self.assertTrue(any("negated" in e for e in ctx.errors), ctx.errors)
 
 
+class TestCli(unittest.TestCase):
+    """lvc's command line: --help must not compile, and story flags stay off stdout."""
+
+    def run_lvc(self, *args):
+        import subprocess
+        return subprocess.run([sys.executable, os.path.join(ROOT, "tools", "lvc.py")] + list(args),
+                              capture_output=True, text=True)
+
+    def test_help_does_not_compile(self):
+        out = tempfile.mkdtemp(prefix="lvc-out-")
+        for flag in ("--help", "-h"):
+            r = self.run_lvc(flag, "--out", out)
+            self.assertEqual(r.returncode, 0)
+            self.assertIn("Usage:", r.stdout)
+            self.assertNotIn("ok:", r.stdout)
+            self.assertNotIn("warning:", r.stdout + r.stderr)
+            self.assertEqual(r.stderr, "")
+        self.assertEqual(os.listdir(out), [])
+
+    def test_flag_names_only_with_verbose(self):
+        out = tempfile.mkdtemp(prefix="lvc-out-")
+        r = self.run_lvc("--check", "--out", out)
+        self.assertEqual(r.returncode, 0)
+        self.assertNotIn("never checked", r.stdout + r.stderr)
+        self.assertTrue(r.stdout.startswith("ok:"), r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
