@@ -72,7 +72,7 @@ when flag water_fixed
 when is A water_fix_who
 when since t_water >= 9
 when home A
-text The water processor on {A}'s ship passes its thousandth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it again.
+text The water processor on {A}'s ship passes its thousandth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it: "{Av}"
 do morale A 2
 
 # --- Clocks -----------------------------------------------------------------
@@ -152,7 +152,7 @@ days 29 33
 roles A
 when flag trim_late
 when cond A ok
-text The latest navigation fix comes in: dead centre of the arrival corridor. The checked burn cost more than the quick one would have, and {A} reruns the propellant table. It still says yes. {A} stops running it.
+text The latest navigation fix comes in: dead centre of the arrival corridor. The checked burn cost more than the quick one would have, and {A} reruns the propellant table. It still says yes. {A} stops running it. "{Av}"
 do morale A 2
 
 # --- Arrival: dust storm over the landing region -------------------------------

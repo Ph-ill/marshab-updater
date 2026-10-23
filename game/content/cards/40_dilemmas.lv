@@ -169,7 +169,7 @@ when cond A ok
 when home A
 lean brave tune wait
 text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A switch to the alternate gain set would probably settle it. Procedure says the guidance team signs off any switch.
-option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles. The ground signs off in the morning.
+option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles, and signs off first: "{Av}"
   set gains_tuned
   who gains_who A
   trait A brave 2

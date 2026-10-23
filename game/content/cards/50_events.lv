@@ -133,7 +133,7 @@ roles A
 when cond A ok
 when res spares >= 1
 when home A
-text The CO₂ scrubber on {A}'s ship fails outright. With one person aboard, the CO₂ climbs about a twentieth of a percent a day: not an emergency yet, the best time to fix one. {A} has the backup running in nine minutes, and it is already complaining.
+text The CO₂ scrubber on {A}'s ship fails outright. With one person aboard, the CO₂ climbs about a twentieth of a percent a day: not an emergency yet, the best time to fix one. {A} has the backup running in nine minutes, already complaining. To the ground: "{Av}"
 do morale A -4
 do open rescue_air
 
