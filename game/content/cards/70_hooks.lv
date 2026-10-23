@@ -7,30 +7,34 @@
 # --- 1. Emergency band ---------------------------------------------------------
 card h_band
 type event
+cat mystery
 hook
 once
-days 4 40
+days 25 38
 weight 10
 roles A
 when cond A ok
 do who hook_who A
-text At 23:40 the dish on {A}'s ship picks up something on the emergency band. It's not from Earth.
+text At 23:40 the dish on {A}'s ship logs a burst on the emergency band. The bearing is Mars.
 
 card r_band
 type event
+cat mystery
+clue
 due
 once
-days 5 42
+days 26 42
 roles A
 when fired h_band
 when is A hook_who
-text {A} decodes it by breakfast. It's the safe-mode beacon of a Mars lander that went quiet years ago, still asking for instructions nobody sent. {A} logs its position and its last words for whoever lands next.
+text {A} decodes it by breakfast: a lander's safe-mode beacon, asking for instructions nobody sent. The header format is old. {A} matches it to a science lander that went quiet years ago, logs it, and is almost sure.
 do trait A curious 3
 do morale A 4
 
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure
 type event
+cat repair
 hook
 once
 days 4 40
@@ -42,6 +46,7 @@ text 01:50. The cabin pressure on {A}'s ship has started to fall. Slowly. {A} is
 
 card r_pressure
 type event
+cat repair
 due
 once
 days 5 42
@@ -55,6 +60,7 @@ do morale A 5
 # --- 3. Solar flare ----------------------------------------------------------
 card h_flare
 type event
+cat grim
 hook
 once
 days 4 40
@@ -66,6 +72,7 @@ text 23:52. The space weather feed flags a major flare on the Sun. Protons will 
 
 card r_flare
 type event
+cat grim
 due
 once
 days 5 42
@@ -79,6 +86,7 @@ do morale A 3
 # --- 4. Uncommanded thruster --------------------------------------------------
 card h_thruster
 type event
+cat repair skill
 hook
 once
 days 4 40
@@ -90,6 +98,7 @@ text 02:14. A thruster on {A}'s ship fires without a command. Then another. {A} 
 
 card r_thruster
 type event
+cat repair skill
 due
 once
 days 5 42
@@ -108,6 +117,7 @@ option watch | Isolate and watch | {A} let the control loop fight it and watched
 # --- 5. Alarm flood -----------------------------------------------------------
 card h_flood
 type event
+cat repair skill
 hook
 once
 days 4 40
@@ -119,6 +129,7 @@ text Just before midnight, 214 alarms hit {A}'s console at once. One of them is 
 
 card r_flood
 type event
+cat repair skill
 due
 once
 days 5 42
@@ -132,6 +143,7 @@ do res spares -1
 # --- 6. Ground silence --------------------------------------------------------
 card h_silence
 type event
+cat grim
 hook
 once
 days 10 40
@@ -143,6 +155,7 @@ text Mission Control misses a scheduled check-in. Then the next one. {A} sends a
 
 card r_silence
 type event
+cat grim
 due
 once
 days 11 42
@@ -156,6 +169,7 @@ do trait A warm 2
 # --- 7. Hull strike -----------------------------------------------------------
 card h_strike
 type event
+cat grim
 hook
 once
 days 4 40
@@ -167,6 +181,7 @@ text Something hits {A}'s ship hard enough to ring the hull like a bell. Every p
 
 card r_strike
 type event
+cat grim
 due
 once
 days 5 42
@@ -177,46 +192,25 @@ text The morning EVA found a crater the size of a fingernail in a shield panel, 
 do trait A brave 2
 do morale A 3
 
-# --- 8. Watchdog ----------------------------------------------------------------
-card h_watchdog
-type event
-hook
-once
-days 4 40
-weight 9
-roles A
-when cond A ok
-do who hook_who A
-text 23:15. The navigation computer on {A}'s ship reboots itself. At 23:17 it does it again. Then again, every two minutes.
-
-card r_watchdog
-type event
-due
-once
-days 5 42
-roles A
-when fired h_watchdog
-when is A hook_who
-text {A} found it at dawn: a logging task had filled the disk, so the watchdog decided the computer was dead and kept reviving it. {A} cleared the logs, and navigation hasn't missed a fix since. "Delete old logs" is now step one of the procedure, in permanent marker.
-do morale A 4
-
-# --- 9. Star tracker ghost (ominous) -------------------------------------------
+# --- 8. Star tracker ghost (ominous) ---------------------------------------------
 card h_ghost
 type event
+cat mystery
 hook
 once
-days 8 40
+days 25 38
 weight 8
 roles A
 when cond A ok
 do who hook_who A
-text {A}'s star tracker reports a star where no star should be. Between frames, it moves.
+text {A}'s star tracker flags a catalog mismatch: one star too many in the field. On the next frame, it has moved.
 
 card r_ghost
 type event
+cat mystery
 due
 once
-days 9 42
+days 26 42
 roles A
 when fired h_ghost
 when is A hook_who
@@ -224,26 +218,56 @@ text {A} pinned it down by morning: a spent upper stage from a Mars mission deca
 do trait A curious 3
 do morale A -2
 
-# --- 10. Two against one ----------------------------------------------------------
-card h_header
+
+# --- 9. A voice on the loop ----------------------------------------------------------
+card h_voice
 type event
+cat mystery
 hook
 once
-days 4 40
+days 25 36
 weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 23:30. A header tank on {A}'s ship reads three percent high and climbing. Two sensors agree. The third doesn't.
+text 02:40. The intercom on {A}'s ship opens by itself. A voice says {A}'s name, once, softly. Everyone else aboard is asleep.
 
-card r_header
+card r_voice
 type event
+cat human
 due
 once
-days 5 42
+days 26 42
 roles A
-when fired h_header
+when fired h_voice
 when is A hook_who
-text {A} pulled the raw data overnight. The two sensors that agreed share a power supply, and it's sagging. The third was right all along. No vent, no lost methane, and one new line in the procedures: "When two agree, check what they have in common."
-do morale A 5
-do res fuel 1
+text {A} traced it by dawn: a message from home, recorded the night before launch, set to play on this flight day and then buried under a software update. The rest of it plays at breakfast. {A} listens with the volume very low.
+do morale A 6
+do trait A warm 3
+
+# --- 10. A ship drops off the net -------------------------------------------------
+card h_dark
+type event
+cat mystery
+hook
+once
+days 27 38
+weight 8
+roles A
+when cond A ok
+do who hook_who A
+text 23:58. {A}'s ship drops off the fleet net in the middle of a sentence. No beacon, no telemetry, just an empty slot on six displays.
+
+card r_dark
+type event
+cat mystery
+clue
+due
+once
+days 28 42
+roles A
+when fired h_dark
+when is A hook_who
+text {A}'s voice came back at 05:40, steady. The main antenna had slewed toward Mars on a command with a valid fleet signature, sent from no ship in the fleet. Mission Control says it is looking into it. It has said that before.
+do trait A brave 3
+do morale A -2

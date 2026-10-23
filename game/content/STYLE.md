@@ -9,6 +9,14 @@ Real Starships, real hazards, real stakes. Space doesn't care, the reports are
 cold, and the crew are good at their jobs. The humor is dry, and it's there for
 relief.
 
+The bar is literary. Use specific, sensory, economical images (the Sharpie, the
+thumbnail held up to the window), never "the vastness of space". Motifs come
+back changed. Details planted early pay off late. Keep dread and wonder in equal
+measure. Keep the uncanny grounded, and never explain it away cheaply. The
+people are competent and kind under pressure. The arc, the motifs and the
+plants are in `STORY_BIBLE.md` (spoilers: writers only, and never quote it to
+players).
+
 ## Setting: grounded near future
 
 - Real SpaceX Starships flying to Mars. Seven ships, one crew member per ship as
@@ -82,6 +90,51 @@ saying so**.
   card plus a copy with `when tag A mech`, each with `when !fired <other>`. That
   way Diego gets it more often, but anyone can. Never lock a storyline to one
   person, and don't make every Diego card mechanical.
+- Keep it rare: roughly 1 card in 6 to 8. Mark those cards `cat <category> skill`.
+  The lint fails above 18%.
+
+## The slow burn
+
+The uncanny ramps up over the voyage. Prefer understatement to announcement:
+let the reader notice, and never tell them a thing is mysterious.
+
+| Days | What's allowed |
+|---|---|
+| 1–10 | Nearly nothing odd. This stretch is wonder, people and ship life. Any oddity is tiny, deniable and easy to miss. No spooky framing at all: no "eerie", "impossible", "strange", "wrong", "chill", "nobody says why". |
+| 11–24 | A few small details a careful reader could connect. Each one has an ordinary explanation on the page. Most of what happens is still real-world drama. |
+| 25–36 | The crew can't deny the pattern any more. Tension and dread rise, and the cliffhangers lean on it. |
+| 37–42 | The payoff. |
+
+- Early cliffhangers are grounded: mission stakes and human stakes. An uncanny
+  hook (`cat mystery`) starts on day 25 or later.
+- The lint (`check_ramp` in lvc) warns if:
+  - a card that can fire before day 11 uses spooky vocabulary;
+  - a card that can fire before day 11 is `cat mystery`;
+  - a mystery cliffhanger can fire before day 25.
+
+## Content mix
+
+This is a voyage, not a maintenance log. Every card carries `cat <category>`
+after its `type` line:
+
+| cat | What it's for | Target share |
+|---|---|---|
+| `wonder` | Deep-space sights: Venus casting shadows, comet tails, Mars becoming a disc | 8–15% |
+| `mystery` | Eerie signals and unexplained things, kept grounded; threads that cross the voyage | 10–15% |
+| `human` | Home, letters, the growing delay, music, dreams, grief, quiet friendship | 15–20% |
+| `life` | Ship life and rituals: meals, games, birthdays, the garden, movie night | 12–18% |
+| `mission` | Fleet choices about the mission: science, names, milestones, course | 6–10% |
+| `arrival` | The approach and arrival | 4–8% |
+| `grim` | Isolation, radiation, risk, bad news with a delay | 10–15% |
+| `repair` | Hardware faults and fixes | **at most 25%** (aim for about 20%) |
+| `ending` | The endings | n/a |
+
+- Repairs are spice. When a fault card is needed, make it about the people
+  (who wakes up, who brings the spare), not the procedure.
+- The crew should spend more of the voyage looking out of the window than
+  into an access panel.
+- `lvc` prints the mix on every build. It warns (and the tests fail) if repairs
+  go above 25%, skill flavor goes above 18%, or a card has no `cat`.
 
 ## Cliffhangers
 
@@ -103,6 +156,9 @@ saying so**.
   overnight.
 - text.json marks hook cards with `"h":1`, so the phone can show the line as
   "Last night...".
+- `clue` marks a fair-play clue (STORY_BIBLE.md has the list). text.json
+  collects them in `"reread"`; the end screen lists their flight days with no
+  explanation. A clue card must read as ordinary on first pass.
 
 ## Card types and what they're for
 
@@ -163,7 +219,9 @@ Bad, and why:
 1. `python3 tools/lvc.py`: it must compile with no pronoun errors and no
    `style:` warnings. The lint flags hard-coded crew names, name-checked jobs,
    words that make someone the joke, cheap resolutions, calendar pins, and
-   over-long text. It's a safety net, not a substitute for reading the lines.
+   over-long text. It also flags a repair share above 25%, skill flavor above
+   18%, or a card without `cat`. It's a safety net, not a substitute for
+   reading the lines.
 2. `python3 sim/season.py` and read `sim/out/narrative.txt` with real names in
    it. Ask, for every line: would this person be glad to read it?
 3. `sh tests/run.sh`: all 7 ships must produce identical digests.

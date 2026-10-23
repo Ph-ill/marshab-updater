@@ -187,6 +187,7 @@ class TestHouseStyle(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.pack, cls.text, cls.ctx = lvc.build(CONTENT)
+        cls.cards = cls.ctx.cards
 
     def test_compiles(self):
         self.assertEqual(self.ctx.errors, [])
@@ -213,12 +214,157 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
         for h in hooks:
             self.assertIn("r_" + h[2:], ids)
 
+    def test_content_mix(self):
+        # STYLE.md "Content mix": repairs <= 25%, skill flavor <= ~1 in 6, all tagged.
+        mix, n = self.ctx.mix, len(self.text["cards"])
+        self.assertEqual(sum(v for k, v in mix.items() if k != "skill"), n)
+        self.assertLessEqual(mix["repair"], lvc.MAX_REPAIR * n)
+        self.assertLessEqual(mix["skill"], lvc.MAX_SKILL * n)
+        for cat in ("wonder", "mystery", "human", "life", "mission", "arrival", "grim"):
+            self.assertGreater(mix[cat], 0, cat)
+        print("\n" + lvc.mix_line(self.ctx), file=sys.stderr)
+
+    def test_mix_lint_fails_a_repair_heavy_deck(self):
+        src = "".join("card fix%d\ntype beat\ncat repair%s\nroles A\ntext {A} fixes thing %d.\n\n"
+                      % (i, " skill" if i < 2 else "", i) for i in range(3))
+        src += "card ok1\ntype beat\ncat life\nroles A\ntext {A} sleeps.\n\ncard un\ntype beat\nroles A\ntext {A} waits.\n"
+        _, _, ctx = lvc.build(mini_content(src))
+        msg = " ".join(ctx.warnings)
+        self.assertIn("repair/fault", msg)
+        self.assertIn("skill flavor", msg)
+        self.assertIn("no `cat` line", msg)
+
+    def test_bad_category_is_an_error(self):
+        _, _, ctx = lvc.build(mini_content("card x\ntype beat\ncat plumbing\nroles A\ntext {A}.\n"))
+        self.assertTrue(any("cat is" in e for e in ctx.errors))
+
+    def test_slow_burn_lint(self):
+        src = ("card early\ntype beat\ncat life\ndays 2 20\nroles A\ntext {A} feels a chill. Something is wrong.\n\n"
+               "card early_m\ntype beat\ncat mystery\ndays 5 20\nroles A\ntext {A} logs a number.\n\n"
+               "card late\ntype beat\ncat mystery\ndays 30 40\nroles A\ntext {A} feels a chill.\n")
+        _, _, ctx = lvc.build(mini_content(src))
+        ws = [w for w in ctx.warnings if "keep days" in w or "cat mystery but" in w]
+        self.assertTrue(any("early " in w and "chill" in w for w in ws))
+        self.assertTrue(any("early_m" in w for w in ws))
+        self.assertFalse(any(" late " in w for w in ws))
+
+    def test_mystery_ramp(self):
+        # STYLE.md "The slow burn": nothing in days 1-10, most of the thread after 25.
+        phases = [0, 0, 0, 0]
+        for c in self.cards:
+            if c["cat"] == "mystery":
+                d0 = c["days"][0]
+                phases[0 if d0 <= 10 else 1 if d0 <= 24 else 2 if d0 <= 36 else 3] += 1
+        self.assertEqual(phases[0], 0)
+        self.assertLess(phases[1], phases[2])
+        self.assertGreater(phases[3], 0)
+        print("mystery cards by first day, phases 1-4:", phases, file=sys.stderr)
+
+    def test_second_read_clues(self):
+        # STORY_BIBLE.md: 6-10 fair-play clues, at least two in the earliest phase.
+        rr = self.text["reread"]
+        self.assertTrue(6 <= len(rr) + 1 <= 10)  # +1: the clue in system text
+        early = [i for i in rr if self.cards[i]["days"][0] <= 10]
+        self.assertGreaterEqual(len(early), 2)
+        self.assertTrue(all(self.cards[i]["clue"] for i in rr))
+
     def test_mech_twin_is_not_exclusive(self):
         # The tagged twin must have an untagged sibling so anyone can draw the card.
         ids = [c["id"] for c in self.text["cards"]]
         for i in ids:
             if i.endswith("_m"):
                 self.assertIn(i[:-2], ids)
+
+
+class TestCompactPack(unittest.TestCase):
+    """Cards are indices into Pack.data; the decoded Card view and the engine's
+    per-category lists must agree with a straight read of the header bytes."""
+
+    @classmethod
+    def setUpClass(cls):
+        pack, _, _ = lvc.build(CONTENT)
+        cls.p = Pack(pack)
+
+    def test_card_view_matches_header(self):
+        p = self.p
+        for i in range(p.ncards):
+            c = p.cards[i]
+            q = p.hdr[i]
+            self.assertEqual(c.idx, i)
+            self.assertEqual((c.type, c.weight, c.dmin, c.dmax, c.flags, c.cooldown,
+                              c.duration, c.nroles, c.laxis, c.lpos, c.lneg),
+                             tuple(p.data[q:q + 11]))
+            self.assertEqual(c.conds, p.conds(i))
+            self.assertEqual(c.nopt, p.nopt(i))
+            self.assertEqual(p.opt(c, 0), p.opt(i, 0))
+        self.assertEqual(len(list(p.cards)), p.ncards)
+
+    def test_category_lists_partition_cards(self):
+        p = self.p
+        seen = list(p.due) + list(p.events) + list(p.beats) + list(p.hooks) + \
+            list(p.decisions) + list(p.dilemmas) + list(p.endings)
+        rescues = [c.idx for c in p.cards if c.type == O.RESCUE]
+        self.assertEqual(sorted(seen + rescues), list(range(p.ncards)))
+        for i in p.hooks:
+            self.assertTrue(p.cards[i].flags & O.F_HOOK)
+        for i in p.events:
+            self.assertEqual(p.cards[i].type, O.EVENT)
+            self.assertFalse(p.cards[i].flags & (O.F_DUE | O.F_HOOK))
+        for lst in (p.events, p.beats, p.decisions):
+            self.assertEqual(list(lst), sorted(lst))
+
+
+class TestFairCasting(unittest.TestCase):
+    """Role casting tries the least-featured crew first (Engine._cast_order), so the
+    spotlight evens out without anyone being locked out of a card."""
+
+    def setUp(self):
+        pack, _, _ = lvc.build(CONTENT)
+        self.p = Pack(pack)
+
+    def test_order_prefers_least_featured(self):
+        from lv import engine as E
+        st = State(self.p)
+        eng = Engine(self.p, st, ChoiceLog(FK))
+        st.spot[:] = bytes([9, 9, 0, 9, 9, 9, 1])
+        order = eng._cast_order(0)
+        self.assertEqual(order[:2], [2, 6])  # bucket 0 first, ties rotate from start
+        self.assertEqual(sorted(order), list(range(7)))
+        st.spot[:] = bytes(7)
+        self.assertEqual(eng._cast_order(3), [3, 4, 5, 6, 0, 1, 2])
+        self.assertEqual(E.FAIR_BUCKET, 2)
+
+    def test_spot_survives_snapshot(self):
+        st = State(self.p)
+        st.spot[:] = bytes([1, 2, 3, 4, 5, 6, 7])
+        self.assertEqual(State.load(st.dump()).spot, st.spot)
+
+    def test_spotlight_spread_over_seasons(self):
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        tot = [0] * 7
+        for seed in range(1, 31):
+            st = reference_season(Pack(self.p.data), seed=seed)[0]
+            out = st.story
+            for i in range(0, len(out), 8):
+                if out[i + 1] in (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN):
+                    for x in (out[i + 3], out[i + 4]):
+                        if x < 7:
+                            tot[x] += 1
+        mean = sum(tot) / 7.0
+        for v in tot:
+            self.assertLess(abs(v - mean) / mean, 0.10, tot)
+
+    def test_reveal_pays_off_every_season(self):
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        _, text, _ = lvc.build(CONTENT)
+        ids = [c["id"] for c in text["cards"]]
+        rv = ids.index("m_reveal")
+        for seed in range(1, 21):
+            key = bytes([0, seed]) + b"season"
+            st = reference_season(Pack(self.p.data), seed=seed, voyage_key=key)[0]
+            self.assertTrue(st.fired[rv], seed)
 
 
 if __name__ == "__main__":

@@ -65,6 +65,7 @@ class Ctx:
         self.errors = []
         self.warnings = []
         self.crew = []       # roster lines, for `when tag`
+        self.mix = {}        # category -> card count (see check_mix)
 
     def flag(self, name, where, setting):
         if not ID_RE.match(name):
@@ -232,7 +233,7 @@ def parse_cards(path, ctx):
                     card = {"id": rest, "where": where, "type": None, "days": (1, SEASON_DAYS),
                             "weight": 10, "flags": 0, "cooldown": 0, "duration": 0, "nroles": 0,
                             "lean": None, "default": None, "conds": [], "effects": [],
-                            "options": [], "text": ""}
+                            "options": [], "text": "", "cat": None, "skill": False, "clue": False}
                     cards.append(card)
                     opt = None
                     continue
@@ -253,6 +254,14 @@ def parse_cards(path, ctx):
                     card["flags"] |= O.F_ONCE
                 elif word == "due":
                     card["flags"] |= O.F_DUE
+                elif word == "cat":
+                    t = rest.split()
+                    if not t or t[0] not in CATS or any(x != "skill" for x in t[1:]):
+                        raise PackError("cat is `cat <%s> [skill]`" % "|".join(CATS))
+                    card["cat"] = t[0]
+                    card["skill"] = "skill" in t[1:]
+                elif word == "clue":
+                    card["clue"] = True  # listed in text.json "reread" for the end screen
                 elif word == "hook":
                     card["flags"] |= O.F_HOOK
                 elif word == "cooldown":
@@ -395,6 +404,72 @@ CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re
 MAX_TEXT, MAX_LABEL = 300, 28
 
 
+# Content mix (STYLE.md, "Content mix"). Every card carries `cat <category>`; add
+# `skill` when the text leans on controls/mechanical flavor. Compile-time only: the
+# category never reaches the pack or text.json.
+CATS = ("repair", "wonder", "mystery", "human", "life", "mission", "arrival", "grim", "ending")
+MAX_REPAIR = 0.25   # hardware faults and fixes
+MAX_SKILL = 0.18    # roughly 1 card in 6 or fewer
+
+
+def check_mix(cards, ctx):
+    if not any(c["cat"] for c in cards):
+        return  # an uncategorized deck (e.g. a test fixture) is not judged
+    mix = dict((k, 0) for k in CATS)
+    mix["skill"] = 0
+    for c in cards:
+        if not c["cat"]:
+            ctx.warnings.append("style: %s %s has no `cat` line" % (c["where"], c["id"]))
+            continue
+        mix[c["cat"]] += 1
+        mix["skill"] += c["skill"]
+    n = len(cards)
+    ctx.mix = mix
+    if mix["repair"] > MAX_REPAIR * n:
+        ctx.warnings.append("style: mix: %d of %d cards are repair/fault (max %d%%)"
+                            % (mix["repair"], n, int(MAX_REPAIR * 100)))
+    if mix["skill"] > MAX_SKILL * n:
+        ctx.warnings.append("style: mix: %d of %d cards carry skill flavor (max %d%%)"
+                            % (mix["skill"], n, int(MAX_SKILL * 100)))
+
+
+# Slow burn (STYLE.md, "The slow burn"). Nothing uncanny before day 11: cards that
+# can fire earlier may not use spooky vocabulary, may not be `cat mystery`, and a
+# cliffhanger that can fire before day 25 may not be `cat mystery`.
+QUIET_UNTIL = 11
+UNCANNY_HOOKS_FROM = 25
+SPOOKY = re.compile(r"\b(eerie\w*|impossible|strange\w*|wrong|chill\w*|uncanny|creep\w*|spooky|"
+                    r"ghost\w*|haunt\w*|ominous\w*|unexplained|sinister|nobody (says|knows) why|"
+                    r"no one (says|knows) why|not from earth|hair on)\b", re.I)
+
+
+def check_ramp(cards, ctx):
+    for c in cards:
+        d0, w = c["days"][0], c["where"]
+        if d0 >= QUIET_UNTIL:
+            continue
+        for t in [c["text"]] + [o["text"] for o in c["options"]]:
+            m = SPOOKY.search(t)
+            if m:
+                ctx.warnings.append("style: %s %s can fire on day %d and says %r; keep days 1-%d quiet"
+                                    % (w, c["id"], d0, m.group(0), QUIET_UNTIL - 1))
+        if c["cat"] == "mystery":
+            ctx.warnings.append("style: %s %s is cat mystery but can fire on day %d (min %d)"
+                                % (w, c["id"], d0, QUIET_UNTIL))
+    for c in cards:
+        if c["flags"] & O.F_HOOK and c["cat"] == "mystery" and c["days"][0] < UNCANNY_HOOKS_FROM:
+            ctx.warnings.append("style: %s %s is an uncanny cliffhanger before day %d; early hooks stay grounded"
+                                % (c["where"], c["id"], UNCANNY_HOOKS_FROM))
+
+
+def mix_line(ctx):
+    n = sum(v for k, v in ctx.mix.items() if k != "skill")
+    if not n:
+        return ""
+    return "mix: " + ", ".join("%s %d (%d%%)" % (k, v, round(100.0 * v / n))
+                               for k, v in ctx.mix.items() if v)
+
+
 def check_style(cards, fleet, ctx):
     names = [cr["name"] for cr in fleet["crew"]]
     for c in cards:
@@ -421,6 +496,8 @@ def check_style(cards, fleet, ctx):
 def validate(cards, ctx, fleet, system):
     check_pronouns(cards, system, ctx)
     check_style(cards, fleet, ctx)
+    check_mix(cards, ctx)
+    check_ramp(cards, ctx)
     ids = [c["id"] for c in cards]
     for c in cards:
         w = c["where"]
@@ -564,6 +641,7 @@ def build(content_dir):
     if len(cards) > 250:
         ctx.errors.append("too many cards (max 250)")
     validate(cards, ctx, fleet, system)
+    ctx.cards = cards
     if ctx.errors:
         return None, None, ctx
     ids = [c["id"] for c in cards]
@@ -595,6 +673,9 @@ def build(content_dir):
         "cards": [dict({"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]},
                        **({"h": 1} if c["flags"] & O.F_HOOK else {}))
                   for c in cards],
+        # Second read: card indices worth revisiting after the ending. The UI may list
+        # the flight days these fired (from the story log) without explaining them.
+        "reread": [i for i, c in enumerate(cards) if c["clue"]],
         "actions": system["actions"],
         "notes": system["notes"],
         "axis_words": system.get("axis_words", []),
@@ -627,6 +708,8 @@ def main(argv):
     n = len(text["cards"])
     print("ok: %d cards, %d flags, %d vars; pack.bin %d B, text.json %d B, gzip %d B; pack id %s"
           % (n, len(ctx.flags), len(ctx.vars), len(pack), len(tj), len(tgz), text["pack"]))
+    if ctx.mix:
+        print(mix_line(ctx))
     if not check:
         os.makedirs(out, exist_ok=True)
         for name, data in (("pack.bin", pack), ("text.json", tj), ("text.json.gz", tgz)):

@@ -14,6 +14,7 @@
 # Integer maths only; runs unchanged on CPython and MicroPython.
 from lv import record as R
 from lv.prng import Rng, day_seed
+from lv.pack import H_TYPE
 
 S_DROP = 0x20    # day_seed salts (+ ship). 0 is the story tick, 1 the setup.
 S_OFF = 0x28
@@ -270,15 +271,14 @@ class Local:
 # ---- what's waiting ---------------------------------------------------------------------
 def hooks_today(pack, st):
     """(day a cliffhanger fired tonight or 0, day its resolution fired this morning or 0).
-    Read from the cards' fired days, so it costs nothing to keep. F_HOOK = 4 (lv/ops.py)."""
+    Read from the cards' fired days, so it costs nothing to keep."""
     tonight = resolved = 0
-    for c in pack.cards:
-        if c.flags & 4:
-            f = st.fired[c.idx]
-            if f == st.day:
-                tonight = f
-            elif f and f == st.day - 1:
-                resolved = st.day
+    for i in pack.hooks:
+        f = st.fired[i]
+        if f == st.day:
+            tonight = f
+        elif f and f == st.day - 1:
+            resolved = st.day
     return tonight, resolved
 
 
@@ -352,8 +352,8 @@ def view(eng, local, pack, st, log, you, minute, visit=True):
         if R.ship(r) != you:
             continue
         k = R.kind(r)
-        if k == R.VOTE and r[5] < len(pack.cards):
-            if pack.cards[r[5]].type == O.RESCUE:
+        if k == R.VOTE and r[5] < pack.ncards:
+            if pack.h(r[5], H_TYPE) == O.RESCUE:
                 rescues += 1
             else:
                 votes += 1

@@ -1,51 +1,10 @@
 # Fleet votes with callbacks days or weeks later. House style: content/STYLE.md.
 # Both sides of every vote are reasonable people being reasonable.
 
-# --- Header tank pressure ---------------------------------------------------
-card dec_header
-type decision
-days 3 20
-weight 10
-once
-duration 2
-roles A B
-lean brave watch vent
-text A sensor on {A}'s header tank reports a slow pressure rise. {A} wants to vent now. {B} wants to watch it one more day, because the trend looks like sensor drift.
-option vent | Vent now | The vent is clean, and the fleet loses methane it would have liked to keep. Mission Control replies 22 minutes later: "Concur."
-  set hdr_vented
-  who hdr_who A
-  res fuel -2
-option watch | Watch it a day | The pressure levels off overnight. It was drift, from a sensor with a failing reference. {B} swaps it on the next shift and manages not to mention it for nearly an hour, a fleet record for restraint.
-  set hdr_watched
-  who hdr_who B
-  bond A B 3
-
-card hdr_review
-type event
-due
-once
-days 21 40
-roles A
-when flag hdr_vented
-when is A hdr_who
-text The propellant review arrives from Earth. The methane vented from {A}'s header tank is listed to three decimal places, under the heading "Prudent". {A} prints it out and tapes it to the tank access panel.
-do morale A 4
-
-card hdr_sensor
-type event
-due
-once
-days 21 40
-roles A
-when flag hdr_watched
-when is A hdr_who
-text Earth sends the teardown report on the header sensor {A} pulled: a reference resistor had cracked from launch vibration. Two more ships in the fleet carry the same batch. {A} has their replacements bagged and labelled by dinner.
-do res spares -1
-do morale A 4
-
 # --- Fleet portrait -----------------------------------------------------------
 card dec_photo
 type decision
+cat mission
 days 6 24
 weight 8
 once
@@ -62,6 +21,7 @@ option decline | Politely decline | The fleet sends a polite no and a very good 
 
 card photo_back
 type beat
+cat human
 due
 once
 days 18 40
@@ -74,6 +34,7 @@ do morale A 5
 # --- Water recovery -------------------------------------------------------
 card dec_water
 type decision
+cat repair
 days 8 26
 weight 9
 once
@@ -93,6 +54,7 @@ option degrade | Run it degraded | The fleet goes on water rationing. Nobody com
 
 card water_fail
 type event
+cat repair
 due
 once
 days 18 40
@@ -107,39 +69,10 @@ do bond A B 8
 do res spares -1
 do clr water_rationed
 
-# --- Cargo shift (mechanical) ------------------------------------------------
-card dec_cargo
-type decision
-days 10 30
-weight 8
-once
-duration 2
-roles A B
-lean warm restow trim
-text A mass check shows the center of mass on {A}'s ship has moved a few centimeters. Cargo shifted on a bracket that was fine in the model. {A} wants to re-stow it all by hand. {B} suggests trimming it out with the engines and saving everyone a day of lifting.
-option restow | Re-stow by hand | Eleven hours of strapping and unstrapping. The center of mass is back where the model said it would be, and the bracket gets redesigned on the spot with zip ties and spite.
-  set cargo_restowed
-  res spares -1
-  morale A -2
-  bond A B 4
-option trim | Trim with engines | The engines soak up the offset, at a small propellant cost on every burn for the rest of the flight. {B} keeps a running total. It is not small.
-  set cargo_trimmed
-  res fuel -2
-
-card cargo_after
-type event
-due
-once
-days 22 40
-roles A
-when flag cargo_restowed
-when cond A ok
-text During the big correction burn, the zip-tied bracket on {A}'s ship is the only mount in the bay that doesn't move a millimeter. Earth asks for the design. {A} sends a photo and the word "spite".
-do morale A 4
-
 # --- Clocks -----------------------------------------------------------------
 card dec_clock
 type decision
+cat mission
 days 4 30
 weight 6
 once
@@ -155,6 +88,7 @@ option keep | Keep fleet time | The fleet keeps its clocks. The ground team adju
 # --- Course correction -------------------------------------------------------
 card dec_trim
 type decision
+cat mission
 days 12 28
 weight 9
 once
@@ -171,6 +105,7 @@ option wait | Wait and check | The solution gets checked three times, then a fou
 
 card trim_callback
 type event
+cat mission
 due
 once
 days 29 40
@@ -182,15 +117,28 @@ text The final navigation fix comes in: the fleet sits within a few kilometers o
 do morale A 3
 
 # --- Arrival: dust storm over the landing region -------------------------------
+card dust_report
+type event
+cat arrival
+days 29 36
+weight 22
+once
+roles A
+when cond A ok
+text {A} pulls the morning weather from the Mars orbiters: a regional dust storm, building over the landing zone. On the map it's a brown thumbprint. {A} measures it against the zone with a ruler, and then measures it again.
+do set dust_seen
+
 card dec_arrival
 type decision
-days 33 39
-weight 30
+cat arrival
+days 33 38
+weight 10
 once
 duration 2
 roles A B
+when flag dust_seen
 lean brave hold wait
-text Orbiters at Mars report a regional dust storm building over the landing zone. {A} wants to hold the arrival plan and trust the margins. {B} wants to burn for a longer capture orbit and wait it out, at a real cost in propellant.
+text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to burn for a longer capture orbit and wait it out, at a real cost in propellant.
 option hold | Hold the plan | The arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
   set arrive_hold
 option wait | Long orbit, wait | The fleet commits to the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.

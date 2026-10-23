@@ -2,25 +2,30 @@
 
 card end_contact
 type ending
+cat ending
 when flag signal_contact
 when res food >= 1
-text Old Friend. The fleet makes Mars orbit carrying a dead orbiter's last telemetry and a crew who won't stop talking about it. Somewhere below, a small machine knows someone came back.
+text Old Friend. Their hail reached Cargo 2 between boots, years late and just in time. The blinking stops. On the next pass it answers, in a format nobody has used in years. Anyone could have answered. One tap was enough.
 
 card end_followed
 type ending
+cat ending
 when flag echo_heard
-text Company. Seven ships make orbit. Just above them, on a slightly higher path, the carrier is still transmitting every 11 seconds. Nobody has answered it yet.
+text Company. Seven ships set down beside Cargo 2. Its lights are still blinking every eleven seconds, the way they did the whole time nobody answered. It can wait a little longer. Somebody gets to knock.
 
 card end_patience
 type ending
+cat ending
 when flag arrive_wait
-text Patience. The fleet parks in a long orbit and watches a dust storm the size of a continent swallow the landing zone. When it clears, seven ships are still waiting above it, with margins thin as foil and every one of them intact.
+text Patience. The fleet waits out the storm in a long orbit. Every night, through the dust, one point of light keeps time at the edge of the landing zone. When the sky clears, seven ships go down to meet it.
 
 card end_through
 type ending
+cat ending
 when flag arrive_hold
-text Through the Dust. The fleet holds the plan. The storm reaches the landing zone hours after the last ship is down, and the last thing the cameras see from orbit is seven ships under an orange sky, hatches sealed.
+text Through the Dust. The fleet holds the plan and goes down into the storm, radar full of sand. Out of the brown, every eleven seconds, a light. Seven ships land on it.
 
 card end_long_way
 type ending
-text The Long Way Round. Seven ships, one planet, and a log that's mostly propellant figures and small kindnesses. Mission Control sends one word: "Nominal." Everyone aboard knows it was more than that.
+cat ending
+text The Long Way Round. Seven ships, one planet. After landing, they walk to Cargo 2 in their suits and open the hold. The first crate has Sharpie on it, in a hand they know: "You'll thank me." Everyone does.
