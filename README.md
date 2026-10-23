@@ -16,7 +16,7 @@ and Safari have no Web Serial.
 | 1 Ship on the bench | Board, MicroPython version, free flash, installed release and ship identity. |
 | 2 Software load | Pick a release from `firmware/index.json` and install it. Every file is checked by sha256 in the browser before anything is written, and again on the board after. `data/` and the bench logs are always kept. A board holding another project's files is offered a clean install. |
 | 3 MicroPython runtime | Checks the board's MicroPython against the release, links the tested `.uf2` on micropython.org with its sha256, and can restart the board into BOOTSEL. |
-| 4 Ship configuration | Writes `data/ship.json`: ship number and name, bench role, hotspot password. WPA2 by default; open only when asked for explicitly. Shows the hotspot the role gives (A → `COEX-0`, B → `COEX-1`, none → `COEX-0`). Remembers, in this browser, which board (by `machine.unique_id()`) got which role, preselects the other role for the next board, defaults its ship number to match (A → 1, B → 2), and warns before two boards share a hotspot. |
+| 4 Ship configuration | Writes `data/ship.json`: ship number and name, bench role, hotspot password. WPA2 by default; open only when asked for explicitly. Shows the hotspot the role gives (A → `COEX-0`, B → `COEX-1`, none → `COEX-0`). Remembers, in this browser, which board (by `machine.unique_id()`) got which role, preselects the other role for the next board, defaults its ship number to match (A → 1, B → 2), and warns before two boards share a hotspot. Below that, **Crew codes**: one 4-digit sign-in code per crew member for The Long Voyage, written to `data/crew.json` as salted sha256 hashes (`src/crew-codes.js`, read on the board by `game/lv/codes.py`). Blank means "not set up". This browser keeps the plain codes and the fleet salt, so every ship gets the same set; "Fill blanks at random", "Copy list" and "Forget codes" do what they say. |
 | 5 Bench logs | Lists and downloads the release's log files, named after the ship and time. |
 | 6 Operations log, 7 Recovery | What happened, and what to do when it goes wrong. |
 
@@ -53,7 +53,7 @@ sh tests/run.sh            # must pass
 git add firmware && git commit -m "firmware: package Long Voyage 0.0.2-coex" && git push
 ```
 
-- The builder refuses to package `secrets.py`, `secrets.json`, `ship.json` or `device.json`.
+- The builder refuses to package `secrets.py`, `secrets.json`, `ship.json`, `crew.json` or `device.json`.
 - `data/` and every `--log` file are preserved on install.
 - `--build-time` makes a rebuild byte-for-byte reproducible.
 - Channels are `stable`, `beta` and `bench`. `latest` follows the newest build unless

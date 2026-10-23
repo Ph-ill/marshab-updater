@@ -35,7 +35,7 @@ VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
 FLASH_WARN_BYTES = 600 * 1024
 PROJECT = "LongVoyage"
 # Device-local files that must never be shipped: they hold per-ship settings and secrets.
-NEVER_SHIP = {"ship.json", "device.json", "secrets.py", "secrets.json"}
+NEVER_SHIP = {"ship.json", "crew.json", "device.json", "secrets.py", "secrets.json"}
 
 
 def parse_args() -> argparse.Namespace:

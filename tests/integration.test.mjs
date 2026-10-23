@@ -11,6 +11,7 @@ import { readDeviceInfo, summarizeDeviceInfo } from '../src/device-info.js';
 import { installRelease } from '../src/installer.js';
 import { validateShipConfig, writeShipConfig } from '../src/ship-config.js';
 import { statFiles, readFileBytes } from '../src/device-logs.js';
+import { crewConfig, writeCrewConfig, newSalt } from '../src/crew-codes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..');
@@ -77,6 +78,22 @@ await t('ship config written atomically and read back', async () => {
   assert.ok(!existsSync(join(root, 'data/ship.tmp')));
   await writeShipConfig(dev, { ...cfg, ship_name: 'Starship-03b' });
   assert.ok(existsSync(join(root, 'data/ship.bak')));
+});
+
+await t('crew codes written to data/crew.json and accepted by the game core', async () => {
+  const cfg = await crewConfig(['1234', '', '0420', '9999', '0000', '1111', '2222'], newSalt());
+  await writeCrewConfig(dev, cfg);
+  assert.ok(!existsSync(join(root, 'data/crew.tmp')));
+  const onBoard = JSON.parse(readFileSync(join(root, 'data/crew.json'), 'utf8'));
+  assert.deepEqual(onBoard.codes, cfg.codes);
+  // The board side (game/lv/codes.py) reads the same file: right code OK, wrong code counted, blank not set up.
+  const r = spawnSync('python3', ['-c',
+    'import json,sys; sys.path.insert(0, sys.argv[1]); from lv import codes as K\n' +
+    'b = K.CodeBook(json.load(open(sys.argv[2])))\n' +
+    'print(b.check(0, "1234", 0), b.check(2, "0420", 0), b.check(0, "4321", 0), b.check(1, "1234", 0))',
+    join(repo, 'game'), join(root, 'data/crew.json')], { encoding: 'utf8' });
+  assert.equal(r.stdout.trim(), '(0, 0) (0, 0) (1, 4) (3, 0)', r.stderr);
+  await writeCrewConfig(dev, cfg);   // overwriting is fine too
 });
 
 // Load the installed config.py with /data/ mapped into the sim board.

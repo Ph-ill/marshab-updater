@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVED = ["index.html", "styles.css", "favicon.svg", "src", "firmware"]  # what the Dockerfile copies
-NEVER_SERVE = {"secrets.py", "secrets.json", "ship.json", "device.json"}
+NEVER_SERVE = {"secrets.py", "secrets.json", "ship.json", "crew.json", "device.json"}
 SAFE = re.compile(r"^(?!/)(?!.*\.\.)[A-Za-z0-9_./-]+$")
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
 SHA = re.compile(r"^[0-9a-f]{64}$")

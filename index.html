@@ -108,6 +108,17 @@
         <dl class="readout"><div><dt>Hotspot</dt><dd id="shipHotspot">—</dd></div></dl>
         <div class="actions"><button id="saveShipBtn" type="button" disabled>Save to ship</button></div>
         <p class="hint">Written to <code>data/ship.json</code>, which installs never touch. Takes effect after a restart.</p>
+        <h3 class="sub" id="h-codes">Crew codes</h3>
+        <p class="hint first">Each person's 4-digit sign-in code for the game. Put the same codes on all seven ships. Leave a name blank to show it as "not set up".</p>
+        <div id="crewCodes" class="codes" aria-labelledby="h-codes"></div>
+        <p id="crewCodesWarn" class="warn" role="alert" hidden></p>
+        <div class="actions">
+          <button id="saveCodesBtn" type="button" disabled>Save codes to ship</button>
+          <button id="fillCodesBtn" type="button">Fill blanks at random</button>
+          <button id="copyCodesBtn" type="button">Copy list</button>
+          <button id="forgetCodesBtn" type="button">Forget codes</button>
+        </div>
+        <p class="hint">Written to <code>data/crew.json</code> as salted hashes. This browser keeps the plain codes so the next ship gets the same ones. Five wrong tries lock a name for 5 minutes.</p>
       </section>
 
       <section class="block wide" aria-labelledby="h-logs">

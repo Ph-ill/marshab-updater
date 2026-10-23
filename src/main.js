@@ -6,6 +6,7 @@ import { loadRuntimeSpec } from './releases.js';
 import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
 import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, hotspotForRole, shipNumberForRole } from './ship-config.js';
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, describeBoard } from './role-memory.js';
+import { CREW, validateCodes, sharedCodes, crewConfig, writeCrewConfig, randomCode, codeList, newSalt, loadCodes, saveCodes, forgetCodes } from './crew-codes.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
 const SHIP_COUNT = 7;
@@ -71,6 +72,14 @@ Object.assign(els, {
   saveShipBtn: $('saveShipBtn'),
 });
 Object.assign(els, {
+  crewCodes: $('crewCodes'),
+  crewCodesWarn: $('crewCodesWarn'),
+  saveCodesBtn: $('saveCodesBtn'),
+  fillCodesBtn: $('fillCodesBtn'),
+  copyCodesBtn: $('copyCodesBtn'),
+  forgetCodesBtn: $('forgetCodesBtn'),
+});
+Object.assign(els, {
   logList: $('logList'),
   refreshLogsBtn: $('refreshLogsBtn'),
   downloadAllLogsBtn: $('downloadAllLogsBtn'),
@@ -131,7 +140,7 @@ function boardLabel(id){
 
 function deviceControls(){
   const list = [];
-  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn);
+  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn, els.saveCodesBtn);
   list.push(els.refreshLogsBtn, els.downloadAllLogsBtn, ...els.logList.querySelectorAll('button'));
   list.push(els.bootselBtn);
   return list;
@@ -442,6 +451,90 @@ async function saveShipConfig(){
   }
 }
 
+// ---------------------------------------------------------------- crew codes
+// The codes can be typed and kept with no ship connected; only "Save codes to ship" needs one.
+function codeInputs(){ return [...els.crewCodes.querySelectorAll('input')]; }
+function typedCodes(){ return codeInputs().map(i => i.value.trim()); }
+
+function renderCrewCodes(){
+  const kept = loadCodes();
+  els.crewCodes.innerHTML = '';
+  CREW.forEach((name, i) => {
+    const label = document.createElement('label');
+    label.className = 'field';
+    label.innerHTML = `<span>${String(i + 1).padStart(2, '0')} ${name}</span>`;
+    const input = document.createElement('input');
+    Object.assign(input, { type: 'text', inputMode: 'numeric', maxLength: 4, autocomplete: 'off', placeholder: '----', value: kept?.codes?.[i] || '' });
+    input.pattern = '\\d{4}';
+    input.setAttribute('aria-label', `${name}'s code`);
+    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); keepCodes(); });
+    label.append(input);
+    els.crewCodes.append(label);
+  });
+  checkCodes();
+}
+
+function keepCodes(){
+  const salt = loadCodes()?.salt || newSalt();
+  saveCodes({ salt, codes: typedCodes() });
+  checkCodes();
+}
+
+function checkCodes(){
+  const codes = typedCodes();
+  const short = CREW.filter((_, i) => codes[i] && codes[i].length !== 4);
+  const shared = sharedCodes(codes.map(c => c.length === 4 ? c : ''));
+  const msgs = [];
+  if(short.length) msgs.push(`${short.join(', ')}: a code needs 4 digits.`);
+  for(const names of shared) msgs.push(`${names.join(' and ')} have the same code. That works, but either could sign in as the other.`);
+  els.crewCodesWarn.hidden = !msgs.length;
+  els.crewCodesWarn.textContent = msgs.join(' ');
+}
+
+function fillCodes(){
+  const taken = new Set(typedCodes().filter(c => c.length === 4));
+  for(const input of codeInputs()){
+    if(input.value.length === 4) continue;
+    let c; do{ c = randomCode(); }while(taken.has(c));
+    taken.add(c); input.value = c;
+  }
+  keepCodes();
+  log('filled the blank crew codes at random; they are kept in this browser for the next ship');
+}
+
+async function copyCodes(){
+  const text = `The Long Voyage: crew codes\n${codeList(typedCodes())}`;
+  try{ await navigator.clipboard.writeText(text); log('crew code list copied'); }
+  catch(_err){ log(`could not copy; here it is:\n${text}`); }
+}
+
+function forgetCrewCodes(){
+  if(!confirm('Forget the crew codes kept in this browser? Ships keep theirs; the next ship you set up would need the codes typed again.')) return;
+  forgetCodes();
+  renderCrewCodes();
+  log('crew codes forgotten in this browser');
+}
+
+async function saveCrewCodes(){
+  if(!state.device){ log('connect a ship first'); return; }
+  setBusy(true);
+  try{
+    const codes = validateCodes(typedCodes());
+    const kept = loadCodes();
+    const salt = kept?.salt || newSalt();
+    saveCodes({ salt, codes });
+    const cfg = await crewConfig(codes, salt);
+    const set = codes.filter(Boolean).length;
+    log(`writing crew codes: ${set} of ${CREW.length} set${set < CREW.length ? ` (not set up: ${CREW.filter((_, i) => !codes[i]).join(', ')})` : ''}`);
+    await writeCrewConfig(state.device, cfg);
+    log('crew codes saved to data/crew.json; they take effect when the ship restarts (Disconnect restarts it)');
+  }catch(err){
+    log(`crew codes not saved: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
+
 // ---------------------------------------------------------------- bench logs
 function logPaths(){
   const installed = state.deviceInfo?.version?.version;
@@ -659,6 +752,10 @@ function initEvents(){
   els.shipRole.addEventListener('change', () => { followRoleWithShipId(); renderShipSsid(); });
   els.shipShowPw.addEventListener('change', () => { els.shipPassword.type = els.shipShowPw.checked ? 'text' : 'password'; });
   els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
+  els.saveCodesBtn.addEventListener('click', () => { saveCrewCodes(); });
+  els.fillCodesBtn.addEventListener('click', fillCodes);
+  els.copyCodesBtn.addEventListener('click', () => { copyCodes(); });
+  els.forgetCodesBtn.addEventListener('click', forgetCrewCodes);
   els.refreshLogsBtn.addEventListener('click', () => { refreshLogs(); });
   els.downloadAllLogsBtn.addEventListener('click', () => { downloadLogs(null); });
   els.bootselBtn.addEventListener('click', () => { enterBootsel(); });
@@ -674,6 +771,7 @@ async function main(){
     log('Web Serial available; plug in a ship over USB and click Connect ship');
   }
   initEvents();
+  renderCrewCodes();
   clearDeviceUi();
   setBusy(false);
   try{
