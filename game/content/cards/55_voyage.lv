@@ -47,7 +47,7 @@ due
 once
 days 4 5
 roles A
-text The fourth tanker's docking computer bounces {A}'s hello, routed through the ground for sign-off: HELLO RX · REPLAY · DISCARD, stale. The docking lead at Mission Control doesn't look up. "It listens for a second, then wants a fresh hello. Go ship to ship." Ship to ship, it locks at once.
+text The fourth tanker's docking computer bounces {A}'s hello, routed via the ground: HELLO RX · REPLAY · DISCARD, stale. The docking lead at Mission Control doesn't look up. "It listens for a second, then wants a fresh hello. Pad-test default. Go ship to ship." Ship to ship, it locks at once.
 do trait A curious 1
 
 card p_garden_plant
@@ -71,7 +71,7 @@ due
 once
 days 5 9
 roles A
-text {A} reads the arrival manifest: water on Cargo 3, the rover on Cargo 4. The written-off page is the fun one: a drill rig left in Earth orbit, a grey relay, "thruster stuck open", a nitrogen pallet vented on the pad, a weather orbiter, Cargo 2, "lost on landing", a pallet of socks, "reason unknown".
+text {A} reads the arrival manifest: water on Cargo 3, the rover on Cargo 4. The written-off page: a drill rig left in Earth orbit, a grey relay, "thruster stuck open", a nitrogen pallet vented on the pad, a weather orbiter, Cargo 2, "lost on landing, divert called, no ack", socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -287,7 +287,7 @@ card w_phosphene
 type beat
 once
 cat grim
-days 14 28
+days 19 23
 weight 6
 roles A
 when cond A ok
@@ -298,7 +298,7 @@ do morale A -1
 card w_comet
 type event
 cat wonder
-days 12 30
+days 20 30
 weight 6
 once
 roles A
@@ -316,7 +316,7 @@ once
 roles A B
 when same A B
 when !fired beat_haircut
-text It's {B}'s birthday by the ground calendar, and {A} is aboard for the transfer window. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
+text It's {B}'s birthday by the ground calendar, and {A} is still aboard from the last transfer window. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
 do bond A B 6
 do morale B 5
 
@@ -328,7 +328,7 @@ weight 7
 once
 roles A B
 when same A B
-text Movie night, with a visitor, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Neither of them presses play again.
+text Movie night, with a visitor, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Then {A} puts on something with a sky in it.
 do bond A B 4
 
 card p_dream
@@ -339,7 +339,7 @@ days 10 39
 weight 5
 roles A
 when cond A ok
-text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone, and {A} doesn't mention it to anyone.
+text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone. {A} writes "rain, car roof" in the log margin, in case it comes back.
 do morale A -2
 do trait A warm 2
 
@@ -362,6 +362,7 @@ weight 6
 once
 roles A B
 when cond A ok
+when is A ow_list
 when cond B ok
 text Long table night. {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on all six screens at once, the one conversation out here with no delay in it. {A} laughs on the beat, and it counts double.
 do morale A 3
@@ -375,6 +376,7 @@ once
 roles A B
 when cond A ok
 when cond B ok
+when !is B ow_list
 text Past the halfway mark the days get heavier. The flight surgeon calls it the third-quarter effect. On the video link, {A} notices {B} staring at one checklist page for ten minutes, and starts calling out the steps, the way {A} would on a pass, until {B} answers them.
 do bond A B 6
 do morale B 3
@@ -470,7 +472,7 @@ days 41 41
 roles A B
 when is A ow_dose
 when !flag arrive_wait
-text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. Neither of them sleeps much.
+text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. {B} sets an alarm for it anyway.
 do bond A B 6
 
 card a_last_night_o
@@ -514,7 +516,7 @@ once
 days 42 42
 roles A
 when flag photo_taken
-text {A} stows the tablet with the fleet portrait on it: seven ships, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have today. Worth it, {A} decides.
+text {A} stows the tablet with the fleet portrait on it: six ships and the edge of a seventh, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have today. Worth it, {A} decides.
 
 card a_recall_wrist
 type event
@@ -525,7 +527,7 @@ days 42 42
 roles A
 when fired crisis_eva
 when is A eva_who
-text {A} straps in for entry with the wrist that wouldn't bend, mostly bending now, and doesn't mention the "mostly" to the flight surgeon.
+text {A} straps in for entry with the wrist that wouldn't bend, mostly bending now, and reports it to the flight surgeon as "bending", which is mostly true.
 
 card a_recall_valve
 type event
@@ -549,7 +551,7 @@ roles A B
 when flag stash_exposed
 when is A stash_who
 when !is A eva_who
-text On the last transfer window, four days out, {A} sends {B} the last pack from the locker, with a note on the bag in borrowed handwriting: "You'll thank me."
+text {A} sent {B} the last pack from the locker on the last transfer window, with a note on the bag in borrowed handwriting: "You'll thank me." {B} opens it tonight, five days out.
 do bond B A 3
 
 card a_recall_marker
@@ -563,7 +565,20 @@ when is A ow_theory
 text Before strapping in, {A} folds the lighthouse drawing into a chest pocket with the blue marker. Overnight a second lighthouse has appeared on it, small, standing on the ground, in the same blue.
 do morale A 2
 
-# --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on the manual abort.
+card a_suit_plan
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag signal_ignored
+when is A ow_hail
+when cond A ok
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, with the old program key on a card taped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which said no for six weeks, says yes.
+do morale A 3
+
+# --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
 card e_entry_hold
 type event
 cat arrival
@@ -573,7 +588,7 @@ days 42 42
 roles A
 when flag arrive_hold
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had, and the abort call sits on {A}'s tongue, the one drilled over the link and run four days ago from memory. Then the radar finds the ground, and {A} doesn't call it.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had, and the take-manual call sits on {A}'s tongue, the one drilled over the link and flown five days ago from memory. Then the radar finds the ground, and {A} doesn't call it.
 do morale A 3
 
 card e_entry_wait
@@ -585,7 +600,7 @@ days 42 42
 roles A
 when flag arrive_wait
 when is A abort_who
-text Aerocapture. Four minutes of plasma blackout high in the air, seven ships silent in turn. Six come out the far side on time. {A}'s comes out eleven seconds late: eleven seconds of nothing on the fleet channel, the abort call ready on {A}'s tongue, as drilled. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
+text Aerocapture. Four minutes of plasma blackout high in the air, seven ships silent in turn. Six come out the far side on time. {A}'s comes out eleven seconds late: eleven seconds of nothing on the fleet channel, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
 do morale A 3
 
 card e_entry_clear
@@ -598,5 +613,5 @@ roles A
 when !flag arrive_hold
 when !flag arrive_wait
 when is A abort_who
-text Entry interface in clear air. Four minutes of plasma blackout, seven ships silent in turn. At the landing burn one of {A}'s engines lights late, a long half second, and the abort call is half out of {A}'s mouth, word for word as drilled over the link, when it catches. The ground comes up exactly where the maps said.
+text Entry interface in clear air. Four minutes of plasma blackout, seven ships silent in turn. At the landing burn one of {A}'s engines lights late, a long half second, and the engine-out call is half out of {A}'s mouth when it catches. The ground comes up exactly where the maps said.
 do morale A 3
