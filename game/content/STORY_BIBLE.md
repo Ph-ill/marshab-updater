@@ -145,17 +145,19 @@ orbiter night pass the strobe has stopped; one status lamp burns steady. `HELLO 
 log-it branch (`a_window_quiet`): it listens until its next tick; the fleet's
 answer would take about ten seconds; the ground holds (no standing answer, a
 review board that won't sit before landing, and a suit beside it).
-**Blind hellos:** after the vote the fleet sends standard hellos blind; the
-first whole frame decodes later (`m_key`/`r_dark`). Every hello is signed with
+**Blind hellos:** after the vote (and the ground's clearance: hello only,
+nothing that commands) the fleet sends standard hellos blind; a whole frame
+decodes later (`m_key`/`r_dark`). Every hello is signed with
 the old program key (`dec_signal`, `a_log`: "every one signed, every one late").
 
 **Why nobody caught it (each gap has an in-world reason):**
 
 | Who | What they saw | Why it didn't add up |
 |---|---|---|
-| Earth (comms) | Six weeks of ground hails, no acknowledgement | Every answer arrived minutes late and was discarded; Cargo 2's replies went out only on the old band, which Earth stopped listening to; X-band OVERTEMP, dish jammed (`m_checked`, `a_report`) |
-| Earth (old band) | Flashes every 10.96 s in the first weeks | Attributed to the tumbling relay, written into its catalogue entry as a spin rate (`m_theory`, `a_report`) |
-| Earth (security) | Signed link requests, sequence 5,750,112 (a boot counter kept in flash: one per knock, so ×10.96 s ≈ two years, dating the source to the cargo landings), an old program key, no spacecraft ID | "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed." The first whole frame had hung the comms computer: a healthy thread kept its watchdog fed, the hourly health check rebooted it, and the backup string, fed the same frame, hung too (`m_key`, `r_dark`) |
+| Earth (comms) | Six weeks of ground hails, no acknowledgement | Earth never heard a challenge, so none of its 31,000 hails was signed to one (`a_log`: NO OPEN CHALLENGE); the fleet's later answers were late (REPLAY); Cargo 2's replies went out only on the old band, which Earth stopped listening to; X-band OVERTEMP, dish jammed (`m_checked`, `a_report`) |
+| Earth (old band) | Flashes every 10.96 s in the first weeks | Attributed to the tumbling relay: three passes of under an hour on a spare antenna that measured power, not frequency, so no Doppler and no day-long drift; nothing else spoke that channel (`m_theory`) |
+| Earth (commanding) | Two years of resets, never out of pad-test mode | The pad check-in masks the lost-link timer and the flag lives in non-volatile memory, so it outlives every reboot; only the relay spoke its channel or could send a hard reset (`a_report`) |
+| Earth (security) | Signed link requests, sequence 5,750,112 (a boot counter kept in flash: one per knock, so ×10.96 s ≈ two years, dating the source to the cargo landings), an old program key, no spacecraft ID | "Old key. Retired with the first batch. Nothing on it still flies." (no list: round 11 widened the suspects) The first whole frame had hung the comms computer: a healthy thread kept its watchdog fed, the hourly health check rebooted it, and the backup string, fed the same frame, hung too (`m_key`, `r_dark`) |
 | Orbiter imaging | One coarse afternoon frame: a smudge and a streak | Backup-site maps predate the cargo landings (`dec_name`); from straight above a standing Starship is two pixels and a shadow; day 40 is the first sharp pass since (`m_reveal`) |
 | The fleet, first look | A carrier on the dish, too faint to lock | Decoy 1: an alias of something aboard (`m_carrier`), killed when it lands on two ships' unsynchronised machinery in the same millisecond (`m_alias`) |
 | The fleet, middle | 37-minute drift, out of view half the day | Decoy 2: the spinning relay "lighthouse" (`m_theory`, `m_theory_confirm`) |
@@ -221,15 +223,16 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 | 7 | `m_theory_confirm` | 3 | – | The decoy confirmed | The decoy |
 | 8 | `m_count` (39) | 4 | – | Lightning and thunder | The 11 s gap against the shrinking round trip |
 | 9 | `m_flash1` | 3 | yes | A pixel on the night side | The floodlights at power-up |
-| 10 | key: `m_key` / `r_dark` | 3 | yes | "Old key, first batch … All dead or crashed." | An old program key: it's one of ours |
-| 11 | ground: `flash_answer` / `flash_answer_ground` | 3 | yes | It isn't in orbit | The decoy breaks |
+| 10 | key: `m_key` / `r_dark` | 3 | yes | "Old key. Retired with the first batch." | An old program key: it's one of ours |
+| 11 | ground: `flash_answer` / `flash_answer_ground` | 3 | yes | The pixel never moves against the rocks | The decoy breaks (no longer said aloud) |
 | 12 | `m_overlay` | 3 | yes | Carrier and flash share a clock | The same machine |
 
 Misdirections: `m_carrier` ("an alias, something of ours"; retracted by
 `m_alias`, not a clue), `m_theory` / `m_theory_confirm` (the relay), `w_phosphene`
 (cosmic-ray pixels), `r_ghost` (a cover plate shed at
-departure, still flying with them), `m_key` / `r_dark` ("All dead or crashed."),
-`signal_reply` (cut off before the sender field; it no longer claims a timing
+departure, still flying with them), `m_key` / `r_dark` ("Nothing on it still flies."), the old science lander
+(`m_flash2`, the ground's first guess; `m_checked` puts it 400 km east),
+`signal_reply` (cut off partway; it no longer claims a timing
 change, so every branch agrees the averaged beat never moves).
 
 ## The reveal itself
@@ -279,8 +282,8 @@ hotter ride, "in every brief from now on".
 
 **The clock (days 30–37):** `h_band` (days 30–34) has the knock miss once, the
 first miss in weeks; `r_band` lays the gap against the night-side temperature
-maps: six knocks late and still on the beat; a battery heater that skips
-knocks rather than wake short of power. "It is getting harder to wake." The
+maps: six knocks late and still on the beat (the battery-heater explanation
+is no longer said; it is left to the reader). "It is getting harder to wake." The
 tick never moves, so every return is on the beat (`c_hail`: "Every gap
 explained"). Seasons without it get `c2_cold`
 (36–37). Both are cat grim, not mystery, so days 35–40 keep one mystery card a
@@ -342,12 +345,12 @@ Each needs ≥ 5% of 300 seasons (tested).
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 21.0% (1000: 19.7%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 26.0% (22.5%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 14.7% (18.2%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 22.0% (18.9%) |
-| 5 | *Old Friend* (`end_friend`) | answered, clear air | 8.3% (11.1%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 8.0% (9.6%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 17.0% (1000: 19.8%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 14.7% (1000: 15.1%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 15.7% (1000: 16.8%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 19.7% (1000: 17.5%) |
+| 5 | *Old Friend* (`end_friend`) | answered, clear air | 18.0% (1000: 15.4%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 15.0% (1000: 15.4%) |
 
 ## Epilogue
 
@@ -507,3 +510,74 @@ fault protection, a suit beside it, one Mars day, transponder.
   "harder to wake", "fits the knock exactly".
 - `h_band` waits for `flash_seen` and ends on the dark pixel; `r_band` ends
   "Each cold night the gap is a knock or two longer."
+
+## Round 11 notes
+
+- **Difficulty.** Cut the over-explanations: `m_count` no longer recalls the
+  0.09 Hz ripple (it now pays off in the epilogue, `m_ripple`: "blamed a
+  pump"), `c_theory` keeps "thirty-seven minutes too long" and drops the
+  sidereal-day solve, `r_band` drops the battery heater, `m_key` drops "the
+  kind that goes stale" and the suspect list, `dec_signal` drops "anything we
+  ever flew". Announcing lines removed: "isn't in orbit", "a byte before the
+  field that says who sent it", "first contact". Day-11 (`l_dock_hello`) and
+  day-16 (`m_ripple`) plants unchanged.
+- **Live decoy.** `m_flash2` (day 32) ends on the ground's first guess, the old
+  science lander, silent since its winter; `m_checked` (37) places it 400 km
+  east, still silent, before naming the crash site.
+- **Order.** `m_carrier` 15 → `m_theory` 17 (the grey relay, "a lighthouse
+  with no keeper") → `m_alias` 19 (not aboard, probably dead) → `dec_signal`
+  19–20, now a vote on answering a dead lighthouse, with the ground's clearance.
+  `m_alias` still opens `dec_signal` (role preset needs an `ow_hail` opener).
+- **Earth's answers.** "Six weeks" of hails (`m_checked`, `a_log`). `a_log`
+  splits the counts: 31,000 Earth hails "NO OPEN CHALLENGE" (never signed to a
+  question it heard) vs 410,000 fleet hellos "REPLAY" (late). `m_theory`: the
+  relay's catalogue spin came from power-only passes under an hour (no
+  Doppler, no day's drift). `a_report`: the pad check-in masks the lost-link
+  timer, outlives a reboot, and only the relay spoke its channel. `g_packer`:
+  "and the relay before that".
+- **Flight rules.** Ground clearance for the hail (`dec_signal` open option,
+  `sys.dec_open`: "the flight director will go with the fleet's call").
+  Symmetric day-41 rule: an entry freeze, nothing new on the comms schedule
+  inside a week of entry; the answered hello was cleared at the vote, the quiet
+  branch has no link for a review board to review. Solo crew: one seat per
+  ship so no single failure takes two people (`l_transfer`).
+- **Numbers.** `m_alias` drift "about two seconds a day" (the closing rate).
+  Earth delays: `signal_reply` six minutes (FD25 round trip 5.7), `comm_delay2`
+  five light-minutes (now day 33 only), `a_list` eight minutes (FD42 8.2).
+  `w_mars_disc` day 41: half-lit, dawn line down the middle. Entry: storm brown
+  to 300 m, then plume brownout (`e_entry_hold*`, `end_lights`). `end_long_orbit`:
+  hinge-line tile runs hot "on the way down". Close Enough's cost has a cause:
+  Cargo 3's only drill bit snaps on the first sol; the bit is planted on day
+  31 by a new due card, `a_drill_plan` ("Be gentle with it"), and the old
+  single-bit line left `a_descent_clear`.
+- **Continuity.** Fold line no longer quotes 93%. Portrait: days 2–5, Earth
+  fills the frame; `photo_back` is "weeks ago now" and keeps six ships plus the
+  edge of the seventh. `r_ghost`: a few metres a day, end over end. Epilogue
+  `e_entry_hold_q`: "walked out on legs that held". `end_friend` light is
+  "steady since the handshake". `h_dark` now never lands on the hail owner and
+  explains the frame came over the fleet net from the listening dish; weight
+  30 (≈55% of seasons; hooks are random, so every season can't be forced).
+  `glint` is now a waste-water ice flake, distinct from `h_ghost`'s tracker
+  scare and `r_ghost`'s cover plate.
+- **Endings as scenes.** All six rewritten as scenes under 640 characters,
+  first sentence short (the web uses it as the heading). Measured at 1000
+  seasons: lights 19.8%, patience 17.5%, long orbit 16.8%, friend 15.4%,
+  close 15.4%, through 15.1%.
+- **Character.** `habit_beat` is commented out (all seven roster habits are
+  placeholders, so it read the same for everyone); restore it when real habits
+  arrive. Seven generic, castable objects carried aboard (`hb_watch`,
+  `hb_pebble`, `hb_key`, `hb_card`, `hb_pick`, `hb_leaf`, `hb_stub`), weight 1,
+  days 12–36: about six per season over four or five people. They are fiction
+  about objects, not claims about the real crew.
+- **Mystery leads.** `m_flash1` and `m_overlay` no longer go to the hail owner
+  (`m_overlay` also avoids the flash and theory owners). Max mystery cards on
+  one person per season: mean 6.65 → 5.37.
+- **Tension tail.** `r_flare` leaves a "lifetime" dose column.
+- **Polish.** "log/logs/logged" cut from about 38 to about 8 per season
+  (mostly `sys.dec_open`); "It was a Tuesday" gone; `a_recall_marker` moved to
+  day 41; humor flags (`storm_shelter2`, `l_long_table`, `galley_pump`,
+  `dec_clock`) softened so nothing stings a crewmate.
+- **Ending titles.** The phone/web never prints `ti`; `app.html` uses the
+  ending's first sentence as the heading. But `/text.json` is fetched whole on
+  day 1, so titles and endings are readable in devtools: see the text-exposure
+  hand-off above (strip `ti` or move it to the day-42 chunk).

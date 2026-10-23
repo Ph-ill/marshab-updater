@@ -39,14 +39,15 @@ players).
   scrubbers, water recovery, dosimeters, the storm shelter between the water
   tanks, solar particle events, micrometeoroids, EVAs, tethers, star trackers,
   the high-gain antenna, Starbase, Mission Control, anomaly reports.
-- Distance is the antagonist. One-way light time: seconds in Earth orbit, about
-  a minute by the middle dark (days 17–22), a few minutes on the approach (about
-  4 at day 28, 6 at days 33–36), about ten at arrival. Never more than 12
-  minutes each way in this season. Earth shrinks to a dot you can cover with a
-  thumbnail.
+- Distance is the antagonist. One-way light time to Earth (engineer's table,
+  2033-05-08 departure): seconds in Earth orbit, about a minute by day 16
+  (1.1 min), about 3 at day 25, 3.7 at day 28, 5 at day 33, 6 at day 36, 8 at
+  arrival (8.2 min at day 42). Mars one-way: 29 s at day 36, 25 s at day 37,
+  15 s at day 39, 5 s at day 41. Never more than 9 minutes each way in this
+  season. Earth shrinks to a dot you can cover with a thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
   Mars "under three weeks out" in real flight. Day 41: inside five
-  light-seconds, about four days before atmospheric entry ("the last night
+  light-seconds (Mars half-lit, dawn line toward the fleet), about four days before atmospheric entry ("the last night
   before entry" belongs to day 41). Day 42: entry morning. Arrival is direct
   entry from the crossing, or aerocapture into a long orbit if the fleet votes
   to wait.
