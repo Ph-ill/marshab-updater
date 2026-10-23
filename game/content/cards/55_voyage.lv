@@ -60,7 +60,7 @@ due
 once
 days 5 9
 roles A
-text {A} reads the arrival manifest. Habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4. Cargo 2, the last one down, gets one line between a surplus drill bit and a pallet of nitrogen bottles: "lost on landing, written off". The relay list ends with a third orbiter in grey: "retired, thruster stuck open".
+text {A} reads the arrival manifest. Habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4. Cargo 2, the last one down, gets one line between a spare drill bit and a pallet of nitrogen: "lost on landing, written off". The relay list ends with a third orbiter in grey: "retired, thruster stuck open".
 do trait A curious 1
 
 card l_departure
@@ -80,7 +80,7 @@ due
 once
 days 7 7
 roles A
-text The ships hold formation a few hundred metres apart. Every fifth day they close up for a transfer window: a tethered line between hatches, a morning on oxygen before it, paid for in propellant, so nobody crosses for fun. An empty ship flies itself. {A} rides it first and calls the middle "educational".
+text The ships hold formation a few hundred metres apart. Every fifth day they close up for a transfer window: a tethered line between hatches, a morning on oxygen before it, paid for in propellant, so nobody crosses for fun. An empty ship flies itself. {A} rides it first and calls it "educational".
 do trait A brave 2
 
 card l_handshake

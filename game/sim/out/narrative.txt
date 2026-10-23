@@ -26,7 +26,7 @@ FLIGHT DAY 04
   On your word, Jai looks after Jacques today.
   Michelle spends the shift on propellant trim, as you asked.
   Dorian plants the garden: six seed pods in a tray the size of a laptop, under a lamp the colour of a plum. Dorian labels each pod in tiny capitals and says good night to them on an open channel. Several people say good night back.
-  A private message for whoever looks after Diego. The airlock on Diego's ship won't cycle. One door sensor says "closed". The other says "ajar". The interlock won't move until they agree. The door is obviously closed, and Diego has the override code.
+  For whoever at home looks after Diego, and nobody else: The airlock on Diego's ship won't cycle. One door sensor says "closed". The other says "ajar". The interlock won't move until they agree. The door is obviously closed, and Diego has the override code.
   Dorian stands the night watch for the whole fleet so the other six can sleep. Nobody asked. The log entry is two lines long and perfectly neat.
 
 FLIGHT DAY 05
@@ -44,7 +44,7 @@ FLIGHT DAY 06
   Diego walks Kim through the backup docking procedure over the link, step by step, until Kim can do it without the checklist. Neither of them mentions why it matters.
 
 FLIGHT DAY 07
-  Diego decided alone: Find a third opinion. Diego pulls the lock's pressure trace as a tiebreaker. The door is sealed, and the "ajar" sensor is lying. Diego swaps it, the interlock is satisfied, and nothing was overridden.
+  Nobody at home weighed in, so Diego chose: Find a third opinion. Diego pulls the lock's pressure trace as a tiebreaker. The door is sealed, and the "ajar" sensor is lying. Diego swaps it, the interlock is satisfied, and nothing was overridden.
   Phill spends the shift on the galley stores, as you asked.
   Jacques spends the shift on the spares locker, as you asked.
   Jai spends the shift on propellant trim, as you asked.
@@ -57,21 +57,21 @@ FLIGHT DAY 08
   On your word, Phill looks after Kim today.
   Michelle spends the shift on the spares locker, as you asked.
   The data drop brings Kim one file flagged personal, from the one person at home who never sends files.
-  A private message for whoever looks after Kim. Every cabin has a camera feed to the medical team on the ground; the airlock is the one place aboard without one. Reading it now means reading it in an airlock. Saving it means carrying it unread until a quiet moment that may never come.
+  For whoever at home looks after Kim, and nobody else: Every cabin has a camera feed to the medical team on the ground; the airlock is the one place aboard without one. Reading it now means reading it in an airlock. Saving it means carrying it unread until a quiet moment that may never come.
   The hatch on Phill's ship sticks whenever the sunward side warms up. Phill works it out on the back of a checklist: the frame grows a millimeter in the sun and the seal doesn't. One new shim, and the door swings the way it did at Starbase.
   Diego inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in Sharpie. Diego logs it and says a quiet thank-you to whoever it was.
   Dorian waters the garden tray with a syringe, two millilitres per pod, and checks each one under the lamp. Nothing yet. Dorian logs the nothing as carefully as anything else.
 
 FLIGHT DAY 09
   Kim passes Diego a note: “Don't do anything brave without me.”
-  Tied at 4 ballot(s); the crew's lean broke it: Politely decline. The fleet sends a polite no and a very good photo of a single ship. Public affairs replies with one word: "Noted."
+  A tie, 4 votes in all. The crew broke it themselves: Politely decline. The fleet sends a polite no and a very good photo of a single ship. Public affairs replies with one word: "Noted."
   Phill spends the shift on the galley stores, as you asked.
   Jacques spends the shift on the spares locker, as you asked.
   Kim takes your advice to heart and tries to be braver.
   The weekly radiation summary puts Jacques's dosimeter at the top of the fleet's list, a little higher every week. The bunk on Jacques's ship sits against the thin side of the hull.
-  A private message for whoever looks after Jacques. Moving the bunk means telling the flight surgeon, who will want a meeting, and a meeting with the ground gets slower every week.
+  For whoever at home looks after Jacques, and nobody else: Moving the bunk means telling the flight surgeon, who will want a meeting, and a meeting with the ground gets slower every week.
   Fleet decision open for 48 hours. Water recovery on Michelle's ship is down to 93 percent from 98. Michelle wants to strip the processor now. Diego wants to run it degraded and fix it when things are calmer. [Strip it now / Run it degraded]
-  A private message for whoever looks after Jai. The attitude control on Jai's ship has a slow wobble, and Jai seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs ground sign-off, and the ground is asleep.
+  For whoever at home looks after Jai, and nobody else: The attitude control on Jai's ship has a slow wobble, and Jai seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs ground sign-off, and the ground is asleep.
 
 FLIGHT DAY 10
   On your word, Phill looks after Jacques today.
@@ -84,16 +84,16 @@ FLIGHT DAY 10
 FLIGHT DAY 11
   Jacques passes Dorian a note: “Don't do anything brave without me.”
   Kim went with your call: Save it. Kim saves it for a bad day. Every mission has one, and now Kim has something set aside for it.
-  Decision closed: Run it degraded. 3 ballot(s). The fleet goes on water rationing. Nobody complains out loud. Michelle logs the recovery rate every hour, which is its own kind of complaint.
+  Decision closed: Run it degraded. Votes cast: 3. The fleet goes on water rationing. Nobody complains out loud. Michelle logs the recovery rate every hour, which is its own kind of complaint.
   On your word, Phill looks after Jacques today.
   On your word, Jacques looks after Dorian today.
   Jai takes your advice to heart and tries to be warmer.
   On your word, Michelle looks after Kim today.
   Behind a stowage panel on Jacques's ship, three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a Starship with its fingers crossed.
-  A private message for whoever looks after Jacques. The three packs from behind the panel are the good rations, the ones the galley ran out of first. Nobody else knows they exist.
+  For whoever at home looks after Jacques, and nobody else: The three packs from behind the panel are the good rations, the ones the galley ran out of first. Nobody else knows they exist.
   Phill spent four hours with an ultrasonic leak detector and a roll of tape. The culprit was a cable feedthrough whose seal shrank in the cold of the shaded side. It's resealed, the pressure holds, and the trend line is taped above the console like a fish someone caught.
   Fleet decision open for 48 hours. Mission Control proposes moving the fleet's clocks two hours forward, to line up with the ground team's shifts. Kim is for it. Jai has seen this study before. [Change the clocks / Keep fleet time]
-  A private message for whoever looks after Michelle. Michelle finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
+  For whoever at home looks after Michelle, and nobody else: Michelle finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
   Kim and Jai spend a whole shift arguing on the fleet channel about what plays during the next burn. Kim wants silence, so every noise means something. Jai wants anything with a chorus. They settle on one song, chosen by the ground team, sight unseen. It's worse than either.
 
 FLIGHT DAY 12
@@ -106,7 +106,7 @@ FLIGHT DAY 12
 
 FLIGHT DAY 13
   Jai passes Jacques a note: “Thinking of you out there.”
-  Decision closed: Keep fleet time. 3 ballot(s). The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza as evidence.
+  Decision closed: Keep fleet time. Votes cast: 3. The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza as evidence.
   On your word, Phill looks after Jai today.
   Jai takes your advice to heart and tries to be blunter.
   Michelle spends the shift on propellant trim, as you asked.
@@ -127,7 +127,7 @@ FLIGHT DAY 14
   Just before midnight, 214 alarms hit Dorian's console at once. One of them is real.
 
 FLIGHT DAY 15
-  Decision closed: Wait and check. 5 ballot(s). The solution gets checked three times, then a fourth. The scheduled burn goes off on time and on target, and Diego lets the computer fly it.
+  Decision closed: Wait and check. Votes cast: 5. The solution gets checked three times, then a fourth. The scheduled burn goes off on time and on target, and Diego lets the computer fly it.
   On your word, Jai looks after Diego today.
   Michelle takes your advice to heart and tries to be more settled.
   Phill's ship-to-ship receiver, which still scans every channel any Mars craft ever used, logs a carrier too faint to see in any one sweep. Folded over a night at 10.96 seconds, 2.4 percent duty, it stands up out of the noise like a fence post. Phill files it under "retired hardware, probably".
@@ -142,7 +142,7 @@ FLIGHT DAY 16
   Jacques closes their eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light; cameras see them too, as single bright pixels. Jacques counts them like sheep and loses count somewhere in the twenties.
 
 FLIGHT DAY 17
-  Decision closed: Hail it every pass. 2 ballot(s). Phill adds one line to the comms schedule: a plain hail on the old channel, every pass, until someone says stop. The first goes out at 14:02. Then static. The carrier comes and goes as before, and Phill logs the hail times to the second, out of habit.
+  Decision closed: Hail it every pass. Votes cast: 2. Phill adds one line to the comms schedule: a plain hail on the old channel, every pass, until someone says stop. The first goes out at 14:02. Then static. The carrier comes and goes as before, and Phill logs the hail times to the second, out of habit.
   Phill takes your advice to heart and tries to be more careful.
   Michelle takes your advice to heart and tries to be more settled.
   Jacques rides the transfer line across to Ship 01 for a few days, and leaves the home ship flying itself.
@@ -151,7 +151,7 @@ FLIGHT DAY 17
   The CO₂ scrubber on Kim's ship fails outright. With one person in a cabin that size, the CO₂ only climbs about a twentieth of a percent a day: not an emergency yet, which is the best time to fix one. Kim has the backup running in nine minutes, and it is already complaining.
   Anyone can answer this one. One tap is enough. Kim's ship is breathing on its backup scrubber. It needs a spare cartridge before the backup gives out. [Send a cartridge / Jai brings it over]
   Fleet decision open for 48 hours. A gamma-ray burst goes off somewhere past the galaxy. Timed against the detectors near Earth, the fleet's sighting could pin the source better than ever before, but only if the ships hold attitude through the next window, and that costs propellant. Diego wants the data. Jai wants the propellant. [Hold for the data / Keep the propellant]
-  A private message for whoever looks after Michelle. An external camera on Michelle's ship has iced over, and its lens heater can't shift it. Clearing it means an unscheduled EVA, alone. Nobody would blame Michelle for waiting for the planned one.
+  For whoever at home looks after Michelle, and nobody else: An external camera on Michelle's ship has iced over, and its lens heater can't shift it. Clearing it means an unscheduled EVA, alone. Nobody would blame Michelle for waiting for the planned one.
   Phill is aboard Jacques's ship for the transfer window and cuts Jacques's hair with the vacuum clippers. The result is logged as "within tolerance". Jacques agrees and tips in coffee.
   Movie night, with a visitor, on a tablet stuck to the ceiling: Michelle picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. Michelle pauses it, and the two of them listen until it stops. Nobody presses play again.
 
@@ -171,7 +171,7 @@ FLIGHT DAY 18
   Phill teaches Jacques a card game from home across a galley table, for once, instead of across a screen. By the end of the shift Jacques is winning, and the rules have been amended twice.
 
 FLIGHT DAY 19
-  Decision closed: Keep the propellant. 4 ballot(s). The fleet passes. Ground telescopes get the burst anyway, less sharply. Jai logs the propellant saved, and doesn't pretend it was an easy trade.
+  Decision closed: Keep the propellant. Votes cast: 4. The fleet passes. Ground telescopes get the burst anyway, less sharply. Jai logs the propellant saved, and doesn't pretend it was an easy trade.
   Phill takes your advice to heart and tries to be blunter.
   On your word, Jacques looks after Jai today.
   Kim takes your advice to heart and tries to be braver.
@@ -207,7 +207,7 @@ FLIGHT DAY 22
   Fleet decision open for 48 hours. Halfway, by the flight plan's clock. Jacques wants to break out the good rations and mark it properly. Kim would rather nobody counted yet. [Mark it / Let it pass]
 
 FLIGHT DAY 23
-  Tied at 2 ballot(s); the crew's lean broke it: Let it pass. Halfway passes without a word on the fleet channel. On every ship, at the same minute, someone looks at the clock regardless.
+  A tie, 2 votes in all. The crew broke it themselves: Let it pass. Halfway passes without a word on the fleet channel. On every ship, at the same minute, someone looks at the clock regardless.
   Phill spends the shift on the spares locker, as you asked.
   Jai spends the shift on propellant trim, as you asked.
   Dorian spends a quiet day re-stowing the whole ship to the arrival plan, locker by locker, ticking each one off. When the others finally get to theirs, Dorian's list is already on the fleet channel, with tips.
@@ -262,7 +262,7 @@ FLIGHT DAY 29
 
 FLIGHT DAY 30
   Jacques passes Dorian a note: “Thinking of you out there.”
-  Decision closed: Name it for home. 4 ballot(s). The crater gets the name of a small town on Earth that nobody outside it has heard of. Within a day, the town's newspaper has a front page about it.
+  Decision closed: Name it for home. Votes cast: 4. The crater gets the name of a small town on Earth that nobody outside it has heard of. Within a day, the town's newspaper has a front page about it.
   Phill spends the shift on the spares locker, as you asked.
   Jacques takes your advice to heart and tries to be braver.
   Jai spends the shift on the galley stores, as you asked.
@@ -288,7 +288,7 @@ FLIGHT DAY 32
 
 FLIGHT DAY 33
   Kim passes Michelle a note: “Thinking of you out there.”
-  Decision closed: Leave it for the ground. 3 ballot(s). The pixel goes into the anomaly log, under a heading Diego writes and then underlines. The letters from home arrive on time, all of them.
+  Decision closed: Leave it for the ground. Votes cast: 3. The pixel goes into the anomaly log, under a heading Diego writes and then underlines. The letters from home arrive on time, all of them.
   On your word, Jacques looks after Kim today.
   Kim takes your advice to heart and tries to be more careful.
   Jai spends the shift on the galley stores, as you asked.
