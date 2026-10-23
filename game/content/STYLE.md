@@ -337,6 +337,19 @@ and no other slots. Two card forms use them:
   use this, so each crewmate gets about two to three quirk touches a season and
   each line can only ever render for its owner (tested).
 
+### The voice slot (round 24)
+
+Each roster line may carry one `voice "..."`: that crewmate's own short sign-off,
+drawn from their habits (Phill "Saving here.", Jacques "Copy. Done. Next.", Kim
+"And scene.", Jai "Clear. Next mark.", Michelle "That's the story; numbers
+follow.", Diego "Now you: how's your day?", Dorian "Checked. Every line.", Marco
+"Club's open Saturday."). A card writes `{Av}` or `{Bv}` where the role's own
+words go, usually a log or radio sign-off, and the renderer fills it with that
+crewmate's voice ("Out." if none). The voice follows the person, not the role, so
+whoever draws a role still sounds like themselves. lvc measures length caps with
+the longest voice. Use it for a closing quote, never as a punchline about the
+speaker.
+
 Rules for quirk lines:
 
 - Only facts the player sent in. Never invent a hobby, a family member or a
