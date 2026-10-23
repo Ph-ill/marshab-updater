@@ -50,7 +50,18 @@ class Players:
 
     def __init__(self, seed):
         self.r = random.Random(seed)
-        self.seq = [0] * N
+        self.g = random.Random(seed * 7919 + 5)   # gifts: own stream, so the rest of
+        self.seq = [0] * N                         # each player's habits stay the same
+        self.asks = []                              # (day, from, to, item) not yet answered
+        try:
+            from lv.engage import load_table
+            t = load_table(os.path.join(ROOT, "build", "engage.bin"))
+            self.give_items = [i for i, f in enumerate(t.gift_flags) if f & 1]
+            self.ask_items = [i for i, f in enumerate(t.gift_flags) if f & 2]
+            self.ask_days = t.ask_days
+        except OSError:
+            self.give_items = self.ask_items = []
+            self.ask_days = 3
 
     def act(self, day, st, pack):
         recs = []
@@ -88,6 +99,20 @@ class Players:
                     rec(R.DILEMMA, idx, self.r.randrange(nopt))
             if self.r.random() < 0.15:
                 rec(R.NOTE, self.r.randrange(3), self.r.choice([j for j in range(N) if j != s]))
+            # Crewmate gifts: answer an ask now and then, give or ask now and then.
+            # Asking a crewmate who never plays is allowed and simply lapses.
+            for a in list(self.asks):
+                if a[2] == s and a[0] < day < a[0] + self.ask_days and self.g.random() < 0.6:
+                    rec(R.GIFT, a[3], a[1], R.GIFT_ANSWER)
+                    self.asks.remove(a)
+            others = [j for j in range(N) if j != s and st.cond[j] != O.COND_HOME]
+            if others and self.give_items and self.g.random() < 0.25:
+                rec(R.GIFT, self.g.choice(self.give_items), self.g.choice(others), R.GIFT_GIVE)
+            if others and self.ask_items and self.g.random() < 0.10:
+                to, it = self.g.choice(others), self.g.choice(self.ask_items)
+                rec(R.GIFT, it, to, R.GIFT_ASK)
+                self.asks.append((day, s, to, it))
+        self.asks = [a for a in self.asks if a[0] + self.ask_days > day]
         return recs
 
 
@@ -293,7 +318,11 @@ def main(argv):
     t_ref = time.time() - t0
 
     # Narrative
-    rd = Renderer(text)
+    try:
+        eng_text = json.load(open(os.path.join(ROOT, "build", "engage.json"), encoding="utf-8"))
+    except OSError:
+        eng_text = None
+    rd = Renderer(text, eng_text)
     lines = []
     lastday = -1
     for day, s in rd.lines(st.story):
