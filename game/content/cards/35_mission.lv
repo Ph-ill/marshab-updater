@@ -167,7 +167,7 @@ once
 days 34 34
 roles A
 when !fired h_dark
-text In the overnight antenna log {A} finds a link request from the direction of Mars, signed with a program key the fleet still trusts, refused only because the dish was busy with Earth. Its sequence number matches one from years ago. Mission Control calls it a replay: "Not ours. Checked."
+text In the log {A} finds a link request from Mars, signed with a program key the fleet still trusts. Its sequence number matches one from years ago, as if the counter never moves; the challenge in it is new. Mission Control: "Not ours. Checked." An hour later a key-rotation ticket opens, marked urgent.
 do trait A curious 2
 
 card flash_answer
@@ -210,7 +210,7 @@ days 36 37
 roles A
 when flag flash_ground
 when is A ow_hail
-text {A} takes the old-channel receiver log, slides it back by the light time from Mars, seventeen seconds and change, and lays it over the fast sequence. The carrier peaks on the exact frame the pixel lights. Every time. It isn't two things. {A} prints both traces and pins them up side by side.
+text {A} takes the old-channel receiver log, slides it back by the light time from Mars, about twenty-five seconds, and lays it over the fast sequence. The carrier peaks on the exact frame the pixel lights. Every time. It isn't two things. {A} puts both traces on the galley screen, side by side.
 do trait A curious 3
 
 card m_checked
@@ -222,7 +222,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_looked
-text Mission Control answers the overlay in one line: nothing on their list within a hundred kilometres of that pixel still has power. They point the next backup-site survey straight at it anyway, because the fleet paid a day of letters for those coordinates. {A} reads the line twice.
+text Mission Control answers the overlay: nothing near that pixel still has power, and nothing they fly at Mars listens on the old band. The nearest entry is the crash site catalogued for Cargo 2, kilometres off, cold for two years. Crash sites don't blink. It goes on the next survey anyway.
 do morale A 1
 
 card m_checked_g
@@ -234,7 +234,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_left
-text Mission Control answers the overlay in one line: nothing on their list within a hundred kilometres of that pixel still has power. Then, a minute later, a second line from the lunch-break stranger: the pixel is on tomorrow's backup-site survey. {A} reads both lines twice.
+text Mission Control answers the overlay: nothing near that pixel still has power, and nothing they fly at Mars listens on the old band. The nearest entry is the crash site catalogued for Cargo 2, kilometres off, cold for two years. Crash sites don't blink. The orbiter-team stranger adds: "Surveying it."
 do morale A 1
 
 card m_listen
@@ -269,7 +269,7 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text The backup-site survey comes in sharp. Thirty kilometres past the zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half unfolded, its dish aimed at empty sky: Cargo 2. In the night video its lights blink, then blink again. {A} counts the gap without meaning to and gets to eleven humming the galley chime. The streak was its shadow.
+text The backup-site survey comes in sharp. Thirty kilometres past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish aimed at empty sky: Cargo 2. In the night video its lights blink once, the way a panel's do on a restart, then again. {A} has been humming the galley chime for a while before noticing that it fits the gap exactly.
 do trait A curious 3
 
 card m_reveal_any
@@ -281,7 +281,7 @@ once
 days 40 40
 roles A
 when !fired m_reveal
-text The backup-site survey comes in sharp. Thirty kilometres past the zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half unfolded, its dish aimed at empty sky: Cargo 2. In the night video its lights blink, then blink again. {A} counts the gap without meaning to and gets to eleven humming the galley chime. The streak was its shadow.
+text The backup-site survey comes in sharp. Thirty kilometres past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish aimed at empty sky: Cargo 2. In the night video its lights blink once, the way a panel's do on a restart, then again. {A} has been humming the galley chime for a while before noticing that it fits the gap exactly.
 do trait A curious 3
 
 card a_report
@@ -293,7 +293,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half. The one {A} starts tonight is at forty pages by midnight, and nobody on seven ships has gone to bed.
+text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half: a last position, one coarse frame from the afternoon orbit, a smudge and a streak, "no further signal". The one {A} starts tonight is at forty pages by midnight. Page one is a single word: watchdog.
 
 card a_report_any
 type event
@@ -304,7 +304,7 @@ days 40 40
 roles A
 when !fired a_report
 when !is A ow_theory
-text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half. The one {A} starts tonight is at forty pages by midnight, and nobody on seven ships has gone to bed.
+text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half: a last position, one coarse frame from the afternoon orbit, a smudge and a streak, "no further signal". The one {A} starts tonight is at forty pages by midnight. Page one is a single word: watchdog.
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -316,9 +316,21 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10. The fleet crosses inside five light-seconds of Mars, the first thing in four years close enough to answer Cargo 2 before its interlock gives up and starts again. Earth's answers always took minutes; it only ever waited eleven seconds. {A}'s standing hail goes out on schedule, the same plain words as every pass, and this time it arrives while something is listening. The light stops blinking.
+text 04:10:07, Mars time: Cargo 2 knocks. The fleet is inside five light-seconds now. {A}'s receiver hears the knock five seconds later and answers on its own, quoting it back, the way it has since the vote. The answer lands at 04:10:17, on the beat, in real time, under a second before the knock times out. Any answer from Earth would have taken minutes. The light stops blinking.
 do set c2_answered
 do morale A 8
+
+card a_log
+type event
+cat arrival
+due
+once
+days 41 41
+roles A
+when fired a_window_hail
+when !is A ow_hail
+text Then Cargo 2 sends its event recorder down the old channel, two years of it. Near the top, from the first weeks after landing, every hello Earth ever sent, each logged the same way: HELLO RX · REPLAY · DISCARD. At the bottom, one new line: HELLO RX · OK. {A} reads it out to the fleet, slowly, and nobody fills the silence after.
+do morale A 2
 
 card a_window_quiet
 type event
@@ -329,7 +341,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10. The fleet crosses inside five light-seconds of Mars, the first thing in four years close enough to answer Cargo 2 before its interlock gives up and starts again. Earth's answers always took minutes; it only ever waited eleven seconds. No hail is on the schedule. {A} looks at the old channel for a long time, then at the entry checklist. Tomorrow, then. In person.
+text 04:10:07, Mars time: Cargo 2 knocks. The fleet is inside five light-seconds now. Nothing on its schedule answers; nobody ever put an answer there. Any answer from Earth would take minutes, and the fleet's would take ten seconds. {A} drafts one anyway, and Mission Control asks the fleet to hold it until there are boots beside the thing. In four days, then. In person.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------

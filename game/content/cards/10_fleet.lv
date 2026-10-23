@@ -63,8 +63,7 @@ days 28 31
 roles A
 when flag signal_answered
 when is A ow_hail
-text At 03:12 the receiver catches something new on the old channel: half a frame of housekeeping in a format nobody has flown in years, cut off a byte before the field that says who sent it. The carrier's beat runs a fraction longer than it did. Mission Control answers eight minutes later: "say again."
-do set signal_contact
+text At 03:12 the receiver catches half a frame of housekeeping on the old channel, in a format nobody flies now, cut off a byte before the field that says who sent it. Since the answers started, the carrier's beat runs a few milliseconds long. Mission Control replies eight minutes later: "say again."
 do trait A curious 4
 
 card signal_echo
@@ -77,7 +76,6 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 text {A} pulls the old-channel carrier out of the receiver logs again, unasked. It's stronger now, the way anything gets louder as you close on it, and its period hasn't moved by a millisecond. The anomaly report uses the word "persistent", and leaves it there. {A} keeps the printout up.
-do set echo_heard
 do morale A -3
 
 # Injury and rescue: needs supplies from another ship.

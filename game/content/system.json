@@ -102,7 +102,7 @@
     "story": [
       [
         "a_window_hail",
-        "Said hello on every pass until, one morning, something was listening."
+        "Set an answer running on day eighteen, and it was there in time."
       ],
       [
         "a_window_quiet",
@@ -110,15 +110,15 @@
       ],
       [
         "m_carrier",
-        "Heard it first, and filed it under retired hardware."
+        "Heard it first, called it ours, and checked."
       ],
       [
         "m_reveal",
-        "Drew the wrong spacecraft in blue marker, and counted to the right number."
+        "Drew the wrong lighthouse in blue marker, and was right about the keeper."
       ],
       [
         "m_theory",
-        "Drew an orbit in blue marker, and slept through for once."
+        "Drew a lighthouse in blue marker, and slept through the night."
       ],
       [
         "a_list",
@@ -200,6 +200,39 @@
         "crisis_eva",
         "Landed with a wrist that bends again."
       ]
-    ]
+    ],
+    "coda": {
+      "name": "Cargo 2",
+      "lines": [
+        [
+          "a_window_hail",
+          "Wrote when it landed. Kept writing. Was answered in time."
+        ],
+        [
+          "end_lights",
+          "Wrote when it landed. Kept writing."
+        ],
+        [
+          "end_through",
+          "Wrote when it landed. Kept writing."
+        ],
+        [
+          "end_long_orbit",
+          "Wrote when it landed. Kept writing."
+        ],
+        [
+          "end_patience",
+          "Wrote when it landed. Kept writing."
+        ],
+        [
+          "end_friend",
+          "Wrote when it landed. Kept writing."
+        ],
+        [
+          "end_close",
+          "Wrote when it landed. Kept writing."
+        ]
+      ]
+    }
   }
 }

@@ -256,7 +256,7 @@ weight 8
 roles A
 when cond A ok
 do who hook_who A
-text 23:58. {A}'s ship drops off the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays.
+text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays.
 
 card r_dark
 type event
@@ -268,6 +268,6 @@ days 26 34
 roles A
 when fired h_dark
 when is A hook_who
-text {A}'s voice came back at 05:40. The main antenna had slewed toward Mars on a link request signed with a program key the fleet still trusts, and waited out the timeout. Its sequence number matches one logged years ago. Mission Control calls it a replay: "Not ours. Checked."
+text {A}'s voice came back at 05:40. The comms computer had taken a link request from Mars, signed with a program key the fleet trusts, and sat blocked on it until a watchdog kicked it. Its sequence number is years old. Mission Control: "Not ours. Checked." A key-rotation ticket opens, marked urgent.
 do trait A brave 3
 do morale A -2
