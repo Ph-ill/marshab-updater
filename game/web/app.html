@@ -130,6 +130,7 @@ nav button+button{border-left:1px solid var(--rule)}
 .tbl{display:grid;grid-template-columns:1fr auto;border-top:1px solid var(--ink);margin-top:8px}
 .tbl div{padding:8px 0;border-bottom:1px solid var(--rule);font-size:16px}
 .tbl div:nth-child(even){font:600 16px var(--mono);text-align:right}
+/*ENGAGE_CSS*/
 .off{padding:8px 16px;font:14px var(--mono);color:var(--ink2);text-align:center;border-bottom:1px solid var(--rule)}
 @media (max-height:640px){:root{--key:52px}#top{height:calc(44px + var(--st))}#dock .act{padding:6px 16px}.btn,.done{min-height:52px}nav button{height:48px}section{padding-top:16px}.kick{padding-top:16px}.pin{margin-top:16px}.err{margin-top:8px}}
 @media (max-height:520px){.kick .help{display:none}}
@@ -141,6 +142,7 @@ nav button+button{border-left:1px solid var(--rule)}
 <div id="dock" hidden></div>
 <script>
 /*RENDER_JS*/
+/*ENGAGE_JS*/
 const N=7;
 const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];
@@ -156,7 +158,8 @@ const fill=(s,a,b)=>R.fill(s,a,b);
 const first=(s)=>{const m=s.match(/^.*?[.!?](\s|$)/);return m?m[0].trim():s};
 
 async function api(path,body){
-  const o={headers:{"X-Crew-Token":tok}};
+  // The phone's clock rides along: the ship has none, and learns the time from this (lv/clock.py).
+  const o={headers:{"X-Crew-Token":tok,"X-Phone-Time":String(Date.now()),"X-Phone-TZ":String(-new Date().getTimezoneOffset())}};
   if(body){o.method="POST";o.body=JSON.stringify(body);o.headers["Content-Type"]="application/json"}
   const r=await fetch(path+(path.startsWith("/api/")?DQ:""),o);
   const j=await r.json().catch(()=>({}));
@@ -181,7 +184,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tok)refre
 
 async function refresh(){
   S=await api("/api/state");
-  lines=null;
+  lines=null;engSeen();
   view();
 }
 
@@ -189,7 +192,7 @@ async function refresh(){
 function story(){
   if(lines)return lines;
   const raw=Uint8Array.from(atob(S.story),(c)=>c.charCodeAt(0));
-  R=new Renderer(T);
+  R=new Renderer(T,EG);
   const days={};
   for(let i=0;i+8<=raw.length;i+=8){
     const e=Array.from(raw.slice(i,i+8)),d=e[0],code=e[1];
@@ -277,7 +280,8 @@ function bar(l,r){$("top").hidden=false;$("top").innerHTML=`<b>${l}</b><span>${r
 function dock(html,tabs){
   const d=$("dock");
   d.hidden=!html&&!tabs;
-  d.innerHTML=(html?`<div class=act>${html}</div>`:"")+(tabs?`<nav>${["home","crew","log"].map((t)=>`<button data-go="${t}"${tabs===t?" aria-current=page":""}>${t.toUpperCase()}</button>`).join("")}</nav>`:"");
+  const tb=EG?["home","crew","log","file"]:["home","crew","log"];
+  d.innerHTML=(html?`<div class=act>${html}</div>`:"")+(tabs?`<nav class="${EG?"n4":""}">${tb.map((t)=>`<button data-go="${t}"${tabs===t?" aria-current=page":""}>${t.toUpperCase()}</button>`).join("")}</nav>`:"");
   $("v").className=html&&tabs?"":tabs||html?"short":"nodock";
 }
 function shipTop(){bar(`${ship(S.you).toUpperCase()}`,`FD ${pad(S.day)}/${S.season}`)}
@@ -307,7 +311,7 @@ function home(){
   const rw=since.filter(rewritten);
   let o=`<div class=kick><div class=lab>Flight day</div><h1 class=m>${pad(S.day)} <span class=dim style="font-weight:400">/ ${S.season}</span></h1>
   <p class=dim>${S.season-S.day} days to Mars orbit.</p>${traj()}</div>`;
-  if(S.open.length)o+=`<section><div class=lab><span>Needs you</span><span>${S.open.length}</span></div>${S.open.map(openRow).join("")}</section>`;
+  o+=engTop();
   o+=`<section><div class=lab><span>Who's where</span><span>${N-S.cond.filter((c)=>c===2).length} flying</span></div><div class=fleet>${[...Array(N).keys()].map((s)=>`<div class="${s===S.you?"here":""}"><b>${pad(s+1)}</b>${[...Array(N).keys()].filter((c)=>S.loc[c]===s&&S.cond[c]!==2).map((c)=>`<span class="${c===S.you?"y":""}">${h(nm(c).slice(0,3).toUpperCase())}</span>`).join("<br>")}</div>`).join("")}</div>`;
   o+=here.map((c)=>`<button class=row data-go="${c===S.you?"crew":"crew/"+c}"><span class=pt>${portrait(c)}</span><span class=t>${h(nm(c))}<small>${c===S.you?"Your astronaut":"Visiting from "+h(ship(c))}${S.cond[c]===1?" · injured":""}</small></span></button>`).join("");
   if(!here.length)o+=`<div class=row><span class="t dim">Nobody aboard ${h(ship(S.you))} right now.</span></div>`;
@@ -465,6 +469,7 @@ function view(){
     if(a==="log")return log();
     if(a==="item")return item(+b);
     if(a==="act")return actSheet();
+    if(EG&&S.eng&&ENG[a])return ENG[a](b);
     if(a==="end")return S.ending!==NONE?ending():home();
     return home();
   }finally{if(net==="poll"&&tok)$("v").insertAdjacentHTML("afterbegin","<div class=off>Live link down · checking every 15 s</div>")}
@@ -499,6 +504,7 @@ document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button");if(!el||el.disabled)return;
   const D=el.dataset;
   if(D.go){if(D.go==="act")draft=null;return go(D.go)}
+  if(D.eng)return engClick(el,D.eng);
   if(D.who){me=+D.who;pin="";if(lockLeft())lockTick();return go("pin")}
   if(D.out){
     try{await api("/api/logout",{})}catch(e){}
@@ -532,7 +538,8 @@ if(/[?&]probe\b/.test(location.search)){
 }
 (async()=>{
   T=await (await fetch("/text.json")).json();
-  R=new Renderer(T);
+  await engLoad();
+  R=new Renderer(T,EG);
   try{codeSet=(await (await fetch("/api/crew"+DQ)).json()).set}catch(e){}
   // Signed in on this phone earlier today? The ship remembers it (by IP and browser) until the next flight day.
   try{const j=await api("/api/me");tok=j.token;me=j.crew;await refresh();live();route="home"}catch(e){}
