@@ -36,7 +36,7 @@ weight 16
 once
 roles A
 when cond A ok
-text {A} runs the dosimeter check. Since Starbase the fleet has passed a nuclear worker's dose limit for a whole year. It was a Tuesday. {A} writes it down and underlines it, and leaves the underline to say the rest.
+text {A} runs the dosimeter check. The fleet has now passed the yearly dose limit for a nuclear worker in Europe. It was a Tuesday. {A} writes it down and underlines it, and leaves the underline to say the rest.
 do trait A curious 1
 
 card comm_delay
@@ -59,7 +59,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Earth is eight light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
+text Earth is six light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
 do morale A 1
 
 card earth_dot
@@ -93,7 +93,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} swings the nose round to face the Sun, so the ship's own shadow falls down the tanks, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
+text Methane boil-off on {A}'s ship runs high while it flies broadside to feed the solar wings. {A} proposes nose-to-Sun, wings canted, so the ship's own shadow falls down the tanks. The ground runs the power numbers and agrees; boil-off drops by a third, and the attitude goes into everyone's plan.
 do res fuel 2
 do morale A 2
 

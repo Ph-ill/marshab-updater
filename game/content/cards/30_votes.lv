@@ -58,6 +58,7 @@ text Water recovery on {A}'s ship is down to 93 percent from 98. {A} wants to st
 option strip | Strip it now | The processor spends nine hours in pieces on the deck. {A} finds a clogged filter and a check valve installed backwards at the factory. Recovery is back to 98 percent by dinner.
   set water_fixed
   who water_fix_who A
+  mark t_water
   res spares -1
   trait A curious 3
 option degrade | Run it degraded | The fleet goes on water rationing. The complaints stay off the channel. {A} logs the recovery rate every hour, which is its own kind of complaint.
@@ -87,11 +88,12 @@ type beat
 cat repair
 due
 once
-days 23 30
+days 23 34
 roles A
 when flag water_fixed
 when is A water_fix_who
-text The water processor on {A}'s ship passes its thousandth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it again.
+when since t_water >= 4
+text The water processor on {A}'s ship passes its five hundredth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it again.
 do morale A 2
 
 # --- Clocks -----------------------------------------------------------------

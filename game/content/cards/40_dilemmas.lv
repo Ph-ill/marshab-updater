@@ -15,7 +15,7 @@ when !is A ow_list
 when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
-text The weekly radiation summary puts {A}'s dosimeter at the top of the fleet's list, a little higher every week. The bunk on {A}'s ship sits against the thin side of the hull.
+text The weekly radiation summary puts {A}'s dosimeter at the top of the fleet's list, a little higher every week. The bunk on {A}'s ship sits on the bare hull, the one wall with no tanks or stowage behind it.
 do who ow_dose A
 do open dil_dose
 
@@ -166,7 +166,7 @@ roles A
 when cond A ok
 lean brave tune wait
 text The attitude control on {A}'s ship has a slow wobble, and {A} seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance team is off shift until morning.
-option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", and one attachment: the procedure for next time.
+option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", one attachment, the procedure for next time, and a new flight rule about who may change gains.
   set gains_tuned
   who gains_who A
   trait A brave 2

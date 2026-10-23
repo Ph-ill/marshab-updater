@@ -15,7 +15,7 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
-text {A}'s spare dish, parked on Mars for the arrival tests, still scans the old common channel, which nothing on Earth listens to. It logs a carrier too faint to lock. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
+text {A}'s spare dish, trained on Mars for the arrival tests, still scans the old common channel, which nothing on Earth listens to. It logs a carrier too faint to lock. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
 do who ow_hail A
 do mark t_carrier
 
@@ -28,7 +28,7 @@ days 18 19
 roles A B
 when is A ow_hail
 when since t_carrier >= 3
-text {A} asks {B} to watch the same channel on {B}'s own dish and clock. Two ships' pumps and fans keep no time with each other; an alias would land whenever each ship's machinery said. The bursts land on both in the same millisecond, every time. "Not us," {A} tells the fleet. "Ignore my last."
+text {A} has {B} watch on {B}'s own dish. Ship machinery would alias differently on each ship; fleet software would keep fleet time. The bursts land on both in the same millisecond, and drift against the fleet clock like something with its own crystal. "Not us," {A} tells the fleet. "Ignore my last."
 do bond A B 3
 do open dec_signal
 
@@ -98,7 +98,7 @@ weight 6
 roles A
 when cond A ok
 when kit_elsewhere A
-text A micrometeoroid hits the hull during {A}'s scheduled EVA, close enough to feel through the boots, with a suited crewmate watching from the next ship's hatch. {A} secures every tool, works back along the tether hand over hand, and comes inside with a wrist that won't bend.
+text During {A}'s scheduled EVA a tether snags on a bracket and wrenches {A}'s arm, with a suited crewmate watching from the next ship's hatch. {A} frees it, secures every tool, works back along the line hand over hand, and comes inside with a wrist that won't bend.
 do cond A injured
 do who eva_who A
 do morale A -10
@@ -112,7 +112,7 @@ roles A B
 default volunteer
 when cond A injured
 when bestbond B A
-text {A} needs the ultrasound and splint set from another ship's medical kit, and the next scheduled transfer window is days away.
+text {A} needs the ultrasound probe from another ship's medical kit, and the next scheduled transfer window is days away.
 option send | Send the kit | The fleet holds formation tight for an unscheduled transfer, and the kit rides the line across alone. {A}'s wrist is scanned and splinted by lunch, and the anomaly report runs to four pages.
   kit A
   res fuel -1

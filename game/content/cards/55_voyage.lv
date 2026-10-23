@@ -91,7 +91,7 @@ due
 once
 days 7 7
 roles A
-text The ships hold formation a few hundred metres apart. Every fifth flight day they close up for a transfer window: a tethered line between hatches, a morning on oxygen first, paid for in RCS gas and everyone's time, so no one crosses for fun. {A} rides the line first and calls it "educational".
+text The ships hold formation a few kilometres apart. Every fifth day, once a page, they close up for a transfer window: a tethered line between hatches, a morning on oxygen first, paid for in RCS gas and everyone's time, so no one crosses for fun. {A} rides the line first and calls it "educational".
 do trait A brave 2
 
 card l_handshake
@@ -275,12 +275,12 @@ do trait A warm 2
 card w_venus_shadow
 type event
 cat wonder
-days 10 30
+days 10 18
 weight 6
 once
 roles A
 when cond A ok
-text With the cabin lights off and the shutters open, {A}'s hand throws a faint shadow on the bulkhead. The light source is Venus. {A} stays there for a long time, moving their fingers, making the planet cast them.
+text With the cabin lights off, the Sun behind the hull and the shutters open, {A}'s hand throws a faint shadow on the bulkhead. The light source is Venus. {A} stays there for a long time, moving their fingers, making the planet cast them.
 do trait A curious 3
 
 card w_phosphene
@@ -351,7 +351,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Every seventh flight day the fleet eats together on video: seven tablets on seven galley tables, one meal at one time. {A} is in charge of the toast. It's short, it isn't funny, and it lands.
+text Once a week the fleet eats together on video: seven tablets on seven galley tables, one meal at one time. {A} is in charge of the toast. It's short, it isn't funny, and it lands.
 do morale A 3
 
 card l_long_table2
@@ -363,13 +363,13 @@ once
 roles A B
 when cond A ok
 when cond B ok
-text Long table night. This time {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on a short delay on all six screens. {A} laughs on the delay, and it still counts.
+text Long table night. {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on all six screens at once, the one conversation out here with no delay in it. {A} laughs on the beat, and it counts double.
 do morale A 3
 
 card g_third_quarter
 type event
 cat grim
-days 24 34
+days 27 34
 weight 9
 once
 roles A B
@@ -433,7 +433,7 @@ weight 14
 once
 roles A
 when cond A ok
-text Phobos is a speck beside Mars now, crossing its face in under an hour. {A} watches it cross a whole world in the time it takes to eat a meal, and for the first time since Starbase wants weight more than sleep.
+text Phobos is a speck beside Mars on the long-lens camera now, crossing its face in under an hour. {A} watches it cross a whole world in the time it takes to eat a meal, and wants weight, suddenly, more than sleep.
 do trait A curious 2
 do morale A 3
 

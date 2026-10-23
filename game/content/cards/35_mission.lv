@@ -4,8 +4,8 @@
 card dec_halfway
 type decision
 cat mission
-days 19 23
-weight 14
+days 24 25
+weight 40
 once
 duration 1
 roles A B
@@ -45,7 +45,7 @@ once
 duration 2
 roles A B
 lean curious record save
-text A gamma-ray burst goes off far past the galaxy, and the fleet's dose monitors catch it. Timed against detectors near Earth, the data could pin the source, but sending it costs a day of the dish, and every letter waits. {A} wants the data sent. {B} wants the letters.
+text A gamma-ray burst goes off far past the galaxy, and every ship's X-ray monitor catches it. Timed against detectors near Earth, the raw buffers could pin the source, but pulling seven of them home bumps a day of mail. {A} wants the data sent. {B} wants the letters.
 option record | Send the data | The burst's source shrinks from a smear of sky to a point. {A} saves the confirmation in the photo folder.
   morale B -2
   trait A curious 3
@@ -161,7 +161,7 @@ duration 1
 roles A B
 when flag flash_twice
 lean curious look leave
-text {A} wants to ask the ground to task an orbiter for a fast sequence over the lit pixel, at the cost of a day of the fleet's downlink: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
+text {A} wants to ask the ground to task an orbiter for a fast sequence over the lit pixel, at the cost of the fleet's next deep-space pass, which the orbiter's data would ride home on: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
 option look | Ask for the sequence | The request goes up. {A} writes the apology to six inboxes personally, and means each one.
   set flash_looked
   morale A -2
@@ -234,7 +234,7 @@ days 36 37
 roles A
 when flag flash_ground
 when is A ow_hail
-text {A} takes the old-channel receiver log, slides it back by the light time from Mars, about twenty-five seconds, and lays it over the fast sequence. The carrier peaks on the exact frame the pixel lights. Every time. It isn't two things. {A} puts both traces on the galley screen, side by side.
+text {A} takes the old-channel receiver log, slides it back by the light time from Mars, about half a minute, and lays it over the fast sequence. The carrier peaks on the exact frame the pixel lights. Every time. It isn't two things. {A} puts both traces on the galley screen, side by side.
 do trait A curious 3
 
 card m_checked
@@ -294,7 +294,7 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop: Cargo 2. From straight above it was always two pixels and a shadow. In the night video its floodlights flare at power-up, die, flare again. {A} hums the galley chime; it fits the gap.
+text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop: Cargo 2. From straight above it was always two pixels and a shadow. In the night video its floodlights flare at each boot's lamp test. {A} hums the galley chime; it fits the gap.
 do trait A curious 3
 
 card m_reveal_any
@@ -306,7 +306,7 @@ once
 days 40 40
 roles A
 when !fired m_reveal
-text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop: Cargo 2. From straight above it was always two pixels and a shadow. In the night video its floodlights flare at power-up, die, flare again. {A} hums the galley chime; it fits the gap.
+text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop: Cargo 2. From straight above it was always two pixels and a shadow. In the night video its floodlights flare at each boot's lamp test. {A} hums the galley chime; it fits the gap.
 do trait A curious 3
 
 card a_report

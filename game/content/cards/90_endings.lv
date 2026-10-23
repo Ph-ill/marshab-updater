@@ -38,7 +38,7 @@ type ending
 cat ending
 title Old Friend
 when flag signal_answered
-text Seven ships come down in clear air, one landing burn a long half second late, on a wind forecast cross-checked against the weather mast of Cargo 2, thirty kilometres off. Answered four days ago, it has been reporting surface wind ever since, like something that has been rehearsing. On the drive out it holds its floodlights steady and sends its whole manifest. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Seven ships come down in clear air, one landing burn a long half second late, on a wind forecast cross-checked against the weather mast of Cargo 2, thirty kilometres off. Answered four days ago, it has been reporting surface wind ever since, like something that has been rehearsing. On the first drive out, two sols later, it holds its floodlights steady and sends its whole manifest. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_close
 type ending

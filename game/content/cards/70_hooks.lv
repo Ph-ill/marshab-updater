@@ -93,7 +93,7 @@ weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 02:14. A thruster on {A}'s ship fires without a command. Then another. {A} is already at the console.
+text 02:14. {A}'s ship starts to roll with nothing in the command log. The control loop fires a thruster to stop it. Then another. {A} is already at the console.
 
 card r_thruster
 type event
@@ -197,7 +197,7 @@ weight 9
 roles A
 when cond A ok
 do who hook_who A
-text Something hits {A}'s ship hard enough to ring the hull like a bell. Every pressure reading is green. {A} doesn't trust green.
+text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} doesn't trust green.
 
 card r_strike
 type event
@@ -208,7 +208,7 @@ days 5 36
 roles A
 when fired h_strike
 when is A hook_who
-text The morning EVA found a crater the size of a fingernail in a shield panel, and behind it, nothing. The shielding did its job. {A} photographed it next to a ruler, and the anomaly report finally has a good picture.
+text The morning EVA found a crater the size of a fingernail in a heat-shield tile, short of the bondline. The entry team runs it against the margins and clears it. {A} photographed it next to a ruler, and the anomaly report finally has a good picture.
 do trait A brave 2
 do morale A 3
 
@@ -276,7 +276,7 @@ weight 8
 roles A
 when cond A ok
 do who hook_who A
-text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays, and out of the windows its cabin lights burning as usual.
+text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays, and on the camera feed its cabin lights burning as usual.
 
 card r_dark
 type event
