@@ -57,7 +57,7 @@
     "move": "{A} rides the transfer line across to {S} for a few days, and leaves the home ship flying itself.",
     "home": "{A} rides the transfer line back home to {S}.",
     "note": "{A} passes {T} a note: “{line}”",
-    "dec_open": "Fleet decision open for 48 hours.",
+    "dec_open": "Fleet decision open for two flight days.",
     "dec_close": "Decision closed: {opt}. Votes cast: {n}.",
     "dec_lean": "Nobody voted, so the crew decided: {opt}.",
     "dec_tie": "A tie, {n} votes in all. The crew broke it themselves: {opt}.",

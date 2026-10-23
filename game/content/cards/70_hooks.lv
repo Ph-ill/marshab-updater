@@ -67,6 +67,7 @@ days 7 33
 weight 9
 roles A
 when cond A ok
+when !fired storm_shelter
 do who hook_who A
 text 23:52. The space weather feed flags a major flare on the Sun. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
 

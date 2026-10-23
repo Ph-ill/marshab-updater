@@ -209,7 +209,7 @@ duration 2
 roles A B
 when flag dust_seen
 lean brave hold wait
-text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit instead, aerocapture, and wait it out, at a real cost in propellant and food.
+text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit instead, aerocapture, and wait it out, at a real cost in food and a little propellant.
 option hold | Hold the plan | The arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
   set arrive_hold
 option wait | Long orbit, wait | The fleet commits to aerocapture and the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.

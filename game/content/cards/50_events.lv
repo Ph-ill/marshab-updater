@@ -10,7 +10,8 @@ weight 7
 once
 roles A
 when cond A ok
-text A flare has gone off on the Sun, and its protons will reach the fleet in about forty minutes. {A} packs into the storm shelter between the water tanks with a sleeping bag and a deck of cards, and plays the other six ships over video until the dosimeter settles.
+when !fired h_flare
+text A flare has gone off on the Sun, and its protons will reach the fleet in about forty minutes. {A} packs into the storm shelter between the water tanks with a sleeping bag and a deck of cards, and every crew in the fleet does the same, cards over video, until the dosimeter settles.
 do morale A 3
 do var storms 1
 
@@ -31,10 +32,9 @@ card storm_dose
 type event
 cat grim
 days 9 14
-weight 6
+weight 16
 once
 roles A
-when var storms >= 1
 when cond A ok
 text {A} runs the dosimeter check. Since Starbase the fleet has passed a nuclear worker's dose limit for a whole year. It was a Tuesday. {A} writes it down and underlines it, and leaves the underline to say the rest.
 do trait A curious 1
@@ -59,7 +59,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Earth is six light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
+text Earth is eight light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
 do morale A 1
 
 card earth_dot
@@ -93,7 +93,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} pitches the nose a few degrees toward the Sun so the tanks sit end-on, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
+text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} swings the nose round to face the Sun, so the ship's own shadow falls down the tanks, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
 do res fuel 2
 do morale A 2
 

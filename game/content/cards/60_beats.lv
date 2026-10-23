@@ -65,6 +65,7 @@ weight 5
 once
 roles A B
 when same A B
+when !fired p_birthday
 when bond A B >= 0
 text {A} is aboard {B}'s ship for the transfer window and cuts {B}'s hair with the vacuum clippers. The result is logged as "within tolerance". {B} agrees and tips in coffee.
 do bond A B 5
