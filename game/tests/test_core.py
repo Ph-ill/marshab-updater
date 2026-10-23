@@ -10,6 +10,7 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
+from lv import codes as K               # noqa: E402
 from lv import record as R              # noqa: E402
 from lv.chlog import ChoiceLog, NEW, DUP, REPLACED, STALE, BAD  # noqa: E402
 from lv.prng import Rng, day_seed       # noqa: E402
@@ -85,9 +86,10 @@ class TestMerge(unittest.TestCase):
         rnd = random.Random(3)
         recs = []
         for i in range(300):
-            recs.append(R.encode(FK, rnd.choice((R.ACTION, R.VOTE, R.NOTE)), rnd.randrange(7),
+            # Authors and targets over the whole fleet (K.N ships), the eighth included.
+            recs.append(R.encode(FK, rnd.choice((R.ACTION, R.VOTE, R.NOTE)), rnd.randrange(K.N),
                                  rnd.choice((1, 3)), rnd.randrange(4), rnd.randrange(1, 8),
-                                 rnd.randrange(3), rnd.randrange(2), rnd.randrange(7)))
+                                 rnd.randrange(3), rnd.randrange(2), rnd.randrange(K.N)))
         digests = set()
         for _ in range(5):
             rnd.shuffle(recs)

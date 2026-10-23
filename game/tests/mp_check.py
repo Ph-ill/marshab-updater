@@ -3,7 +3,8 @@
 # after every flight day with build/season_expect.txt written by CPython.
 # It merges the log twice, in authored order and reversed, to show order doesn't matter.
 #
-#   micropython -X heapsize=96k tests/mp_check.py     (from game/)
+#   micropython -X heapsize=128k tests/mp_check.py    (from game/; 64-bit unix port)
+#   micropython32 -X heapsize=96k tests/mp_check.py   (32-bit build, like the Pico's)
 import sys
 import gc
 

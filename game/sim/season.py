@@ -405,7 +405,7 @@ def main(argv):
     for scen in ("instant", "gossip", "reverse", "bursty"):
         ships = deliver(pack, authored, scen)
         ok = all(s.st.digest() == ref for s in ships)
-        det[scen] = {"all_7_match": ok,
+        det[scen] = {"all_ships_match": ok,
                      "replays": sum(s.replays for s in ships),
                      "replayed_days": sum(s.replayed_days for s in ships),
                      "deepest_rewrite_days": max(s.max_depth for s in ships)}
@@ -434,7 +434,7 @@ def main(argv):
     else:
         print("reference season: digest %s, %d entries, %d records; details in sim/out/stats.json"
               % (stats["reference_digest"], stats["entries"], stats["records"]))
-    bad = [k for k, v in det.items() if not v["all_7_match"]]
+    bad = [k for k, v in det.items() if not v["all_ships_match"]]
     if bad:
         print("DETERMINISM FAILED:", bad)
         return 1
