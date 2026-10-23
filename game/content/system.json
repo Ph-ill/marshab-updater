@@ -57,7 +57,7 @@
     "move": "{A} rides the transfer line across to {S} for a few days, and leaves the home ship flying itself, as it was built to.",
     "home": "{A} rides the transfer line back home to {S}.",
     "note": "{A} passes {T} a note: “{line}”",
-    "dec_open": "Fleet vote, two pages. Both options are cleared; the flight director takes the call.",
+    "dec_open": "Fleet vote:",
     "dec_close": "Decision closed: {opt}. Votes cast: {n}.",
     "dec_lean": "No votes came in, so the crew decided: {opt}.",
     "dec_tie": "A tie, {n} votes in all. The crew broke it themselves: {opt}.",
@@ -68,7 +68,7 @@
     "res_close": "Help is on the way: {opt}.",
     "res_default": "No answer in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
-    "end": "Arrival day.",
+    "end": "From the log:",
     "fold": "On the other ships, {who} ran the water rounds and checked the recovery rate.",
     "fold_pool": [
       "On the other ships, {who} ran the water rounds and checked the recovery rate.",
@@ -121,7 +121,7 @@
       ],
       [
         "e_entry_wait",
-        "Came out of the blackout eleven seconds late, reading the orbit numbers aloud."
+        "Came out of the blackout nine seconds late, reading the orbit numbers aloud."
       ],
       [
         "a_window_hail",
@@ -169,7 +169,7 @@
       ],
       [
         "p_garden_sprout",
-        "Strapped the seedling beside the seat, and planted it in the lee of Cargo 2."
+        "Strapped the seedling beside the seat, and planted it in the lee of the ship."
       ],
       [
         "p_garden_none",
