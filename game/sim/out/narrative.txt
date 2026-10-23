@@ -11,7 +11,7 @@ FLIGHT DAY 02
   Phill spends the shift on the hydroponics, as you asked.
   On your word, Jacques gives Michelle the last good coffee.
   Dorian hitches a ride over to Ship 06.
-  Diego and Dorian argue about the thermostat for most of a shift. Both are wrong.
+  Diego and Dorian spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
 
 FLIGHT DAY 03
   Jacques passes Dorian a note: “Don't do anything brave without me.”
@@ -54,7 +54,7 @@ FLIGHT DAY 08
   Michelle spends the shift on spare parts, as you asked.
   Dorian saves Diego the last good coffee.
   A private message for whoever looks after Phill. Phill finds three unlogged ration packs taped behind a panel. Nobody else knows.
-  Diego and Dorian argue about the thermostat for most of a shift. Both are wrong.
+  Diego and Dorian spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
 
 FLIGHT DAY 09
   Decision closed: Open the channel. 4 ballot(s). Phill keys the transmitter and the whole fleet listens to static for an hour.
@@ -80,7 +80,7 @@ FLIGHT DAY 11
   On your word, Jacques gives Diego the last good coffee.
   Jai hitches a ride over to Ship 02.
   A micrometeoroid clips the hull during Jacques's EVA. Jacques gets everyone's kit stowed and comes back in with a sprained wrist.
-  Anyone can answer this one. One tap is enough. Jacques needs a med kit from another ship. [Send a med kit / Let Michelle go]
+  Anyone can answer this one. One tap is enough. Jacques needs a med kit from another ship. [Send a med kit / Michelle flies one over]
   A private message for whoever looks after Jai. Jai finds three unlogged ration packs taped behind a panel. Nobody else knows.
   Jacques and Jai share the night watch. Mostly they talk about home.
 
@@ -113,7 +113,7 @@ FLIGHT DAY 14
   Dorian saves Jacques the last good coffee.
   Phill hitches a ride over to Ship 05.
   Dorian heads back to Ship 07.
-  Jai and Jacques argue about the thermostat for most of a shift. Both are wrong.
+  Jai and Jacques spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
 
 FLIGHT DAY 15
   Jacques did as their owner asked: Hand them in. Jacques hands them to the galley. Dinner is briefly excellent.
@@ -148,33 +148,34 @@ FLIGHT DAY 18
   On your word, Jacques gives Phill the last good coffee.
   Kim spends the shift on the hydroponics, as you asked.
   On your word, Michelle gives Diego the last good coffee.
-  Jacques hitches a ride over to Ship 01.
+  Jacques hitches a ride over to Ship 07.
   Jai heads back to Ship 04.
 
 FLIGHT DAY 19
   Phill takes your advice to heart and tries to be blunter.
   On your word, Jacques gives Phill the last good coffee.
+  Dorian saves Jacques the last good coffee.
 
 FLIGHT DAY 20
   Dorian made up their own mind: Hand them in. Dorian hands them to the galley. Dinner is briefly excellent.
   Phill takes your advice to heart and tries to be more settled.
   On your word, Kim gives Jacques the last good coffee.
   Jai spends the shift on fuel trim, as you asked.
-  Phill and Jacques argue about the thermostat for most of a shift. Both are wrong.
 
 FLIGHT DAY 21
   Phill spends the shift on fuel trim, as you asked.
   On your word, Jai gives Phill the last good coffee.
   Michelle takes your advice to heart and tries to be more careful.
   Jacques hitches a ride over to Ship 06.
-  Jacques and Diego share the night watch. Mostly they talk about home.
-  Dorian quietly fixes the galley pump again. Nobody asked; nobody needed to.
+  Jacques quietly fixes the galley pump again. Nobody asked; nobody needed to.
 
 FLIGHT DAY 22
   Phill takes your advice to heart and tries to be warmer.
   On your word, Jacques gives Jai the last good coffee.
   On your word, Jai gives Diego the last good coffee.
   Michelle hitches a ride over to Ship 04.
+  Jacques and Diego share the night watch. Mostly they talk about home.
+  Diego and Jacques spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
 
 FLIGHT DAY 23
   Phill passes Michelle a note: “You still owe me a coffee.”
@@ -183,37 +184,35 @@ FLIGHT DAY 23
   Kim takes your advice to heart and tries to be warmer.
   On your word, Jai gives Kim the last good coffee.
   On your word, Michelle gives Jai the last good coffee.
-  Phill hitches a ride over to Ship 04.
+  Phill hitches a ride over to Ship 03.
   At 03:12 the dish picks up a reply. It's the fleet's own message, played back slowly. Diego is the first one awake.
 
 FLIGHT DAY 24
   Phill passes Diego a note: “Thinking of you out there.”
   Phill spends the shift on the hydroponics, as you asked.
   Jai spends the shift on the hydroponics, as you asked.
-  Michelle hitches a ride over to Ship 07.
+  Michelle hitches a ride over to Ship 03.
 
 FLIGHT DAY 25
   Phill passes Diego a note: “Thinking of you out there.”
   Phill spends the shift on spare parts, as you asked.
   On your word, Jai gives Jacques the last good coffee.
-  Dorian saves Michelle the last good coffee.
   Dorian quietly fixes the galley pump again. Nobody asked; nobody needed to.
 
 FLIGHT DAY 26
   Phill spends the shift on fuel trim, as you asked.
   Jacques spends the shift on the hydroponics, as you asked.
   On your word, Kim gives Phill the last good coffee.
-  Jai and Phill argue about the thermostat for most of a shift. Both are wrong.
-  Jai and Phill share the night watch. Mostly they talk about home.
 
 FLIGHT DAY 27
   Phill passes Michelle a note: “Thinking of you out there.”
   Jai passes Jacques a note: “You still owe me a coffee.”
   Phill spends the shift on spare parts, as you asked.
+  Kim saves Phill the last good coffee.
   Jai spends the shift on fuel trim, as you asked.
   Michelle spends the shift on fuel trim, as you asked.
-  Dorian saves Michelle the last good coffee.
   Phill heads back to Ship 01.
+  Kim and Michelle share the night watch. Mostly they talk about home.
 
 FLIGHT DAY 28
   Phill takes your advice to heart and tries to be braver.
@@ -222,13 +221,13 @@ FLIGHT DAY 28
   Jai spends the shift on spare parts, as you asked.
   Jacques finds the stash in Diego's locker. Diego shares it out on the spot. Dessert all round.
   Jai spots a glint off the starboard quarter. Jai logs it and watches from the window until it's gone.
+  Diego and Jacques spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
 
 FLIGHT DAY 29
   Phill takes your advice to heart and tries to be more careful.
   On your word, Jacques gives Phill the last good coffee.
   Kim takes your advice to heart and tries to be braver.
-  Dorian saves Michelle the last good coffee.
-  Phill hitches a ride over to Ship 06.
+  Phill hitches a ride over to Ship 04.
   Michelle quietly fixes the galley pump again. Nobody asked; nobody needed to.
 
 FLIGHT DAY 30
@@ -236,31 +235,27 @@ FLIGHT DAY 30
   On your word, Kim gives Dorian the last good coffee.
   On your word, Jai gives Dorian the last good coffee.
   Michelle spends the shift on fuel trim, as you asked.
-  Dorian saves Michelle the last good coffee.
 
 FLIGHT DAY 31
   Phill spends the shift on spare parts, as you asked.
   Jacques spends the shift on fuel trim, as you asked.
-  Dorian saves Michelle the last good coffee.
   Jacques heads back to Ship 02.
-  Jai hitches a ride over to Ship 02.
-  Michelle and Dorian share the night watch. Mostly they talk about home.
+  Jai hitches a ride over to Ship 03.
 
 FLIGHT DAY 32
   Phill spends the shift on the hydroponics, as you asked.
   On your word, Jacques gives Michelle the last good coffee.
   Kim spends the shift on spare parts, as you asked.
   Michelle spends the shift on the hydroponics, as you asked.
-  Phill hitches a ride over to Ship 02.
-  Jai and Phill argue about the thermostat for most of a shift. Both are wrong.
+  Phill hitches a ride over to Ship 03.
+  Kim and Jai share the night watch. Mostly they talk about home.
 
 FLIGHT DAY 33
   Phill spends the shift on spare parts, as you asked.
   On your word, Jacques gives Kim the last good coffee.
   On your word, Jai gives Kim the last good coffee.
   Michelle spends the shift on fuel trim, as you asked.
-  Dorian saves Michelle the last good coffee.
-  Jai hitches a ride over to Ship 03.
+  Jai hitches a ride over to Ship 02.
   The galley pump fails again. Kim fixes it and narrates the whole repair like a nature documentary.
   Diego quietly fixes the galley pump again. Nobody asked; nobody needed to.
 
@@ -269,41 +264,41 @@ FLIGHT DAY 34
   Jacques passes Dorian a note: “Don't do anything brave without me.”
   On your word, Phill gives Diego the last good coffee.
   On your word, Jacques gives Michelle the last good coffee.
-  Kim saves Jai the last good coffee.
+  Kim saves Phill the last good coffee.
   Jai takes your advice to heart and tries to be warmer.
   On your word, Michelle gives Kim the last good coffee.
+  Jai and Jacques spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
 
 FLIGHT DAY 35
   On your word, Phill gives Diego the last good coffee.
   On your word, Jacques gives Dorian the last good coffee.
   Jai spends the shift on the hydroponics, as you asked.
   Michelle takes your advice to heart and tries to be more curious.
-  Dorian saves Michelle the last good coffee.
 
 FLIGHT DAY 36
   Phill spends the shift on spare parts, as you asked.
-  Kim saves Jai the last good coffee.
+  Kim saves Phill the last good coffee.
   On your word, Jai gives Phill the last good coffee.
   Michelle spends the shift on fuel trim, as you asked.
-  Michelle and Dorian share the night watch. Mostly they talk about home.
 
 FLIGHT DAY 37
   On your word, Jacques gives Kim the last good coffee.
-  Kim saves Jai the last good coffee.
+  Kim saves Michelle the last good coffee.
   Jai takes your advice to heart and tries to be more careful.
   On your word, Michelle gives Jai the last good coffee.
   Phill heads back to Ship 01.
-  Jai hitches a ride over to Ship 01.
-  Kim quietly fixes the galley pump again. Nobody asked; nobody needed to.
+  Jai hitches a ride over to Ship 03.
+  Kim and Jai share the night watch. Mostly they talk about home.
 
 FLIGHT DAY 38
   Michelle passes Jacques a note: “Don't do anything brave without me.”
   Phill spends the shift on the hydroponics, as you asked.
   On your word, Jacques gives Dorian the last good coffee.
+  Kim saves Jai the last good coffee.
   Michelle spends the shift on fuel trim, as you asked.
-  Dorian hitches a ride over to Ship 01.
+  Dorian hitches a ride over to Ship 03.
   Jai spots a glint off the starboard quarter. Jai logs it and watches from the window until it's gone.
-  Phill and Jai argue about the thermostat for most of a shift. Both are wrong.
+  Kim quietly fixes the galley pump again. Nobody asked; nobody needed to.
 
 FLIGHT DAY 39
   Jai passes Michelle a note: “Thinking of you out there.”
@@ -312,7 +307,7 @@ FLIGHT DAY 39
   Kim spends the shift on fuel trim, as you asked.
   On your word, Jai gives Phill the last good coffee.
   On your word, Michelle gives Diego the last good coffee.
-  Dorian saves Phill the last good coffee.
+  Dorian saves Michelle the last good coffee.
   Michelle hitches a ride over to Ship 02.
 
 FLIGHT DAY 40
@@ -321,12 +316,13 @@ FLIGHT DAY 40
   Jai passes Phill a note: “You still owe me a coffee.”
   Phill spends the shift on the hydroponics, as you asked.
   Jacques takes your advice to heart and tries to be more settled.
+  Kim saves Dorian the last good coffee.
   On your word, Jai gives Jacques the last good coffee.
   On your word, Michelle gives Jai the last good coffee.
-  Dorian saves Phill the last good coffee.
-  Jacques hitches a ride over to Ship 01.
+  Dorian saves Kim the last good coffee.
+  Jacques hitches a ride over to Ship 03.
   Jai heads back to Ship 04.
-  Dorian hitches a ride over to Ship 06.
+  Dorian hitches a ride over to Ship 02.
 
 FLIGHT DAY 41
   Phill spends the shift on fuel trim, as you asked.
@@ -335,14 +331,15 @@ FLIGHT DAY 41
   Jai spends the shift on spare parts, as you asked.
   On your word, Michelle gives Jai the last good coffee.
   Michelle heads back to Ship 05.
-  Diego and Dorian share the night watch. Mostly they talk about home.
-  Dorian quietly fixes the galley pump again. Nobody asked; nobody needed to.
 
 FLIGHT DAY 42
   Jai passes Michelle a note: “Thinking of you out there.”
   On your word, Jacques gives Diego the last good coffee.
+  Kim saves Jacques the last good coffee.
   Jai spends the shift on the hydroponics, as you asked.
-  Michelle hitches a ride over to Ship 06.
-  Diego hitches a ride over to Ship 01.
+  Michelle hitches a ride over to Ship 04.
+  Diego hitches a ride over to Ship 03.
   The galley pump fails again. Jai fixes it and narrates the whole repair like a nature documentary.
+  Diego quietly fixes the galley pump again. Nobody asked; nobody needed to.
+  Jacques and Kim share the night watch. Mostly they talk about home.
   Arrival day. First Contact, Sort Of. The fleet arrives with a recording nobody can explain and a crew that won't stop talking about it.

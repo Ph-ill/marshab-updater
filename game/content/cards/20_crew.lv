@@ -54,9 +54,8 @@ cooldown 6
 roles A B
 when trait A warm <= -10
 when same A B
-text {A} and {B} argue about the thermostat for most of a shift. Both are wrong.
-do bond A B -8
-do morale B -3
+text {A} and {B} spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
+do bond A B -4
 
 # Trait-driven reaction: what happens depends on how brave A is.
 card glint

@@ -73,7 +73,7 @@ text {A} needs a med kit from another ship.
 option send | Send a med kit | A med kit goes over on the next shuttle. {A}'s wrist is strapped up by lunch.
   kit A
   morale A 6
-option volunteer | Let {B} go | {B} doesn't wait to be asked and flies a kit over personally.
+option volunteer | {B} flies one over | {B} doesn't wait to be asked and flies a kit over personally.
   kitfrom B A
   move B A
   bond A B 12

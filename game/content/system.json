@@ -4,25 +4,29 @@
       "id": "gift",
       "label": "Give a gift",
       "you": "On your word, {A} gives {T} the last good coffee.",
-      "self": "{A} saves {T} the last good coffee."
+      "self": "{A} saves {T} the last good coffee.",
+      "owner": "{A} gives {T} the last good coffee, on their owner's word."
     },
     {
       "id": "advice",
       "label": "Give advice",
       "you": "{A} takes your advice to heart and tries to be {axis}.",
-      "self": "{A} has a think about being {axis}."
+      "self": "{A} has a think about being {axis}.",
+      "owner": "{A} takes some advice from home and tries to be {axis}."
     },
     {
       "id": "task",
       "label": "Set a task",
       "you": "{A} spends the shift on {res}, as you asked.",
-      "self": "{A} spends the shift on {res}."
+      "self": "{A} spends the shift on {res}.",
+      "owner": "{A} spends the shift on {res}, as their owner asked."
     },
     {
       "id": "rest",
       "label": "Tell them to rest",
       "you": "{A} takes the day off, on your orders.",
-      "self": "{A} sleeps through the morning watch."
+      "self": "{A} sleeps through the morning watch.",
+      "owner": "{A} takes the day off, on their owner's orders."
     }
   ],
   "axis_words": [

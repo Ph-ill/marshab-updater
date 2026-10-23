@@ -3,7 +3,7 @@
  "cards_fired": {
   "galley_pump": 5,
   "beat_watch": 9,
-  "beat_argue": 7,
+  "beat_argue": 6,
   "quiet_fixer": 10,
   "glint": 4,
   "dec_signal": 1,
@@ -28,19 +28,19 @@
   "default": 0
  },
  "story_appearances": {
-  "Phill": 7,
-  "Jacques": 9,
-  "Kim": 4,
-  "Jai": 15,
-  "Michelle": 9,
-  "Diego": 9,
-  "Dorian": 13
+  "Phill": 2,
+  "Jacques": 13,
+  "Kim": 8,
+  "Jai": 14,
+  "Michelle": 8,
+  "Diego": 11,
+  "Dorian": 8
  },
- "entries": 405,
- "out_bytes": 3240,
- "state_bytes": 307,
+ "entries": 404,
+ "out_bytes": 3232,
+ "state_bytes": 323,
  "resources_end": {
-  "food": 98,
+  "food": 100,
   "fuel": 65,
   "spares": 55
  },
@@ -53,7 +53,7 @@
   "Diego": "ok",
   "Dorian": "ok"
  },
- "reference_digest": "56bddf505825afed",
+ "reference_digest": "8782c95070c3682d",
  "records": 170,
  "records_per_player": {
   "Phill": 52,
@@ -90,7 +90,7 @@
    "deepest_rewrite_days": 11
   }
  },
- "seconds_reference_season": 0.004,
- "seconds_determinism_runs": 0.29,
- "pack_bytes": 596
+ "seconds_reference_season": 0.005,
+ "seconds_determinism_runs": 0.3,
+ "pack_bytes": 592
 }
