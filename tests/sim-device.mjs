@@ -25,16 +25,21 @@ _m = _t2.ModuleType('machine')
 # unique_id: 8 bytes like the RP2 flash id; a test can give each sim board its own via SIM_UID
 _m.unique_id = lambda: bytes.fromhex(os.environ.get('SIM_UID', 'e6614c311b2a3d2f'))
 sys.modules['machine'] = _m
+# SIM_FROZEN=id:version:core makes it the game firmware (a frozen lvfrozen module).
+if os.environ.get('SIM_FROZEN'):
+    _f = _t2.ModuleType('lvfrozen')
+    _f.ID, _f.VERSION, _f.CORE = os.environ['SIM_FROZEN'].split(':')
+    sys.modules['lvfrozen'] = _f
 _ld, _sv = os.listdir, os.statvfs
 os.listdir = lambda p='.': _ld('.' if p in ('/', '') else p)
 os.statvfs = lambda p='.': _sv('.')
 `;
 
 export class SimDevice {
-  constructor(root, { uid = 'e6614c311b2a3d2f' } = {}){ this.root = root; this.uid = uid; this.execs = 0; this.resets = 0; }
+  constructor(root, { uid = 'e6614c311b2a3d2f', frozen = '' } = {}){ this.root = root; this.uid = uid; this.frozen = frozen; this.execs = 0; this.resets = 0; }
   async exec(code, _opts = {}){
     this.execs++;
-    const r = spawnSync('python3', ['-c', SHIM + '\n' + code], { cwd: this.root, encoding: 'utf8', env: { ...process.env, SIM_UID: this.uid } });
+    const r = spawnSync('python3', ['-c', SHIM + '\n' + code], { cwd: this.root, encoding: 'utf8', env: { ...process.env, SIM_UID: this.uid, SIM_FROZEN: this.frozen } });
     if(r.status !== 0) throw new Error(`device exec failed: ${r.stderr.trim().split('\n').pop()}`);
     return { stdout: r.stdout, stderr: r.stderr };
   }

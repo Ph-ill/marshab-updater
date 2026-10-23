@@ -1,11 +1,11 @@
-# Bench runtime for one ship (Pico W / Pico 2 W, MicroPython 1.29): the choice log, the
-# story replay, BLE sync with the other ships, the hotspot and a small status server.
-# It is not the game's phone server yet; it is what the bench needs to prove that
-# ships find each other, swap records and keep the story identical, with Wi-Fi up.
+# One ship (Pico W / Pico 2 W, MicroPython 1.29): the choice log, the story replay (every
+# day's story kept for the phones), BLE sync with the other ships, and the taps phones make.
 #
-#   main.py       runs at boot: hotspot (lvwifi.py), then Ship(...).loop() and the server
+#   main.py       runs at boot: hotspot (lvwifi.py), then Ship(...).loop() and the web server
+#   lvweb.py      the web server: captive portal, the phone page from flash, bench status
+#   lvphone.py    the phone game's JSON API (what sim/mockserver.py serves on a PC)
 #   selftest.py   selftest.run(...) from the REPL or mpremote (see docs/BENCH_TEST.md)
-# Kept apart so the running ship carries only this module's code.
+# Kept apart so the running ship carries only the code it uses.
 #
 # Settings come from /data/ship.json (written by the web updater or by hand) on top of
 # DEFAULTS. Nothing secret lives in this file: the hotspot password is per board, and
@@ -17,7 +17,7 @@ try:
 except ImportError:  # pragma: no cover
     import uasyncio as asyncio
 
-from lv.pack import load, Pack
+from lv.pack import load
 from lv.chlog import ChoiceLog
 from lv.state import State, N
 from lv.engine import Engine
@@ -47,6 +47,8 @@ DEFAULTS = {
     "channel": 6,
     "country": "US",
     "http_port": 80,
+    "captive_dns": True,           # answer every DNS name with the board (captive portal)
+    "phone_game": "auto",          # serve the phone game: auto = on the game firmware only
     "led_notify": False,           # the LED notifier stays off unless this says true
     "stat_every_s": 60,
     "ble": {},                     # overrides for lv/ble.DEFAULTS (scan duty, intervals...)
@@ -68,6 +70,20 @@ def load_config(path="/data/ship.json"):
     return c
 
 
+def phone_game(cfg):
+    """Serve the phone game (lvweb + lvphone)? "auto": only when the game firmware's frozen
+    core is in use; on stock MicroPython the heap can't hold it (docs/BENCH_TEST.md)."""
+    v = cfg.get("phone_game", "auto")
+    if v != "auto":
+        return bool(v)
+    try:
+        import lv
+        core, _ = lv.firmware()
+        return core is not None and not core["shadowed"]
+    except Exception:
+        return False
+
+
 def free():
     gc.collect()
     return gc.mem_free() if hasattr(gc, "mem_free") else -1
@@ -79,15 +95,7 @@ def used():
 
 
 def pack_for(root=""):
-    # The game firmware (tools/build_firmware.sh) freezes the pack into flash as lvdata.PACK:
-    # read in place, it costs no heap. It is used only when it was built with this exact
-    # lvship (a newer lvship copied over the frozen firmware brings its own pack.bin).
-    try:
-        import lvdata
-        if lvdata.VERSION == VERSION:
-            return Pack(lvdata.PACK), "frozen"
-    except ImportError:
-        pass
+    # The story pack is content: always a file the updater can replace (pack.bin).
     return load(root + "pack.bin"), "file"
 
 
@@ -95,7 +103,7 @@ class Ship:
     SNAP_EVERY = 7
     SNAPS = 3          # weekly snapshots kept (743 B each); older rewinds start from day 0
 
-    def __init__(self, cfg, root="", data="/data", ble=None, say=print, radio=True):
+    def __init__(self, cfg, root="", data="/data", ble=None, say=print, radio=True, days=None):
         self.cfg = cfg
         self.say = say
         self.me = cfg["ship_id"] - 1
@@ -106,6 +114,8 @@ class Ship:
         self.data = data
         self.st = None
         self.snaps = {}
+        self.days = days           # lvdays.Days: each day's story kept for the phones (or None)
+        self.v = 0                 # bumped whenever what a phone sees may have changed
         self.replays = 0
         self.gifts_in = []         # (from ship, item, day) of gifts to this ship
         self.gifts_out = 0
@@ -158,8 +168,11 @@ class Ship:
     def tick_to(self, day):
         while self.st.day < day:
             Engine(self.pack, self.st, self.log).tick()
-            if self.st.day % self.SNAP_EVERY == 0:
-                self.snaps[self.st.day] = self.st.dump()
+            d = self.st.day
+            if self.days is not None:
+                self.days.put(d, bytes(self.st.out), self.day)
+            if d % self.SNAP_EVERY == 0:
+                self.snaps[d] = self.st.dump()
                 if len(self.snaps) > self.SNAPS:
                     del self.snaps[min(self.snaps)]
 
@@ -172,6 +185,10 @@ class Ship:
             e = R.eff_day(r)
             if earliest is None or e < earliest:
                 earliest = e
+        self.v += 1
+        self._rewind(earliest)
+
+    def _rewind(self, earliest):
         if self.st is not None and earliest is not None and earliest <= self.st.day:
             # A late record lands in a day already told: rewind to the snapshot before it.
             now = self.st.day
@@ -183,6 +200,16 @@ class Ship:
             self.replays += 1
             self.tick_to(now)
 
+    def tap(self, crew, kind, a, b=0, c=0):
+        """A phone tap: crew (0-7, whoever signed in here) signs a record for today. The
+        sequence number follows that crew member's highest one in the log. Returns it."""
+        seq = self.log.seq_vector()[crew] + 1
+        rec = R.encode(self.fk, kind, crew, 1, seq, max(1, self.day), a & 255, b & 255, c & 255)
+        if self.node.add(rec):
+            self._keep([rec])
+            self.v += 1
+            self._rewind(R.eff_day(rec))
+        return rec
     def _gift_seen(self, r):
         if R.kind(r) == R.GIFT and r[6] == self.me and R.ship(r) != self.me:
             self.gifts_in.append((R.ship(r), r[5], R.day(r)))
@@ -198,10 +225,9 @@ class Ship:
         to = int(to_ship) - 1
         if not (0 <= to < N) or to == self.me:
             raise ValueError("pick another ship, 1-8")
-        seq = self.log.seq_vector()[self.me] + 1
-        rec = R.encode(self.fk, R.GIFT, self.me, 1, seq, max(1, self.day), item & 255, to, R.GIFT_GIVE)
-        if self.node.add(rec):
-            self._keep([rec])
+        n = len(self.log)
+        rec = self.tap(self.me, R.GIFT, item, to, R.GIFT_GIVE)
+        if len(self.log) != n:
             self.gifts_out += 1
         return rec
 
@@ -216,7 +242,8 @@ class Ship:
              "replays": self.replays, "gifts_in": len(self.gifts_in), "gifts_out": self.gifts_out,
              "led": {"enabled": self.led.enabled, "waiting": self.led.waiting, "writes": self.led.writes,
                      "time_known": self.clock.known()},
-             "heap_used": u, "heap_free": free(), "heap_peak": self.mem_peak, "http": self.http_hits}
+             "heap_used": u, "heap_free": free(), "heap_peak": self.mem_peak, "http": self.http_hits,
+             "v": self.v}
         s["ble"] = self.ble.status(now) if self.ble else None
         return s
 
@@ -230,51 +257,6 @@ class Ship:
                     s["ship"], s["records"], s["digest"], b["state"], peers, n.get("ok"), n.get("fail"),
                     n.get("sent"), n.get("got"), n.get("new"), s["gifts_in"],
                     "on" if self.led.enabled else "off", s["heap_used"], s["heap_free"]))
-
-    # ---- HTTP: a small status server (the game's phone server is separate work)
-    async def http(self, reader, writer):
-        try:
-            line = await reader.readline()
-            hdr = {}
-            for _ in range(24):
-                h = await reader.readline()
-                if not h or h in (b"\r\n", b"\n"):
-                    break
-                i = h.find(b":")
-                if i > 0:
-                    hdr[str(h[:i].strip().lower(), "utf-8")] = str(h[i + 1:].strip(), "utf-8")
-            self.clock.learn_headers(hdr.get)
-            self.http_hits += 1
-            parts = str(line, "utf-8").split(" ")
-            path = parts[1] if len(parts) > 1 else "/"
-            code, body, ctype = 200, None, "application/json"
-            if path.startswith("/api/gift"):
-                q = path.split("to=")
-                try:
-                    r = self.gift(int(q[1].split("&")[0]) if len(q) > 1 else 0)
-                    body = '{"gift":"%s"}' % r.hex()
-                except (ValueError, IndexError) as e:
-                    code, body = 400, '{"error":"%s"}' % e
-            elif path.startswith("/api/sync"):
-                import json
-                body = json.dumps(self.status())
-            elif path == "/" or path.startswith("/status"):
-                ctype, body = "text/plain", self.stat_line() + "\n"
-            else:
-                code, body = 302, ""
-            body = bytes(body, "utf-8")
-            writer.write(bytes("HTTP/1.0 %d OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n%s\r\n" % (
-                code, ctype, len(body), "Location: /\r\n" if code == 302 else ""), "utf-8"))
-            writer.write(body)
-            await writer.drain()
-        except Exception as e:      # one bad request never takes the server down
-            self.say("http: %s" % e)
-        finally:
-            try:
-                writer.close()
-                await writer.wait_closed()
-            except Exception:
-                pass
 
     async def loop(self, stop_after_ms=None, stat_every_ms=None, until=None):
         t0 = ticks_ms()
