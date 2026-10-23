@@ -32,7 +32,7 @@ days 6 10
 weight 12
 once
 roles A B
-text {A} and {B} keep a channel open as Earth and the Moon slide into the same frame, each at their own window on their own ship. For a long time neither says anything, and the link carries the hum of two sets of fans.
+text {A} and {B} keep a channel open as Earth and the Moon slide into the same frame, each at their own window on their own ship. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: the Moon, behind a thumb.
 do bond A B 6
 
 card beat_gym
@@ -43,7 +43,7 @@ weight 7
 once
 roles A B
 when cond B ok
-text {A} and {B} share the exercise slot over video, two hours a day so their bones still work at Mars. Neither will hang up first. The sessions keep getting longer.
+text {A} and {B} share the exercise slot over video, two hours a day so their bones still work at Mars. Whoever hangs up first owes the other a dessert. The sessions keep getting longer.
 do bond A B 4
 do morale A 2
 
@@ -67,7 +67,7 @@ roles A B
 when same A B
 when !fired p_birthday
 when bond A B >= 0
-text {A} is aboard {B}'s ship for the transfer window and cuts {B}'s hair with the vacuum clippers. The result is logged as "within tolerance". {B} agrees and tips in coffee.
+text {A}, visiting since the last transfer window, cuts {B}'s hair with the vacuum clippers. The result is logged as "within tolerance". {B} agrees and tips in coffee.
 do bond A B 5
 
 card beat_home_msg
@@ -162,7 +162,7 @@ once
 roles A B
 when idle A >= 3
 when cond B ok
-text {A} walks {B} through the manual landing abort over the link, step by step, until {B} can call it without the checklist. Neither of them mentions why it matters.
+text {A} walks {B} through taking the landing by hand over the link: hold, pick a new spot, commit. Step by step, until {B} can call it without the checklist. {A} logs it as training. It is.
 do who abort_who B
 do bond B A 6
 do trait B brave 2

@@ -47,7 +47,7 @@ roles A B
 when flag dose_hidden
 when is A ow_dose
 when cond B ok
-text {B} reads the fleet's dosimeter logs the way other people read the news, notices {A}'s numbers, and calls. It takes an hour of {B}'s numbers against {A}'s, and {B}'s are better. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
+text {B} reads the fleet's dose logs like the news, notices {A}'s numbers, and calls. {B}'s dosimeter has the newer calibration, and the two of them redo {A}'s week with it. It takes an hour. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
 do bond A B 10
 do bond B A 6
 

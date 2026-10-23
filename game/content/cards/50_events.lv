@@ -43,7 +43,7 @@ card comm_delay
 type event
 cat human
 days 17 23
-weight 6
+weight 8
 once
 roles A
 when cond A ok
@@ -65,7 +65,7 @@ do morale A 1
 card earth_dot
 type event
 cat wonder
-days 14 30
+days 18 26
 weight 5
 once
 roles A
