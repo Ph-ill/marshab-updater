@@ -17,9 +17,11 @@ Card format (one card per `card` line, indentation only matters for option effec
   weight 10                       # relative chance among eligible cards (default 10)
   once                            # fire at most once per season
   due                             # fire whenever eligible (callbacks), no dice roll
-  clue [core]                     # second-read clue (text.json "reread"); core clues
-                                  #   must fire before the reveal in every season
+  clue [core [GROUP]]             # second-read clue (text.json "reread"); core clues
+                                  #   must fire before the reveal in every season. Cards
+                                  #   sharing a GROUP are alternatives: one is enough
   reveal                          # the payoff card(s) (text.json "reveal")
+  title The Long Orbit            # endings: shown as a heading (text.json "ti")
   hook                            # cliffhanger event: last line of its day; needs a
                                   #   `due` resolver with `when fired <this card>`
   cooldown 6                      # days before it can fire again (repeatable cards)
@@ -29,6 +31,7 @@ Card format (one card per `card` line, indentation only matters for option effec
   default send                    # rescue: option used when nobody answers
   when trait A curious >= 10      # condition (see COND_SYNTAX below)
   when tag A mech                 # A is a crew member tagged `mech` in roster.lv
+  when !is A hail_who             # A is not the crew member a `who` var names
   text {A} wants to answer it.    # phone template; {A} {B} are crew names
   do set seen_rock                # effect when the card fires (see EFFECT_SYNTAX)
   option open | Open the channel | {A} keys the transmitter.
@@ -127,8 +130,10 @@ def condition(tokens, card, ctx, where):
         return (O.C_NOFLAG if neg else O.C_FLAG, ctx.flag(t[1], where, False), 0, 0)
     if neg and w == "fired":
         return (O.C_NOTFIRED, ("card", t[1]), 0, 0)
+    if neg and w == "is":
+        return (O.C_ISNT, role(t[1], card), ctx.var(t[2], where, False), 0)
     if neg:
-        raise PackError("only flag and fired can be negated")
+        raise PackError("only flag, fired and is can be negated")
     if w == "fired":
         return (O.C_FIRED, ("card", t[1]), 0, 0)
     if w == "var":
@@ -237,7 +242,7 @@ def parse_cards(path, ctx):
                             "weight": 10, "flags": 0, "cooldown": 0, "duration": 0, "nroles": 0,
                             "lean": None, "default": None, "conds": [], "effects": [],
                             "options": [], "text": "", "cat": None, "skill": False, "clue": False,
-                            "core": False, "reveal": False}
+                            "core": None, "reveal": False, "title": ""}
                     cards.append(card)
                     opt = None
                     continue
@@ -266,10 +271,15 @@ def parse_cards(path, ctx):
                     card["skill"] = "skill" in t[1:]
                 elif word == "clue":
                     card["clue"] = True  # listed in text.json "reread" for the end screen
-                    if rest.split()[:1] == ["core"]:
-                        card["core"] = True  # must fire before the reveal in every season
+                    t = rest.split()
+                    if t[:1] == ["core"]:
+                        # Must fire before the reveal in every season; a named group
+                        # is satisfied by any one of its cards.
+                        card["core"] = t[1] if len(t) > 1 else card["id"]
                 elif word == "reveal":
                     card["reveal"] = True  # text.json "reveal"; the sim checks core clues precede it
+                elif word == "title":
+                    card["title"] = rest.strip()
                 elif word == "hook":
                     card["flags"] |= O.F_HOOK
                 elif word == "cooldown":
@@ -410,6 +420,8 @@ DEMEANING = re.compile(r"\b(forgot|forgets|forgetting|clumsy|lazy|useless|incomp
 CHEAP = re.compile(r"\b(it was nothing|just a glitch|false alarm|all a dream)\b", re.I)
 CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re.I)
 MAX_TEXT, MAX_LABEL = 300, 28
+MAX_PAYOFF = 420   # endings, reveal cards and the arrival-day cards (days 40+) may run longer
+PAYOFF_FROM = 40
 
 
 # Content mix (STYLE.md, "Content mix"). Every card carries `cat <category>`; add
@@ -494,8 +506,9 @@ def check_style(cards, fleet, ctx):
                 m = rx.search(t)
                 if m:
                     ctx.warnings.append("style: %s %s %r %s" % (w, what, m.group(0), why))
-            if len(t) > MAX_TEXT:
-                ctx.warnings.append("style: %s %s is %d chars (max %d on a phone)" % (w, what, len(t), MAX_TEXT))
+            cap = MAX_PAYOFF if (c["type"] == O.ENDING or c["reveal"] or c["days"][0] >= PAYOFF_FROM) else MAX_TEXT
+            if len(t) > cap:
+                ctx.warnings.append("style: %s %s is %d chars (max %d on a phone)" % (w, what, len(t), cap))
         for o in c["options"]:
             if len(o["label"]) > MAX_LABEL:
                 ctx.warnings.append("style: %s button %r is long (max %d)" % (w, o["label"], MAX_LABEL))
@@ -689,14 +702,18 @@ def build(content_dir):
         "flagship": next((i for i, cr in enumerate(fleet["crew"]) if cr["flagship"]), 0),
         "epi": epi,
         "cards": [dict({"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]},
-                       **({"h": 1} if c["flags"] & O.F_HOOK else {}))
+                       **dict(({"h": 1} if c["flags"] & O.F_HOOK else {}),
+                              **({"ti": c["title"]} if c["title"] else {})))
                   for c in cards],
         # Second read: card indices worth revisiting after the ending. The UI may list
         # the flight days these fired (from the story log) without explaining them.
         "reread": [i for i, c in enumerate(cards) if c["clue"]],
         # Fair play: these clue cards fire before any "reveal" card in every season
         # (sim/season.py --seasons asserts it).
-        "core": [i for i, c in enumerate(cards) if c["core"]],
+        # Each entry is a group of alternatives (card indices): one per group must fire.
+        "core": [[i for i, c in enumerate(cards) if c["core"] == g]
+                 for g in sorted(set(c["core"] for c in cards if c["core"]),
+                                 key=lambda g: min(i for i, c in enumerate(cards) if c["core"] == g))],
         "reveal": [i for i, c in enumerate(cards) if c["reveal"]],
         "actions": system["actions"],
         "notes": system["notes"],
