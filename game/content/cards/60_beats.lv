@@ -106,7 +106,7 @@ do bond A B 4
 
 card beat_early_watch
 type beat
-cat human
+cat wonder
 days 1 5
 weight 10
 once
@@ -123,7 +123,7 @@ weight 8
 once
 roles A B
 when cond B ok
-text {A} and {B} watch the tankers come and go from their own windows, a few kilometres apart, and narrate each docking on the fleet channel like a sports commentary. By the third one they have a catchphrase, and by the fourth it has gone fleet-wide.
+text {A} and {B} watch the last top-off tankers come and go from their own windows, a few kilometres apart, and narrate each docking on the fleet channel like a sports commentary. By the third one they have a catchphrase, and by the fourth it has gone fleet-wide.
 do bond A B 4
 
 # --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
