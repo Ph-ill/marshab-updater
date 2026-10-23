@@ -3,6 +3,7 @@
 # Prints BLE state, peers seen, records exchanged, free heap, the gift path and the LED
 # path, then one PASS/CHECK line per check and a SELFTEST RESULT line.
 # docs/BENCH_TEST.md has the full checklist and what to send back when something fails.
+import os
 import sys
 
 try:
@@ -28,6 +29,15 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None):
         import lvwifi
         lvwifi.hotspot(cfg)
     ship = lvship.Ship(cfg)
+    # Variant A (.mpy copy): code and pack from files. Variant B (game firmware): both frozen;
+    # a frozen module's __file__ names no file on the filesystem.
+    src = getattr(lvship, "__file__", "?")
+    try:
+        os.stat(src)
+        where = "filesystem"
+    except OSError:
+        where = "frozen"
+    print("SELFTEST code: %s (%s), pack: %s" % (src, where, ship.pack_src))
     if epoch:
         ship.clock.learn(epoch, tz)
     b = ship.ble
