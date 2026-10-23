@@ -327,6 +327,21 @@ class Engine:
         s.emit(O.O_ACT, NONE, c, act, tgt, 0, param)
         return True
 
+    def _gift(self, ship, rec):
+        # A crewmate gift between players (lv/engage.py has the menu). Small on purpose:
+        # a give or an answered ask warms the bond and the receiver's morale a little;
+        # an ask changes nothing, and an ask nobody answers simply lapses.
+        s = self.s
+        item, tgt, mode = rec[5], rec[6], rec[7]
+        if tgt >= N or tgt == ship or mode > R.GIFT_ANSWER or item > 63:
+            return
+        if mode != R.GIFT_ASK:
+            if s.cond[tgt] == O.COND_HOME:
+                return
+            s.add_bond(ship, tgt, 4 if mode == R.GIFT_ANSWER else 2)
+            s.add_morale(tgt, 2)
+        s.emit(O.O_GIFT, NONE, ship, item, tgt, mode)
+
     def _auto_action(self, c):
         # An astronaut whose owner gave no instruction acts on their own traits.
         s, rng = self.s, self.rng
@@ -435,6 +450,8 @@ class Engine:
             elif k == R.NOTE and rec[6] < N and rec[6] != ship and rec[5] < 3:
                 s.add_bond(ship, rec[6], 3)
                 s.emit(O.O_NOTE, NONE, ship, rec[5], rec[6])
+            elif k == R.GIFT:
+                self._gift(ship, rec)
         # Close whatever is due today, in the order it was opened.
         keep = []
         due = []

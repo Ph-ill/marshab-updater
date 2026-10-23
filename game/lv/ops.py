@@ -86,3 +86,4 @@ O_END = 9         # card
 O_RES_OPEN = 10   # card, A, B
 O_RES_CLOSE = 11  # card, option, ballots, defaulted
 O_SHORT = 12      # resource running low
+O_GIFT = 13       # from crew, item, to crew, mode (record.GIFT_*): a crewmate gift or ask
