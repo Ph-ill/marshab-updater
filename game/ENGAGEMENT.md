@@ -30,7 +30,7 @@ runs (`tests/test_engage.py`, inactive season). Nothing is stored on the phone.
 * **Timed job.** One job a day per ship, outcome fixed by the seed (`S_JOB`). Time only
   gates *when* the result is shown: the board learns the phone's clock from request
   headers and shows "about HH:MM" until then, "Done" after.
-* **Collections.** Mission patches (milestones, drawn as plain line SVG), artifacts
+* **Collections.** Mission patches (milestones, drawn as plain line SVG; a neutral "how to earn it" line until earned), artifacts
   (found drops), the crew file (met / shared a line / traded with each crewmate) and
   story % (distinct non-ending cards seen / all non-ending cards).
 * **Gifts and asks.** One give and one ask per flight day (the board enforces it); an ask
@@ -86,15 +86,25 @@ story replay (`tests/mp_check.py`) peak 51.3 KB; story + engagement
 64-bit `build-standard`: 81.7 KB and 95.2 KB. The page is 59 KB raw, 19.0 KB gzipped
 (14.5% of the 128 KB budget; was 13.9 KB before engagement).
 
-**Heap fragmentation (core, not engagement):** merging ~220+ records into `ChoiceLog`
-back to back on a 192 KB m32 heap can raise `MemoryError` on a dict resize with plenty
-free, with or without engagement loaded. `gc.collect()` every 32 merged records fixes it
-(as `tests/mp_engage.py` does). The firmware's sync path should do the same.
+**Heap fragmentation (core, not engagement):** merging a long sync's worth of records
+back to back can raise `MemoryError` on a dict resize with most of the heap free
+(MicroPython 1.29, 32-bit unix port: the 287-record season fails at every heap from 96 to
+192 KB). `ChoiceLog.merge` (lv/chlog.py) now calls `gc.collect()` every 32 new records on
+MicroPython, so the firmware sync path gets it without extra code
+(`tests/mp_merge.py`; `nogc` reproduces the failure). Not yet confirmed on hardware.
+
+## Content safety
+
+Engagement text can show on any flight day, so it stays clear of the story:
+`tools/lve.py` fails the build on any drop, job, gift, patch, artifact or crew-file line
+that matches `content/engage/reserved.json` (maintainers only: it names the story's
+threads, like STORY_BIBLE.md) or lvc's slow-burn vocabulary. Patches show a neutral
+`lock` line until earned; their evocative line appears only after.
 
 ## Tests
 
 `tests/run.sh` (with `MICROPYTHON=...`) runs lvc/lve, the unit and sim tests, the 7-ship
-x 4-delivery-order determinism check, `tests/test_engage.py` (27 tests: drops, jobs,
+x 4-delivery-order determinism check, `tests/test_engage.py` (32 tests: merge collection, content safety, drops, jobs,
 streak/cover days, gifts limits, waiting/seen, clock, LED quiet hours/budget/disabled,
 inactive season), render parity, page size, sign-in, and both MicroPython checks.
 `web/shots_engage.sh` writes the 390x844 screenshots.
