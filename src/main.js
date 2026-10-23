@@ -4,7 +4,8 @@ import { installRelease, loadReleaseManifest } from './installer.js';
 import { loadReleaseIndex, compareVersions } from './releases.js';
 import { loadRuntimeSpec } from './releases.js';
 import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
-import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary } from './ship-config.js';
+import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, hotspotForRole, shipNumberForRole } from './ship-config.js';
+import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, describeBoard } from './role-memory.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
 const SHIP_COUNT = 7;
@@ -20,6 +21,8 @@ const state = {
   resetInProgress: false,
   busy: false,
   logSizes: {},
+  shipIdFollowsRole: false, // ship number unset on the board and not picked by hand: it tracks the role
+  shipFormFor: null,   // board the ship form was last filled for (its defaults are applied once per connection)
 };
 
 const $ = id => document.getElementById(id);
@@ -59,6 +62,8 @@ Object.assign(els, {
   shipId: $('shipId'),
   shipName: $('shipName'),
   shipRole: $('shipRole'),
+  shipSsid: $('shipSsid'),
+  shipRoleWarn: $('shipRoleWarn'),
   shipPassword: $('shipPassword'),
   shipOpen: $('shipOpen'),
   shipShowPw: $('shipShowPw'),
@@ -102,7 +107,7 @@ function resetProgress(status = 'Standing by.', visible = false){
 }
 function hotspotName(){
   const role = state.deviceInfo?.ship?.role;
-  return role ? `COEX-${role === 'B' ? 1 : 0}` : 'the ship hotspot (COEX-0 or COEX-1)';
+  return role ? hotspotForRole(role) : 'the ship hotspot (COEX-0 or COEX-1)';
 }
 function showPowerCycleModal(){
   els.powerCycleSsid.textContent = hotspotName();
@@ -221,10 +226,14 @@ function renderDeviceInfo(info, { quiet = false } = {}){
 
 function clearDeviceUi(){
   for(const el of [els.installedVersion, els.deviceShip, els.deviceBoard, els.deviceRuntime, els.deviceFs]) setText(el, '—');
+  state.shipFormFor = null;
+  state.shipIdFollowsRole = false;
   els.shipName.value = '';
   els.shipPassword.value = '';
   els.shipOpen.checked = false;
+  els.shipRole.value = '';
   setText(els.shipHotspot, '—');
+  renderShipSsid();
   els.logList.innerHTML = '<li class="muted">Connect a ship to list its log files.</li>';
   renderRuntimePanel();
 }
@@ -325,7 +334,7 @@ function renderShipFields(){
   for(const r of roles){
     const o = document.createElement('option');
     o.value = r;
-    o.textContent = `${r} (hotspot COEX-${r === 'B' ? 1 : 0})`;
+    o.textContent = r;
     els.shipRole.append(o);
   }
   els.shipRole.value = roles.includes(current) ? current : '';
@@ -337,9 +346,64 @@ function renderShipFields(){
     els.shipOpen.checked = !!cfg.hotspot_open;
     if(cfg.role && roles.includes(cfg.role)) els.shipRole.value = cfg.role;
   }
+  const formKey = state.device ? (state.deviceInfo?.uid || 'board') : null;
+  if(formKey && roles.length && state.deviceInfo && state.shipFormFor !== formKey){
+    state.shipFormFor = formKey;
+    applyShipDefaults(cfg, roles);
+  }
   setText(els.shipHotspot, state.device ? hotspotSummary(cfg) : '—');
+  renderShipSsid();
   els.shipName.placeholder = defaultShipName(els.shipId.value || 1);
   els.shipPassword.disabled = !state.device || state.busy || els.shipOpen.checked;
+}
+
+// First fill of the form for a newly connected board: if it has no role yet, preselect one the last
+// board configured from this browser is not using.
+// If it has no ship number yet either, the number follows the role (A -> 1, B -> 2).
+function applyShipDefaults(cfg, roles){
+  if(!cfg?.role){
+    const uid = state.deviceInfo?.uid || null;
+    const history = loadRoleHistory();
+    const suggestion = suggestRole(history, uid, roles);
+    if(suggestion){
+      const last = lastOtherBoard(history, uid);
+      els.shipRole.value = suggestion;
+      log(`preselected role ${suggestion} (${hotspotForRole(suggestion, roles)}): the last board configured here, ${describeBoard(last)}, is role ${last.role || 'none'}`);
+    }
+  }
+  state.shipIdFollowsRole = !cfg?.ship_id;
+  if(state.shipIdFollowsRole) followRoleWithShipId();
+}
+
+function followRoleWithShipId(){
+  if(!state.shipIdFollowsRole) return;
+  const n = shipNumberForRole(els.shipRole.value, shipRoles()) || 1;
+  els.shipId.value = String(n);
+  els.shipName.placeholder = defaultShipName(n);
+}
+
+// The clash this board would have with the last other board configured from this browser, if any.
+function currentClash(){
+  if(!state.device) return null;
+  return roleClash(loadRoleHistory(), state.deviceInfo?.uid || null, els.shipRole.value, shipRoles());
+}
+
+// Live "→ COEX-n" tag next to the role select: the network name this board will broadcast,
+// turned rust with a warning underneath when the last other board broadcasts the same one.
+function renderShipSsid(){
+  const roles = shipRoles();
+  const role = els.shipRole.value;
+  const ssid = roles.length ? hotspotForRole(role, roles) : '—';
+  els.shipSsid.textContent = ssid;
+  els.shipSsid.title = role ? `Role ${role} broadcasts ${ssid}` : `No role: the firmware default, ${ssid} (same as role ${roles[0] || 'A'})`;
+  const clash = roles.length ? currentClash() : null;
+  els.shipSsid.classList.toggle('clash', !!clash);
+  els.shipRoleWarn.hidden = !clash;
+  if(clash){
+    const other = roles.find(r => hotspotForRole(r, roles) !== ssid);
+    els.shipRoleWarn.textContent = `Same hotspot as the last board configured here: ${describeBoard(clash)} is role ${clash.role || 'none'} → ${ssid}. `
+      + `Two boards on one role ignore each other over BLE.${other ? ` Pick role ${other} for this one.` : ''}`;
+  }
 }
 
 async function saveShipConfig(){
@@ -356,11 +420,18 @@ async function saveShipConfig(){
       hotspot_open: els.shipOpen.checked,
       role: els.shipRole.value,
     }, { count: SHIP_COUNT, roles: shipRoles() });
+    const clash = roleClash(loadRoleHistory(), state.deviceInfo?.uid || null, cfg.role, shipRoles());
+    if(clash && !confirm(`The last board configured from this browser, ${describeBoard(clash)}, is role ${clash.role || 'none'} and broadcasts ${hotspotForRole(cfg.role, shipRoles())}. `
+      + `Saving role ${cfg.role || 'none'} here gives this board the same hotspot, and the two will ignore each other over BLE.\n\nSave the same role anyway?`)){
+      log('ship settings not saved: same role as the last board'); return;
+    }
     if(cfg.hotspot_open && !confirm('Run this ship\'s hotspot as an open network, with no password? Anyone nearby can join it.')){
       log('ship settings not saved'); return;
     }
     log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}`);
     const written = await writeShipConfig(state.device, cfg);
+    recordRole({ uid: state.deviceInfo?.uid || null, role: written.role, ship_id: written.ship_id, ship_name: written.ship_name });
+    state.shipIdFollowsRole = false; // the board has a number of its own now
     state.deviceInfo = { ...(state.deviceInfo || {}), ship: written };
     renderDeviceInfo(state.deviceInfo, { quiet: true });
     log('ship settings saved; they take effect when the ship restarts (Disconnect restarts it)');
@@ -584,7 +655,8 @@ function initEvents(){
   els.powerCycleModal.addEventListener('click', event => { if(event.target === els.powerCycleModal) hidePowerCycleModal(); });
   document.addEventListener('keydown', event => { if(event.key === 'Escape' && !els.powerCycleModal.hidden) hidePowerCycleModal(); });
   els.saveShipBtn.addEventListener('click', () => { saveShipConfig(); });
-  els.shipId.addEventListener('change', () => { els.shipName.placeholder = defaultShipName(els.shipId.value); });
+  els.shipId.addEventListener('change', () => { state.shipIdFollowsRole = false; els.shipName.placeholder = defaultShipName(els.shipId.value); });
+  els.shipRole.addEventListener('change', () => { followRoleWithShipId(); renderShipSsid(); });
   els.shipShowPw.addEventListener('change', () => { els.shipPassword.type = els.shipShowPw.checked ? 'text' : 'password'; });
   els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
   els.refreshLogsBtn.addEventListener('click', () => { refreshLogs(); });
