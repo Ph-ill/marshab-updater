@@ -1120,7 +1120,7 @@ class TestRound19(unittest.TestCase):
         ids = [c["id"] for c in self.text["cards"]]
         quirk = {i: int(cid.rsplit("_", 1)[1]) - 1 for i, cid in enumerate(ids) if cid.startswith("quirk_")}
         n_crew = len(self.text["crew"])
-        self.assertEqual(len(quirk), 3 * n_crew)
+        self.assertEqual(len(quirk), sum(len(c["habits"]) for c in lvc.parse_fleet(os.path.join(CONTENT, "fleet.lv"), os.path.join(CONTENT, "roster.lv"))["crew"] if c["habits"]))
         for i, k in quirk.items():
             self.assertNotIn("{habit}", self.text["cards"][i]["t"])
         touches = [0] * n_crew
@@ -1201,7 +1201,7 @@ class TestEightShips(unittest.TestCase):
         fleet = lvc.parse_fleet(os.path.join(CONTENT, "fleet.lv"), os.path.join(CONTENT, "roster.lv"))
         marco = fleet["crew"][7]
         self.assertEqual(marco["ship"], "Ship 08")
-        self.assertEqual(len(marco["habits"]), 3)
+        self.assertEqual(len(marco["habits"]), 4)
 
     def test_crew_mask_for_ship_eight(self):
         # C_CREW is a byte mask: crew index 7 is 0x80, and the clone binds only Marco.
@@ -1329,7 +1329,7 @@ class TestRound20(unittest.TestCase):
         self.assertNotIn("sulks", self.t["end_lights"])
         self.assertTrue(self.t["end_through"].startswith("Dust to the windows."))
         self.assertNotIn("wanted to answer all along", self.t["end_through"])
-        self.assertIn("none to come back", self.t["end_friend"])
+        self.assertIn("enough to get there, not back", self.t["end_friend"])
         self.assertIn("forklift photo", self.t["end_friend"])
         self.assertIn("puts a glove flat on the cold hull", self.t["end_close"])
         self.assertIn("By then it has nothing left to hear it with.", self.t["end_close"])
@@ -1355,7 +1355,7 @@ class TestRound21(unittest.TestCase):
         block = src[src.index("card l_handshake"):]
         block = block[:block.index("\ncard ", 1)]
         self.assertIn("when is A abort_who", block)
-        self.assertIn("sulking galley screen boots to ONLINE", self.t["a_window_hail"])
+        self.assertIn("by pure coincidence, one galley screen boots to ONLINE", self.t["a_window_hail"])
 
     def test_light_time_says_what_it_measures(self):
         self.assertIn("a day this week", self.t["m_alias"])
@@ -1371,8 +1371,8 @@ class TestRound21(unittest.TestCase):
     def test_endings_round_21(self):
         self.assertIn("up the old channel", self.t["end_long_orbit"])
         self.assertIn("all eight chose the lamp", self.t["end_long_orbit"])
-        self.assertIn("none to come back", self.t["end_friend"])
-        self.assertIn("opens on ship power", self.t["end_close"])
+        self.assertIn("enough to get there, not back", self.t["end_friend"])
+        self.assertIn("behind a door on ship power", self.t["end_close"])
         self.assertIn("the folded ship's battery", self.t["end_through"])
         self.assertIn("panels, a mast, a winch", self.t["end_through"])
         blob = json.dumps(self.text)
@@ -1387,6 +1387,54 @@ class TestRound21(unittest.TestCase):
         joined = " ".join(self.text["habits"]) if "habits" in self.text else json.dumps(self.text)
         self.assertNotIn("cat-proofs", joined)
         self.assertIn("Copy. Done. Next.", joined)
+
+class TestRound22(unittest.TestCase):
+    """Final pass: entry pins, owner bindings, new quirks from the crew."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.text, cls.pack = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] + " " + " ".join(o[1] for o in c.get("o", [])) for c in cls.text["cards"]}
+        with open(os.path.join(CONTENT, "roster.lv")) as f:
+            cls.roster = {l.split()[1]: l for l in f if l.startswith("crew ")}
+
+    def test_no_habit_pins_itself_to_entry(self):
+        for cid, t in self.t.items():
+            if cid.startswith("quirk_"):
+                for bad in ("before entry", "entry eve", "last corridor burn"):
+                    self.assertNotIn(bad, t, cid)
+
+    def test_new_quirks_are_on_their_owners(self):
+        want = {"Kim": ("Mango", "Dirt"), "Jai": ("fantasy football", "JetBlue", "wedding"),
+                "Diego": ("three cats", "strangers"), "Dorian": ("Wesley", "Uncrustables"),
+                "Jacques": ("circuit-board", "chihuahua", "two cats"), "Michelle": ("Disney", "Tesla"),
+                "Marco": ("Elgin", "BMW in Mexico", "cologne")}
+        for name, words in want.items():
+            for w in words:
+                self.assertIn(w, self.roster[name], (name, w))
+                for other, line in self.roster.items():
+                    if other != name and w not in ("two cats", "three cats", "strangers", "wedding"):
+                        self.assertNotIn(w, line, (other, w))
+        self.assertNotIn("two cats", self.roster["Diego"])
+        self.assertNotIn("both fed", self.roster["Diego"])
+
+    def test_quirk_4_clones_only_for_real_fourth_habits(self):
+        ids = {c["id"] for c in self.text["cards"]}
+        self.assertNotIn("quirk_4_1", ids)
+        for k in range(2, 9):
+            self.assertIn("quirk_4_%d" % k, ids)
+
+    def test_owner_bindings(self):
+        src = "".join(open(os.path.join(CONTENT, "cards", f)).read() for f in ("55_voyage.lv",))
+        block = src[src.index("card g_packer"):]
+        block = block[:block.index("\ncard ", 1)]
+        self.assertIn("when is A ow_theory", block)
+        self.assertIn("Pump it on entry morning", self.t["c_dose"])
+
+    def test_final_ending_wording(self):
+        self.assertIn("every floodlight burning the charge", self.t["end_lights"])
+        self.assertIn("The trays froze in week two", self.t["end_long_orbit"])
+        self.assertIn("rover's spare packs", self.t["end_close"])
 
 
 if __name__ == "__main__":
