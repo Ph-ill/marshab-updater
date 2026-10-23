@@ -1,0 +1,249 @@
+# Cliffhangers. A `hook` is the last line of its flight day; its resolver (`due`,
+# `when fired <hook>`) opens the next day. The engine spaces hooks >= 4 days apart.
+# Resolutions: mostly satisfying, sometimes ominous, never "it was nothing".
+# All hooks share hook_who to carry the astronaut over; they never overlap.
+# House style: content/STYLE.md.
+
+# --- 1. Emergency band ---------------------------------------------------------
+card h_band
+type event
+hook
+once
+days 4 40
+weight 10
+roles A
+when cond A ok
+do who hook_who A
+text At 23:40 the dish on {A}'s ship picks up something on the emergency band. It's not from Earth.
+
+card r_band
+type event
+due
+once
+days 5 42
+roles A
+when fired h_band
+when is A hook_who
+text {A} decodes it by breakfast. It's the safe-mode beacon of a Mars lander that went quiet years ago, still asking for instructions nobody sent. {A} logs its position and its last words for whoever lands next.
+do trait A curious 3
+do morale A 4
+
+# --- 2. Cabin pressure -------------------------------------------------------
+card h_pressure
+type event
+hook
+once
+days 4 40
+weight 10
+roles A
+when cond A ok
+do who hook_who A
+text 01:50. The cabin pressure on {A}'s ship has started to fall. Slowly. {A} is the only one awake.
+
+card r_pressure
+type event
+due
+once
+days 5 42
+roles A
+when fired h_pressure
+when is A hook_who
+text {A} spent four hours with an ultrasonic leak detector and a roll of tape. The culprit was a cable feedthrough whose seal shrank in the cold of the shaded side. It's resealed, the pressure holds, and the trend line is pinned to the wall like a trophy.
+do res spares -1
+do morale A 5
+
+# --- 3. Solar flare ----------------------------------------------------------
+card h_flare
+type event
+hook
+once
+days 4 40
+weight 9
+roles A
+when cond A ok
+do who hook_who A
+text 23:52. The space weather feed flags a major flare on the Sun. Protons will reach the fleet in about forty minutes. {A} starts waking people up.
+
+card r_flare
+type event
+due
+once
+days 5 42
+roles A
+when fired h_flare
+when is A hook_who
+text Every crew spent the night in the storm shelter between the water tanks, shoulder to shoulder, listening to the dosimeters tick. By morning the fleet had taken a month's dose in six hours, and everyone walked out on their own feet. {A} logged the peak and went to make coffee.
+do var storms 1
+do morale A 3
+
+# --- 4. Uncommanded thruster --------------------------------------------------
+card h_thruster
+type event
+hook
+once
+days 4 40
+weight 10
+roles A
+when cond A ok
+do who hook_who A
+text 02:14. A thruster on {A}'s ship fires without a command. Then another. {A} is already at the console.
+
+card r_thruster
+type event
+due
+once
+days 5 42
+roles A
+when fired h_thruster
+when is A hook_who
+lean brave manual watch
+text By 02:30 the ship was steady again.
+option manual | Hand control | {A} took attitude into manual, just for a minute, and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
+  trait A brave 2
+  morale A 4
+option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night is pinned up with the leak circled in red.
+  trait A curious 2
+  morale A 4
+
+# --- 5. Alarm flood -----------------------------------------------------------
+card h_flood
+type event
+hook
+once
+days 4 40
+weight 10
+roles A
+when cond A ok
+do who hook_who A
+text Just before midnight, 214 alarms hit {A}'s console at once. One of them is real.
+
+card r_flood
+type event
+due
+once
+days 5 42
+roles A
+when fired h_flood
+when is A hook_who
+text {A} found it at 01:30, buried on page nine: a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to 11, and nobody is sure when {A} slept.
+do morale A 5
+do res spares -1
+
+# --- 6. Ground silence --------------------------------------------------------
+card h_silence
+type event
+hook
+once
+days 10 40
+weight 8
+roles A
+when cond A ok
+do who hook_who A
+text Mission Control misses a scheduled check-in. Then the next one. {A} sends a third hail and starts the clock: forty minutes for an answer.
+
+card r_silence
+type event
+due
+once
+days 11 42
+roles A
+when fired h_silence
+when is A hook_who
+text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup took all night to come up. The message ends: "All good here. How are you?" {A} reads it twice before answering.
+do morale A 6
+do trait A warm 2
+
+# --- 7. Hull strike -----------------------------------------------------------
+card h_strike
+type event
+hook
+once
+days 4 40
+weight 9
+roles A
+when cond A ok
+do who hook_who A
+text Something hits {A}'s ship hard enough to ring the hull like a bell. Every pressure reading is green. {A} doesn't trust green.
+
+card r_strike
+type event
+due
+once
+days 5 42
+roles A
+when fired h_strike
+when is A hook_who
+text The morning EVA found a crater the size of a fingernail in a shield panel, and behind it, nothing. The shielding did its job. {A} photographed it next to a ruler, and the anomaly report finally has a good picture.
+do trait A brave 2
+do morale A 3
+
+# --- 8. Watchdog ----------------------------------------------------------------
+card h_watchdog
+type event
+hook
+once
+days 4 40
+weight 9
+roles A
+when cond A ok
+do who hook_who A
+text 23:15. The navigation computer on {A}'s ship reboots itself. At 23:17 it does it again. Then again, every two minutes.
+
+card r_watchdog
+type event
+due
+once
+days 5 42
+roles A
+when fired h_watchdog
+when is A hook_who
+text {A} found it at dawn: a logging task had filled the disk, so the watchdog decided the computer was dead and kept reviving it. {A} cleared the logs, and navigation hasn't missed a fix since. "Delete old logs" is now step one of the procedure, in permanent marker.
+do morale A 4
+
+# --- 9. Star tracker ghost (ominous) -------------------------------------------
+card h_ghost
+type event
+hook
+once
+days 8 40
+weight 8
+roles A
+when cond A ok
+do who hook_who A
+text {A}'s star tracker reports a star where no star should be. Between frames, it moves.
+
+card r_ghost
+type event
+due
+once
+days 9 42
+roles A
+when fired h_ghost
+when is A hook_who
+text {A} pinned it down by morning: a spent upper stage from a Mars mission decades ago, tumbling along almost the same path. It will pass forty kilometers off the bow. It has been out here the whole time, and no one is coming for it.
+do trait A curious 3
+do morale A -2
+
+# --- 10. Two against one ----------------------------------------------------------
+card h_header
+type event
+hook
+once
+days 4 40
+weight 10
+roles A
+when cond A ok
+do who hook_who A
+text 23:30. A header tank on {A}'s ship reads three percent high and climbing. Two sensors agree. The third doesn't.
+
+card r_header
+type event
+due
+once
+days 5 42
+roles A
+when fired h_header
+when is A hook_who
+text {A} pulled the raw data overnight. The two sensors that agreed share a power supply, and it's sagging. The third was right all along. No vent, no lost methane, and one new line in the procedures: "When two agree, check what they have in common."
+do morale A 5
+do res fuel 1

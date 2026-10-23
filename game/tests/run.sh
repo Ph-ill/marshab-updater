@@ -7,6 +7,7 @@ set -e
 cd "$(dirname "$0")/.."
 python3 tools/lvc.py
 python3 tests/test_core.py
+python3 tests/test_content.py
 python3 tests/mp_codes.py
 python3 sim/season.py > /dev/null
 python3 - <<'PY'

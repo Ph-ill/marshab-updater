@@ -12,6 +12,10 @@ ENDING = 6     # checked in pack order on the last flight day
 # Card flag bits
 F_ONCE = 1
 F_DUE = 2      # fires whenever eligible, before the random picks (callbacks)
+F_HOOK = 4     # cliffhanger: picked last in the day, at most one every HOOK_GAP days
+
+HOOK_GAP = 4   # days between cliffhangers (so never two days running)
+HOOK_PCT = 50  # daily chance of a cliffhanger once the gap has passed
 
 # Conditions
 C_FLAG = 1        # a = flag
@@ -39,6 +43,7 @@ C_IS = 22         # a = role, b = var holding crew index + 1
 C_DAY_GE = 23     # b = day
 C_HOME = 24       # a = role is aboard its own ship
 C_AWAY = 25
+C_CREW = 26       # a = role, b = bitmask of crew indices (compiled from roster tags)
 
 # Effects
 E_SET = 1         # a = flag

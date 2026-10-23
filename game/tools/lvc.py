@@ -17,12 +17,15 @@ Card format (one card per `card` line, indentation only matters for option effec
   weight 10                       # relative chance among eligible cards (default 10)
   once                            # fire at most once per season
   due                             # fire whenever eligible (callbacks), no dice roll
+  hook                            # cliffhanger event: last line of its day; needs a
+                                  #   `due` resolver with `when fired <this card>`
   cooldown 6                      # days before it can fire again (repeatable cards)
   duration 2                      # days a decision/dilemma/rescue stays open
   roles A B                       # crew roles to bind (A first)
   lean curious open log           # tie-break/default: axis, option if >= 0, option if < 0
   default send                    # rescue: option used when nobody answers
   when trait A curious >= 10      # condition (see COND_SYNTAX below)
+  when tag A mech                 # A is a crew member tagged `mech` in roster.lv
   text {A} wants to answer it.    # phone template; {A} {B} are crew names
   do set seen_rock                # effect when the card fires (see EFFECT_SYNTAX)
   option open | Open the channel | {A} keys the transmitter.
@@ -61,6 +64,7 @@ class Ctx:
         self.var_read = {}
         self.errors = []
         self.warnings = []
+        self.crew = []       # roster lines, for `when tag`
 
     def flag(self, name, where, setting):
         if not ID_RE.match(name):
@@ -159,6 +163,16 @@ def condition(tokens, card, ctx, where):
         return (O.C_HOME, role(t[1], card), 0, 0)
     if w == "away":
         return (O.C_AWAY, role(t[1], card), 0, 0)
+    if w == "tag":
+        # Resolved at compile time into a bitmask of the crew who carry the tag, so the
+        # engine only tests a bit. An unknown tag is an error, not a silent "nobody".
+        mask = 0
+        for i, cr in enumerate(ctx.crew):
+            if t[2] in cr["tags"]:
+                mask |= 1 << i
+        if not mask:
+            raise PackError("no crew member in roster.lv has tag %r" % t[2])
+        return (O.C_CREW, role(t[1], card), mask, 0)
     raise PackError("unknown condition %r" % " ".join(t))
 
 
@@ -239,6 +253,8 @@ def parse_cards(path, ctx):
                     card["flags"] |= O.F_ONCE
                 elif word == "due":
                     card["flags"] |= O.F_DUE
+                elif word == "hook":
+                    card["flags"] |= O.F_HOOK
                 elif word == "cooldown":
                     card["cooldown"] = ubyte(rest)
                 elif word == "duration":
@@ -272,19 +288,23 @@ def parse_cards(path, ctx):
 
 
 def parse_crew(t):
-    # crew <name> ship <ship words...> [quirk <q>] [flagship]
-    cr = {"name": t[1], "quirk": None, "ship": "", "flagship": False}
+    # crew <name> ship <ship words...> [quirk <q>] [tag <t>]... [flagship]
+    cr = {"name": t[1], "quirk": None, "ship": "", "flagship": False, "tags": []}
     i = 2
     ship = []
     while i < len(t):
         if t[i] == "ship":
             i += 1
-            while i < len(t) and t[i] not in ("quirk", "flagship"):
+            while i < len(t) and t[i] not in ("quirk", "flagship", "tag"):
                 ship.append(t[i])
                 i += 1
             continue
         if t[i] == "quirk":
             cr["quirk"] = t[i + 1]
+            i += 2
+            continue
+        if t[i] == "tag":
+            cr["tags"].append(t[i + 1])
             i += 2
             continue
         if t[i] == "flagship":
@@ -365,8 +385,42 @@ def check_pronouns(cards, system, ctx):
             ctx.errors.append("system.json: gendered pronoun %r in %r" % (m.group(0), t[:40]))
 
 
+# House-style lint (content/STYLE.md). Warnings, not errors: a human reads the
+# narrative before anything ships, but these are the mistakes that sting.
+SKILL_NAMECHECK = re.compile(r"\b(controls?|automation|mechanical|design|software|electrical) engineer", re.I)
+DEMEANING = re.compile(r"\b(forgot|forgets|forgetting|clumsy|lazy|useless|incompetent|careless|"
+                       r"screw(s|ed)? up|mess(es|ed)? up|idiot\w*|stupid|dumb)\b", re.I)
+CHEAP = re.compile(r"\b(it was nothing|just a glitch|false alarm|all a dream)\b", re.I)
+CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re.I)
+MAX_TEXT, MAX_LABEL = 300, 28
+
+
+def check_style(cards, fleet, ctx):
+    names = [cr["name"] for cr in fleet["crew"]]
+    for c in cards:
+        w = c["where"]
+        parts = [("text", c["text"])] + [("option " + o["name"], o["text"]) for o in c["options"]]
+        for what, t in parts:
+            for n in names:
+                if re.search(r"\b%s\b" % re.escape(n), t):
+                    ctx.warnings.append("style: %s %s names %s; use {A}/{B} so any crew member fits" % (w, what, n))
+            for rx, why in ((SKILL_NAMECHECK, "name-checks a job; keep skill flavor implicit"),
+                            (DEMEANING, "may make a crewmate the butt of the joke"),
+                            (CHEAP, "cheap resolution"),
+                            (CALENDAR, "pins calendar time; use flight days")):
+                m = rx.search(t)
+                if m:
+                    ctx.warnings.append("style: %s %s %r %s" % (w, what, m.group(0), why))
+            if len(t) > MAX_TEXT:
+                ctx.warnings.append("style: %s %s is %d chars (max %d on a phone)" % (w, what, len(t), MAX_TEXT))
+        for o in c["options"]:
+            if len(o["label"]) > MAX_LABEL:
+                ctx.warnings.append("style: %s button %r is long (max %d)" % (w, o["label"], MAX_LABEL))
+
+
 def validate(cards, ctx, fleet, system):
     check_pronouns(cards, system, ctx)
+    check_style(cards, fleet, ctx)
     ids = [c["id"] for c in cards]
     for c in cards:
         w = c["where"]
@@ -418,6 +472,26 @@ def validate(cards, ctx, fleet, system):
                     tgt = cards[ids.index(a[1])]
                     if tgt["type"] not in (O.RESCUE, O.DECISION, O.DILEMMA):
                         ctx.errors.append("%s: open needs a rescue, decision or dilemma" % where)
+    for c in cards:
+        if not c["flags"] & O.F_HOOK:
+            continue
+        w = c["where"]
+        if c["type"] != O.EVENT or c["flags"] & O.F_DUE:
+            ctx.errors.append("%s: a hook must be a plain event (not due)" % w)
+        if not c["flags"] & O.F_ONCE:
+            ctx.errors.append("%s: a hook needs `once`" % w)
+        if c["days"][1] > fleet["season"] - 2:
+            ctx.errors.append("%s: a hook can't fire in the last 2 days; end its days by %d"
+                              % (w, fleet["season"] - 2))
+        resolvers = [r for r in cards if r["flags"] & O.F_DUE and r["type"] in (O.EVENT, O.BEAT)
+                     and any(op == O.C_FIRED and a == ("card", c["id"]) for (op, a, _, _), _ in r["conds"])]
+        if not resolvers:
+            ctx.errors.append("%s: hook %s has no resolver (a due event with `when fired %s`)"
+                              % (w, c["id"], c["id"]))
+        for r in resolvers:
+            if r["days"][1] < c["days"][1] + 1:
+                ctx.errors.append("%s: resolver %s must run to day %d or later"
+                                  % (r["where"], r["id"], c["days"][1] + 1))
     endings = [c for c in cards if c["type"] == O.ENDING]
     if not endings:
         ctx.errors.append("no ending cards")
@@ -477,6 +551,7 @@ def encode_card(c, ids):
 def build(content_dir):
     ctx = Ctx()
     fleet = parse_fleet(os.path.join(content_dir, "fleet.lv"), os.path.join(content_dir, "roster.lv"))
+    ctx.crew = fleet["crew"]
     with open(os.path.join(content_dir, "system.json"), encoding="utf-8") as f:
         system = json.load(f)
     cards = []
@@ -517,7 +592,8 @@ def build(content_dir):
         "ships": [cr["ship"] for cr in fleet["crew"]],
         "flagship": next((i for i, cr in enumerate(fleet["crew"]) if cr["flagship"]), 0),
         "epi": system.get("epi", {}),
-        "cards": [{"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]}
+        "cards": [dict({"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]},
+                       **({"h": 1} if c["flags"] & O.F_HOOK else {}))
                   for c in cards],
         "actions": system["actions"],
         "notes": system["notes"],

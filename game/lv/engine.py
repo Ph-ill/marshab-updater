@@ -16,7 +16,7 @@ FOOD, FUEL, SPARES = 0, 1, 2
 # Which condition ops take roles in a (and b)
 _ROLE_A = (O.C_TRAIT_GE, O.C_TRAIT_LE, O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART,
            O.C_COND, O.C_IDLE_GE, O.C_MORALE_LE, O.C_MORALE_GE, O.C_KIT_ELSE,
-           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY)
+           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY, O.C_CREW)
 _ROLE_B = (O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART, O.C_BESTBOND)
 
 
@@ -88,6 +88,8 @@ class Engine:
             return s.loc[ra] == ra
         if op == O.C_AWAY:
             return s.loc[ra] != ra
+        if op == O.C_CREW:
+            return (b >> ra) & 1 == 1
         return False
 
     def _check(self, off, roles):
@@ -465,7 +467,7 @@ class Engine:
                 r = self.eligible(c)
                 if r is not None:
                     self._fire(c, r)
-        events = [c for c in p.cards if c.type == O.EVENT and not (c.flags & O.F_DUE)]
+        events = [c for c in p.cards if c.type == O.EVENT and not (c.flags & (O.F_DUE | O.F_HOOK))]
         c, r = self._pick(events, 55)
         if c is not None:
             self._fire(c, r)
@@ -484,9 +486,30 @@ class Engine:
             c, r = self._pick(beats, 60)
             if c is not None:
                 self._fire(c, r)
+        # Cliffhanger last, so it is the final line of the day. Never on the last two
+        # days: its resolver (a `due` card) needs tomorrow to fire.
+        if d + 1 < p.season:
+            self._hook()
         if d == p.season:
             self._ending()
         return d
+
+    def _hook(self):
+        # At most one cliffhanger every HOOK_GAP days. The gap is read from the hook
+        # cards' own fired days, so there is no extra state to save or merge.
+        s, d = self.s, self.s.day
+        hooks = [c for c in self.p.cards if c.flags & O.F_HOOK]
+        if not hooks or d < O.HOOK_GAP:
+            return
+        last = 0
+        for c in hooks:
+            if s.fired[c.idx] > last:
+                last = s.fired[c.idx]
+        if last and d - last < O.HOOK_GAP:
+            return
+        c, r = self._pick(hooks, O.HOOK_PCT)
+        if c is not None:
+            self._fire(c, r)
 
     def _ending(self):
         s = self.s

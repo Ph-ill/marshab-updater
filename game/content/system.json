@@ -44,9 +44,9 @@
     ]
   ],
   "res_words": [
-    "the hydroponics",
-    "fuel trim",
-    "spare parts"
+    "the galley stores",
+    "propellant trim",
+    "the spares locker"
   ],
   "notes": [
     "Thinking of you out there.",
@@ -86,10 +86,10 @@
       ]
     ],
     "bond": "Closest to {T} by the end.",
-    "plain": "Kept the ship running, quietly and well.",
+    "plain": "Kept the ship running, quietly and well. The logs say so, in small handwriting.",
     "head": [
-      "Seven landed. Nobody was left behind.",
-      "Seven ships, one planet."
+      "Seven ships made orbit. Nobody was left behind.",
+      "Seven ships, one planet, and every seal held."
     ]
   }
 }

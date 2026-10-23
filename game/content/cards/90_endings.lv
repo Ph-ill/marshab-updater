@@ -4,13 +4,23 @@ card end_contact
 type ending
 when flag signal_contact
 when res food >= 1
-text First Contact, Sort Of. The fleet arrives with a recording nobody can explain and a crew that won't stop talking about it.
+text Old Friend. The fleet makes Mars orbit carrying a dead orbiter's last telemetry and a crew who won't stop talking about it. Somewhere below, a small machine knows someone came back.
 
 card end_followed
 type ending
 when flag echo_heard
-text Company. Seven ships land; the asteroid parks itself in a high orbit and stays there.
+text Company. Seven ships make orbit. Just above them, on a slightly higher path, the carrier is still transmitting every 11 seconds. Nobody has answered it yet.
+
+card end_patience
+type ending
+when flag arrive_wait
+text Patience. The fleet parks in a long orbit and watches a dust storm the size of a continent swallow the landing zone. When it clears, seven ships are still waiting above it, with margins thin as foil and every one of them intact.
+
+card end_through
+type ending
+when flag arrive_hold
+text Through the Dust. The fleet holds the plan. The storm reaches the landing zone hours after the last ship is down, and the last thing the cameras see from orbit is seven ships under an orange sky, hatches sealed.
 
 card end_long_way
 type ending
-text The Long Way Round. Seven ships, one planet, and a log full of small kindnesses.
+text The Long Way Round. Seven ships, one planet, and a log that's mostly propellant figures and small kindnesses. Mission Control sends one word: "Nominal." Everyone aboard knows it was more than that.

@@ -1,0 +1,165 @@
+# Crew beats: small human moments, most of the log. Idle-friendly beats make an
+# absent player's astronaut look good. House style: content/STYLE.md.
+
+card beat_coffee
+type beat
+days 3 42
+weight 8
+once
+roles A B
+when same A B
+text {A} and {B} rebuild the coffee maker's heater. It now settles in forty seconds. {B} wants it faster. {A} is worried about overshoot. The coffee is excellent either way.
+do bond A B 5
+
+card beat_cards
+type beat
+days 2 42
+weight 8
+cooldown 12
+roles A B
+when same A B
+text {A} teaches {B} a card game from home. By the end of the shift {B} is winning, and the rules have been amended twice.
+do bond A B 5
+
+card beat_window
+type beat
+days 1 8
+weight 12
+once
+roles A B
+when same A B
+text {A} and {B} take turns at the window as Earth and the Moon slide into the same frame. Neither says anything for a long time. Neither needs to.
+do bond A B 6
+
+card beat_gym
+type beat
+days 3 42
+weight 7
+cooldown 9
+roles A B
+when same A B
+text {A} and {B} share the exercise slot, two hours a day so their bones still work at Mars. They keep score. Nobody knows what the score measures.
+do bond A B 4
+do morale A 2
+
+card beat_zipties
+type beat
+days 10 42
+weight 6
+once
+roles A B
+when same A B
+text {A} and {B} finally agree on which drawer the zip ties live in. It has taken the whole flight so far, and it may be the most important engineering decision made aboard.
+do bond A B 4
+
+card beat_haircut
+type beat
+days 12 42
+weight 5
+once
+roles A B
+when same A B
+when bond A B >= 0
+text {A} cuts {B}'s hair with the vacuum clippers. The result is logged as "within tolerance". {B} agrees and tips in coffee.
+do bond A B 5
+
+card beat_torque
+type beat
+days 5 42
+weight 5
+once
+roles A
+when cond A ok
+text {A} discovers that the torque value for the galley panel fasteners isn't written down anywhere: not in the manual, not on the drawings. {A} measures one, writes the number on the panel in marker, and that is now the spec.
+do morale A 2
+
+card beat_interlock
+type beat
+days 4 42
+weight 5
+once
+roles A B
+when same A B
+text An interlock on {A}'s ship won't let the water heater run while the service hatch is open. It is correct. It is also why {A} and {B} have been drinking cold coffee all week. Neither of them will touch it.
+do bond A B 3
+
+card beat_home_msg
+type beat
+days 8 42
+weight 6
+cooldown 10
+roles A
+when cond A ok
+text {A} records a message for a school group back home that's been following the fleet. The kids send back forty questions, mostly about the toilet. {A} answers every one.
+do morale A 4
+do trait A warm 2
+
+card beat_shelter_night
+type beat
+days 6 42
+weight 5
+cooldown 12
+roles A B
+when same A B
+when var storms >= 1
+text {A} and {B} reorganize the storm shelter between the water tanks so the next flare night is less miserable. Two more sleeping spots, one hook for the cards, and a sign that reads "the Sun is not your friend".
+do bond A B 4
+
+card beat_early_watch
+type beat
+days 1 8
+weight 10
+cooldown 3
+roles A B
+when same A B
+text {A} and {B} stand the night watch. Earth still fills most of the window, blue and close. They talk about home as if it were down the road. Each day it's a little less true.
+do bond A B 5
+
+# --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
+card idle_watch
+type beat
+days 4 42
+weight 10
+cooldown 10
+roles A
+when idle A >= 3
+when cond A ok
+text {A} takes an extra night watch so everyone else can sleep before the burn. Nobody asked. The log entry is two lines long and perfectly neat.
+do morale A 2
+do trait A warm 2
+
+card idle_logs
+type beat
+days 5 42
+weight 9
+cooldown 7
+roles A
+when idle A >= 3
+when cond A ok
+text {A} spends a quiet shift on the fault logs nobody has time for, and finds the common cause behind three intermittent alarms. The fix list on the galley wall gets three lines shorter.
+do res spares 1
+do morale A 2
+
+card idle_mentor
+type beat
+days 6 42
+weight 8
+cooldown 12
+roles A B
+when idle A >= 3
+when same A B
+when cond B ok
+text {A} walks {B} through the backup docking procedure step by step, until {B} can do it without the checklist. Neither of them mentions why it matters.
+do bond B A 6
+do trait B brave 2
+
+card idle_spares
+type beat
+days 8 42
+weight 8
+cooldown 9
+roles A
+when idle A >= 4
+when cond A ok
+text {A} inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin. {A} logs it and says a quiet thank-you to whoever it was.
+do res spares 1
