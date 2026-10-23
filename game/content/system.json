@@ -79,7 +79,6 @@
       "{who} ran the water rounds. The reclaimer printed its blessing: RECLAIMED. DRINK SPARINGLY.",
       "{who} swapped scrubber cartridges two days early, because the trend lines said so.",
       "{who} answered mail from home: weather, a dog, a fence that needs mending.",
-      "{who} reran pump checks that came back two tenths off, then on.",
       "{who} cleaned galley filters and found a missing spoon.",
       "{who} recalibrated cabin sensors reading half a degree warm.",
       "{who} swept cabins with leak detectors and found nothing, which is the point.",
@@ -87,8 +86,7 @@
       "{who} wiped down windows and watched Mars not move.",
       "{who} wrote letters home and dated them for after landing.",
       "{who} slept nine hours on the flight surgeon's orders.",
-      "{who} panned the hull cameras seam by seam and found every seam whole.",
-      "{who} stripped and re-taped frayed cable runs."
+      "{who} panned the hull cameras seam by seam and found every seam whole."
     ]
   },
   "epi": {
@@ -272,6 +270,10 @@
       [
         "dil_gains",
         "Saw the wobble first."
+      ],
+      [
+        "dil_eva_cam",
+        "Weighed an iced lens against an unplanned EVA."
       ],
       [
         "l_manifest",
