@@ -57,14 +57,14 @@
     "move": "{A} rides the transfer line across to {S} for a few days, and leaves the home ship flying itself, as it was built to.",
     "home": "{A} rides the transfer line back home to {S}.",
     "note": "{A} passes {T} a note: “{line}”",
-    "dec_open": "Fleet decision open for two pages. Both options are cleared; the flight director wants the fleet's call.",
+    "dec_open": "Fleet vote, two pages. Both options are cleared; the flight director takes the call.",
     "dec_close": "Decision closed: {opt}. Votes cast: {n}.",
     "dec_lean": "No votes came in, so the crew decided: {opt}.",
     "dec_tie": "A tie, {n} votes in all. The crew broke it themselves: {opt}.",
-    "dil_open": "For whoever at home looks after {A}, and only them:",
+    "dil_open": "Private, for whoever looks after {A}:",
     "dil_you": "{A} went with your call: {opt}.",
     "dil_self": "No word from home in time, so {A} chose: {opt}.",
-    "res_open": "Anyone can answer this one. One tap is enough.",
+    "res_open": "Anyone can answer; one tap is enough.",
     "res_close": "Help is on the way: {opt}.",
     "res_default": "No answer in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
@@ -72,21 +72,21 @@
     "fold": "On the other ships, {who} ran the water rounds and checked the recovery rate.",
     "fold_pool": [
       "On the other ships, {who} ran the water rounds and checked the recovery rate.",
-      "{who} chased a rattle behind a panel and found a pen.",
-      "{who} swapped a scrubber cartridge two days early, because the trend line said so.",
+      "{who} chased rattles behind panels and found pens.",
+      "{who} swapped scrubber cartridges two days early, because the trend lines said so.",
       "{who} answered mail from home: weather, a dog, a fence that needs mending.",
-      "{who} reran a pump check that came back two tenths off, then on.",
-      "{who} cleaned the galley filter and found most of last week's bread.",
-      "{who} counted the spare fuses twice and got the same number both times.",
-      "{who} recalibrated a cabin sensor reading half a degree warm.",
-      "{who} swept the cabin with the leak detector and found nothing, which is the point.",
-      "{who} re-torqued a hatch hinge to spec and wrote down the number.",
-      "{who} logged the cabin air and found it dull, which is good.",
-      "{who} wiped down the window and watched Mars not move.",
-      "{who} ran the comms self-test and filed a clean sheet.",
+      "{who} reran pump checks that came back two tenths off, then on.",
+      "{who} cleaned galley filters and found most of last week's bread.",
+      "{who} counted spare fuses twice and got the same numbers both times.",
+      "{who} recalibrated cabin sensors reading half a degree warm.",
+      "{who} swept cabins with leak detectors and found nothing, which is the point.",
+      "{who} re-torqued hatch hinges to spec and wrote down the numbers.",
+      "{who} logged cabin air and found it dull, which is good.",
+      "{who} wiped down windows and watched Mars not move.",
+      "{who} ran comms self-tests and filed clean sheets.",
       "{who} slept nine hours on the flight surgeon's orders.",
-      "{who} walked the hull with the camera and found it whole.",
-      "{who} stripped and re-taped a frayed cable run."
+      "{who} walked hulls with the camera and found them whole.",
+      "{who} stripped and re-taped frayed cable runs."
     ]
   },
   "epi": {
@@ -125,7 +125,7 @@
       ],
       [
         "a_window_hail",
-        "Set an answer running weeks early. Still has the printout of the first OK."
+        "Set an answer running weeks early. The printout of the first OK is over the habitat bunk."
       ],
       [
         "a_window_quiet",
@@ -141,7 +141,7 @@
       ],
       [
         "m_reveal",
-        "Got the lighthouse wrong and the keeper right. Kept the drawing."
+        "Got the lighthouse wrong and the keeper right. The drawing hangs by the airlock."
       ],
       [
         "m_theory",
@@ -193,11 +193,11 @@
       ],
       [
         "dose_swap",
-        "Slept between the water tanks, because someone had a better dosimeter."
+        "Moved the bunk to the water wall on a crewmate's better numbers, and slept."
       ],
       [
         "dose_ok",
-        "Thanked the ground for checking. Sleeps beside the water wall, and sleeps."
+        "Thanked the ground for checking, and slept beside the water wall until entry pumped it down."
       ],
       [
         "a_last_night",
