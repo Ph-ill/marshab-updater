@@ -1,0 +1,37 @@
+{
+  "_doc": "What the File tab collects. Patches unlock by a rule the phone checks: day N reached, votes cast, rescues answered, gifts sent, cliffhangers seen, drops opened, artifacts found, story % discovered, watch streak. Artifacts come from rare drops and rare job results. Crew file entries unlock per crewmate as your astronaut gets to know them. STUBS: the content pass replaces these.",
+  "patches": [
+    {"id": "fd07", "n": "First week", "rule": ["day", 7], "t": "Seven days out. Earth still fills the window."},
+    {"id": "fd21", "n": "Halfway", "rule": ["day", 21], "t": "Past the point where turning back is cheaper."},
+    {"id": "fd42", "n": "Mars orbit", "rule": ["day", 42], "t": "Seven ships, one orbit."},
+    {"id": "ballot", "n": "First ballot", "rule": ["votes", 1], "t": "Your ship had a say."},
+    {"id": "rescue", "n": "Answered the call", "rule": ["rescues", 1], "t": "Someone asked for help and you answered."},
+    {"id": "gift", "n": "Care package", "rule": ["gifts", 1], "t": "Something small, sent a long way."},
+    {"id": "night", "n": "Night watch", "rule": ["hooks", 1], "t": "You were there when the log stopped mid-sentence."},
+    {"id": "mail", "n": "Mail call", "rule": ["opened", 10], "t": "Ten drops opened."},
+    {"id": "curator", "n": "Curator", "rule": ["artifacts", 3], "t": "Three things worth keeping."},
+    {"id": "story50", "n": "Half the story", "rule": ["story", 50], "t": "Half of this voyage's story discovered."}
+  ],
+  "badges": [
+    {"n": 3, "id": "Three watches"},
+    {"n": 7, "id": "Full week"},
+    {"n": 14, "id": "Fortnight"},
+    {"n": 21, "id": "Three weeks"},
+    {"n": 30, "id": "Thirty watches"},
+    {"n": 42, "id": "Every watch"}
+  ],
+  "artifacts": [
+    {"id": "scorched_patch", "n": "Scorched patch", "t": "First crewed flight. One corner burnt. It gets quieter."},
+    {"id": "pad_photo", "n": "Pad photo", "t": "Seven ships, the night before. Numbers in pen."},
+    {"id": "old_probe", "n": "Carrier tone", "t": "Fifty years out and still talking."},
+    {"id": "grain", "n": "Sample bag 01", "t": "A micrometeoroid, smaller than a grain of rice. Dated."},
+    {"id": "quarter", "n": "1969 quarter", "t": "For luck. R."}
+  ],
+  "file": {
+    "_doc": "Three entries per crewmate. met: they appear in your log. shared: your astronaut and they share a log line. traded: a gift or ask between you. {T} = crewmate, {S} = their ship, {lean} = their strongest character word.",
+    "met": "{T}, {S}. On the manifest and in the log.",
+    "shared": "Has worked a shift alongside your astronaut. Reads as {lean}.",
+    "traded": ["Keeps a paper notebook of every alarm ever silenced.", "Packed one real mug. Drinks from a pouch anyway.", "Labels every cable, including the labelled ones.", "Has a favourite wrench and won't say which.", "Can name every star the tracker uses.", "Keeps the last letter from home unopened, for a bad day.", "Hums during checklists. Always the same tune."],
+    "lean": [["brave", "careful"], ["curious", "settled"], ["warm", "blunt"]]
+  }
+}

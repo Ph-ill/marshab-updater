@@ -1,0 +1,23 @@
+{
+  "_doc": "Daily drop: one thing for each crew member to open per flight day. Tier is rolled per ship and day from the voyage key (lv/engage.py); items in a tier come round in order with a per-ship offset, so nobody sees a repeat until the tier runs out. Rare items can carry 'art' (an artifact id in collections.json). {A} = your astronaut. STUBS: the content pass replaces these. House style: content/STYLE.md.",
+  "tiers": [
+    {"id": "routine", "label": "Routine", "pct": 78},
+    {"id": "priority", "label": "Priority", "pct": 18},
+    {"id": "rare", "label": "Eyes only", "pct": 4}
+  ],
+  "pity_days": 14,
+  "items": [
+    {"tier": "routine", "kind": "Mission Control memo", "t": "MEMO 0412. Crews are reminded that the galley clock is the reference clock. The other clocks are opinions."},
+    {"tier": "routine", "kind": "Sensor log", "t": "Hull temperature sensor 14 reported -270 °C for one sample, then went back to normal. Logged. Not discussed."},
+    {"tier": "routine", "kind": "Letter from home", "t": "A letter from home, three days in the uplink queue. The dog has learned to open the fridge. Nobody knows how, and the dog isn't saying."},
+    {"tier": "routine", "kind": "Starbase weather", "t": "Starbase: 31 °C, wind from the southeast, and a gull loose in the high bay again. Ground crew morale is described as 'fine'."},
+    {"tier": "routine", "kind": "Maintenance ticket", "t": "Ticket 2231 is closed by the ground as 'cannot reproduce'. {A} reproduces it twice before lunch and reopens it with a video."},
+    {"tier": "routine", "kind": "Uplink digest", "t": "Today's uplink: 14 procedure updates, 2 software patches, 1 crossword. The crossword gets done first."},
+    {"tier": "priority", "kind": "Odd reading", "t": "The star tracker logs a faint object it can't match to any catalogue. Ground says it's probably ice from the last vent. Probably."},
+    {"tier": "priority", "kind": "Recorded message", "t": "A recording from the launch-day control room. Fourteen people talking at once, all saying the same thing: go."},
+    {"tier": "priority", "kind": "Mission Control memo", "t": "Mission Control approves 40 extra minutes of bandwidth for personal calls this week. The approval took six signatures and a meeting."},
+    {"tier": "rare", "kind": "Sealed envelope", "art": "scorched_patch", "t": "An envelope from the first crewed Starship flight, marked 'open past halfway'. Inside: a mission patch with one scorched corner, and four words. It gets quieter. Breathe."},
+    {"tier": "rare", "kind": "Data card", "art": "pad_photo", "t": "A data card from the ground team: all seven ships on the pad the night before launch, lit from below. Someone has written the ship numbers on in pen."},
+    {"tier": "rare", "kind": "Deep-space relay", "art": "old_probe", "t": "The relay passes on a carrier tone from a probe that left Earth half a century ago. Still talking. The fleet is the closest anyone has been to it in decades."}
+  ]
+}

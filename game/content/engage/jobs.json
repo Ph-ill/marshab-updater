@@ -1,0 +1,33 @@
+{
+  "_doc": "Timed jobs: on some flight days your ship has one job that finishes at a set local time ('around 14:15'). The job, its finish time and its outcome are all fixed by the voyage key, the day and the ship (lv/engage.py), so every ship agrees and nothing waits for anyone. The time only decides when the phone shows the result. h = [earliest, latest) finish hour, local. out: w = weight, t = result text, art = artifact unlocked. {A} = your astronaut. STUBS: the content pass replaces these.",
+  "pct": 60,
+  "jobs": [
+    {"id": "eva_latch", "label": "EVA", "t": "{A} suits up to swap a sticking radiator latch on the aft skirt.", "h": [11, 15],
+     "out": [
+       {"w": 70, "t": "Latch swapped. {A} is back inside with oxygen to spare and an opinion about the old latch."},
+       {"w": 25, "t": "The latch was fine. The bracket behind it had walked two millimetres. {A} shims it and photographs it for the ground."},
+       {"w": 5, "art": "grain", "t": "Behind the latch, {A} finds a micrometeoroid lodged in the insulation, smaller than a grain of rice. It goes in a sample bag, labelled and dated."}
+     ]},
+    {"id": "tracker_cal", "label": "Calibration", "t": "The star tracker needs a full recalibration: six hours of slews, one star at a time.", "h": [13, 17],
+     "out": [
+       {"w": 75, "t": "It converges on the third pass. The residuals are small enough to brag about, so {A} does."},
+       {"w": 25, "t": "It converges only after {A} notices the reference star is a variable star. The catalogue gets a quiet correction."}
+     ]},
+    {"id": "boiloff", "label": "Tank survey", "t": "{A} runs the weekly boil-off survey on the header tanks.", "h": [10, 16],
+     "out": [
+       {"w": 70, "t": "Boil-off is 0.3% under the model. The model takes the credit."},
+       {"w": 30, "t": "{A} traces a warm spot on the header tank to a heater relay that sticks on. It's tagged out, bypassed and written up before dinner."}
+     ]},
+    {"id": "water_filter", "label": "Filter swap", "t": "Water recovery is due a filter swap. The procedure says 40 minutes. It is never 40 minutes.", "h": [9, 13],
+     "out": [
+       {"w": 72, "t": "Two hours and one spare O-ring later, the water tastes of nothing at all, which is the goal."},
+       {"w": 22, "t": "The old filter is clogged with something fibrous. {A} bags a sample for the ground and starts a list of suspects."},
+       {"w": 6, "art": "quarter", "t": "Taped inside the old filter housing: a 1969 quarter and a note. 'For luck. R.' Nobody on the manifest starts with R."}
+     ]},
+    {"id": "antenna", "label": "Antenna check", "t": "A pointing check on the high-gain antenna, timed for the next Earth pass.", "h": [14, 19],
+     "out": [
+       {"w": 80, "t": "Pointing error under a tenth of a degree. The ground replies 22 minutes later with one word: nice."},
+       {"w": 20, "t": "Off by half a degree. {A} finds a thermal offset nobody had modelled and writes it into the table by hand."}
+     ]}
+  ]
+}
