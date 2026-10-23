@@ -1,0 +1,10 @@
+{
+  "_doc": "SPOILERS for maintainers only (like content/STORY_BIBLE.md). Engagement text (drops, jobs, gifts, patches, artifacts, crew file) can show on any flight day and in any order, so it must not touch the story's mystery threads or motifs. tools/lve.py fails the build if any engagement text matches one of these patterns (case-insensitive, whole words), or the story's slow-burn vocabulary from tools/lvc.py (SPOOKY). Add to this list when the story gains a thread.",
+  "patterns": [
+    "carrier", "beacons?", "probes?", "signals?", "eleven", "flash\\w*", "blink\\w*", "points? of light",
+    "manifest", "sharpie", "marker", "in pen", "cargo ?\\d+", "cargo ships?", "written off",
+    "earlier missions?", "previous missions?", "tumbl\\w*", "orbiter", "lander", "ripple", "noise floor",
+    "harmonic", "re?boot\\w*", "chime", "header format", "overlay", "landing zone", "thumb\\w*",
+    "voice on the loop", "off the net", "unknown object", "can't match", "nobody on the"
+  ]
+}

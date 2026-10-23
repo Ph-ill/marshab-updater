@@ -27,6 +27,17 @@ ROOT = os.path.dirname(HERE)
 PRONOUN = re.compile(r"\b(he|she|him|her|his|hers|himself|herself)\b", re.I)
 
 
+def reserved(content):
+    """One regex for words engagement text must not use: content/engage/reserved.json (the
+    story's threads and motifs) plus lvc's slow-burn vocabulary. Engagement text can show
+    on any day, in any order, so it stays clear of the story entirely."""
+    sys.path.insert(0, HERE)
+    from lvc import SPOOKY
+    with open(os.path.join(content, "engage", "reserved.json"), encoding="utf-8") as f:
+        pats = json.load(f)["patterns"]
+    return SPOOKY, re.compile(r"\b(%s)\b" % "|".join(pats), re.I)
+
+
 class Err(Exception):
     pass
 
@@ -101,11 +112,19 @@ def build(content):
     for a in arts:
         if not any(it.get("art") == a for it in drops["items"]) and not any(o.get("art") == a for j in jb for o in j["out"]):
             warns.append("collections.json: artifact %r can never be found" % a)
+    for p in coll["patches"]:
+        if not p.get("lock"):
+            errs.append("collections.json %s: needs a neutral 'lock' line (shown before it is earned)" % p["id"])
+    spooky, story = reserved(content)
     for src, obj in (("drops", drops), ("jobs", jobs), ("gifts", gifts), ("collections", coll)):
         for w, s in texts(obj, src):
             m = PRONOUN.search(s)
             if m:
                 errs.append("%s: gendered pronoun %r (crew can be anyone)" % (w, m.group(0)))
+            for rx, why in ((spooky, "slow-burn vocabulary"), (story, "reserved for the story (reserved.json)")):
+                m = rx.search(s)
+                if m:
+                    errs.append("%s: %r is %s; engagement text can show on any day" % (w, m.group(0), why))
     if errs:
         raise Err("\n".join(errs))
     b = bytearray(b"LVE1")
@@ -126,7 +145,7 @@ def build(content):
         "drops": by_tier,
         "jobs": [{"l": j["label"], "t": j["t"], "out": [{"t": o["t"], **({"art": o["art"]} if o.get("art") else {})} for o in j["out"]]} for j in jb],
         "gifts": {"items": [[i["n"], i["give"], i["ask"]] for i in items], "sys": gifts["sys"], "ask_days": gifts.get("ask_days", 3)},
-        "patches": [{"id": p["id"], "n": p["n"], "t": p["t"], "r": p["rule"]} for p in coll["patches"]],
+        "patches": [{"id": p["id"], "n": p["n"], "t": p["t"], "l": p["lock"], "r": p["rule"]} for p in coll["patches"]],
         "badges": [[x["n"], x["id"]] for x in coll["badges"]],
         "arts": [{"id": a["id"], "n": a["n"], "t": a["t"]} for a in coll["artifacts"]],
         "file": {k: v for k, v in coll["file"].items() if not k.startswith("_")},

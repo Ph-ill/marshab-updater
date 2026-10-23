@@ -46,6 +46,52 @@ class FakeTicks:
 NOON = 1792843200000   # 2026-10-24 12:00 UTC
 
 
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+
+
+class TestContentSafety(unittest.TestCase):
+    # Engagement text shows on any day, so it may not touch the story (tools/lve.py).
+    def _build(self, edit):
+        import shutil
+        import tempfile
+        import lve
+        d = tempfile.mkdtemp()
+        try:
+            shutil.copytree(os.path.join(ROOT, "content", "engage"), os.path.join(d, "engage"))
+            p = os.path.join(d, "engage", "collections.json")
+            with open(p) as f:
+                c = json.load(f)
+            edit(c)
+            with open(p, "w") as f:
+                json.dump(c, f)
+            return lve.build(d)
+        finally:
+            shutil.rmtree(d)
+
+    def test_shipped_text_is_clean_and_every_patch_has_a_lock_line(self):
+        self._build(lambda c: None)
+
+    def test_reserved_word_fails(self):
+        import lve
+        with open(os.path.join(ROOT, "content", "engage", "reserved.json")) as f:
+            word = json.load(f)["patterns"][0]
+        def edit(c):
+            c["patches"][0]["t"] = "A %s, for the record." % word
+        self.assertRaises(lve.Err, self._build, edit)
+
+    def test_spooky_word_fails(self):
+        import lve
+        def edit(c):
+            c["artifacts"][0]["t"] = "Something eerie in the bag."
+        self.assertRaises(lve.Err, self._build, edit)
+
+    def test_missing_lock_fails(self):
+        import lve
+        def edit(c):
+            del c["patches"][0]["lock"]
+        self.assertRaises(lve.Err, self._build, edit)
+
+
 class TestGiftRecord(unittest.TestCase):
     def test_give_and_ask_same_day_are_different_keys(self):
         a = rec(R.GIFT, 1, 1, 3, 2, 4, R.GIFT_GIVE)
