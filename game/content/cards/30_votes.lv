@@ -4,6 +4,7 @@
 # --- Fleet portrait -----------------------------------------------------------
 card dec_photo
 type decision
+cat mission
 days 6 24
 weight 8
 once
@@ -20,6 +21,7 @@ option decline | Politely decline | The fleet sends a polite no and a very good 
 
 card photo_back
 type beat
+cat human
 due
 once
 days 18 40
@@ -32,6 +34,7 @@ do morale A 5
 # --- Water recovery -------------------------------------------------------
 card dec_water
 type decision
+cat repair
 days 8 26
 weight 9
 once
@@ -51,6 +54,7 @@ option degrade | Run it degraded | The fleet goes on water rationing. Nobody com
 
 card water_fail
 type event
+cat repair
 due
 once
 days 18 40
@@ -68,6 +72,7 @@ do clr water_rationed
 # --- Clocks -----------------------------------------------------------------
 card dec_clock
 type decision
+cat mission
 days 4 30
 weight 6
 once
@@ -83,6 +88,7 @@ option keep | Keep fleet time | The fleet keeps its clocks. The ground team adju
 # --- Course correction -------------------------------------------------------
 card dec_trim
 type decision
+cat mission
 days 12 28
 weight 9
 once
@@ -99,6 +105,7 @@ option wait | Wait and check | The solution gets checked three times, then a fou
 
 card trim_callback
 type event
+cat mission
 due
 once
 days 29 40
@@ -112,6 +119,7 @@ do morale A 3
 # --- Arrival: dust storm over the landing region -------------------------------
 card dec_arrival
 type decision
+cat arrival
 days 33 39
 weight 30
 once

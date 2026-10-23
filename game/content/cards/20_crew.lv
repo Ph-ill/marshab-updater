@@ -4,6 +4,7 @@
 # Private dilemma that surfaces later.
 card dil_stash
 type dilemma
+cat human
 days 3 30
 weight 8
 duration 3
@@ -23,6 +24,7 @@ option share | Hand them in | {A} turns them in. The galley has an unplanned sur
 
 card stash_found
 type beat
+cat human
 due
 once
 days 12 41
@@ -38,6 +40,7 @@ do set stash_exposed
 
 card beat_watch
 type beat
+cat life
 days 9 42
 weight 10
 cooldown 8
@@ -49,23 +52,25 @@ do bond A B 6
 
 card beat_argue
 type beat
+cat life
 days 2 42
 weight 5
 cooldown 16
 roles A B
-when trait A warm <= -10
+when trait A warm <= 10
 when same A B
-text {A} and {B} spend a whole shift arguing about the cabin temperature deadband. {A} wants it tighter. {B} points out that the heater already cycles more than anyone likes. They settle on half a degree and a truce.
+text {A} and {B} spend a whole shift arguing about what plays during the next burn. {A} wants silence, so every noise means something. {B} wants anything with a chorus. They settle on one song, chosen by the ground team, sight unseen. It's worse than either.
 do bond A B -4
 
 # Trait-driven reaction: what happens depends on how brave A is.
 card glint
 type event
+cat mystery
 days 4 38
 weight 8
 cooldown 9
 roles A
-when trait A curious >= 15
+when trait A curious >= -5
 when cond A ok
 lean brave closer window
 text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
@@ -77,6 +82,7 @@ option window | Track it from the window | {A} logs its bearing every hour until
 
 card galley_pump
 type event
+cat repair
 days 1 42
 weight 6
 cooldown 11

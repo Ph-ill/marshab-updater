@@ -3,16 +3,18 @@
 
 card beat_coffee
 type beat
+cat life
 days 3 42
 weight 8
 once
 roles A B
 when same A B
-text {A} and {B} rebuild the coffee maker's heater. It now settles in forty seconds. {B} wants it faster. {A} is worried about overshoot. The coffee is excellent either way.
+text {A} and {B} try to bake bread in the galley oven. Without gravity it rises in every direction at once and comes out shaped like a lung. They eat all of it, warm, with the lights down, and agree not to describe it to anyone at home.
 do bond A B 5
 
 card beat_cards
 type beat
+cat life
 days 2 42
 weight 8
 cooldown 12
@@ -23,6 +25,7 @@ do bond A B 5
 
 card beat_window
 type beat
+cat wonder
 days 1 8
 weight 12
 once
@@ -33,6 +36,7 @@ do bond A B 6
 
 card beat_gym
 type beat
+cat life
 days 3 42
 weight 7
 cooldown 9
@@ -44,6 +48,7 @@ do morale A 2
 
 card beat_zipties
 type beat
+cat life skill
 days 10 42
 weight 6
 once
@@ -54,6 +59,7 @@ do bond A B 4
 
 card beat_haircut
 type beat
+cat life
 days 12 42
 weight 5
 once
@@ -65,6 +71,7 @@ do bond A B 5
 
 card beat_home_msg
 type beat
+cat human
 days 8 42
 weight 6
 cooldown 10
@@ -76,6 +83,7 @@ do trait A warm 2
 
 card beat_shelter_night
 type beat
+cat life
 days 6 42
 weight 5
 cooldown 12
@@ -87,17 +95,19 @@ do bond A B 4
 
 card beat_early_watch
 type beat
+cat human
 days 1 8
 weight 10
 cooldown 3
 roles A B
 when same A B
-text {A} and {B} stand the night watch. Earth still fills most of the window, blue and close. They talk about home as if it were down the road. Each day it's a little less true.
+text {A} and {B} stand the night watch. Earth still fills most of the window, blue and close. {A} holds up a thumb, and the planet spills out around it on every side. They talk about home as if it were down the road. Each day it's a little less true.
 do bond A B 5
 
 # --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
 card idle_watch
 type beat
+cat life
 days 4 42
 weight 10
 cooldown 10
@@ -110,6 +120,7 @@ do trait A warm 2
 
 card idle_mentor
 type beat
+cat life
 days 6 42
 weight 8
 cooldown 12
@@ -123,11 +134,12 @@ do trait B brave 2
 
 card idle_spares
 type beat
+cat life
 days 8 42
 weight 8
 cooldown 9
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin. {A} logs it and says a quiet thank-you to whoever it was.
+text {A} inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin, and ticked the bag in Sharpie. {A} logs it and says a quiet thank-you to whoever it was.
 do res spares 1

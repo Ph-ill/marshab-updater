@@ -2,14 +2,13 @@
 
 card dec_signal
 type decision
+cat mystery
 days 5 14
 weight 10
 once
 duration 2
 roles A B
 lean curious open log
-when trait A curious >= 10
-when trait B curious <= 5
 text The high-gain antenna picks up a weak carrier on an old deep-space frequency, repeating every 11 seconds. {A} wants to turn a dish and answer it. {B} points out that turning the dish costs propellant the fleet hasn't got to spare.
 option open | Answer it | {A} spends the propellant, and the whole fleet listens to static for an hour. Then the carrier changes pitch.
   set signal_answered
@@ -24,19 +23,20 @@ option log | Log it, keep going | The signal goes into the anomaly log under "la
 # Weeks later: the callback for whichever way the fleet voted.
 card signal_reply
 type event
+cat mystery
 due
 once
 days 15 41
 roles A
 when flag signal_answered
 when since t_signal >= 14
-when trait A curious >= 0
 text At 03:12 the dish locks onto a reply: housekeeping telemetry from a Mars orbiter that went silent years ago, answering a hail nobody had sent it in a decade. {A} is the first one awake. Mission Control's reply comes 40 minutes later, in full: "say again??"
 do set signal_contact
 do trait A curious 4
 
 card signal_echo
 type event
+cat mystery
 due
 once
 days 15 41
@@ -50,12 +50,12 @@ do morale A -3
 # Injury and rescue: needs supplies from another ship.
 card crisis_eva
 type event
+cat grim
 once
 days 10 34
 weight 6
 roles A
 when cond A ok
-when trait A brave >= 0
 when kit_elsewhere A
 text A micrometeoroid hits the hull during {A}'s EVA, close enough to feel through the boots. {A} secures every tool, works back along the tether hand over hand, and comes inside with a wrist that won't bend.
 do cond A injured
@@ -64,6 +64,7 @@ do open rescue_kit
 
 card rescue_kit
 type rescue
+cat grim
 duration 1
 roles A B
 default volunteer
