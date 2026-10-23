@@ -1,0 +1,178 @@
+# Ship and fleet events: hardware, physics, distance. One fires on most days.
+# House style: content/STYLE.md.
+
+# --- Fleet-wide -------------------------------------------------------------
+card storm_shelter
+type event
+days 5 40
+weight 7
+cooldown 14
+roles A
+when cond A ok
+text A solar flare is 40 minutes out. Every crew packs into the storm shelter between the water tanks. It's cramped and loud, and {A} has brought cards.
+do morale A 3
+do var storms 1
+
+card storm_dose
+type event
+days 6 41
+weight 6
+cooldown 10
+roles A
+when var storms >= 1
+when cond A ok
+text {A} runs the dosimeter check. The fleet has taken the radiation of a few dozen chest X-rays so far. {A} writes it down, underlines it, and goes to make coffee.
+do trait A curious 1
+
+card comm_delay
+type event
+days 18 40
+weight 6
+once
+roles A
+when cond A ok
+text The signal delay to Earth passes 15 minutes each way. {A} sends a joke to the ground team and spends the next half hour waiting to find out whether it landed. It did.
+do morale A 4
+
+card earth_dot
+type event
+days 14 30
+weight 5
+once
+roles A
+when cond A ok
+text {A} goes to the window to find Earth and has to look for a while. It's a bright dot now, no brighter than the stars around it. {A} stays until the shift change.
+do trait A warm 3
+
+# --- Hardware (controls flavor, never named) ----------------------------------
+card scrubber_fault
+type event
+days 2 40
+weight 8
+cooldown 7
+roles A
+when res spares >= 1
+text The CO₂ scrubber on {A}'s ship throws its fourth fault this week. {A} fixes it, then labels it "temperamental" in permanent marker so the next shift knows.
+do res spares -1
+
+card nuisance_alarm
+type event
+days 4 38
+weight 6
+once
+roles A
+when cond A ok
+text A nuisance alarm on {A}'s ship has gone off 340 times since launch. {A} traces it to a pressure switch with no deadband, chattering every time the cabin fans breathe. Two lines of config later, the cabin is quiet for the first time since Starbase.
+do morale A 5
+
+card stale_value
+type event
+days 6 38
+weight 6
+once
+roles A
+when cond A ok
+text {A} notices that the propellant temperature on the status page hasn't moved a tenth of a degree in six hours. Space is cold, but not that steady. A frozen gateway has been replaying the last good value. {A} restarts it, and the real number comes up two degrees warmer.
+do trait A curious 2
+do res fuel 1
+
+card sensor_vote
+type event
+days 5 38
+weight 5
+once
+roles A
+when cond A ok
+text Two of the cabin oxygen sensors on {A}'s ship disagree by half a percent. {A} wakes up the third, which sides with neither. By morning all three are recalibrated, with a note on the panel: "They voted. Nobody won."
+do trait A curious 1
+
+card boiloff
+type event
+days 8 36
+weight 6
+once
+roles A
+when cond A ok
+text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} rolls the ship a few degrees to put the tanks in shade, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
+do res fuel 2
+do morale A 2
+
+# --- Hardware (mechanical flavor) --------------------------------------------
+# Twin pattern: the tagged copy lets Diego draw this more often; anyone still can.
+card tol_stack
+type event
+days 6 36
+weight 5
+once
+roles A
+when cond A ok
+when !fired tol_stack_m
+when res spares >= 1
+text A replacement pump won't sit in its mount on {A}'s ship. Every part is in tolerance. Stacked together, they're 1.4 millimeters out. {A} shims it with a washer from the spares kit and writes the stack-up on the bulkhead for the next person.
+do res spares -1
+do morale A 2
+
+card tol_stack_m
+type event
+days 6 36
+weight 5
+once
+roles A
+when cond A ok
+when tag A mech
+when !fired tol_stack
+when res spares >= 1
+text A replacement pump won't sit in its mount on {A}'s ship. Every part is in tolerance. Stacked together, they're 1.4 millimeters out. {A} shims it with a washer from the spares kit and writes the stack-up on the bulkhead for the next person.
+do res spares -1
+do morale A 2
+
+card hatch_sun
+type event
+days 6 38
+weight 5
+once
+roles A
+when cond A ok
+text The hatch on {A}'s ship sticks whenever the sunward side warms up. {A} works it out on the back of a checklist: the frame grows a millimeter in the sun and the seal doesn't. One new shim, and the door swings the way it did at Starbase.
+do morale A 3
+
+card margin_plenty
+type event
+days 15 38
+weight 5
+once
+roles A
+when cond A ok
+text {A} reruns the structural margins on the cargo rack with the loads it actually sees, not the loads on paper. The margin was "plenty". It is now "enough". {A} adds two straps and doesn't make a speech about it.
+do res spares -1
+do morale A 2
+
+# --- Rescue: CO2 scrubber failure -------------------------------------------
+card crisis_air
+type event
+once
+days 9 36
+weight 6
+roles A
+when cond A ok
+when res spares >= 1
+text The CO₂ scrubber on {A}'s ship fails outright. CO₂ is climbing a fraction of a percent an hour. {A} has the backup running in nine minutes, and the backup is already complaining.
+do morale A -4
+do open rescue_air
+
+card rescue_air
+type rescue
+duration 1
+roles A B
+default send
+when apart B A
+when cond B ok
+text {A}'s ship is breathing on its backup scrubber. It needs a spare cartridge before the backup gives out.
+option send | Send a cartridge | A spare cartridge crosses on the next transfer. {A}'s ship is breathing easy by evening.
+  res spares -1
+  morale A 4
+option bring | {B} brings it over | {B} carries the cartridge across personally and stays to help rebuild the primary. By midnight both scrubbers are running, and {B} is asleep on {A}'s floor.
+  res spares -1
+  move B A
+  bond A B 10
+  morale B 3
