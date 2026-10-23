@@ -42,7 +42,7 @@ do trait A curious 1
 card comm_delay
 type event
 cat human
-days 17 23
+days 16 19
 weight 8
 once
 roles A

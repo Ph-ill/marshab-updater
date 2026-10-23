@@ -45,9 +45,9 @@ cat life
 clue core
 due
 once
-days 4 5
+days 11 12
 roles A
-text The fourth tanker's docking computer bounces {A}'s hello, routed via the ground: HELLO RX · REPLAY · DISCARD, stale. The docking lead doesn't look up. "It only takes an answer to the hello it just sent, within one tick. Pad-test default. Go ship to ship." Ship to ship, it locks at once.
+text Transfer window. The next ship's hatch takes a code that goes stale in a fifth of a second. The procedure still says to read them up via the ground. {A} does, once: CODE STALE. Ship to ship it opens first time, and {A} files a correction to page two.
 do trait A curious 1
 
 card p_garden_plant
@@ -69,9 +69,9 @@ cat life
 clue core
 due
 once
-days 5 9
+days 5 7
 roles A
-text {A} reads the arrival manifest: water on Cargo 3, the rover on Cargo 4. Written off: a drill rig left in Earth orbit, a grey relay, "thruster stuck open", a weather orbiter, Cargo 2, "lost on landing, divert flagged on last tone, no ack" (drill spares, habitat film), socks, "reason unknown".
+text {A} reads the manifest like a shopping list: water on Cargo 3, the rover on Cargo 4. Then the write-offs: a drill rig left in Earth orbit; a grey relay, "thruster stuck open"; an orbiter; an old science lander, "silent since winter"; Cargo 2, drill spares, "lost on landing"; socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -91,7 +91,7 @@ due
 once
 days 7 7
 roles A
-text The ships hold formation a few kilometres apart. Every fifth day, once a page, they close up for a transfer window: a tethered line between hatches, a morning on oxygen first, paid for in RCS gas and everyone's time, so no one crosses for fun. {A} rides the line first and calls it "educational".
+text The ships hold formation a few kilometres apart, trimmed with a puff of RCS. Once a page they close up for a transfer window: a tethered line between hatches, a morning on oxygen first, paid for in gas and time, so no one crosses for fun. {A} rides the line first and calls it "educational".
 do trait A brave 2
 
 card l_handshake
@@ -102,7 +102,7 @@ once
 days 12 20
 roles A
 when !is A ow_list
-text The galley screen on {A}'s ship has started to sulk: after every restart it sits on its logo longer than it used to, twelve now on {A}'s count, then boots with a sad cloud icon and the word OFFLINE. {A} files a ticket titled "manners".
+text The galley screen on {A}'s ship has started to sulk: after every restart it sits on its logo longer than it used to, then boots with a sad cloud icon and the word OFFLINE. {A} files a ticket titled "manners".
 do morale A 1
 
 # --- Thread: the list ------------------------------------------------------------
@@ -244,7 +244,7 @@ days 30 37
 roles A
 when is A ow_garden
 when var garden >= 3
-text {A} opens the fleet channel and turns the camera on the tray. In the last pod, a pale hook of a shoot has split the seed coat and turned, against no gravity at all, toward the lamp. Six ships go quiet to look.
+text {A} opens the fleet channel and turns the camera on the tray. In the last pod, a pale hook of a shoot has split the seed coat and turned, against no gravity at all, toward the lamp. Six ships screenshot it at once.
 do morale A 6
 
 card c_garden
@@ -377,7 +377,7 @@ roles A B
 when cond A ok
 when cond B ok
 when !is B ow_list
-text Past the halfway mark the days get heavier. The flight surgeon calls it the third-quarter effect. On the video link, {A} notices {B} staring at one checklist page for ten minutes, and starts calling out the steps, the way {A} would on a pass, until {B} answers them.
+text The flight surgeon calls it the third-quarter effect. On the video link {A} and {B} find themselves on the same checklist page at the same minute, both stuck on step four. {A} reads the steps aloud, the way they would on a pass, and {B} answers each one. They file a ticket: the page is too long.
 do bond A B 6
 do morale B 3
 
@@ -397,7 +397,7 @@ type event
 cat human
 due
 once
-days 31 31
+days 28 28
 roles A
 text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis. The one with the Sharpie signs off: "Packed every cargo ship since the first. Seven of you this time. Write when you land. I'll be counting."
 do morale A 2
@@ -493,20 +493,22 @@ type event
 cat arrival
 due
 once
-days 39 39
+days 40 40
 roles A
+when fired m_reveal
 when flag name_home
-text On the approach map {A} finds the crater the fleet named for a small town at home, right where it should be. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a town newspaper is about to need a second front page.
+text On the new pass {A} finds the crater the fleet named for a small town at home, and Cargo 2 behind its rim, where no old map could show it. Somewhere on Earth, a town newspaper is about to need a second front page.
 
 card a_recall_plan
 type event
 cat arrival
 due
 once
-days 39 39
+days 40 40
 roles A
+when fired m_reveal
 when flag name_plan
-text On the approach map {A} finds the crater the fleet named for the first person who ever wrote a Mars plan. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a committee is about to have a great deal more to argue about.
+text On the new pass {A} finds the crater the fleet named for the first person who ever wrote a Mars plan, and Cargo 2 behind its rim, where no old map could show it. Somewhere on Earth, a committee is about to have a great deal more to argue about.
 
 card a_recall_photo
 type event
@@ -523,11 +525,11 @@ type event
 cat arrival
 due
 once
-days 41 41
+days 40 40
 roles A
 when fired crisis_eva
 when is A eva_who
-text {A} runs the entry seat checks with the wrist that wouldn't bend, mostly bending now, and reports it to the flight surgeon as "bending", which is mostly true.
+text {A} runs the first entry seat checks with the wrist that wouldn't bend, mostly bending now, and reports it to the flight surgeon as "bending", which is mostly true.
 
 card a_recall_valve
 type event
@@ -551,7 +553,7 @@ roles A B
 when flag stash_exposed
 when is A stash_who
 when !is A eva_who
-text {A} sent {B} the last pack from the locker on the last transfer window, with a note on the bag in borrowed handwriting: "You'll thank me." {B} opens it tonight, five days out.
+text {A} sent {B} the last pack from the locker on the last transfer window, with a note on the bag in borrowed handwriting: "You'll thank me." {B} opens it tonight.
 do bond B A 3
 
 card a_recall_marker
@@ -562,7 +564,7 @@ once
 days 42 42
 roles A
 when is A ow_theory
-text Before strapping in, {A} folds the lighthouse drawing into a chest pocket with the blue marker. Overnight a second lighthouse has appeared on it, small, standing on the ground, in the same blue.
+text Before strapping in, {A} folds the lighthouse drawing into a chest pocket with the blue marker. Overnight a second lighthouse has appeared on it, small, standing on the ground, in the same blue, and beside it a small figure holding a Sharpie.
 do morale A 2
 
 card a_suit_plan
@@ -575,7 +577,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, with the old program key on a card taped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, with the old program key on a card clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
@@ -587,8 +589,22 @@ once
 days 42 42
 roles A
 when flag arrive_hold
+when flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar finds the ground a hundred metres up, on a slope, and {A} calls the take-manual, the one drilled over the link, and puts the ship down on the flat.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At a hundred metres the cameras find a slope, and {A} calls the take-manual and puts the ship down on the flat.
+do morale A 3
+
+card e_entry_hold_q
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag arrive_hold
+when !flag c2_answered
+when is A abort_who
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At a hundred metres the cameras find a slope under the ship, and {A} calls the take-manual and fights it level. It comes down hard, upright.
 do morale A 3
 
 card e_entry_wait

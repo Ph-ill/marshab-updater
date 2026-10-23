@@ -29,7 +29,7 @@ option keep | Keep them quiet | {A} thanks the Sharpie silently. The packs go in
   mark t_stash
   who stash_who A
   morale A 6
-option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch, and the bag goes up on the galley wall.
+option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch, and the bag is folded into the inventory binder.
   who stash_who A
   res food 3
   morale A 2
@@ -53,11 +53,11 @@ card beat_watch
 type beat
 cat life
 once
-days 8 18
+days 8 11
 weight 10
 roles A B
 when bond A B >= -20
-text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a small bright disc now, a third the width of the Moon from home, easy to cover with a thumbnail. They each make a coffee at the same minute, as if that counted as sharing one.
+text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a small bright disc now, a sixth the width of the Moon from home, easy to cover with a thumbnail. They each make a coffee at the same minute, as if that counted as sharing one.
 do bond A B 6
 
 card beat_argue
