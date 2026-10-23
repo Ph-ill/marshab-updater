@@ -1,6 +1,6 @@
 # The Long Voyage: card style guide
 
-The players are seven real coworkers. The story is about their astronauts. Write
+The players are eight real coworkers. The story is about their astronauts. Write
 every card so that the person it lands on would be glad to read it aloud at work.
 
 ## The voice in one line
@@ -19,7 +19,7 @@ players).
 
 ## Setting: grounded near future
 
-- Real SpaceX Starships flying to Mars. Seven ships, **each astronaut belongs to
+- Real SpaceX Starships flying to Mars. Eight ships, **each astronaut belongs to
   a home ship; a ship may briefly hold 0 or 2.** Crossings happen only in a
   crossing window (every fifth day from day 7: a tethered line between hatches,
   paid for in propellant) or an unscheduled rescue window, and an empty ship
@@ -107,7 +107,7 @@ players).
   is gracious, or turns out to have had a point.
 - When something breaks, someone notices it early, fixes it well, and looks
   after the others.
-- Cards bind roles at random, so any line can land on any of the seven. Read
+- Cards bind roles at random, so any line can land on any of the eight. Read
   each line once with every name in it. If it would sting for anyone, rewrite it.
 - Teasing aims at objects: the coffee maker, the scrubber, the bracket, the
   form. "Labelled 'temperamental' in permanent marker" is fine. "Jai forgot
@@ -117,7 +117,7 @@ players).
 
 ## Subtle skill flavor
 
-Six of the crew are controls and automation engineers, and Diego is a mechanical
+Seven of the crew are controls and automation engineers, and Diego is a mechanical
 design engineer. Some situations should feel familiar to them **without ever
 saying so**.
 
@@ -380,4 +380,4 @@ Bad, and why:
    reading the lines.
 2. `python3 sim/season.py` and read `sim/out/narrative.txt` with real names in
    it. Ask, for every line: would this person be glad to read it?
-3. `sh tests/run.sh`: all 7 ships must produce identical digests.
+3. `sh tests/run.sh`: all 8 ships must produce identical digests.

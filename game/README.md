@@ -1,6 +1,6 @@
 # The Long Voyage: game core
 
-This is the hardware-independent core of the game that runs on the seven Pico W Starships.
+This is the hardware-independent core of the game that runs on the eight Pico W Starships.
 The same Python runs on CPython 3 (PC simulator and tests) and on MicroPython 1.29 (the boards).
 It uses integer maths only, fixed-size bytearrays, and has no dependency on Wi-Fi or BLE.
 The design Page is the spec; this folder is the first build of it.
@@ -86,9 +86,9 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
 
 ## Results (build 0.1.0, 15 sample cards)
 
-*Current content pack (207 cards):* pack.bin 6,526 B, text.json 24,920 B gzipped, peak MicroPython heap 73,088 B on the 64-bit unix port (a 32-bit build, like the Pico's, measured about 48.6 KB on the previous pack), snapshot 690 B, final reference digest `74e4547ef6d34a5d` (authored and reversed merge order). `python3 -m unittest discover -s tests` runs 87 tests (66 content, 21 core). The figures below are the original 15-card measurements.
+*Current content pack (207 cards):* pack.bin 6,542 B, text.json 24,913 B gzipped, peak MicroPython heap 77,504 B on the 64-bit unix port (51,200 B on a 32-bit build, like the Pico's), snapshot 739 B, final reference digest `b577df953a5c7cf8` (authored and reversed merge order). `python3 -m unittest discover -s tests` runs 92 tests (71 content, 21 core). The figures below are the original 15-card measurements.
 
-**Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 7 independent ships in 4 ways:
+**Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 8 independent ships in 4 ways:
 * instant;
 * gossip (0-2 days of lag);
 * reverse-order with 20% duplicates;
@@ -123,7 +123,7 @@ Every ship ends on the same reference digest in every scenario (`8782c95070c3682
 2. **The merge key includes `sub`.** The Page says `(ship, day, kind)`. With two decisions open, a ship needs two VOTE records on one day, so the key is `(day, ship, kind, sub)`.
 3. **The "a late signal changed this" marker is ship-local.** A replay can rewrite up to about 12 days of a story the phone has already shown. The core is deterministic, but the page needs a policy: show a "the log was updated" note, or only show days older than N as final.
 4. **32-bit PRNG on the RP2040.** xorshift32 values exceed MicroPython's 31-bit small ints, so some steps allocate bigints. This works and matches on the 32-bit build. If tick time on the board is tight, split the state into two 16-bit halves.
-5. **The crew roster is real and lives in `content/roster.lv`.** Phill (ship 1, flagship), Jacques, Kim, Jai, Michelle, Diego, Dorian. No quirks were given, so each astronaut's starting traits are seeded from the voyage key and their name; add `quirk <name>` to a line to set one. Each line also carries up to four `habit "..."` entries (the player's own light quirks); `each habit N` cards clone once per crewmate who has an Nth habit, so a quirk line only ever renders for its owner (see `content/STYLE.md`, "The habit slot"). The compiler rejects gendered pronouns in any card or template text, and story beats are kept good-natured (injuries come from the environment, never from someone's mistake).
+5. **The crew roster is real and lives in `content/roster.lv`.** Phill (ship 1, flagship), Jacques, Kim, Jai, Michelle, Diego, Dorian, Marco (ship 8). No quirks were given, so each astronaut's starting traits are seeded from the voyage key and their name; add `quirk <name>` to a line to set one. Each line also carries up to four `habit "..."` entries (the player's own light quirks); `each habit N` cards clone once per crewmate who has an Nth habit, so a quirk line only ever renders for its owner (see `content/STYLE.md`, "The habit slot"). The compiler rejects gendered pronouns in any card or template text, and story beats are kept good-natured (injuries come from the environment, never from someone's mistake).
 6. **Content: the first voice batch is in (91 cards).** See `content/STYLE.md` for the house style. Card language additions: `hook` (a cliffhanger that is the last line of its day, at most one every 4 days, resolved the next day by a `due` card with `when fired <hook>`; text.json marks hooks with `"h":1` so the phone can show them as "Last night...") and `when tag A <word>` (roster tags, compiled to a crew bitmask). `lvc` also prints `style:` warnings: hard-coded names, name-checked jobs, demeaning words, cheap resolutions, calendar pins, over-long text. `tests/test_content.py` keeps the real pack at zero style warnings.
 7. **Content batch 2 (113 cards).** Every card carries `cat <category> [skill]`; `lvc` prints the mix and fails the build if repairs exceed 25% or skill flavor 18% (`check_mix`). `check_ramp` enforces the slow burn (no uncanny vocabulary before day 11, uncanny hooks only from day 25; see STYLE.md). `clue` marks a card for the second read: text.json gains `"reread": [card indices]`, and the end screen (web, not yet built) should list those cards' flight days under the ending without explanation. The story design is in `content/STORY_BIBLE.md` (spoilers; players should not read it). Engine: role casting prefers the least-featured crew (`State.spot`, part of the snapshot), keeping story appearances within about 2% of the mean over 100 seasons. Every ending lands in 12-31% of 300 seasons.
 8. **The weekly snapshot cadence is a guess.** Snapshots take about 676 B each with the current pack, so daily snapshots on flash would make replays almost free.

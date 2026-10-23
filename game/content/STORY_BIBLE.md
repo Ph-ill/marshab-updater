@@ -251,10 +251,10 @@ pre-divert; six weeks of hails, no ack; a carrier too faint for Doppler, called
 relay tumble. `a_report` now has a speaker ({A} reads the fleet the only
 paragraph that matters) and no page count.
 
-## Threads (seven, one owner each per voyage)
+## Threads (eight, one owner each per voyage)
 
 Owners are bound with `who` on the opener and kept distinct with `!is`, so all
-seven astronauts carry exactly one thread and every one gets an epilogue line.
+eight astronauts carry exactly one thread and every one gets an epilogue line.
 
 | Thread | Opener (day) | Payoffs |
 |---|---|---|
@@ -280,7 +280,7 @@ astronaut has the entry scene). Every unanswered ending keeps a cost past landin
 `end_through` loses a ship (a leg folds on the slope; it will not fly home),
 `end_patience` finds Cargo 2 dead the night before landing (no OK), and
 `end_close` hears one OK before its battery gives out. Their last lines change
-accordingly ("All seven. Found the eighth."). A mid-voyage cost that lasts:
+accordingly ("All eight. Found the ninth."). A mid-voyage cost that lasts:
 `r_strike` clears the struck ship for entry two degrees shallower, a longer,
 hotter ride, "in every brief from now on".
 
@@ -334,11 +334,11 @@ thank me.") stays in `end_lights`; the Sharpie hand also returns on day 38
 Every answer is HELLO then HOLD on the next tick (the patch says ON HELLO: WAKE
 ALL), and every power draw in an ending has a named source. Since
 round 14 every ending pays a price, answered or not. Answered endings: *Lights
-On* spends Cargo 2's floodlights ("All seven. The eighth kept the lights on."),
+On* spends Cargo 2's floodlights ("All eight. The ninth kept the lights on."),
 *The Long Orbit* loses the seed stock in Cargo 2's hold (round 17: an explicit
 power choice; a storm sky starves the wing, the budget holds a lamp or a hold
 heater, not both, and the fleet asks for the lamp as a mark to land on;
-"Landed. All seven. The eighth was waiting."), *Sit With It* (`end_friend`,
+"Landed. All eight. The ninth was waiting."), *Sit With It* (`end_friend`,
 retitled from *Old Friend* in round 17) costs Cargo 2 its cold-night charge:
 the drive is for the drill spares in Cargo 2's hold (round 18, paying off
 `a_drill_plan`'s "Be gentle with it."); the rover is forty-eight percent used at
@@ -348,8 +348,8 @@ YOUR CALL, the pad crew's marker note over the port at Cargo 2's foot says "Slow
 charger. Sit with it.", the crew plug in at four percent and sit all afternoon
 on the charge Cargo 2 kept for the cold, load the spares gently, and its lamp is
 dimmer that night for good ("All eight.", the only ending that says it).
-Unanswered endings close "Seven down, six to fly." / "All seven. The eighth is
-warm." / "All seven. Found the eighth. In time for the bit." Since round 18 every
+Unanswered endings close "Eight down, seven to fly." / "All eight. The ninth is
+warm." / "All eight. Found the ninth. In time for the bit." Since round 18 every
 ending is a present-tense scene under "From the log:" (backstory only in the
 past). Endings may run to 640 characters (lint MAX_ENDING).
 
@@ -362,7 +362,7 @@ the prime zone and a rover drive (Cargo 4's rover). Clear air = prime zone,
 Cargo 2 thirty kilometres past it. Unanswered endings answer in person.
 
 Cargo 2 has a job in every ending: floodlights as the place marker (`end_lights`),
-seven blind pilots flying Cargo 2's knock for bearing, a fix every eleven seconds (the cross-check planted in `a_descent_hold_q`), one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame, and that ship's battery sledded up the rim so the one who argued to answer can answer by hand (`end_through`, round 18); `end_lights` gets one extra granted command (lights), a manifest line read by pass, a
+eight blind pilots flying Cargo 2's knock for bearing, a fix every eleven seconds (the cross-check planted in `a_descent_hold_q`), one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame, and that ship's battery sledded up the rim so the one who argued to answer can answer by hand (`end_through`, round 18); `end_lights` gets one extra granted command (lights), a manifest line read by pass, a
 spare drill bit and the frozen seed stock (`end_long_orbit`; no tile line, since an ending can't bind the r_strike astronaut), nearly dead after the cold (two knocks missed while the crew wait at the port), answered by hand
 (`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), a rover drive past the point of return, judged by Cargo 2's knock on the rover radio (the lamp is below the horizon at 30 km), rescued by the leg charge port planted in `g_packer`'s forklift photo, paid for with the charge Cargo 2 kept for the cold (`end_friend`, round 17), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
 two storm endings open differently; the two orbit endings are scenes (week
@@ -402,8 +402,8 @@ first, then openers, then a few fallbacks. lvc maps it to card indices.
 `Renderer.epilogue` gives each astronaut the first line whose card they were
 role A in; given the final state it fills any gap from the strongest trait
 (`epi.axis`), the closest bond (`epi.bond`), or `epi.plain`, never repeating a
-line, so the end screen always has seven (tested, including an empty log).
-Measured: 7/7 from story lines alone in 300/300 seasons. Hand-off:
+line, so the end screen always has eight (tested, including an empty log).
+Measured: 8/8 from story lines alone in 300/300 seasons. Hand-off:
 web/render.js has no epilogue yet; it should use the same fallback. `epi.coda` adds one line
 for someone who isn't crew (name "Cargo 2"): the first card in its list that
 fired, in any role, picks the line (`Renderer.coda`; tested present every
@@ -437,7 +437,7 @@ can list the flight days they fired on, with no explanation.
 
 ## Characters
 
-All seven are competent, kind, and tired in different ways. Each astronaut
+All eight are competent, kind, and tired in different ways. Each astronaut
 belongs to a home ship; a ship may briefly hold 0 or 2 during a crossing window
 (every fifth day from day 7) or an unscheduled rescue window. No crossing
 out after day 32; from day 37 every visitor goes home, and nobody crosses on
@@ -478,19 +478,19 @@ The window after each knock is eleven, half a million, half the day, abort
 call, keeper, question mark, eight and a half degrees, I'll be
 counting, pad-test, lamp test, battery heater, slower to wake, still on time,
 docking lead, last nav fix, weather mast, drill bit, All dead or crashed,
-first batch, Old key, Item located, Wrong book, divert, page two, CODE STALE, Seven down, six to fly,
+first batch, Old key, Item located, Wrong book, divert, page two, CODE STALE, Eight down, seven to fly,
 parser guard, blind hellos, first whole frame, Every gap explained, harder to
-wake, manual takeover, engine-out call, corridor correction, Found the eighth,
-All seven, low-gain antenna, logo, bar, chime, eleven, First one out, say hello,
+wake, manual takeover, engine-out call, corridor correction, Found the ninth,
+All eight, low-gain antenna, logo, bar, chime, eleven, First one out, say hello,
 fault protection, line of sight, one Mars day, transponder, ON HELLO: WAKE ALL,
-The eighth was waiting.
+The ninth was waiting.
 
 ## Round 8 notes
 
 - Resolvers live in `cards/05_resolvers.lv`, which sorts first, so a resolver is
   the first due card of its day (only decision/dilemma closings come earlier;
   that order is the engine's and is not changed here).
-- Endings: `end_through` / `e_entry_hold` are the same ship ("Seven down, six to
+- Endings: `end_through` / `e_entry_hold` are the same ship ("Eight down, seven to
   fly."); `end_friend` sends the rover, drill spares first, no weather mast;
   `end_patience` powers the box before answering; `end_long_orbit` flies two
   passes. Epilogue and coda lines match their ending (system.json).
@@ -851,7 +851,7 @@ The eighth was waiting.
 - **Endings.** *Through the Dust*: strut folded, the ship won't fly home; the
   one who wanted to answer climbs the rim two sols later and answers inside the
   tick from 200 m. *Old Friend*: the ground, eight minutes off, signs a waiver
-  for the drive. *Long Orbit*: "Landed. All seven. The eighth was waiting."
+  for the drive. *Long Orbit*: "Landed. All seven. The ninth was waiting."
   *Close Enough*: WAKE ALL wording. Winks cut from `m_flash1` (cosmic-ray hit),
   `c_theory` (now the microsecond timing: early, then late, once a day, the day
   37 minutes long) and `m_reveal`; `p_packer_note` softened.
@@ -1125,6 +1125,39 @@ engineering wording, page headings, character and grimdark, quirks.
   light-minutes"); the optional galley-chime echo and the day-39 hook move.
 - **Hand-offs.** Fold-line repeats (`pool[day % 16]`, render side) and the web
   page header / FD labels, as before.
+
+## Eight-ship conversion
+
+The fleet is eight ships. Marco flies Ship 08 (controls and automation, tag
+`controls`); his three habits are the galley playlist, a pump timer retuned to
+the beat, and the friends holding his spot on a night out. They follow the
+same habit-slot rules as everyone else (light, occasional, owner-only; tested
+for ship 8 too).
+
+- **Engine.** `lv/state.N = 8`, `lv/codes.N = 8`, the crew byte mask and the
+  `dil_seen` bit byte hold eight exactly. The record author field is 4 bits, so
+  `ADMIN_SHIP` moved from 7 to 15. `ChoiceLog` keeps its records in shards of
+  eight flight days (`key >> 19`) so a merge never grows one large dict at
+  once: with eight ships the single table needed a contiguous resize that a
+  160 KB MicroPython heap could not always find. Digests and merge results are
+  unchanged by the sharding (tested against one table).
+- **Compiler, sim, web, updater.** `lvc` checks the roster against `N_CREW = 8`
+  and writes it in the pack header; the sim has an eighth player profile
+  (`weekend`); `web/app.html` draws eight columns; the updater's ship count is
+  8 and ship ids run 1–8.
+- **Story counts.** "Seven ships" means the whole fleet nowhere now: the fleet
+  is eight, the others are seven, and Cargo 2 is the ninth ("All eight. The
+  ninth was waiting."; "Eight down, seven to fly."). Tested in `TestEightShips`.
+- **Budget.** Marco's lines and nine new epilogue story lines (so every one of
+  eight crew gets a story line in 300/300 seasons) were paid for by retiring
+  `beat_window`, `beat_argue` and `beat_home_msg` and trimming `beat_watch`,
+  `p_dream`, `idle_spares`, `crisis_air`, `l_long_table`, `h_thruster` and
+  `beat_zipties` (now days 11–39, which also fills day 11). `dust_report` is
+  weight 1.
+- **Measured** (300 seasons): fair play 300/300; endings lights 81, through 55,
+  long orbit 53, patience 49, friend 33, close 29; crowding 112/300; blank
+  story days at most 4/300 (day 11); Marco's quirk lines fire in 196, 261 and
+  210 seasons; peak heap 77.5 KB (64-bit), 51.2 KB (32-bit).
 
 ## Replay: the mystery spine reads the same every season (note, not built)
 
