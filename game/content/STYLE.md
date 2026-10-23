@@ -42,8 +42,16 @@ players).
   4 at day 28, 6 at days 33–36), about ten at arrival. Never more than 12
   minutes each way in this season. Earth shrinks to a dot you can cover with a
   thumbnail.
-- Arrival is direct entry from the crossing (day 42), or aerocapture into a long
-  orbit if the fleet votes to wait. In dust the cameras go blind; the radar
+- **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
+  Mars "under three weeks out" in real flight. Day 41: inside five
+  light-seconds, about four days before atmospheric entry ("the last night
+  before entry" belongs to day 41). Day 42: entry morning. Arrival is direct
+  entry from the crossing, or aerocapture into a long orbit if the fleet votes
+  to wait.
+- **EVAs are never solo.** A partner is suited at the next ship's hatch, or the
+  card says the EVA was scheduled with one. An unscheduled EVA costs a closed-up
+  window and propellant. Crossing the transfer line means a morning of
+  prebreathe on oxygen first. In dust the cameras go blind; the radar
   still has the ground. No reaction wheels on a Starship: attitude is thrusters.
 - **Nothing internal or proprietary.** If you only know it from work, it doesn't
   go in a card. No part numbers, no internal tool names, no program names.
@@ -219,10 +227,20 @@ competence, kindness, the extra watch nobody asked for.
 ## Length
 
 - Card text: 1 to 3 sentences, under about 300 characters (payoff cards, from
-  day 40, reveals and endings, may run to 420). Phone screen, captive
-  sheet.
+  day 40, and reveals may run to 420; endings to 460, lint MAX_ENDING, because
+  they carry the shared coda). Phone screen, captive sheet.
 - Button labels: 2 to 5 words.
 - Outcomes: 1 to 3 sentences. End on the image or the joke, not on a moral.
+
+## The habit slot
+
+`content/roster.lv` gives each astronaut a `habit "..."` line: one harmless,
+real quirk the player has sent in, written with `{A}` and no other slots. A card
+marked `each crew` is cloned once per astronaut (`id_1`..`id_7`, each bound to
+that astronaut only) with `{habit}` filled in. Never invent a habit for a real
+person: until one is supplied, the roster carries the neutral default ("keeps
+one small thing from home within reach of the console"). Keep `each crew` cards
+rare (the habit beat uses a shared flag so exactly one clone fires per voyage).
 
 ## Examples
 
