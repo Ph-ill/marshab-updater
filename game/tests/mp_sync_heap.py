@@ -10,7 +10,11 @@
 # live heap (after gc) is sampled through all of it, including at the web server's
 # busiest points (lvweb.probe, lvphone.probe). The board's share must stay under
 # 80 KB (80,000 B): the peak, less the fake radio module and the peer at its largest
-# (see below). The LED stays off.
+# (see below). The LED stays off, unless:
+#   --led    the LED notifier on (led_notify: board/lvled.py loaded, a fake pin from
+#            tests/fakeboard): it blinks through the sync (no quiet hours, a test pattern
+#            first), polled from the loop as lvship does. On stock MicroPython the
+#            notifier stays dark (game firmware only); --led --force measures it anyway.
 #   dir      a directory of .mpy files first on the path (tools/board_build.sh build/board:
 #            stock MicroPython, Variant A): the code comes precompiled, as on the board.
 #   frozen   the interpreter has the game core lv/ frozen in (tools/build_firmware.sh
@@ -25,6 +29,11 @@ import gc
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 PHONE = "--phone" in sys.argv
+LED = "--led" in sys.argv
+if LED:
+    sys.path.insert(0, "tests/fakeboard")
+    import fakeboard
+    fakeboard.install()
 FROZEN = bool(ARGS) and ARGS[0] == "frozen"
 if FROZEN:
     for p in ("", "."):
@@ -108,6 +117,10 @@ if PHONE:
     # The phone game as it runs for real: the day from the calendar (board/lvcal.py), FD 42
     # once the first request brings the phones' clock (launched long enough ago).
     cfg["launch_date"] = "2026-09-01"
+if LED:
+    cfg["led_notify"] = "--force" in sys.argv and "force" or True   # stock MicroPython: --force
+    cfg["led_quiet"] = ""
+    cfg["led_unknown_time"] = True
 # The board keeps each day's story for the phones only when it serves the phone game.
 ship = lvship.Ship(cfg, root=ROOT, data=DATA, ble=w.new(), say=lambda s: None,
                    days=lvdays.Days(DATA + "/days.bin") if WEB else None)
@@ -115,6 +128,9 @@ for i in range(NREC):
     ship.node.merge([RAW[i * R.LEN:(i + 1) * R.LEN]])
 ship.tick_to(42)
 RAW = None
+if LED and ship.led.enabled:
+    ship._led("test")
+    ship._led("gift")
 WANT = ship.node.digest()
 m_ship = sample()
 
@@ -183,6 +199,8 @@ async def heap_run():
         t += 10
         ship.ble.poll(w.now)
         peer.poll(w.now)
+        if LED:
+            ship.led.poll(ship.ble.busy())
         if t % 50 == 0:
             sample()
             await lvship.sleep_ms(1 if PHONE else 0)
@@ -194,6 +212,15 @@ async def heap_run():
         if phones_done and peer.node.digest() == ship.node.digest() and ship.ble.state == "idle" \
                 and peer.state == "idle":
             break
+    if LED:
+        # the patterns in real time (the sync above runs on the fake radio's clock): the
+        # test blinks, then the gift's double blink, polled as lvship's loop does
+        n = 0
+        while n < 9000:
+            d = min(100, max(1, ship.led.poll(False)))
+            await lvship.sleep_ms(d)
+            n += d
+            sample()
     if srv:
         srv.close()
     return t
@@ -226,7 +253,9 @@ m_peer_end = m_peer - m_code + grow
 board = peak[0] - m_peer_end - m_fake  # what a board holds: no second ship, no fake radio
 BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # The cap is the Pico's: a 32-bit build. The 64-bit port's figure is printed for comparison.
-ok = (synced and http_ok[0] and not ship.led.enabled and ship.led.writes == 0 and
+led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
+          not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
+ok = (synced and http_ok[0] and led_ok and
       (base == 0 or BITS == 64 or (0 < board < 80000)))
 import lv                                   # noqa: E402
 if FROZEN:

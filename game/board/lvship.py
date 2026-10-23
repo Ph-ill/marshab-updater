@@ -11,6 +11,7 @@
 # DEFAULTS. Nothing secret lives in this file: the hotspot password is per board, and
 # the fleet key below is the public test key the simulator uses.
 import gc
+import sys
 
 try:
     import asyncio
@@ -78,12 +79,25 @@ def phone_game(cfg):
     v = cfg.get("phone_game", "auto")
     if v != "auto":
         return bool(v)
+    return game_fw()
+
+
+def game_fw():
+    """Is the game firmware's frozen core in use (not stock MicroPython)?"""
     try:
         import lv
         core, _ = lv.firmware()
         return core is not None and not core["shadowed"]
     except Exception:
         return False
+
+
+def drop(name):
+    """Forget a module loaded for a moment (lvledcfg) so its code leaves the heap."""
+    try:
+        del sys.modules[name]
+    except KeyError:
+        pass
 
 
 def free():
@@ -124,7 +138,10 @@ class Ship:
         self.http_hits = 0
         self.mem_peak = 0
         self.clock = Clock()
-        self.led = Notifier(self.clock, cfg["led_notify"])
+        self.led = Notifier(self.clock, False)    # dark; lvled.Led replaces it when switched on
+        self.web = None            # lvweb.Server, if the phone game runs (its busy count)
+        if cfg["led_notify"]:
+            self.led_on(True)
         self.ready = False
         self.cal = None            # lvcal.Calendar with a launch date, else the manual day
         if cfg.get("launch_date"):
@@ -143,7 +160,6 @@ class Ship:
         if cfg["story"]:
             self.st = State(self.pack)
             self.tick_to(self.day)
-        self.led.set_waiting(bool(self.gifts_in))
         self.ready = True
         self.ble = None
         if radio:
@@ -175,6 +191,27 @@ class Ship:
                     f.write(r)
         except OSError as e:
             self.say("log: write failed %s" % e)
+
+    # ---- the LED notifier (lvled.py, loaded only when it is switched on)
+    def led_on(self, on):
+        """Switch the LED notifier on or off while running (ship.json led_notify at boot,
+        the phone's Ship light switch, the selftest). Returns whether it is on. Game
+        firmware only: on stock MicroPython its code would push the heap past the 80 KB
+        cap (BENCH_TEST.md), so it stays dark there ("led_notify": "force" overrides)."""
+        if on and not game_fw() and self.cfg.get("led_notify") != "force":
+            self.say("led: the notifier needs the game firmware (no heap for it on stock MicroPython)")
+            on = False
+        if not (on or self.led.enabled):
+            return False
+        import lvledcfg
+        try:
+            return lvledcfg.switch(self, on)
+        finally:
+            drop("lvledcfg")
+
+    def _led(self, what):
+        if self.led.enabled:                  # (lv/led.py's dark Notifier never is)
+            self.led.note(what)
 
     # ---- the flight day
     def day_check(self):
@@ -233,8 +270,8 @@ class Ship:
             self.gifts_in.append((R.ship(r), r[5], R.day(r)))
             if len(self.gifts_in) > 8:
                 self.gifts_in.pop(0)
-            self.led.set_waiting(True)
-            if self.ready:
+            if self.ready:          # one that arrives now, not the old ones in the log at boot
+                self._led("gift")
                 self.say("gift: from ship %d, item %d, day %d" % (R.ship(r) + 1, r[5], R.day(r)))
 
     def gift(self, to_ship, item=0):
@@ -259,7 +296,8 @@ class Ship:
              "digest": self.node.digest().hex(), "story": self.st.hexdigest() if self.st else None,
              "replays": self.replays, "gifts_in": len(self.gifts_in), "gifts_out": self.gifts_out,
              "led": {"enabled": self.led.enabled, "waiting": self.led.waiting, "writes": self.led.writes,
-                     "time_known": self.clock.known()},
+                     "time_known": self.clock.known(),
+                     "why": getattr(self.led, "state", "off")},
              "heap_used": u, "heap_free": free(), "heap_peak": self.mem_peak, "http": self.http_hits,
              "v": self.v, "day_src": self.cal.src if self.cal else "manual"}
         s["ble"] = self.ble.status(now) if self.ble else None
@@ -271,10 +309,10 @@ class Ship:
         n = b["n"]
         peers = " ".join(["%d%s" % (p["ship"], "=" if p["same"] else "*") for p in b["peers"]]) or "-"
         return ("STAT ship=%d recs=%d digest=%s ble=%s peers=%s ok=%s fail=%s sent=%s got=%s new=%s "
-                "gifts_in=%d led=%s heap_used=%d heap_free=%d day=%d/%s" % (
+                "gifts_in=%d led=%s/%d heap_used=%d heap_free=%d day=%d/%s" % (
                     s["ship"], s["records"], s["digest"], b["state"], peers, n.get("ok"), n.get("fail"),
                     n.get("sent"), n.get("got"), n.get("new"), s["gifts_in"],
-                    "on" if self.led.enabled else "off", s["heap_used"], s["heap_free"], self.day, s["day_src"]))
+                    s["led"]["why"], self.led.writes, s["heap_used"], s["heap_free"], self.day, s["day_src"]))
 
     async def loop(self, stop_after_ms=None, stat_every_ms=None, until=None):
         t0 = ticks_ms()
@@ -288,7 +326,8 @@ class Ship:
             if now >= nday:
                 nday = now + 10000
                 self.day_check()
-            wait = self.led.poll(self.ble.busy() if self.ble else False)
+            wait = self.led.poll((self.ble is not None and self.ble.busy()) or
+                                 (self.web is not None and self.web.busy > 0))
             if now >= nxt:
                 nxt = now + every
                 self.say(self.stat_line())

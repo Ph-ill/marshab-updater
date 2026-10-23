@@ -155,6 +155,15 @@ try {
   await until(`!!document.querySelector('[data-out]')`, 4000, 'crew page with the sign-out button');
   const crewRows = await ev(`document.querySelectorAll('[data-go^="crew/"]').length`);
   check(crewRows === 7, 'crew page lists ' + crewRows + ' crewmates');
+  // The Ship light switch (the board's LED notifier): the board answers on (game firmware)
+  // or stays off (a plain interpreter); the button shows what the board said. Back off after.
+  check(await ev(`!!document.querySelector('[data-led]')`), 'Ship light button on your crew page');
+  await click('[data-led]');
+  await until(`typeof S.led==="boolean"&&!document.querySelector('[data-led]').disabled&&document.querySelector('[data-led]').textContent.includes("Ship light: "+(S.led?"on":"off"))`, 4000, 'Ship light answered');
+  if (await ev('S.led')) {
+    await click('[data-led]');
+    await until(`S.led===false&&document.querySelector('[data-led]').textContent.includes("Ship light: off")`, 4000, 'Ship light off again');
+  }
   await click('[data-out]');
   await until(`tok===""&&document.querySelectorAll('[data-who]').length===8`, 4000, 'signed out');
   step('second sign-in');
