@@ -67,7 +67,7 @@ roles A B
 when same A B
 when !fired p_birthday
 when bond A B >= 0
-text {A}, visiting since the last transfer window, cuts {B}'s hair with the vacuum clippers. The result is logged as "within tolerance". {B} agrees and tips in coffee.
+text {A}, visiting since the last transfer window, cuts {B}'s hair with the vacuum clippers. The result is recorded as "within tolerance". {B} agrees and tips in coffee.
 do bond A B 5
 
 card beat_home_msg
@@ -136,7 +136,7 @@ once
 roles A
 when idle A >= 3
 when cond A ok
-text {A} stands the night watch for the whole fleet so the other six can sleep. Unasked. The log entry is two lines long and perfectly neat.
+text {A} stands the night watch for the whole fleet so the other six can sleep. Unasked. The watch report is two lines long and perfectly neat.
 do morale A 2
 do trait A warm 2
 
@@ -181,15 +181,95 @@ text {A} inventories the spares locker by hand and finds a filter cartridge the 
 do res spares 1
 
 # --- Habits: one clone per astronaut, text from roster.lv `habit` ---------------
-card habit_beat
+# Parked in round 11 while every roster habit is still the placeholder: the
+# filler read the same for all seven. Uncomment when real habits arrive.
+# card habit_beat
+# type beat
+# cat life
+# each crew
+# once
+# days 12 36
+# weight 2
+# roles A
+# when cond A ok
+# when !flag habit_told
+# text On the long shifts, {habit} The other six ships have stopped asking about it, and would notice if it went.
+# do set habit_told
+
+# --- Small things carried aboard (round 11): generic, castable to anyone. ---
+card hb_watch
 type beat
 cat life
-each crew
 once
-days 12 36
-weight 2
+days 12 17
+weight 1
 roles A
 when cond A ok
-when !flag habit_told
-text On the long shifts, {habit} The other six ships have stopped asking about it, and would notice if it went.
-do set habit_told
+text {A}'s wristwatch is still on home time. At fleet midnight {A} glances at it and tells the net, "Breakfast at home." Nobody asks whose. Somebody always says "Enjoy."
+do morale A 1
+
+card hb_pebble
+type beat
+cat life
+once
+days 14 20
+weight 1
+roles A
+when cond A ok
+text A flat beach pebble rides in {A}'s cup holder. During every burn {A} turns it once, the same way, and puts it back. It keeps the engine honest, {A} says, and after this many clean burns nobody argues.
+do morale A 1
+
+card hb_key
+type beat
+cat life
+once
+days 17 23
+weight 1
+roles A
+when cond A ok
+text {A} carries a house key on a cord and taps it once on the hatch rim before closing out each page. The ground calls it the end-of-page tone.
+do morale A 1
+
+card hb_card
+type beat
+cat life
+once
+days 20 26
+weight 1
+roles A
+when cond A ok
+text {A} tapes a new blank postcard by the window every page, a different city each time, nothing on the back. The fleet guesses where from. {A} has confirmed one, and won't say which.
+do morale A 1
+
+card hb_pick
+type beat
+cat life
+once
+days 23 29
+weight 1
+roles A
+when cond A ok
+text {A}'s flight-plan binder is bookmarked with a guitar pick, worn pale at one corner. The mass budget left the guitar at home. When the plan changes, {A} moves the pick and hums.
+do morale A 1
+
+card hb_leaf
+type beat
+cat life
+once
+days 26 32
+weight 1
+roles A
+when cond A ok
+text A dried leaf in a sleeve is clipped above {A}'s bunk, picked up on the walk to the pad. Every few days {A} turns it over and reports to the net: "Still green on one side." Nobody disputes it.
+do morale A 1
+
+card hb_stub
+type beat
+cat life
+once
+days 29 36
+weight 1
+roles A
+when cond A ok
+text {A} scrapes the food trays with an old ticket stub from a game nobody else remembers. Before each meal: "Still a draw." Down the fleet net, a few seconds later: "Copy, still a draw."
+do morale A 1
