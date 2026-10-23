@@ -1,0 +1,69 @@
+{
+  "actions": [
+    {
+      "id": "gift",
+      "label": "Give a gift",
+      "you": "On your word, {A} gives {T} the last good coffee.",
+      "self": "{A} saves {T} the last good coffee."
+    },
+    {
+      "id": "advice",
+      "label": "Give advice",
+      "you": "{A} takes your advice to heart and tries to be {axis}.",
+      "self": "{A} has a think about being {axis}."
+    },
+    {
+      "id": "task",
+      "label": "Set a task",
+      "you": "{A} spends the shift on {res}, as you asked.",
+      "self": "{A} spends the shift on {res}."
+    },
+    {
+      "id": "rest",
+      "label": "Tell them to rest",
+      "you": "{A} takes the day off, on your orders.",
+      "self": "{A} sleeps through the morning watch."
+    }
+  ],
+  "axis_words": [
+    [
+      "braver",
+      "more careful"
+    ],
+    [
+      "more curious",
+      "more settled"
+    ],
+    [
+      "warmer",
+      "blunter"
+    ]
+  ],
+  "res_words": [
+    "the hydroponics",
+    "fuel trim",
+    "spare parts"
+  ],
+  "notes": [
+    "Thinking of you out there.",
+    "You still owe me a coffee.",
+    "Don't do anything brave without me."
+  ],
+  "sys": {
+    "move": "{A} hitches a ride over to {S}.",
+    "home": "{A} heads back to {S}.",
+    "note": "{A} passes {T} a note: “{line}”",
+    "dec_open": "Fleet decision open for 48 hours.",
+    "dec_close": "Decision closed: {opt}. {n} ballot(s).",
+    "dec_lean": "Nobody voted, so the crew decided: {opt}.",
+    "dec_tie": "Tied at {n} ballot(s); the crew's lean broke it: {opt}.",
+    "dil_open": "A private message for whoever looks after {A}.",
+    "dil_you": "{A} did as their owner asked: {opt}.",
+    "dil_self": "{A} made up their own mind: {opt}.",
+    "res_open": "Anyone can answer this one. One tap is enough.",
+    "res_close": "Help is on the way: {opt}.",
+    "res_default": "Nobody answered in time, so it fell to the crew: {opt}.",
+    "short": "Food stores are running low.",
+    "end": "Arrival day."
+  }
+}
