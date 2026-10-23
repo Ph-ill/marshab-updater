@@ -289,12 +289,14 @@ function rewritten(d){const a=S.updated[d];return a&&a>=d+2&&d<S.day?a:0}
 
 // ---- drawing --------------------------------------------------------------------------
 function hash(s){let x=2166136261;for(const c of s)x=Math.imul(x^c.charCodeAt(0),16777619)>>>0;return x}
-// Crew portraits: one suit and helmet ring for everyone, then each astronaut's own visor,
-// helmet detail and chest patch (by roster order), then trait and condition marks. Suits,
-// helmets and patches only: no faces. The flagship's patch has a rust ring.
+// Crew portraits: one suit and collar for everyone, then each astronaut's own helmet shell
+// (so the silhouette alone says who it is), visor, helmet detail and chest patch (by roster
+// order), then trait and condition marks. Suits, helmets and patches only: no faces. The
+// flagship's patch has a rust ring.
 const PI="var(--ink)",PP="var(--paper)",PR="var(--rust)";
 const pL=(d,w=1.5,c=PI)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}"/>`;
 const pF=(d,c=PI)=>`<path d="${d}" fill="${c}"/>`;
+const pS=(d,w=1.5)=>`<path d="${d}" fill="${PP}" stroke="${PI}" stroke-width="${w}"/>`;
 const pC=(x,y,r,f=PI,st="")=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"${st}/>`;
 const pK=(x,y,r,w=1.1,da="")=>`<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${PI}" stroke-width="${w}"${da?` stroke-dasharray="${da}"`:""}/>`;
 const VIS=[
@@ -302,39 +304,49 @@ const VIS=[
   pC(32,28,10.5)+pL("M25.5 24Q27.5 20.5 31 19.5",1.5,PP),
   pF("M17.5 23H46.5V32H17.5Z")+pL("M21 25.5H29",1.5,PP),
   pF("M20 22H44V30Q32 37 20 30Z")+pL("M23 24.5H28",1.5,PP),
-  pF("M18 25H46V30.5Q32 33.5 18 30.5Z")+pL("M21.5 27.2H27",1.5,PP),
-  pF("M16.5 24Q32 20.5 47.5 24L45.5 33Q32 39 18.5 33Z")+pL("M37 31L40 28M40.5 32.5L42.5 30.5",1.2,PP)];
+  pF("M18.5 25H45.5V30.5Q32 33.5 18.5 30.5Z")+pL("M21.5 27.2H27",1.5,PP),
+  pF("M18.5 24.5Q32 21 45.5 24.5L44 33Q32 38.5 20 33Z")+pL("M37 31L40 28M40.5 32.5L42.5 30.5",1.2,PP)];
 let chk="";for(let i=0;i<4;i++)for(let j=0;j<3;j++)if((i+j)%2===0)chk+=`M${28.5+i*1.75} ${54+j*1.67}h1.75v1.67h-1.75Z`;
+// Helmet shells: [outline (starts on the left side, runs clockwise over the crown), rust crown
+// as [offset, length] in pathLength 100, antenna root y at x 41, top-line y, side-vent x].
+const HEL=[
+  ["M15.5 28.5A16.5 16.5 0 0 1 48.5 28.5A16.5 16.5 0 0 1 15.5 28.5Z",[7,36],14.7,14.2,16],
+  ["M15 28V20Q15 11 24 11H40Q49 11 49 20V28Q49 45 32 45Q15 45 15 28Z",[6,39],11,13.3,15],
+  ["M16.5 26.5A15.5 19.5 0 0 1 47.5 26.5A15.5 19.5 0 0 1 16.5 26.5Z",[10,30],9.3,12.6,16.5],
+  ["M16 27Q16 10.5 32 10.5Q48 10.5 48 27L46.5 37Q45 44.5 38.5 45.5H25.5Q19 44.5 17.5 37Z",[4,35],10.8,13,16],
+  ["M11.5 26.5A20.5 20.5 0 0 1 52.5 26.5A20.5 20.5 0 0 1 11.5 26.5Z",[7,36],8,9,12],
+  ["M13.5 30A18.5 15 0 0 1 50.5 30A18.5 15 0 0 1 13.5 30Z",[9,32],16.9,17.4,15.5],
+  ["M15.5 22V17.5L32 8.5L48.5 17.5V35L32 45.5L15.5 35Z",[0,42],12.8,12.5,15.5],
+  ["M15.5 29Q16.5 13 32 6Q47.5 13 48.5 29Q48.5 45 32 45Q15.5 45 15.5 29Z",[7,35],12.6,12.5,15.5]];
 // [visor, helmet detail, patch glyph]. Patches are drawn at the chest, centre 32,57.
 const CREW=[
-  // Phill: a garden brim on the helmet; a house with a d-pad window.
-  [0,pL("M13.5 21.5Q32 12.5 50.5 21.5",2),pL("M27.8 57.4L32 53.6L36.2 57.4M28.9 56.4V60.6H35.1V56.4",1.1)+pL("M32 57.2V60M30.6 58.6H33.4",1)],
+  // Phill: a dome with a wide garden-hat brim; a house with a d-pad window.
+  [0,pS("M8.5 21.5Q32 10.5 55.5 21.5Q32 16 8.5 21.5Z"),pL("M27.8 57.4L32 53.6L36.2 57.4M28.9 56.4V60.6H35.1V56.4",1.1)+pL("M32 57.2V60M30.6 58.6H33.4",1)],
   // Jacques: a squared service helmet with rank chevrons and a side rail; a circuit trace that climbs.
   [2,pL("M19 16.5L21.5 18.5L24 16.5M19 19.5L21.5 21.5L24 19.5",1.2)+pL("M15 26.5H12.5V31.5H15"),pL("M27.5 60.5H29.8L32.3 58H33.8L36.3 54M34.4 54.1L36.5 53.6L37 55.6",1.1)+pC(27.5,60.5,1)+pC(32.3,58,1)],
-  // Kim: a mecha-pilot V-fin; a sparkle.
-  [1,pL("M32 12L25.5 5M32 12L38.5 5",2)+pF("M29.5 11.8L32 8.5L34.5 11.8Z"),pF("M32 52.6Q32.6 56.4 36.4 57Q32.6 57.6 32 61.4Q31.4 57.6 27.6 57Q31.4 56.4 32 52.6Z")+pC(35.4,53.6,.7)],
-  // Jai: a racing stripe and a narrow slot visor; a chequered flag.
-  [4,pL("M29.5 11.3V24.5M34.5 11.3V24.5",1.2),pF(chk)+pL("M28.5 54H35.5V59H28.5M28.5 54V61.2",.8)],
-  // Michelle: a bubble helmet and a lightning-bolt shoulder decal; a paw print.
-  [3,pK(32,28,19.75,.75)+pF("M50.5 51.5L46.8 56.2H49.3L47.4 60.5L52.4 54.6H49.8Z"),`<ellipse cx="32" cy="58.8" rx="2.3" ry="1.8" fill="${PI}"/>`+pC(29.4,56.1,.9)+pC(31.1,54.6,.9)+pC(32.9,54.6,.9)+pC(34.6,56.1,.9)],
-  // Diego: a comms headset (always up for a chat) and bolted collar; a cog.
-  [0,`<rect x="47" y="23" width="3.5" height="10" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`+pL("M48.7 33Q48.7 40.5 41 41",1.2)+pC(39.7,41,1.6)+pC(23.5,47.5,.9)+pC(40.5,47.5,.9),pK(32,57,3.7,2,"1.45 1.455")+pC(32,57,2.3,PP,` stroke="${PI}" stroke-width="1.1"`)+pC(32,57,.8)],
-  // Dorian: a little network of nodes; a crimped, crustless sandwich.
-  [3,pL("M19.5 19.5L23 14L27.5 17ZM27.5 17L31.5 12.5",1)+pC(19.5,19.5,1.3)+pC(23,14,1.3)+pC(27.5,17,1.3)+pC(31.5,12.5,1.3),pK(32,57,4.6,1.1,".8 .65")+pK(32,57,3.2)+pC(32,57,1)],
-  // Marco: level-meter bars and a wraparound visor; an atomiser bottle.
-  [5,pL("M41 22V18.5M43.5 22V15.5M46 22V19",1.6),`<rect x="29.3" y="55.6" width="5.4" height="5.6" rx="1.2" fill="none" stroke="${PI}" stroke-width="1.1"/>`+pL("M31.2 55.6V54.2H32.8V55.6",1)+pF("M30.6 54.2H33.4V52.6H30.6Z")+pC(35.6,53.4,.45)+pC(36.7,52.5,.45)+pC(36.6,54.4,.45)]];
+  // Kim: a tall mecha-pilot shell with side pods and a V-fin; a sparkle.
+  [1,pL("M32 8L25 1.8M32 8L39 1.8",2)+pF("M29.5 8.2L32 4.6L34.5 8.2Z")+pS("M16.6 21.5L11.5 24.5V33.5L17.2 36.5ZM47.4 21.5L52.5 24.5V33.5L46.8 36.5Z"),pF("M32 52.6Q32.6 56.4 36.4 57Q32.6 57.6 32 61.4Q31.4 57.6 27.6 57Q31.4 56.4 32 52.6Z")+pC(35.4,53.6,.7)],
+  // Jai: a full-face racing helmet, chin bar, rear spoiler and twin stripes; a chequered flag.
+  [4,pS("M22.5 10.8L20.5 6.8H43.5L41.5 10.8")+pL("M29.5 10.8V25M34.5 10.8V25",1.2)+pL("M27.5 39.5H36.5M29 42.3H35",1.1),pF(chk)+pL("M28.5 54H35.5V59H28.5M28.5 54V61.2",.8)],
+  // Michelle: one wide, clean glass bubble with a glint, a lightning-bolt shoulder decal; a paw print.
+  [3,pL("M16.5 21Q18.5 13.5 25 10.2",1.1)+pF("M50.5 51.5L46.8 56.2H49.3L47.4 60.5L52.4 54.6H49.8Z"),`<ellipse cx="32" cy="58.8" rx="2.3" ry="1.8" fill="${PI}"/>`+pC(29.4,56.1,.9)+pC(31.1,54.6,.9)+pC(32.9,54.6,.9)+pC(34.6,56.1,.9)],
+  // Diego: a squat, wide shell under a comms headset (always up for a chat), boom mic, bolted collar; a cog.
+  [0,pL("M11.5 24Q11.5 9 32 9Q52.5 9 52.5 24",2.2)+pS("M9 25.5Q9 23 11.5 23H15V36H11.5Q9 36 9 33.5ZM55 25.5Q55 23 52.5 23H49V36H52.5Q55 36 55 33.5Z")+pL("M52 36Q52 42 42.5 42",1.2)+pC(41,42,1.6)+pC(23.5,47.5,.9)+pC(40.5,47.5,.9),pK(32,57,3.7,2,"1.45 1.455")+pC(32,57,2.3,PP,` stroke="${PI}" stroke-width="1.1"`)+pC(32,57,.8)],
+  // Dorian: a faceted hex shell with a little network of nodes on the crown; a crimped, crustless sandwich.
+  [3,pL("M21 18.5L25 14.5L29 17.5ZM29 17.5L32 13",1)+pC(21,18.5,1.3)+pC(25,14.5,1.3)+pC(29,17.5,1.3)+pC(32,13,1.3),pK(32,57,4.6,1.1,".8 .65")+pK(32,57,3.2)+pC(32,57,1)],
+  // Marco: a pointed, aerodynamic shell, level-meter bars and a wraparound visor; an atomiser bottle.
+  [5,pL("M37.5 22V18.5M40 22V15.5M42.5 22V19",1.6),`<rect x="29.3" y="55.6" width="5.4" height="5.6" rx="1.2" fill="none" stroke="${PI}" stroke-width="1.1"/>`+pL("M31.2 55.6V54.2H32.8V55.6",1)+pF("M30.6 54.2H33.4V52.6H30.6Z")+pC(35.6,53.4,.45)+pC(36.7,52.5,.45)+pC(36.6,54.4,.45)]];
 function portrait(c){
-  const t=S?S.traits[c]:[0,0,0],cond=S?S.cond[c]:0,[vi,det,pat]=CREW[c%8],sq=c%8===1,fl=c===T.flagship;
+  const t=S?S.traits[c]:[0,0,0],cond=S?S.cond[c]:0,[vi,det,pat]=CREW[c%8],[hd,cr,ay,ly,sx]=HEL[c%8],fl=c===T.flagship;
   let g=`<path d="M6 64C7 52 18 47.5 32 47.5S57 52 58 64" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`+pL("M20 47.5L22 64M44 47.5L42 64",1);
-  g+=`<path d="M20.5 46H43.5V49H20.5Z" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`;
-  g+=sq?`<path d="M15 28V20Q15 11 24 11H40Q49 11 49 20V28Q49 45 32 45Q15 45 15 28Z" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`:pC(32,28,17,PP,` stroke="${PI}" stroke-width="1.5"`);
-  if(t[2]>15)g+=pL("M17.6 21A17 17 0 0 1 46.4 21",3,PR);
-  else if(t[2]<-15)g+=pL("M15 31H17.5M46.5 31H49",2.5);
+  g+=pS(hd)+pS("M20.5 46H43.5V49H20.5Z");
+  if(t[2]>15)g+=`<path d="${hd}" pathLength="100" fill="none" stroke="${PR}" stroke-width="3" stroke-dasharray="0 ${cr[0]} ${cr[1]} 100"/>`;
+  else if(t[2]<-15)g+=pL(`M${sx} 31h2.5M${64-sx} 31h-2.5`,2.5);
+  if(t[0]<-15)g+=`<path d="${hd}" transform="matrix(.86 0 0 .86 4.5 3.9)" fill="none" stroke="${PI}" stroke-width=".85" stroke-dasharray="1.7 1.7"/>`;
   g+=VIS[vi]+det;
-  if(t[1]>15)g+=pL("M41 13.5L46 4")+`<rect x="44.5" y="2" width="3.5" height="3.5" fill="${PI}"/>`;
-  else if(t[1]<-15)g+=pL("M23.5 13.3H40.5",1);
-  if(t[0]>15)g+=pL("M17 36L20 34.5M18.5 39L21.5 37.5",1);
-  else if(t[0]<-15)g+=pK(32,28,14.5,.75,"1.5 1.5");
+  if(t[1]>15)g+=pL(`M41 ${ay}L46 4`)+`<rect x="44.5" y="2" width="3.5" height="3.5" fill="${PI}"/>`;
+  else if(t[1]<-15)g+=pL(`M27 ${ly}H37`,1);
+  if(t[0]>15)g+=pL("M18 36L21 34.5M19.5 39L22.5 37.5",1);
   g+=pC(32,57,6.5,PP,` stroke="${fl?PR:PI}" stroke-width="${fl?2:1.2}"`)+pat;
   if(cond===1)g+=pL("M43 37L49 41M43.5 41L48.5 36.5",2,PR);
   return `<svg viewBox="0 0 64 64" aria-hidden="true"${cond===2?' opacity=".4"':""}>${g}</svg>`;
