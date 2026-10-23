@@ -335,11 +335,12 @@ class Engine:
         item, tgt, mode = rec[5], rec[6], rec[7]
         if tgt >= N or tgt == ship or mode > R.GIFT_ANSWER or item > 63:
             return
-        if mode != R.GIFT_ASK:
-            if s.cond[tgt] == O.COND_HOME:
-                return
-            s.add_bond(ship, tgt, 4 if mode == R.GIFT_ANSWER else 2)
-            s.add_morale(tgt, 2)
+        # An ask stays between the two of them (the gifts screen shows it), so it
+        # has no effect and no story line; nothing happens if nobody answers it.
+        if mode == R.GIFT_ASK or s.cond[tgt] == O.COND_HOME:
+            return
+        s.add_bond(ship, tgt, 4 if mode == R.GIFT_ANSWER else 2)
+        s.add_morale(tgt, 2)
         s.emit(O.O_GIFT, NONE, ship, item, tgt, mode)
 
     def _auto_action(self, c):
