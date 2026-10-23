@@ -40,46 +40,147 @@ motifs, what gets planted and where it pays off.
 
 | Phase | Mystery content |
 |---|---|
-| 1 (days 1–10) | None. Only plants that read as ordinary life: the thumb, the Sharpie, the garden, the live call. |
+| 1 (days 1–10) | No mystery cards. Clues 1–3 hide in ordinary life (manifest, reboot, Sharpie doodle), alongside the thumb, the garden and the live call. |
 | 2 (days 11–24) | The carrier vote, which reads as a retired probe's beacon. The noise-floor ripple, which reads as a wheel harmonic. Eleven sparks behind closed eyes (filed as `grim`, not mystery). Each detail has an ordinary explanation. |
 | 3 (days 25–36) | The carrier comes back. The uncanny hooks open up (band, ghost, voice, dark). The flashes, first and second sighting, and the vote on them. The crew stops being able to call it chance. |
-| 4 (days 37–42) | The overlay (carrier and flash in the same frame). The flash answer, if they looked. The endings. |
+| 4 (days 37–42) | The overlay. The reveal (day 40, every season). The endings (variants on one truth). |
 
 ## Motifs
 
 | Motif | Planted | Turns | Pays off |
 |---|---|---|---|
 | **The thumb**: holding a thumb up to a world | The early watch: Earth won't fit behind a thumb | The middle watch: a thumbnail covers Earth | Approach: Mars no longer fits behind it |
-| **Eleven seconds** | The carrier repeats every 11 s | Night-side flashes (mystery thread) | See *The lighthouse* |
+| **Eleven seconds** | A galley screen reboot (blink, logo, chime) | The carrier, a noise ripple, the flashes | The boot loop (see *The reveal*) |
 | **The Sharpie hand**: someone at Starbase packing a margin | The ration stash ("you'll thank me") | A spare that isn't on the manifest | A second note in the same hand, at the moment it's needed most |
-| **What earlier missions left** | The safe-mode beacon hook, the spent stage ghost | The carrier | Arrival: Mars orbit is crowded with patient dead machines, and the fleet is the first to come back for them |
+| **What earlier missions left** | The breakfast manifest line | The beacon hook, the spent stage | Cargo 2, waiting at the landing zone |
 | **The delay** | A live call home, with laughter landing in real time | Letters, then monologues | A message that arrives after the moment it was about |
 | **The garden** | Seeds planted in the first week | Nothing grows, and the crew keeps watering it anyway | One shoot on the approach, carried down |
 | **The shelter between the water tanks** | Flare drills, a deck of cards | Flare nights, shoulder to shoulder | Water is shielding, water is life, water is the last thing checked before landing |
 
-## The lighthouse (main mystery)
+## The reveal (designed first; everything else works backwards from it)
 
-The carrier on the old deep-space frequency comes from a dead Mars orbiter. Its
-attitude control failed years ago, and it has been tumbling ever since with an
-11-second rotation. Its beacon antenna sweeps past the fleet once per turn, so
-the signal "repeats every 11 seconds". Its solar panel flashes the same way:
-those are the night-side glints in the flash thread, seen against the dark
-limb. The reader can solve it before the crew does, by noticing that the two
-periods match.
+### Candidates, and the skeptical reader's attack
 
-Nothing is ever said outright. The fleet's choices decide how it reads:
+**A. The lighthouse.** The carrier and the night-side flashes both come from a
+dead orbiter tumbling with an 11-second rotation.
+- *Guessable by day 20?* Yes. "Old probe" is the first thing anyone thinks, and
+  the cards even say it.
+- *Cheat?* No, but it isn't a twist. The reveal would just confirm the surface
+  reading.
+- *Reframes earlier moments?* Barely.
+- *Grounded?* Yes.
+- *Emotional?* Melancholy, but it's about a machine nobody aboard knew.
+- **Verdict: weak as the reveal, strong as the misdirection.** Kept as the
+  crew's own theory.
 
-- **Answer it** (dec_signal: open). The tumbling orbiter answers between sweeps.
-  The fleet has woken an old friend. Ending: *Old Friend*.
-- **Log it** (dec_signal: log). The carrier keeps showing up, stronger each
-  time, as the fleet closes on the orbit it shares. It reads as being followed.
-  Ending: *Company*. Ominous, but accurate: it's just orbital mechanics.
-- **The flash thread** (dec_flash). Looking closer resolves the flashes as a
-  tumbling panel, without naming it. A reader who remembers the 11 seconds will
-  join the dots. Leaving it alone keeps the flashes uncanny.
-  - It never contradicts the carrier outcome.
-  - It doesn't pick an ending. It adds a line of meaning, and the endings stay
-    readable either way.
+**B. The packer.** One person at Starbase staged every oddity (the stash, the
+voice, the antenna file) as a long-distance care package.
+- *Guessable?* Partly. The Sharpie notes point at it.
+- *Cheat?* Yes. The antenna file and the flashes on Mars can't be explained by
+  someone on Earth without hand-waving.
+- *Reframes?* The kind moments, yes. The uncanny ones, badly.
+- *Grounded?* Strained.
+- *Emotional?* Warm, but it shrinks the dread into a prank.
+- **Verdict: rejected.** The packer survives as a person, not as the
+  explanation.
+
+**C. An echo.** The carrier is the fleet's own transmissions, reflected back
+from Phobos or from their own discarded hardware.
+- *Guessable?* Unlikely.
+- *Cheat?* Yes. A reflection doesn't make an 11-second rhythm or a light on the
+  night side.
+- *Grounded?* Not really.
+- *Emotional?* Hollow.
+- **Verdict: rejected.**
+
+**D (chosen). Cargo 2.** One of the uncrewed cargo Starships that went ahead was
+written off as "lost on landing" years ago. It isn't lost. It landed upright at
+the edge of the landing zone with a dead uplink. Its flight computer has been
+stuck in a watchdog boot loop ever since.
+- Every boot takes eleven seconds. Every boot keys the beacon once, on the old
+  fleet channel, and blinks the landing lights once for the self-test.
+- So the carrier and the night-side flashes are the same machine, saying "I'm
+  here" the only way it can, every eleven seconds, for years.
+- It carries what the manifest said it carried: spares and water. In other
+  words, the margin.
+
+The attack on D:
+- *Guessable by day 20?* Very unlikely. By then the clues are a breakfast
+  manifest line, a galley screen that blinks the lights when it restarts, a
+  Sharpie doodle and a carrier on an unused frequency. Each one has an ordinary
+  reading. The obvious theory (A) arrives later and fits well enough to stop
+  people looking.
+- *Cheat?* No. Every piece is on the page:
+  - the eleven seconds;
+  - the boot blink;
+  - the written-off cargo ship;
+  - the flashes on the ground, not in orbit;
+  - a command carrying a valid fleet signature from no ship in the fleet.
+- *Reframes?* Hard. Read again, the galley reboot is the whole answer. The
+  doodle on the stash bag is a ship with a 2 on it. "One tap is enough" stops
+  being UI copy.
+- *Grounded?* Uncrewed cargo Starships going ahead of crew is the public plan.
+  A lander with a failed antenna and a computer in a boot loop is an ordinary
+  failure, held for an unusual length of time. Controls people will feel this
+  one in their teeth, and nobody has to say why.
+- *Emotional?* Yes. A machine built by people the crew knows has been keeping a
+  light on at the landing site for years. It holds the margin someone at
+  Starbase packed after losing it. The fleet arrives as its rescue, not its
+  discoverer.
+
+**Why D wins:** it's the only candidate that makes the dread *and* the wonder
+true at once. Some weeks of the voyage felt haunted, and they were. The ghost
+is ours, and it has been waiting.
+
+### Fair-play clues (surface reading → truth)
+
+| # | Card / place | Phase | Surface | Truth |
+|---|---|---|---|---|
+| 1 | `l_manifest` (breakfast beat) | 1 | Background color: the cargo ships went ahead, and one was written off | Cargo 2 exists, carried spares and water, and was never found |
+| 2 | `l_reboot` (routine beat) | 1 | A galley screen update; a cabin in-joke about the chime | A boot blinks the lights once and takes eleven seconds |
+| 3 | `dil_stash` (the Sharpie bag) | 1 | A kind packer's joke, with a doodle of a ship with a 2 on it | The packer lost Cargo 2, and packs margins because of it |
+| 4 | System text `res_open`: "Anyone can answer this one. One tap is enough." | all | UI copy for rescues | The carrier is a rescue call anyone could answer; in *Old Friend*, one hail was enough |
+| 5 | `dec_signal` | 2 | "Some retired probe's beacon, probably", on a frequency the fleet stopped using | It's the old fleet channel |
+| 6 | `m_ripple` | 2 | A reaction wheel harmonic | The boot cycle, heard in the noise floor |
+| 7 | `r_band` | 3 | Matched, "almost sure", to an old science lander | The header format is a Starship's |
+| 8 | `r_dark` | 3 | Hacking or a ground-side mistake | The fleet software slewed toward a *fleet* signature: one of ours |
+| 9 | `flash_answer` | 3 | (if they looked) A point of light | It's on the ground, at the landing zone, not in orbit: theory A breaks |
+| 10 | `m_overlay` | 4 | The carrier and the flash share a frame | The same machine |
+
+`sharpie2` repeats the doodle (it echoes clue 3, and isn't counted).
+
+**Misdirections:**
+- `m_theory` (phase 3): the crew's tumbling-orbiter theory. It fits the
+  carrier, so everyone relaxes.
+- `r_ghost` (phase 3): a real tumbling stage. It proves tumbling hardware is
+  out there.
+- `signal_reply` (phase 3): the reply format is "old". This reads as the
+  orbiter.
+
+### The reveal itself
+
+`m_reveal` fires on flight day 40 in every season, cast to anyone. It's
+understated: a map grid, a tilted ship on its legs, a light every eleven
+seconds. It names Cargo 2 once and explains nothing else. The reader does the
+rest.
+
+### Choices bend the meaning and the cost (the core truth never changes)
+
+| Ending | Condition | What Cargo 2 becomes |
+|---|---|---|
+| *Old Friend* | Answered the carrier, and food held | Their hail landed between boots. It stopped looping and answered. One tap was enough. |
+| *Company* | Logged the carrier | It's still blinking when they land beside it. It waited without anyone answering, and it can wait a little longer. |
+| *Patience* | Waited in orbit | They watch its light through the storm from above. It keeps time for them. |
+| *Through the Dust* | Held the plan | They land in the storm on its light. It guided them down. |
+| *The Long Way Round* | None of the above | They walk over after landing and open the hold. Sharpie on the first crate: "You'll thank me." |
+
+### The second read
+
+Every clue card carries `clue` (lvc). The list goes into text.json as `reread`
+(card indices in deck order). The end screen can list the flight days on which
+those cards fired, read from the story log, with no explanation: "Flight days
+worth a second look: 3, 6, 14, …". That's data only, and the UI is the web
+worker's call. The final entries should send the reader back to scroll.
 
 ## Endings (checked in order on day 42)
 
