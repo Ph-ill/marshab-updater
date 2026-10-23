@@ -19,10 +19,14 @@ players).
 
 ## Setting: grounded near future
 
-- Real SpaceX Starships flying to Mars. Seven ships, **one astronaut per ship**.
-  Nobody shares a cabin, a shelter or a galley with a crewmate: two-person
-  scenes happen over the fleet link, video, or an EVA between ships. Check every
-  `{A}`/`{B}` card for "next to", "hands {B}", "across the table" and the like.
+- Real SpaceX Starships flying to Mars. Seven ships, **each astronaut belongs to
+  a home ship; a ship may briefly hold 0 or 2.** Crossings happen only in a
+  transfer window (every fifth day from day 7: a tethered line between hatches,
+  paid for in propellant) or an unscheduled rescue window, and an empty ship
+  flies itself. Most two-person scenes happen over the fleet link, video, or an
+  EVA between ships; an in-person scene needs `when same A B` and reads as a
+  visit. Check every `{A}`/`{B}` card for "next to", "hands {B}", "across the
+  table" and the like.
 - **Days 1–5 are in Earth orbit** (fuelling, tanker dockings, checkouts). Earth
   is huge in the window and calls are live. The departure burn is day 6; any
   card about Earth shrinking, the delay growing, or "since leaving" needs
@@ -33,15 +37,20 @@ players).
   scrubbers, water recovery, dosimeters, the storm shelter between the water
   tanks, solar particle events, micrometeoroids, EVAs, tethers, star trackers,
   the high-gain antenna, Starbase, Mission Control, anomaly reports.
-- Distance is the antagonist. The comm delay grows to about 20 minutes each way,
-  so a round trip is up to 40. Earth shrinks to a dot you can cover with a
+- Distance is the antagonist. One-way light time: seconds in Earth orbit, about
+  a minute by the middle dark (days 17–22), a few minutes on the approach (about
+  4 at day 28, 6 at days 33–36), about ten at arrival. Never more than 12
+  minutes each way in this season. Earth shrinks to a dot you can cover with a
   thumbnail.
+- Arrival is direct entry from the crossing (day 42), or aerocapture into a long
+  orbit if the fleet votes to wait. In dust the cameras go blind; the radar
+  still has the ground. No reaction wheels on a Starship: attitude is thrusters.
 - **Nothing internal or proprietary.** If you only know it from work, it doesn't
   go in a card. No part numbers, no internal tool names, no program names.
 - No aliens, no magic, no killer AI. Mysteries resolve into something real: an
   old spacecraft, physics, a failing part, a ground station down in a storm.
-- **Time:** the season is 42 flight days, and Phill hasn't decided how much real
-  transit time one game day is. Write "flight day", "this week", "a few days
+- **Time:** the season is 42 flight days. One flight day in the log is about
+  five days of real flight, so write "flight day", "this week", "a few days
   later", "since Starbase". Don't write "month three" or "halfway through
   the sixth month". Hours and minutes inside a scene are fine.
 
@@ -209,7 +218,8 @@ competence, kindness, the extra watch nobody asked for.
 
 ## Length
 
-- Card text: 1 to 3 sentences, under about 300 characters. Phone screen, captive
+- Card text: 1 to 3 sentences, under about 300 characters (payoff cards, from
+  day 40, reveals and endings, may run to 420). Phone screen, captive
   sheet.
 - Button labels: 2 to 5 words.
 - Outcomes: 1 to 3 sentences. End on the image or the joke, not on a moral.

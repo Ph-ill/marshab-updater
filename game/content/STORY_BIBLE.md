@@ -24,231 +24,186 @@ motifs, what gets planted and where it pays off.
 
 ## Shape of the voyage (flight days 1–42)
 
-1. **Leaving (days 1–10).** Days 1–5 are in Earth orbit (fuelling, tanker
-   dockings, checkouts): Earth fills the window and calls home are live. The
-   departure burn is day 6 (`l_departure`), and only after that does Earth
-   start to shrink. Plant everything here.
-2. **The middle dark (days 11–28).** Earth becomes a dot. Calls turn into
-   letters. The routine hardens into rituals, the isolation bites, and the
-   carrier and the flare nights come. The garden fails here.
-3. **The approach (days 29–39).** Mars becomes a disc, then a place. The things
-   earlier missions left behind start to answer. The dust storm builds and
-   forces the arrival vote (`dust_worse` opens `dec_arrival`).
-4. **Arrival (days 40–42).** Quiet on purpose: no new hooks, threads or
-   filler. Day 40 the reveal, day 41 the descent call (one of three
-   `a_descent_*` cards), day 42 the ending. `test_climax_is_clear` enforces it.
+One flight day in the log stands for about five days of real flight (STYLE.md).
+
+1. **Leaving (days 1–10).** Days 1–5 are in Earth orbit (a month-long tanker
+   campaign, checkouts): Earth fills the window and calls home are live. The
+   departure burn is day 6 (`l_departure`); the transfer-window routine starts
+   day 7 (`l_transfer`). Plant everything here.
+2. **The middle dark (days 11–24).** Earth becomes a dot, calls become letters,
+   the carrier arrives (day 15) and gets an ordinary explanation (day 22).
+3. **The approach (days 25–36).** Mars becomes a disc. The flash, the key, the
+   ground answer; the orbiter theory stops working. The dust storm forces the
+   arrival vote (`dust_worse` opens `dec_arrival`, about 2 seasons in 3).
+4. **Arrival (days 37–42).** One mystery beat a day: checked (37), listen (38),
+   count (39), reveal (40); day 41 the window (`a_window_*`) and the descent
+   call (`a_descent_*`); day 42 the recall cards and the ending.
+   `test_climax_is_clear` and the 300-season test enforce it.
 
 ## The ramp (slow burn)
 
 | Phase | Mystery content |
 |---|---|
-| 1 (days 1–10) | No mystery cards. The two phase-1 core clues hide in ordinary life (`l_reboot` days 2–9, `l_manifest` days 4–9), alongside the thumb, the garden and the live call. |
-| 2 (days 11–24) | The carrier (`m_carrier`, a due event days 13–16 that opens `dec_signal`), which reads as a retired probe's beacon. The noise-floor ripple, which reads as a wheel harmonic. The crew's orbiter theory (`m_theory`, days 17–24) lands here, so a sharp reader's day-20 lead is the misdirection. Phosphenes (single cosmic-ray pixels, filed `grim`) prime the cosmic-ray reading of the flash. |
-| 3 (days 25–36) | The carrier comes back cut off mid-header. The uncanny hooks open up (band, ghost, voice, dark). The flash (`m_flash1`, due days 29–32), the second sighting, and the vote on it. The crew stops being able to call it chance. |
-| 4 (days 37–42) | The overlay. The reveal (day 40, every season). The endings. |
+| 1 (days 1–10) | No mystery cards. The two phase-1 core clues hide in ordinary life (`l_reboot` day 3, `l_manifest` day 5). |
+| 2 (days 11–24) | The carrier (`m_carrier`, due days 15–19, opens `dec_signal`) on the ship-to-ship receiver. The ripple (`m_ripple`, a coolant-pump ground loop at 0.09 Hz). The 37-minute dropout (`m_dropout`). The crew's theory (`m_theory`, day 22): a written-off relay in a one-sol orbit, in a reset loop. |
+| 3 (days 25–36) | The theory confirmed (`m_theory_confirm`, the decoy holds). The reply (`signal_reply` / `signal_echo`). The uncanny hooks (band, ghost, voice, dark). The flash (30), the second sighting and its vote (32), the key (34), the ground answer (35), the overlay (36). |
+| 4 (days 37–42) | Checked, listen, count, the reveal (40), the window (41), endings. |
 
-Measured (lvc ramp line): mystery cards by first day 0 / 4 / 13 / 3.
+Measured (lvc ramp line): mystery cards by first day 0 / 5 / 17 / 6. Per season
+(metrics, 300 seasons): 0.0 / 4.6 / 9.9 / 4.0 mystery cards fired by phase.
+
+## The twist, in layers
+
+**Outer layer (what the crew believes from day 22):** something out there is
+boot-looping. The decoy is a written-off relay orbiter in a one-sol orbit,
+resetting forever; its 37-minute daily drift and half-orbit dropouts fit the
+evidence (`m_dropout`, `m_theory`, `m_theory_confirm`, `r_band`).
+
+**Truth (day 40):** it's on the ground. Cargo 2 came down about thirty
+kilometres long, tilted behind a crater rim, one solar wing half open, its dish
+aimed at empty sky. Its flight computer reboots every eleven seconds; each boot
+keys the beacon once and blinks the landing lights once (the self-test).
+
+**Why it never stopped (hindsight):** after a boot, its landing interlock waits
+about eleven seconds for a peer to answer before it gives up and reboots. Earth
+was always minutes away, so every reply from home arrived to a machine that had
+already given up. The fleet, inside five light-seconds on day 41, is the first
+thing in years that can answer in time. One tap is enough.
+
+**Plants for the why:** the galley chime and counting to eleven (`l_reboot`),
+the galley screen that waits for the ground's hello (`l_handshake`), the
+comm-delay cards (`comm_delay`, `comm_delay2`, `h_silence`), "the interlock
+won't move until they agree" (`dil_interlock`), the system text "One tap is
+enough". The reveal has a crewmate counting to eleven, humming the chime.
+
+**The vote that matters:** `dec_signal` (day 15). *Answer* means the hail owner
+hails every pass (costs: letters wait); then `a_window_hail` (day 41) lands the
+answer in time and the light stops blinking. *Log it* means `a_window_quiet`:
+"Tomorrow, then. In person." The `dec_flash` vote (look / leave) changes who
+learns it's on the ground and how (`flash_answer` vs `flash_answer_ground`,
+`m_checked` vs `m_checked_g`); leaving it buys letters on time.
 
 ## Motifs
 
 | Motif | Planted | Turns | Pays off |
 |---|---|---|---|
-| **The thumb**: holding a thumb up to a world | The early watch: Earth won't fit behind a thumb | The middle watch: a thumbnail covers Earth | Approach: Mars no longer fits behind it |
-| **Eleven seconds** | A galley screen reboot: dark, logo, chime, over before anyone counts to eleven | The carrier ("every 11 seconds"), a noise ripple, the orbiter theory ("eleven seconds a turn") | The boot loop: the lights blink again eleven seconds later |
-| **The Sharpie hand**: someone at Starbase packing a margin | The ration stash ("you'll thank me", a Starship doodle with its fingers crossed) | A spare that isn't on the manifest | A second note in the same hand, at the moment it's needed most |
-| **What earlier missions left** | The breakfast manifest line | The beacon hook, the spent stage | Cargo 2, waiting at the landing zone |
-| **The delay** | A live call home, with laughter landing in real time | Letters, then monologues | A message that arrives after the moment it was about |
-| **The garden** | Seeds planted in the first week | Nothing grows, and the crew keeps watering it anyway | One shoot on the approach, carried down |
-| **The shelter between the water tanks** | Flare drills, a deck of cards | Flare nights, shoulder to shoulder | Water is shielding, water is life, water is the last thing checked before landing |
+| **The thumb** | Early watch: Earth spills out around a thumb | Middle watch: a thumbnail covers Earth | Day 41: Mars spills out around it again, and a light keeps time |
+| **Eleven** | The galley chime; the fleet counts to eleven | The carrier's 10.96 s; the interlock | A crewmate counts to eleven, humming the chime |
+| **The Sharpie hand** | The ration stash ("you'll thank me", a little ship, fingers crossed) | A spare not on the manifest; `sharpie2` | The crate coda in every ending |
+| **What earlier missions left** | The manifest: Cargo 1/3/4 and one line for Cargo 2 | The relay decoy, the cover plate | Cargo 2, behind the crater rim |
+| **The delay** | A live call, laughter landing in real time | A minute, then six, then ten | Earth's answers always came too late |
+| **The garden** | Seeds in the first week | Four pods fail | A shoot on the approach, unless the water was rationed |
+| **The shelter between the water tanks** | Flare drills | The dose thread | Patting the tanks goodnight on the last night |
 
-## The reveal (designed first; everything else works backwards from it)
+## Fair-play clues (surface → truth)
 
-### Candidates, and the skeptical reader's attack
+**Core clues** carry `clue core [GROUP]` (lvc). text.json `core` is a list of
+groups; `sim/season.py --seasons 300` and the 300-season test fail if any group
+has no member fired before the reveal day. Measured: 300/300 seasons, 8 groups.
 
-**A. The lighthouse.** The carrier and the night-side flashes both come from a
-dead orbiter tumbling with an 11-second rotation.
-- *Guessable by day 20?* Yes, and that's the point now: `m_theory` hands it to
-  the reader on days 17–24 with a measured spin rate that fits the carrier.
-- *Cheat?* No, but it isn't a twist. The reveal would just confirm the surface
-  reading.
-- *Reframes earlier moments?* Barely.
-- *Grounded?* Yes.
-- *Emotional?* Melancholy, but it's about a machine nobody aboard knew.
-- **Verdict: weak as the reveal, strong as the misdirection.** Kept as the
-  crew's own theory.
-
-**B. The packer.** One person at Starbase staged every oddity (the stash, the
-voice, the antenna file) as a long-distance care package.
-- *Guessable?* Partly. The Sharpie notes point at it.
-- *Cheat?* Yes. The antenna file and the flashes on Mars can't be explained by
-  someone on Earth without hand-waving.
-- *Reframes?* The kind moments, yes. The uncanny ones, badly.
-- *Grounded?* Strained.
-- *Emotional?* Warm, but it shrinks the dread into a prank.
-- **Verdict: rejected.** The packer survives as a person, not as the
-  explanation.
-
-**C. An echo.** The carrier is the fleet's own transmissions, reflected back
-from Phobos or from their own discarded hardware.
-- *Guessable?* Unlikely.
-- *Cheat?* Yes. A reflection doesn't make an 11-second rhythm or a light on the
-  night side.
-- *Grounded?* Not really.
-- *Emotional?* Hollow.
-- **Verdict: rejected.**
-
-**D (chosen). Cargo 2.** One of the uncrewed cargo Starships that went ahead was
-written off as "lost on landing" years ago. It isn't lost. It landed upright at
-the edge of the landing zone with a dead uplink. Its flight computer has been
-stuck in a watchdog boot loop ever since.
-- Every boot takes eleven seconds. Every boot keys the beacon once, on the old
-  fleet channel, and blinks the landing lights once for the self-test.
-- So the carrier and the night-side flashes are the same machine, saying "I'm
-  here" the only way it can, every eleven seconds, for years.
-- It carries what the manifest said it carried: spares and water. In other
-  words, the margin.
-
-The attack on D:
-- *Guessable by day 20?* Very unlikely. By then the clues are a breakfast
-  manifest line, a galley screen that blinks the lights when it restarts, a
-  Sharpie doodle and a carrier on an unused frequency. Each one has an ordinary
-  reading. The obvious theory (A) arrives later and fits well enough to stop
-  people looking.
-- *Cheat?* No. Every piece is on the page:
-  - the eleven seconds;
-  - the boot blink;
-  - the written-off cargo ship;
-  - the flashes on the ground, not in orbit;
-  - a command carrying a valid fleet signature from no ship in the fleet.
-- *Reframes?* Hard. Read again, the galley reboot is the whole answer. The
-  doodle on the stash bag is a ship with a 2 on it. "One tap is enough" stops
-  being UI copy.
-- *Grounded?* Uncrewed cargo Starships going ahead of crew is the public plan.
-  A lander with a failed antenna and a computer in a boot loop is an ordinary
-  failure, held for an unusual length of time. Controls people will feel this
-  one in their teeth, and nobody has to say why.
-- *Emotional?* Yes. A machine built by people the crew knows has been keeping a
-  light on at the landing site for years. It holds the margin someone at
-  Starbase packed after losing it. The fleet arrives as its rescue, not its
-  discoverer.
-
-**Why D wins:** it's the only candidate that makes the dread *and* the wonder
-true at once. Some weeks of the voyage felt haunted, and they were. The ghost
-is ours, and it has been waiting.
-
-### Fair-play clues (surface reading → truth)
-
-**Core clues** carry `clue core` (lvc). They go into text.json as `core`, and
-`sim/season.py --seasons 300` (and `test_fair_play_and_endings_over_300_seasons`)
-fails if any season reaches the first `reveal` card without all of them fired on
-an earlier day. Measured: 300/300 seasons. Core clues are due cards with tight
-windows; decisions they need are opened from an event with `do open`.
-
-| # | Card / place | Phase | Core | Surface | Truth |
+| # | Card | Phase | Core | Surface | Truth |
 |---|---|---|---|---|---|
-| 1 | `l_reboot` | 1 | yes | A galley screen update; a cabin in-joke about the chime | A boot is over in under eleven seconds |
-| 2 | `l_manifest` (tanker docking, Earth orbit) | 1 | yes | Background color: the cargo ships went ahead, one written off, with a smudge-and-streak thumbnail | Cargo 2 exists, carried spares and water, and the thumbnail is the ship and its shadow |
-| 3 | System text `res_open`: "Anyone can answer this one. One tap is enough." | all | – | UI copy for rescues | In the answered endings, one hail was enough |
-| 4 | `m_carrier` → `dec_signal` | 2 | yes | "Some retired probe's beacon", every 11 seconds, on a channel the fleet retired | It's the old fleet channel |
-| 5 | `m_ripple` | 2 | – | A reaction wheel harmonic | The boot cycle, heard in the noise floor |
-| 6 | `r_band` | 3 | – | A safe-mode beacon matched to a science orbiter | The header format is a Starship's |
-| 7 | `r_dark` | 3 | – | Hacking or a ground-side mistake; a replayed packet "it has said before" | The fleet software accepted it as one of ours |
-| 8 | `m_flash1` | 3 | yes | One lit pixel in an orbiter night frame: a cosmic ray, probably | The landing lights |
-| 9 | `flash_answer` | 3 | – | (if they looked) Frames counted | It's on the ground, not in orbit: the orbiter theory breaks |
-| 10 | `m_overlay` | 4 | – | The carrier and the flash share a frame | The same machine |
+| 1 | `l_reboot` | 1 | yes | A galley update, an in-joke about the chime | A boot is eleven seconds |
+| 2 | `l_manifest` | 1 | yes | Background: the cargo ships, one written off, a smudge-and-streak thumbnail | Cargo 2 and its shadow, outside the zone |
+| 3 | System text `res_open` | all | – | UI copy | One tap is enough |
+| 4 | `m_carrier` | 2 | yes | An old probe's beacon on the old channel | Cargo 2, every 10.96 s |
+| 5 | `m_ripple` | 2 | – | Coolant-pump ground loop | The same rhythm in the noise floor |
+| 6 | `m_dropout` | 2 | yes | Gone 37 minutes later each day: a one-sol orbit | Mars's own day: it turns with the ground |
+| 7 | `m_theory_confirm` | 3 | – | The decoy confirmed | The decoy |
+| 8 | `r_band` | 3 | – | Matched to the old relay, almost | Cut before the spacecraft ID |
+| 9 | `m_flash1` | 3 | yes | A pixel on the night side | The landing lights |
+| 10 | key: `m_key` / `r_dark` | 3 | yes | A replay: "Not ours. Checked." | A trusted key: it's one of ours |
+| 11 | ground: `flash_answer` / `flash_answer_ground` | 3 | yes | It isn't in orbit | The decoy breaks |
+| 12 | `m_overlay` | 3 | yes | Carrier and flash share a clock | The same machine |
 
-`sharpie2` (days 26–39) is where the 2 appears in the Sharpie hand; it echoes the
-stash and isn't counted. `dil_stash` is no longer a clue.
+Misdirections: `m_theory` / `m_theory_confirm` (the relay), `w_phosphene`
+(cosmic-ray pixels), `r_band` (old relay), `r_ghost` (a cover plate shed at
+departure, still flying with them), `m_key` / `r_dark` ("Not ours. Checked."),
+`signal_reply` (cut off before the sender field).
 
-**Misdirections:**
-- `m_theory` (phase 2): the crew's spinning relay orbiter. Its measured turn
-  fits the carrier exactly, so everyone relaxes.
-- `w_phosphene` (phase 2): cosmic rays as single pixels, so `m_flash1` reads as
-  noise.
-- `r_band` (phase 3): matched to a science orbiter in safe mode.
-- `r_ghost` (phase 3): a real tumbling stage. It proves tumbling hardware is
-  out there.
-- `signal_reply` (phase 3): half a frame, cut off mid-header, "as if the sender
-  restarted". It reads as the orbiter's spin taking the antenna away.
-- `r_dark`: the replayed packet reads as a stuck relay.
+## The reveal itself
 
-### The reveal itself
+`m_reveal` (`reveal`, day 40) is cast to the theory owner (`ow_theory`);
+`m_reveal_any` is the fallback and never fires in 300 seasons. Understated: the
+survey frame, Cargo 2 named once, the count to eleven, "the streak was its
+shadow". `a_report` (day 40) carries the sting: a page and a half / forty pages.
 
-`m_reveal` (`reveal`) fires on flight day 40, cast to whoever saw the flash
-(`flash_who`); `m_reveal_any` is the fallback if that card can't fire, and
-normally never does. It's understated: the landing-zone survey comes in sharp,
-the thumbnail's smudge and streak become Cargo 2 and its shadow, and the lights
-blink again eleven seconds later. It names Cargo 2 once and explains nothing
-else.
+## Threads (seven, one owner each per voyage)
 
-### Endings: carrier × arrival (the core truth never changes)
+Owners are bound with `who` on the opener and kept distinct with `!is`, so all
+seven astronauts carry exactly one thread and every one gets an epilogue line.
 
-Checked in deck order on day 42; the first match wins. Each needs ≥ 5% of 300
-seasons (tested).
+| Thread | Opener (day) | Payoffs |
+|---|---|---|
+| list | `p_live_call` (1) | `p_list_letter`, `g_news` (27), `a_list` (42) |
+| song | `p_music` (2) | `p_song_ask` (21), `a_song` (42) |
+| garden | `p_garden_plant` (4) | `p_garden_fail` (18), `p_garden_sprout` or `p_garden_none` (water vote) |
+| letter | `l_letter` → `dil_letter` (8) | `letter_open` / `letter_worn`, `a_letter` (40) |
+| dose | `l_dose` → `dil_dose` (9) | `dose_swap` / `dose_ok`, `a_last_night` (41) |
+| hail | `m_carrier` → `dec_signal` (15) | `signal_reply`/`signal_echo` (28), `m_overlay` (36), `a_window_*` (41), `a_recall_*` (42) |
+| theory | `m_theory` (22) | `m_theory_confirm` (25), `m_reveal` (40) |
+
+Costs carry forward: answering costs letters (morale), leaving the flash buys
+them back, rationed water costs the garden, the wait branch costs fuel and food.
+Endings cite the votes. The packer's loss is on the page (`g_packer`).
+
+## Endings: hail × arrival (the core truth never changes)
+
+Checked in deck order on day 42; first match wins. Titles come from `title`
+(text.json `ti`). Every ending closes on the first crate (the Sharpie coda).
+Each needs ≥ 5% of 300 seasons (tested).
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered the carrier + held the plan | 18.7% |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 15.7% |
 | 2 | *Through the Dust* (`end_through`) | held the plan | 22.0% |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + waited in orbit | 18.0% |
-| 4 | *Patience* (`end_patience`) | waited in orbit | 14.0% |
-| 5 | *Old Friend* (`end_friend`) | answered, no arrival vote | 11.7% |
-| 6 | *The Long Way Round* (`end_long_way`) | none of the above | 15.7% |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 19.3% |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 16.0% |
+| 5 | *Old Friend* (`end_friend`) | answered, clear air | 12.7% |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 14.3% |
 
-### Epilogue
+## Epilogue
 
-`system.json` `epi.story` is a priority list of [card id, line]. lvc maps it to
-[card index, line]. `Renderer.epilogue` gives each crew member the first line
-whose card they were role A in, falling back to the axis/bond lines.
-`sim/season.py` writes it to `sim/out/epilogue.txt`. The web end screen
-should mirror `Renderer.epilogue` (web worker).
+`system.json` `epi.story` is a priority list of [card id, line]: thread payoffs
+first, then openers, then a few fallbacks. lvc maps it to card indices.
+`Renderer.epilogue` gives each astronaut the first line whose card they were
+role A in. Measured: 7/7 in 300/300 seasons (tested).
 
-### The second read
+## Reading view
 
-Every clue card carries `clue` (lvc). The list goes into text.json as `reread`
-(card indices in deck order). The end screen can list the flight days on which
-those cards fired, read from the story log, with no explanation: "Flight days
-worth a second look: 3, 6, 14, …". That's data only, and the UI is the web
-worker's call. The final entries should send the reader back to scroll.
+`Renderer.reader` (sim/out/reader.txt) folds each day's system echoes (actions,
+crossings, notes) into one "around the fleet" line and prints the ending title
+as a heading. Hand-off: web/render.js should do the same.
 
-## Threads
+## The second read
 
-- **The garden**: a planting beat (first week), a failing beat (the middle
-  dark), then one sprout (approach), only if someone kept watering it (the
-  `garden` var).
-- **The flashes**: the first sighting (due, days 29–32); a second sighting at the
-  same longitude a few days later; then a fleet vote (look closer / leave it
-  for the ground); then a resolution only if they looked.
-- **The Sharpie hand**: dil_stash, then idle_spares, then a late note (sharpie2,
-  days 26–39) that fires only if the stash was found earlier.
-- **The delay**: a live call (early), comm_delay (middle), a late video message
-  that arrives after the event it was about.
+Every clue card carries `clue`; text.json `reread` lists them. The end screen
+can list the flight days they fired on, with no explanation.
 
 ## Characters
 
-All seven are competent, kind, and tired in different ways. Traits (brave,
-curious, warm) choose which option fires and who gets cast. Skill flavor stays
-subtle: Diego's eye for parts and fits, everyone else's for loops, logic and
-sensors. Never name the job, and use it in no more than about 1 card in 6.
+All seven are competent, kind, and tired in different ways. Each astronaut
+belongs to a home ship; a ship may briefly hold 0 or 2 during a transfer window
+(every fifth day from day 7) or an unscheduled rescue window. Skill flavor stays
+subtle, in no more than about 1 card in 6.
 
 ## Cliffhangers
 
-The hooks in 70_hooks.lv follow the STYLE.md rules. The new hooks lean toward
-the uncanny over repairs:
-
-- a voice on the loop at night;
-- a ship that drops off the net.
-
-Both resolve in grounded ways that leave a residue: one tender, one unsettling.
+Mystery hooks (band, ghost, voice, dark) open days 25–33 and resolve by 34.
+Other hooks open by 35 and resolve by 36. Each resolves in grounded hardware
+with a residue.
 
 ## Reserved words
 
 engagement keeps `content/engage/reserved.json`: story words that engagement/UI
 text must not use. That file lives on the engagement branch only, so this list is
-the source to sync from. "Cargo 2" stays as the story's name (the gifts label's
-everyday "cargo" should change there, not here).
+the source to sync from. "Cargo 2" stays as the story's name.
 
 Cargo 2, smudge, streak, shadow (of a ship), fingers crossed, self-test,
-safe-mode, pixel, night frame, fast sequence, spin, turns a minute, between
-boots, old channel, retired channel, aim for the light, eleven / 11 seconds,
-Sharpie, you'll thank me, written off, lost on landing, landing lights.
+safe mode, safe-mode, pixel, night frame, fast sequence, spin, turns a minute,
+between boots, old channel, retired channel, old common channel, aim for the
+light, eleven / 11 seconds, 10.96, Sharpie, you'll thank me, written off, lost
+on landing, landing lights, light-seconds, sol, Mars day, thirty-seven minutes,
+37 minutes, interlock, transfer line, crater rim, solar wing, sequence number,
+trusted key, program key, backup site, lighthouse, blue marker, galley chime,
+chime, count to eleven, offline mode, replay, not ours, say again, keeps time.
