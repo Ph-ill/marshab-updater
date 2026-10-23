@@ -33,7 +33,12 @@ try:
     root = sorted(os.listdir('/'))
 except Exception:
     root = []
-print(json.dumps({'mpy': '%d.%d.%d' % (v[0], v[1], v[2]), 'machine': os.uname().machine, 'build': b, 'fs': fs, 'root': root, 'mainHead': head}))
+try:
+    import machine, binascii
+    uid = binascii.hexlify(machine.unique_id()).decode()
+except Exception:
+    uid = None
+print(json.dumps({'mpy': '%d.%d.%d' % (v[0], v[1], v[2]), 'machine': os.uname().machine, 'build': b, 'fs': fs, 'root': root, 'mainHead': head, 'uid': uid}))
 `;
 }
 
@@ -86,7 +91,7 @@ export async function readDeviceInfo(device){
   const runtime = await readRuntime(device);
   const version = await readJsonFile(device, 'version.json').catch(() => null);
   const ship = await readJsonFile(device, 'data/ship.json').catch(() => null);
-  const info = { version, ship, runtime, board: boardFromRuntime(runtime) };
+  const info = { version, ship, runtime, board: boardFromRuntime(runtime), uid: runtime?.uid || null };
   info.kind = firmwareKind(info);
   return info;
 }
@@ -100,5 +105,6 @@ export function summarizeDeviceInfo(info){
   const ship = info.ship;
   const name = ship ? `${ship.ship_name || 'ship'} · #${ship.ship_id}${ship.role ? ` · role ${ship.role}` : ''}` : 'not set';
   const fs = info.runtime?.fs ? `${Math.round(info.runtime.fs[1] / 1024)} KB free of ${Math.round(info.runtime.fs[0] / 1024)} KB` : '—';
-  return { version, runtime, name, board: info.board || 'unknown', fs, kind };
+  const board = `${info.board || 'unknown'}${info.uid ? ` · id ${info.uid}` : ''}`;
+  return { version, runtime, name, board, fs, kind };
 }
