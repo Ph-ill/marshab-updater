@@ -7,6 +7,13 @@ Writes (relative to the repo root):
 
 Log files named with --log are always preserved too, and data/ is never touched by an install.
 
+Partial releases for the game firmware (a .uf2 with the game core lv/ frozen in, see
+game/tools/build_firmware.sh): --frozen game/tools/fw/cores/lv-core-<ver>-<core>.json says
+which core the release is built against. Such a release ships no lv/ (a /lv folder would
+hide the frozen core), may ship lvx/<module>.mpy overrides of only the core modules that
+changed, and is refused by the updater on a board running any other core. lv/ and lvx/ are
+always cleared first, so overrides from an older release never linger.
+
 Example (coexistence bench test):
   python3 tools/build_release.py --version 0.0.1-coex --channel bench \
       --label "Wi-Fi + BLE coexistence bench test" --source game/bench/coex-test \
@@ -71,6 +78,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--build-time", default=None, help="ISO timestamp stored in version.json (default: now); pin it for reproducible builds")
     ap.add_argument("--mpy-cross", default=None, help="path to mpy-cross for a syntax check of every .py")
     ap.add_argument("--no-latest", action="store_true", help="do not move the index 'latest' pointer")
+    ap.add_argument("--frozen", type=Path, default=None,
+                    help="core manifest (game/tools/fw/cores/*.json): a partial release for the game firmware with that frozen core")
     ap.add_argument("--repo-root", type=Path, default=ROOT)
     return ap.parse_args()
 
@@ -111,6 +120,34 @@ def mpy_check(mpy_cross: str, files: list[tuple[str, bytes]]) -> None:
     print("mpy-cross syntax check passed")
 
 
+LVX_RE = re.compile(r"^lvx/([a-z_][a-z0-9_]*)\.(mpy|py)$")
+
+
+def frozen_spec(path: Path, rels: list[str]) -> tuple[dict, list[str]]:
+    """(release "frozen" block, override names) for a partial release; exits on a bad layout."""
+    core = json.loads(path.read_text())
+    for k in ("id", "version", "core", "modules"):
+        if k not in core:
+            raise SystemExit(f"{path}: not a core manifest (no {k!r})")
+    if not re.match(r"^[0-9a-f]{12}$", core["core"]):
+        raise SystemExit(f"{path}: bad core hash {core['core']!r}")
+    mods = {m[3:] for m in core["modules"] if m.startswith("lv.")}
+    overrides = []
+    for r in rels:
+        if r == "lv" or r.startswith("lv/"):
+            raise SystemExit(f"{r}: a game-firmware release must not ship lv/ (it hides the frozen core); "
+                             "changed core modules go in lvx/")
+        if r.startswith("lvx/"):
+            m = LVX_RE.match(r)
+            if not m or m.group(1) not in mods:
+                raise SystemExit(f"{r}: lvx/ may only hold overrides of the frozen modules ({', '.join(sorted(mods))})")
+            if m.group(1) in overrides:
+                raise SystemExit(f"{r}: two overrides for lv.{m.group(1)}")
+            overrides.append(m.group(1))
+    return ({"id": core["id"], "version": core["version"], "requires": core["core"],
+             "micropython": core.get("micropython", ""), "modules": sorted(mods)}, sorted(overrides))
+
+
 def vkey(version: str):
     core, _, pre = version.partition("-")
     nums = tuple(int(x) for x in core.split("."))
@@ -131,10 +168,20 @@ def main() -> None:
     if "main.py" not in [r.as_posix() for r in rels]:
         raise SystemExit("release has no main.py; the board would boot to an empty REPL")
 
+    frozen, overrides = (None, [])
+    if a.frozen:
+        frozen, overrides = frozen_spec(a.frozen.resolve(), [r.as_posix() for r in rels])
+        for d in ("lv", "lvx"):           # never a stale full install or an old override
+            if d not in a.delete:
+                a.delete.append(d)
+    elif any(r.parts[0] == "lvx" for r in rels):
+        raise SystemExit("lvx/ overrides only work on the game firmware: give --frozen <core manifest>")
+
     created = a.build_time or dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     version_meta = {
         "schema": 2, "project": PROJECT, "version": a.version,
         "channel": a.channel, "runtime": "micropython", "min_runtime": a.runtime, "build": created,
+        **({"frozen": frozen["requires"], "overrides": overrides} if frozen else {}),
     }
     payload: list[tuple[str, bytes]] = [(r.as_posix(), (source / r).read_bytes()) for r in rels if r.as_posix() != "version.json"]
     payload.append(("version.json", (json.dumps(version_meta, separators=(",", ":")) + "\n").encode()))
@@ -179,6 +226,7 @@ def main() -> None:
         "logs": a.log,
         "shipConfig": {"roles": [r for r in a.roles.split(",") if r]},
         **({"hotspot": {"prefix": a.hotspot_prefix}} if a.hotspot_prefix else {}),
+        **({"frozen": frozen, "overrides": overrides} if frozen else {}),
         "payload_bytes": total,
         "files": files,
     }
@@ -193,7 +241,8 @@ def main() -> None:
     index_path = root / "firmware" / "index.json"
     index = json.loads(index_path.read_text()) if index_path.exists() else {"schema": 2, "project": PROJECT, "latest": None, "channels": {}, "releases": []}
     entry = {"version": a.version, "channel": a.channel, "date": a.date, "label": a.label,
-             "path": "/" + (rel_dir / "release.json").as_posix(), "bytes": total, "files": len(files)}
+             "path": "/" + (rel_dir / "release.json").as_posix(), "bytes": total, "files": len(files),
+             **({"frozen": frozen["requires"]} if frozen else {})}
     releases = [r for r in index.get("releases", []) if r.get("version") != a.version] + [entry]
     releases.sort(key=lambda r: vkey(r["version"]), reverse=True)
     index["releases"] = releases
@@ -206,6 +255,8 @@ def main() -> None:
     index_path.write_text(json.dumps(index, indent=2) + "\n")
 
     print(f"wrote {out.relative_to(root)}: {len(files)} files, {total} bytes payload, {out.stat().st_size} bytes json")
+    if frozen:
+        print(f"partial release for {frozen['id']} {frozen['version']} core {frozen['requires']}: overrides [{', '.join(overrides)}]")
     print(f"index {index_path.relative_to(root)}: latest={index['latest']} channels={index['channels']}")
 
 

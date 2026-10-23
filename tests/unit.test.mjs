@@ -4,8 +4,8 @@ import { compareVersions, latestVersion, isTestRelease } from '../src/releases.j
 import { validateShipConfig, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from '../src/ship-config.js';
 import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
-import { boardFromRuntime, firmwareKind, summarizeDeviceInfo } from '../src/device-info.js';
-import { findRelease } from '../src/installer.js';
+import { boardFromRuntime, firmwareKind, summarizeDeviceInfo, describeFirmware, overridesOf } from '../src/device-info.js';
+import { findRelease, frozenMismatch } from '../src/installer.js';
 import { CREW, validateCodes, sharedCodes, crewConfig, digest, randomCode, codeList, loadCodes, saveCodes, forgetCodes, CODES_MEMORY_KEY } from '../src/crew-codes.js';
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, ROLE_MEMORY_KEY } from '../src/role-memory.js';
 
@@ -59,6 +59,22 @@ t('firmware kind: Long Voyage, hand-copied coex test, empty, other', () => {
   assert.equal(firmwareKind({ runtime: { mainHead: '', root: ['boot.py', 'data'] } }), 'empty');
   assert.equal(firmwareKind({ version: { project: 'MarsHab' }, runtime: { root: ['main.py', 'server.py'] } }), 'other');
   assert.equal(summarizeDeviceInfo({ runtime: { mpy: '1.29.0', root: [] } }).version, 'nothing installed');
+});
+t('game firmware: frozen core described like the board, partial releases need their exact core', () => {
+  const fz = { id: 'lv-core', version: '0.1.0', core: 'abcdef012345' };
+  assert.equal(describeFirmware({ mpy: '1.29.0', root: [] }), 'stock MicroPython (no frozen game core)');
+  assert.equal(describeFirmware({ frozen: fz, root: ['main.py', 'lvx'], lvx: ['engine.mpy', 'sync.py', '_x.py', 'notes.txt'] }),
+    'frozen lv-core 0.1.0 (core abcdef012345), overrides: [engine, sync]');
+  assert.match(describeFirmware({ frozen: fz, root: ['lv', 'main.py'], lvx: [] }), /HIDDEN by a \/lv directory/);
+  assert.deepEqual(overridesOf({ lvx: ['engine.mpy', 'engine.py'] }), ['engine']);
+  assert.match(summarizeDeviceInfo({ runtime: { mpy: '1.29.0', root: [], frozen: fz, lvx: [] } }).runtime, /^MicroPython 1\.29\.0 · game firmware: frozen lv-core/);
+  assert.equal(summarizeDeviceInfo({ runtime: { mpy: '1.29.0', root: [] } }).runtime, 'MicroPython 1.29.0');
+  const rel = { version: '0.1.1-x', frozen: { id: 'lv-core', version: '0.1.0', requires: 'abcdef012345' } };
+  assert.equal(frozenMismatch({ version: '0.0.2' }, { mpy: '1.29.0' }), null, 'a full release goes anywhere');
+  assert.equal(frozenMismatch(rel, { frozen: fz }), null);
+  assert.match(frozenMismatch(rel, { mpy: '1.29.0' }), /stock MicroPython\. Flash lv-core-0\.1\.0-abcdef012345-<board>\.uf2 first/);
+  assert.match(frozenMismatch(rel, { frozen: { ...fz, core: '111111111111' } }), /this board has lv-core 0\.1\.0 \(core 111111111111\)/);
+  assert.match(frozenMismatch(rel, null), /could not be read/);
 });
 t('runtime: status, boards and upstream links', () => {
   assert.equal(runtimeStatus(runtime, { runtime: { mpy: '1.29.0' } }, '1.29.0').state, 'ok');
