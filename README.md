@@ -45,7 +45,7 @@ Only `index.html`, `styles.css`, `favicon.svg`, `src/` and `firmware/` go into t
 ```bash
 python3 tools/build_release.py --version 0.0.2-coex --channel bench \
   --label "Wi-Fi + BLE coexistence bench test" \
-  --source ../pico-games/coex-test \
+  --source game/bench/coex-test \
   --log coex_log.csv --log coex_log.old --log coex_boot.txt --roles A,B \
   --notes "What changed and what to look for." \
   --mpy-cross "$(command -v mpy-cross)"

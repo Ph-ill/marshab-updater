@@ -9,7 +9,7 @@ Log files named with --log are always preserved too, and data/ is never touched 
 
 Example (coexistence bench test):
   python3 tools/build_release.py --version 0.0.1-coex --channel bench \
-      --label "Wi-Fi + BLE coexistence bench test" --source ../pico-games/coex-test \
+      --label "Wi-Fi + BLE coexistence bench test" --source game/bench/coex-test \
       --log coex_log.csv --log coex_log.old --log coex_boot.txt --roles A,B
 """
 from __future__ import annotations
