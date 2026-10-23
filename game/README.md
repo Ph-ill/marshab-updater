@@ -86,15 +86,17 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
 
 ## Results (build 0.1.0, 15 sample cards)
 
+*Current content pack (196 cards):* pack.bin 6,150 B, text.json 24,908 B gzipped, peak MicroPython heap 72,480 B, snapshot 676 B, final reference digest `8aa6f108a5646d29` (authored and reversed merge order). `python3 -m unittest discover -s tests` runs 70 tests (49 content, 21 core). The figures below are the original 15-card measurements.
+
 **Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 7 independent ships in 4 ways:
 * instant;
 * gossip (0-2 days of lag);
 * reverse-order with 20% duplicates;
 * bursty, with one ship's links down every 5 days.
 
-Every ship ends on the reference digest `8782c95070c3682d` in every scenario. The deepest replay rewrote 11 days.
+Every ship ends on the same reference digest in every scenario (`8782c95070c3682d` for the 15-card pack; the current pack's digest is above). The deepest replay rewrote 11 days.
 
-**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest is `8782c95070c3682d`.
+**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest matches (`8782c95070c3682d` then; see above for the current pack).
 
 **Size and RAM** (32-bit MicroPython, `gc.mem_alloc`):
 
@@ -105,7 +107,7 @@ Every ship ends on the reference digest `8782c95070c3682d` in every scenario. Th
 | text.json / .gz (phone) | 4.2 KB / 2.0 KB | ≈20 KB / ≈9-10 KB (estimate, real prose) |
 | core code in RAM | 19 KB as .mpy, 20.6 KB from .py | same; ≈0 if frozen into the firmware |
 | choice log | 3.9-4.9 KB for 169 records (≈23-29 B/record) | ≈10 KB for 7 active players; ≈25 KB worst case |
-| state + engine | ≈1.1 KB, snapshot about 320 B | same |
+| state + engine | ≈1.1 KB, snapshot about 320 B (676 B with the current pack) | same |
 | whole check, peak | runs in a 56 KB heap (.mpy) | ≈50-60 KB of the 157-168 KB free with coex running |
 
 **Tick time** (x86 unix port, 32-bit): the 15-card pack averages 0.16 ms/tick (worst 0.28 ms); the 110-card pack averages 1.3 ms (worst 2.9 ms). A record merge with its HMAC check takes about 15 µs.
@@ -124,4 +126,4 @@ Every ship ends on the reference digest `8782c95070c3682d` in every scenario. Th
 5. **The crew roster is real and lives in `content/roster.lv`.** Phill (ship 1, flagship), Jacques, Kim, Jai, Michelle, Diego, Dorian. No quirks were given, so each astronaut's starting traits are seeded from the voyage key and their name; add `quirk <name>` to a line to set one. The compiler rejects gendered pronouns in any card or template text, and story beats are kept good-natured (injuries come from the environment, never from someone's mistake).
 6. **Content: the first voice batch is in (91 cards).** See `content/STYLE.md` for the house style. Card language additions: `hook` (a cliffhanger that is the last line of its day, at most one every 4 days, resolved the next day by a `due` card with `when fired <hook>`; text.json marks hooks with `"h":1` so the phone can show them as "Last night...") and `when tag A <word>` (roster tags, compiled to a crew bitmask). `lvc` also prints `style:` warnings: hard-coded names, name-checked jobs, demeaning words, cheap resolutions, calendar pins, over-long text. `tests/test_content.py` keeps the real pack at zero style warnings.
 7. **Content batch 2 (113 cards).** Every card carries `cat <category> [skill]`; `lvc` prints the mix and fails the build if repairs exceed 25% or skill flavor 18% (`check_mix`). `check_ramp` enforces the slow burn (no uncanny vocabulary before day 11, uncanny hooks only from day 25; see STYLE.md). `clue` marks a card for the second read: text.json gains `"reread": [card indices]`, and the end screen (web, not yet built) should list those cards' flight days under the ending without explanation. The story design is in `content/STORY_BIBLE.md` (spoilers; players should not read it). Engine: role casting prefers the least-featured crew (`State.spot`, part of the snapshot), keeping story appearances within about 2% of the mean over 100 seasons. Every ending lands in 12-31% of 300 seasons.
-8. **The weekly snapshot cadence is a guess.** Snapshots take about 320 B each, so daily snapshots on flash would make replays almost free.
+8. **The weekly snapshot cadence is a guess.** Snapshots take about 676 B each with the current pack, so daily snapshots on flash would make replays almost free.

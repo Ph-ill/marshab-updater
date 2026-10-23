@@ -323,8 +323,11 @@ Endings cite the votes. The packer's loss is on the page (`g_packer`).
 
 Checked in deck order on day 42; first match wins. Titles come from `title`
 (text.json `ti`). Every ending closes on the first message off the surface,
-to a loading bay at Starbase, and since round 16 on the loading bay's reply
-("From a loading bay, later: "Told them it sulks.""). The first crate ("You'll
+to a loading bay at Starbase, and on the loading bay's reply, different in
+each ending since round 17 ("Told them it sulks." stays with *Lights On*, which
+echoes `p_packer_note`; the others: "Tell it the bay says hello.", "Thank it for
+the drill bit.", "Knew it'd keep.", "Told you it was slow.", "Told them. Thank
+it for us."). The first crate ("You'll
 thank me.") stays in `end_lights`; the Sharpie hand also returns on day 38
 (`a_recall_shared`). The renderer prefixes every ending with `sys.end`, now
 "From the log:" (was "Arrival day.", which clashed with endings set sols later).
@@ -332,10 +335,16 @@ Every answer is HELLO then HOLD on the next tick (the patch says ON HELLO: WAKE
 ALL), and every power draw in an ending has a named source. Since
 round 14 every ending pays a price, answered or not. Answered endings: *Lights
 On* spends Cargo 2's floodlights ("All seven. The eighth kept the lights on."),
-*The Long Orbit* loses the seed stock in Cargo 2's hold (the lamp stayed lit,
-the heater didn't; "Landed. All seven. The eighth was waiting."), *Old Friend*
-ruins the rover's pack (half range for the mission, a ground waiver for the
-drive; "All eight.", the only ending that says it). Unanswered endings close "All seven, one
+*The Long Orbit* loses the seed stock in Cargo 2's hold (round 17: an explicit
+power choice; a storm sky starves the wing, the budget holds a lamp or a hold
+heater, not both, and the fleet asks for the lamp as a mark to land on;
+"Landed. All seven. The eighth was waiting."), *Sit With It* (`end_friend`,
+retitled from *Old Friend* in round 17) costs Cargo 2 its cold-night charge:
+the rover is forty-eight percent used at the turn-round point, the sixteen-minute
+waiver says YOUR CALL, the pad crew's marker note over the leg port says "Slow
+charger. Sit with it.", the crew plug in at four percent and sit all afternoon
+on the charge Cargo 2 kept for the cold, and that night its lamp is dimmer and
+stays that way ("All eight.", the only ending that says it). Unanswered endings close "All seven, one
 for good. Found the eighth." / "All seven. Found the eighth." / "All seven.
 Found the eighth, in time." Endings may run to 640 characters (lint MAX_ENDING).
 
@@ -350,7 +359,7 @@ Cargo 2 thirty kilometres past it. Unanswered endings answer in person.
 Cargo 2 has a job in every ending: floodlights as the place marker (`end_lights`),
 answered from the crater rim by the one who argued to answer, one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame (`end_through`); `end_lights` gets one extra granted command (lights), a manifest line read by pass, a
 spare drill bit and the frozen seed stock (`end_long_orbit`; no tile line, since an ending can't bind the r_strike astronaut), found dead after the cold, answered by hand
-(`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), a rover drive past the point of return, judged by Cargo 2's knock on the rover radio (the lamp is below the horizon at 30 km), rescued by the leg charge port planted in `g_packer`'s forklift photo, paid for with the rover's pack (`end_friend`), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
+(`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), a rover drive past the point of return, judged by Cargo 2's knock on the rover radio (the lamp is below the horizon at 30 km), rescued by the leg charge port planted in `g_packer`'s forklift photo, paid for with the charge Cargo 2 kept for the cold (`end_friend`, round 17), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
 two storm endings open differently; the two orbit endings are scenes (week
 three, week two), not summaries. The recorder paragraph is worded differently
 in each.
@@ -370,12 +379,12 @@ ending, and any role test on the fallback.
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 14.7% (1000: 16.0%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 17.3% (1000: 17.8%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 17.0% (1000: 17.2%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 16.3% (1000: 14.9%) |
-| 5 | *Old Friend* (`end_friend`) | answered, clear air | 16.7% (1000: 16.3%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 18.0% (1000: 17.8%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 16.0% (1000: 18.1%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 15.3% (1000: 17.6%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 18.0% (1000: 18.2%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 19.7% (1000: 16.3%) |
+| 5 | *Sit With It* (`end_friend`) | answered, clear air | 15.7% (1000: 14.3%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 15.3% (1000: 15.5%) |
 
 ## Epilogue
 
@@ -927,6 +936,58 @@ UI only if it's an internal index.
   `g_packer` clause (a WHO clue). `beat_watch` "a seventh of the Moon" (the
   engineer's figures support "less than half"). Moving `a_recall_home/plan` to
   day 41 (day 41 is full; `a_recall_shared` moved to 38 instead).
+
+## Round 17 notes
+
+Blind round 17 (hunter, editor, engineer). Aim: slots 3 (*The Long Orbit*) and 5
+(*Sit With It*) to "great", more character, more tension.
+
+- **Concealment.** `h_band` no longer mentions the pixel or the orbiter frame
+  (it ends on the count, out loud, to an empty cabin) and is gated on
+  `fired m_flash2` (days 33-35; `r_band` 34-36), so it can only fire after the
+  pixel is a fixed ground spot. `h_band` is cast `is A ow_hail`: the knock hook
+  and its resolver stay with whoever found the carrier (tested).
+  `signal_reply` gives a raw figure only ("up twenty-seven thousand and change in
+  a week", about half a week of knocks per the engineer) and draws no conclusion.
+  Dismissal tags vary: `m_ripple` a crew line and a service slot, `m_dropout` a
+  filing place, `m_flash1` "Probably.".
+- **Climax.** `a_report` drops the spin explanation (the hunter: it explained
+  the day-17 clue away). The crew ask Starbase for the rest of the patch; the pad
+  crew kept a copy and no one had asked. That squares Starbase against the
+  program: the loaders wrote the patch and hoped (their hints were faith), while
+  the program's books never had it. The crew voice the realisation ("Every hail it
+  got came after it stopped listening."); the board catches up by evening.
+  `m_reveal`: the ellipse from the last patch, "never put in the write-off file",
+  is what Starbase sends (hunter fix 4: why nobody overlaid it earlier).
+  `a_window_quiet`'s ruling now rests on WAKE ALL, NO BATTERY CHECK with one
+  clause of intent: AFTER LANDING. SPARE POWER IN HAND, INSIDE THE TICK.
+  *Through the Dust* and *Patience* obey it (battery pack); *Close Enough* breaks
+  it (the spares went to heaters). `a_suit_plan`: "if a spare battery rides along".
+- **Resolvers lead with the struggle**: `r_thruster`, `r_dark(_a)`, `r_silence`,
+  `r_ghost`, `r_voice`, `r_band`.
+- **Voices.** Every arc now speaks: list (the run-on take in `p_list_letter`),
+  theory ("Who keeps a lighthouse on Mars time?" in `c_theory`), hail
+  ("Counter noted. Out.", "Booked again. Out."), song ("Nearly." in `m_listen`).
+- **Endings.** *Lights On*: the storm left only a pre-dawn slot. *Patience*:
+  "two weeks, longer than any chart gave it" (no clash with the day-39 forecast).
+  *Close Enough*: the HOLD reaches a tick it is no longer awake for. Loading-bay
+  replies differ per ending; the Cargo 2 coda lines no longer all start "Wrote
+  when it landed. Kept writing." (only *Lights On* keeps it). Day 41 no longer
+  narrates the aerocapture (`e_entry_wait` on day 42 does; tested).
+- **Continuity.** The neighbour retired and moved to the sea (`g_news`, `a_list`,
+  epilogue "one postmarked from the sea"). `galley_pump` drops "third time".
+  `dec_name`: "the sharpest camera". Letter epilogue: "knows its last line by
+  heart". Decision lines: the flight director takes the crew's advice or lean.
+  `g_packer`: "Seven of you. Write when you land, every one."
+- **Numbers.** Mars half lit, dawn line nearly straight (day 41). `storm_dose`
+  days 20-21. `w_venus_shadow` days 7-10. `comm_delay` "well over three
+  minutes". Blackout three minutes. `dec_halfway` days 23-24 and `w_milky` day 23
+  (day-20 crowding and the day-23 blank budget).
+- **Declined.** Hunter's day-36 light-time change: the engineer's DE440s check
+  gives 29.4 s, so "just under half a minute" stays. Editor's "a twentieth of the
+  Moon" for `beat_watch`: Earth's disc is 13.3'-5.1' against the Moon's 15.5', so
+  "less than half" stays. Editor's grim neighbour option: the user chose
+  retirement with a new address. Engine-level per-day cap: content spreading only.
 
 ## Replay: the mystery spine reads the same every season (note, not built)
 

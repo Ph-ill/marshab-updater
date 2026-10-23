@@ -47,12 +47,12 @@ players).
   day 34, just under half a minute at day 36, 15 s at day 39, 10 s round trip
   at day 41 (5 s one-way). The carrier slides against fleet time by about 1.65
   seconds a day around day 20. The tick is 10.96 s; in prose say "about eleven
-  seconds", never a rounder or sharper figure. Storm dose: past 100 mSv by days 17-21. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
+  seconds", never a rounder or sharper figure. Storm dose: past 100 mSv on days 20-21 (72-101 mSv over that stretch, round 17 engineer); never earlier. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
   season. Earth shrinks to a dot you can cover with a thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
   Mars "under three weeks out" in real flight. Day 41: inside five
-  light-seconds (Mars gibbous, about three-quarters lit, the dawn line along one edge), about four days before atmospheric entry ("the last night
-  before entry" belongs to day 41). Day 42: entry morning. Arrival is direct
+  light-seconds (Mars about half lit, phase near 92°, the dawn line almost straight down the middle; round 17), about four days before atmospheric entry ("the last night
+  before entry" belongs to day 41). Day 42: entry morning. Plasma blackout is "three minutes" (under four for a Mars entry), the same on every entry card. Venus casts a hand shadow only in the first ten days (`w_venus_shadow` days 7-10). Round trip to Earth at day 19 is about 3.2 minutes ("well over three minutes"). Arrival is direct
   entry from the crossing, or aerocapture into a long orbit if the fleet votes
   to wait.
 - **EVAs are never solo.** A partner is suited at the next ship's hatch, or the
@@ -218,16 +218,22 @@ after its `type` line:
   recorder (`a_log` when answered; the unanswered endings otherwise).
 - Voices belong to arcs, not people (casting is random). See STORY_BIBLE.md
   "Voices". Keep the register different per arc:
-  - list: a talker; run-on sentences, lists inside lines;
+  - list: a talker; run-on sentences, lists inside lines ("Hi, it's me, ship's fine, I'm fine, the bread's improving, here's the list");
   - song: taciturn and musical; two-word lines, never explains;
   - garden: chats to the plants; logs failure hopefully;
   - letter: formal and procedural ("Item located."), except about the letter;
   - dose: blunt; argues with numbers, thanks grudgingly ("Fair.");
-  - hail: timestamps and radio-terse ("No misses. Patient. Out.");
-  - theory: visual; asks questions and draws them.
+  - hail: timestamps and radio-terse ("No misses. Patient. Out.", "Booked again. Out.", "Counter noted. Out.");
+  - theory: visual; asks questions and draws them ("Who keeps a lighthouse on Mars time?" to the drawing);
+  - every arc speaks at least once in its own register; never name the skill behind a line, and never make the line about a crewmate's competence (round 17).
 - Humor lands on the situation, the object or the procedure, never on the
   crewmate's memory or competence (a book written for windowsills, step
   fourteen of a ground procedure, numbers that turned out better).
+- Resolvers lead with the struggle and land on the outcome ("Fourteen minutes of
+  the control loop fighting a roll..."), never "{A} fixed it by morning:" first
+  (round 17).
+- Anomaly dismissals vary: an action, a crew line, a filing place, a one-word
+  hedge ("Probably."). Never the same "moves on to..." tag twice.
 - Retired tics (round 5): "since Starbase", "slowly", "Around the fleet" and
   other filler fold lines (fold lines name a concrete chore), "nobody" anywhere
   in card or system text.
