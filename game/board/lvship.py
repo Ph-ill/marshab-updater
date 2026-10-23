@@ -38,7 +38,9 @@ DEFAULTS = {
     "ship_id": 1,                  # 1-8 (ship 1 = crew 0)
     "ship_name": "",
     "fleet_key": "test-fleet-key-not-secret",
-    "day": 1,                      # bench flight day (no phone clock on the bench)
+    "day": 1,                      # bench flight day, used when there's no launch_date
+    "launch_date": "",             # "YYYY-MM-DD": flight day 1 starts 06:00 local that day (lvcal.py)
+    "day_start": "06:00",          # when a flight day rolls over (bench tests move it)
     "story": True,                 # replay the story as records arrive
     "hotspot": True,               # SoftAP for phones (BLE coexists with it)
     "ssid_prefix": "LV-",
@@ -124,6 +126,16 @@ class Ship:
         self.clock = Clock()
         self.led = Notifier(self.clock, cfg["led_notify"])
         self.ready = False
+        self.cal = None            # lvcal.Calendar with a launch date, else the manual day
+        if cfg.get("launch_date"):
+            import lvcal
+            self.cal = lvcal.Calendar(cfg, self.clock, self.pack.season, data, say)
+            if self.cal.launch is None:
+                say("calendar: launch_date %r not understood (YYYY-MM-DD): manual day %d" % (
+                    cfg["launch_date"], self.day))
+                self.cal = None
+            else:
+                self.day = self.cal.poll()
         self._load_log()
         self.node = S.Node(self.log, self.me, self.fk, self.day, self._new)
         for r in self.log.values():
@@ -163,6 +175,12 @@ class Ship:
                     f.write(r)
         except OSError as e:
             self.say("log: write failed %s" % e)
+
+    # ---- the flight day
+    def day_check(self):
+        """With a launch date: move to today's flight day if it has come (lvcal.py). Called
+        on every phone request (after its clock is learned) and every 10 s by loop()."""
+        return self.cal is not None and self.cal.advance(self)
 
     # ---- story
     def tick_to(self, day):
@@ -243,7 +261,7 @@ class Ship:
              "led": {"enabled": self.led.enabled, "waiting": self.led.waiting, "writes": self.led.writes,
                      "time_known": self.clock.known()},
              "heap_used": u, "heap_free": free(), "heap_peak": self.mem_peak, "http": self.http_hits,
-             "v": self.v}
+             "v": self.v, "day_src": self.cal.src if self.cal else "manual"}
         s["ble"] = self.ble.status(now) if self.ble else None
         return s
 
@@ -253,19 +271,23 @@ class Ship:
         n = b["n"]
         peers = " ".join(["%d%s" % (p["ship"], "=" if p["same"] else "*") for p in b["peers"]]) or "-"
         return ("STAT ship=%d recs=%d digest=%s ble=%s peers=%s ok=%s fail=%s sent=%s got=%s new=%s "
-                "gifts_in=%d led=%s heap_used=%d heap_free=%d" % (
+                "gifts_in=%d led=%s heap_used=%d heap_free=%d day=%d/%s" % (
                     s["ship"], s["records"], s["digest"], b["state"], peers, n.get("ok"), n.get("fail"),
                     n.get("sent"), n.get("got"), n.get("new"), s["gifts_in"],
-                    "on" if self.led.enabled else "off", s["heap_used"], s["heap_free"]))
+                    "on" if self.led.enabled else "off", s["heap_used"], s["heap_free"], self.day, s["day_src"]))
 
     async def loop(self, stop_after_ms=None, stat_every_ms=None, until=None):
         t0 = ticks_ms()
         every = stat_every_ms or self.cfg["stat_every_s"] * 1000
         nxt = every
+        nday = 0
         while True:
             now = ticks_diff(ticks_ms(), t0)
             if self.ble:
                 self.ble.poll(now)
+            if now >= nday:
+                nday = now + 10000
+                self.day_check()
             wait = self.led.poll(self.ble.busy() if self.ble else False)
             if now >= nxt:
                 nxt = now + every

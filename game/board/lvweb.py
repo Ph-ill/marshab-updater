@@ -204,7 +204,8 @@ class Server:
     async def route(self, req, w):
         p = req.path
         sh = self.ship
-        sh.clock.learn_headers(req.header)     # any phone request carries its clock
+        if sh.clock.learn_headers(req.header):  # any phone request carries its clock
+            sh.day_check()                       # with a launch date: today's flight day
         if req.method == "GET":
             s = STATIC.get(p)
             if s:
