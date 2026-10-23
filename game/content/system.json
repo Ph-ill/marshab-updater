@@ -58,18 +58,25 @@
     "home": "{A} rides the transfer line back home to {S}.",
     "note": "{A} passes {T} a note: “{line}”",
     "dec_open": "Fleet decision open for 48 hours.",
-    "dec_close": "Decision closed: {opt}. {n} ballot(s).",
+    "dec_close": "Decision closed: {opt}. Votes cast: {n}.",
     "dec_lean": "Nobody voted, so the crew decided: {opt}.",
-    "dec_tie": "Tied at {n} ballot(s); the crew's lean broke it: {opt}.",
-    "dil_open": "A private message for whoever looks after {A}.",
+    "dec_tie": "A tie, {n} votes in all. The crew broke it themselves: {opt}.",
+    "dil_open": "For whoever at home looks after {A}, and nobody else:",
     "dil_you": "{A} went with your call: {opt}.",
-    "dil_self": "{A} decided alone: {opt}.",
+    "dil_self": "Nobody at home weighed in, so {A} chose: {opt}.",
     "res_open": "Anyone can answer this one. One tap is enough.",
     "res_close": "Help is on the way: {opt}.",
     "res_default": "Nobody answered in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
     "end": "Arrival day.",
-    "fold": "Around the fleet, {who} kept the small things running."
+    "fold": "Around the fleet, {who} kept the small things running.",
+    "fold_pool": [
+      "Around the fleet, {who} kept the small things running.",
+      "Elsewhere on the fleet net: {who}, busy.",
+      "The rest of the log belongs to {who}.",
+      "Meanwhile {who} kept the lights on.",
+      "Off the main thread, {who} had a full day."
+    ]
   },
   "epi": {
     "axis": [

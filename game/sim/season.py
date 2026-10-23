@@ -341,7 +341,8 @@ def main(argv):
     open(os.path.join(outdir, "reader.txt"), "w", encoding="utf-8").write("\n".join(rlines).strip() + "\n")
     epi = rd.epilogue(st.story)
     open(os.path.join(outdir, "epilogue.txt"), "w", encoding="utf-8").write(
-        "".join("%s: %s\n" % (text["crew"][c], epi[c]) for c in sorted(epi)))
+        "".join("%s: %s\n" % (text["crew"][c], epi[c]) for c in sorted(epi))
+        + ("%s: %s\n" % rd.coda(st.story) if rd.coda(st.story) else ""))
 
     # The raw story bytes, so tests/render_check.mjs can prove web/render.js says the same.
     with open(os.path.join(ROOT, "build", "season_story.bin"), "wb") as f:

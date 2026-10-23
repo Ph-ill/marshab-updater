@@ -470,7 +470,8 @@ DEMEANING = re.compile(r"\b(forgot|forgets|forgetting|clumsy|lazy|useless|incomp
 CHEAP = re.compile(r"\b(it was nothing|just a glitch|false alarm|all a dream)\b", re.I)
 CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re.I)
 MAX_TEXT, MAX_LABEL = 300, 28
-MAX_PAYOFF = 420   # endings, reveal cards and the arrival-day cards (days 40+) may run longer
+MAX_PAYOFF = 420   # reveal cards and the arrival-day cards (days 40+) may run longer
+MAX_ENDING = 460   # an ending carries the landing and its coda in one card
 PAYOFF_FROM = 40
 
 
@@ -556,7 +557,8 @@ def check_style(cards, fleet, ctx):
                 m = rx.search(t)
                 if m:
                     ctx.warnings.append("style: %s %s %r %s" % (w, what, m.group(0), why))
-            cap = MAX_PAYOFF if (c["type"] == O.ENDING or c["reveal"] or c["days"][0] >= PAYOFF_FROM) else MAX_TEXT
+            cap = (MAX_ENDING if c["type"] == O.ENDING else
+                   MAX_PAYOFF if (c["reveal"] or c["days"][0] >= PAYOFF_FROM) else MAX_TEXT)
             if len(t) > cap:
                 ctx.warnings.append("style: %s %s is %d chars (max %d on a phone)" % (w, what, len(t), cap))
         for o in c["options"]:
@@ -750,6 +752,12 @@ def build(content_dir):
         if bad and len(bad) < len(epi["story"]):  # a cut-down test deck may have none
             ctx.warnings.append("epi.story: unknown card(s) %s" % ", ".join(bad))
         epi["story"] = [[idx[cid], line] for cid, line in epi["story"] if cid in idx]
+    if "coda" in epi:
+        # {"name": ..., "lines": [[card id, line], ...]}: an epilogue line for someone
+        # who isn't crew; the first listed card that fired picks it (Renderer.coda).
+        idx = {c["id"]: i for i, c in enumerate(cards)}
+        cd = epi["coda"]
+        epi["coda"] = {"name": cd["name"], "lines": [[idx[cid], line] for cid, line in cd["lines"] if cid in idx]}
     text = {
         "pack": pack_id.hex(),
         "crew": [cr["name"] for cr in fleet["crew"]],

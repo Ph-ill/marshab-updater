@@ -91,8 +91,12 @@ class Renderer:
     def reader(self, out):
         # The reading view (sim/out/reader.txt; a hand-off for web/render.js): story
         # lines in full, and each day's system echoes (actions, crossings, notes) folded
-        # into one closing "around the fleet" line. The ending gets its title as a heading.
+        # into one closing "around the fleet" line. Self-chosen chores (what an astronaut
+        # does when nobody at home said anything) are left out, so a day where nobody at
+        # home acted has no fold line at all. sys.fold_pool varies the wording by day;
+        # sys.fold is the fallback. The ending gets its title as a heading.
         day, folded = None, []
+        pool = self.t["sys"].get("fold_pool") or [self.t["sys"].get("fold", "Around the fleet: {who}.")]
 
         def fold():
             names = []
@@ -105,7 +109,7 @@ class Renderer:
             if len(names) >= len(self.t["crew"]):
                 who = [self.t["sys"].get("fold_all", "everyone")]
             who = who[0] if len(who) == 1 else ", ".join(who[:-1]) + " and " + who[-1]
-            return self.fill(self.t["sys"].get("fold", "Around the fleet: {who}."), who=who, n=len(folded))
+            return self.fill(pool[day % len(pool)], who=who, n=len(folded))
 
         for i in range(0, len(out), 8):
             e = out[i:i + 8]
@@ -114,7 +118,8 @@ class Renderer:
                     yield day, fold()
                 day, folded = e[0], []
             if e[1] in self.ECHO:
-                folded.append(e[3])
+                if not (e[1] == O.O_ACT and e[6] == 1 and e[4] != 0):
+                    folded.append(e[3])
                 continue
             if e[1] == O.O_END:
                 if folded:
@@ -127,7 +132,23 @@ class Renderer:
             if s:
                 yield day, s.strip()
         if folded:
-            yield day, fold()
+            f = fold()
+            if f:
+                yield day, f
+
+    def coda(self, out):
+        # Epilogue lines for someone who isn't crew (text.json epi.coda: a name and a
+        # priority list of [card index, line]); the first card that fired, in any role,
+        # picks the line. Kept apart from epilogue() so that stays one line per astronaut.
+        cd = self.t.get("epi", {}).get("coda")
+        if not cd:
+            return None
+        fired = set(out[i + 2] for i in range(0, len(out), 8)
+                    if out[i + 1] in (O.O_EVENT, O.O_END, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN))
+        for card, line in cd["lines"]:
+            if card in fired:
+                return cd["name"], line
+        return None
 
     def epilogue(self, out):
         # One story line per astronaut for the end screen: text.json epi.story is a
