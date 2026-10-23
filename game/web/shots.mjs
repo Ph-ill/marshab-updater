@@ -46,8 +46,14 @@ async function signIn(p, size, day) {
   await inset(p, size);
   await p.click('[data-who="0"]');
   for (const k of "1234") await p.click(`[data-key="${k}"]`);
-  await p.waitForSelector("#dock nav, .tbl, .big");
-  if (await p.$(".big")) { await p.click('[data-go="home"]'); await p.waitForSelector("#dock nav, .tbl"); }
+  await p.waitForSelector("#dock nav, .tbl, .kick.big");
+  await pastFirstRun(p);
+  await p.waitForSelector("#dock nav, .tbl");
+}
+// A first sign-in shows the meet screen, then the crew briefing: step past both.
+async function pastFirstRun(p) {
+  if (await p.$(".kick.big")) { await p.click("#dock .btn"); await p.waitForSelector(".kick.big", { state: "detached" }); }
+  if (await p.$(".tut")) { await p.click("[data-tut=skip]"); await p.waitForSelector(".tut", { state: "detached" }); }
 }
 const goto = (p, r) => p.evaluate((r) => go(r), r);
 // Open the first card of a kind (3 vote, 4 private, 5 anyone) on the signed-in day, so the
@@ -81,6 +87,9 @@ for (const [n, size] of SIZES.entries()) {
   for (const k of "1234") await p.click(`[data-key="${k}"]`);
   await p.waitForSelector(".big");
   await shot(p, size, "03-onboard-meet");
+  await p.click("#dock .btn");
+  await p.waitForSelector(".tut");
+  await shot(p, size, "03b-onboard-briefing");
   await p.context().close();
 
   p = await page(size);

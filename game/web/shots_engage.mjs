@@ -21,8 +21,10 @@ async function page(day, when, crew = 0, colorScheme = "light") {
   await p.addStyleTag({ content: `:root{--sb:${size.inset}}` });
   await p.click(`[data-who="${crew}"]`);
   for (const k of "1234") await p.click(`[data-key="${k}"]`);
-  await p.waitForSelector("#dock nav, .big");
-  if (await p.$(".big")) { await p.click('[data-go="home"]'); await p.waitForSelector("#dock nav"); }
+  await p.waitForSelector("#dock nav, .kick.big");
+  if (await p.$(".kick.big")) { await p.click("#dock .btn"); await p.waitForSelector(".kick.big", { state: "detached" }); }
+  if (await p.$(".tut")) { await p.click("[data-tut=skip]"); await p.waitForSelector(".tut", { state: "detached" }); }
+  await p.waitForSelector("#dock nav");
   return p;
 }
 async function shot(p, name, full = false) {
