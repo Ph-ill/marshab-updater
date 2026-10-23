@@ -99,7 +99,11 @@
           <label class="field"><span>Hotspot password</span>
             <input id="shipPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="blank = keep current (WPA2)" disabled>
           </label>
+          <label class="field"><span>Launch date (flight day 1 starts 06:00)</span>
+            <input id="shipLaunch" type="date" min="2024-01-01" max="2100-12-31" disabled>
+          </label>
         </div>
+        <p class="hint">Long Voyage: one flight day per real day, rolling over at 06:00 phone time, from the launch date. Give every ship the same date. Blank keeps the bench's fixed day.</p>
         <p id="shipRoleWarn" class="warn" role="alert" hidden></p>
         <div class="row">
           <label class="check"><input id="shipShowPw" type="checkbox"><span>Show password</span></label>
@@ -108,7 +112,7 @@
         <div class="row">
           <label class="check"><input id="shipLed" type="checkbox" disabled><span>Blink the onboard light when something is waiting (Long Voyage; off 22:00-07:00)</span></label>
         </div>
-        <dl class="readout"><div><dt>Hotspot</dt><dd id="shipHotspot">—</dd></div></dl>
+        <dl class="readout"><div><dt>Hotspot</dt><dd id="shipHotspot">—</dd></div><div><dt>Flight day</dt><dd id="shipDay">—</dd></div></dl>
         <div class="actions"><button id="saveShipBtn" type="button" disabled>Save to ship</button></div>
         <p class="hint">Written to <code>data/ship.json</code>, which installs never touch. Takes effect after a restart.</p>
         <h3 class="sub" id="h-codes">Crew codes</h3>

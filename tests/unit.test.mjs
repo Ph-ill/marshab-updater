@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { compareVersions, latestVersion, isTestRelease } from '../src/releases.js';
-import { validateShipConfig, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from '../src/ship-config.js';
+import { validateShipConfig, SHIP_CONFIG_KEYS, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from '../src/ship-config.js';
 import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
 import { boardFromRuntime, firmwareKind, summarizeDeviceInfo, describeFirmware, overridesOf } from '../src/device-info.js';
@@ -47,6 +47,16 @@ t('ship config: WPA2 default, custom password, explicit open network', () => {
     assert.throws(() => validateShipConfig({ ship_name: 'S', hotspot_password: '', role: '', ...bad }, opts), JSON.stringify(bad));
   }
   assert.equal(defaultShipName(3), 'Starship-03');
+});
+t('ship config: fleet launch date (one flight day per real day from 06:00 that date)', () => {
+  const opts = { count: 8, roles: [] };
+  assert.equal(validateShipConfig({ ship_id: 1, launch_date: '2026-10-24' }, opts).launch_date, '2026-10-24');
+  assert.equal(validateShipConfig({ ship_id: 1, launch_date: ' 2028-02-29 ' }, opts).launch_date, '2028-02-29', 'leap day');
+  assert.ok(!('launch_date' in validateShipConfig({ ship_id: 1, launch_date: '' }, opts)), 'blank = the bench fixed day');
+  for(const bad of ['2026-02-29', '2026-13-01', '24-10-2026', '2026-10-24T06:00', '1999-12-31', 'soon']){
+    assert.throws(() => validateShipConfig({ ship_id: 1, launch_date: bad }, opts), bad);
+  }
+  assert.ok(SHIP_CONFIG_KEYS.includes('launch_date') && !SHIP_CONFIG_KEYS.includes('day'), 'the bench day is not the page\'s to drop');
 });
 t('log file names carry role, ship and UTC time', () => {
   const when = new Date('2026-10-22T21:05:00Z');

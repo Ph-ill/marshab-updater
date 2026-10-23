@@ -4,7 +4,7 @@ import { installRelease, loadReleaseManifest } from './installer.js';
 import { loadReleaseIndex, compareVersions, latestVersion, isTestRelease } from './releases.js';
 import { loadRuntimeSpec } from './releases.js';
 import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
-import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from './ship-config.js';
+import { validateShipConfig, writeShipConfig, SHIP_CONFIG_KEYS, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from './ship-config.js';
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, describeBoard } from './role-memory.js';
 import { CREW, validateCodes, sharedCodes, crewConfig, writeCrewConfig, randomCode, codeList, newSalt, loadCodes, saveCodes, forgetCodes } from './crew-codes.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
@@ -68,6 +68,8 @@ Object.assign(els, {
   shipPassword: $('shipPassword'),
   shipOpen: $('shipOpen'),
   shipLed: $('shipLed'),
+  shipLaunch: $('shipLaunch'),
+  shipDay: $('shipDay'),
   shipShowPw: $('shipShowPw'),
   shipHotspot: $('shipHotspot'),
   saveShipBtn: $('saveShipBtn'),
@@ -146,7 +148,7 @@ function boardLabel(id){
 
 function deviceControls(){
   const list = [];
-  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.shipLed, els.saveShipBtn, els.saveCodesBtn);
+  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.shipLed, els.shipLaunch, els.saveShipBtn, els.saveCodesBtn);
   list.push(els.refreshLogsBtn, els.downloadAllLogsBtn, ...els.logList.querySelectorAll('button'));
   list.push(els.bootselBtn);
   return list;
@@ -249,6 +251,7 @@ function clearDeviceUi(){
   els.shipPassword.value = '';
   els.shipOpen.checked = false;
   els.shipLed.checked = false;
+  els.shipLaunch.value = '';
   els.shipRole.value = '';
   setText(els.shipHotspot, '—');
   renderShipSsid();
@@ -363,6 +366,8 @@ function renderShipFields(){
     els.shipPassword.value = '';
     els.shipOpen.checked = !!cfg.hotspot_open;
     els.shipLed.checked = !!cfg.led_notify;
+    // The board's own launch date; one it lacks is offered from the last ship saved in this browser.
+    els.shipLaunch.value = cfg.launch_date || lastLaunchDate();
     if(cfg.role && roles.includes(cfg.role)) els.shipRole.value = cfg.role;
   }
   const formKey = state.device ? (state.deviceInfo?.uid || 'board') : null;
@@ -371,10 +376,14 @@ function renderShipFields(){
     applyShipDefaults(cfg, roles);
   }
   setText(els.shipHotspot, state.device ? hotspotSummary(cfg) : '—');
+  setText(els.shipDay, !state.device ? '—' : cfg?.launch_date ? `from the calendar: FD 01 = ${cfg.launch_date} 06:00` : `fixed (bench): day ${cfg?.day ?? 1}`);
   renderShipSsid();
   els.shipName.placeholder = defaultShipName(els.shipId.value || 1);
   els.shipPassword.disabled = !state.device || state.busy || els.shipOpen.checked;
 }
+
+const LAUNCH_KEY = 'lv-launch-date';
+function lastLaunchDate(){ try{ return localStorage.getItem(LAUNCH_KEY) || ''; }catch(_err){ return ''; } }
 
 // First fill of the form for a newly connected board: if it has no role yet, preselect one the last
 // board configured from this browser is not using.
@@ -439,6 +448,7 @@ async function saveShipConfig(){
       hotspot_open: els.shipOpen.checked,
       led_notify: els.shipLed.checked,
       role: els.shipRole.value,
+      launch_date: els.shipLaunch.value,
     }, { count: SHIP_COUNT, roles: shipRoles() });
     const clash = roleClash(loadRoleHistory(), state.deviceInfo?.uid || null, cfg.role, shipRoles());
     if(clash && !confirm(`The last board configured from this browser, ${describeBoard(clash)}, is role ${clash.role || 'none'} and broadcasts ${hotspotForRole(cfg.role, shipRoles())}. `
@@ -448,11 +458,14 @@ async function saveShipConfig(){
     if(cfg.hotspot_open && !confirm('Run this ship\'s hotspot as an open network, with no password? Anyone nearby can join it.')){
       log('ship settings not saved'); return;
     }
-    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}${cfg.led_notify ? ", LED notifier on" : ""}`);
+    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}${cfg.led_notify ? ", LED notifier on" : ""}${cfg.launch_date ? `, launch ${cfg.launch_date}` : ", fixed bench day"}`);
     const written = await writeShipConfig(state.device, cfg);
+    if(written.launch_date) try{ localStorage.setItem(LAUNCH_KEY, written.launch_date); }catch(_err){}
     recordRole({ uid: state.deviceInfo?.uid || null, role: written.role, ship_id: written.ship_id, ship_name: written.ship_name });
     state.shipIdFollowsRole = false; // the board has a number of its own now
-    state.deviceInfo = { ...(state.deviceInfo || {}), ship: written };
+    // data/ship.json keeps the keys this page doesn't own (the bench "day", "day_start", ...).
+    const kept = Object.fromEntries(Object.entries(previous).filter(([k]) => !SHIP_CONFIG_KEYS.includes(k)));
+    state.deviceInfo = { ...(state.deviceInfo || {}), ship: { ...kept, ...written } };
     renderDeviceInfo(state.deviceInfo, { quiet: true });
     log('ship settings saved; they take effect when the ship restarts (Disconnect restarts it)');
   }catch(err){
