@@ -54,7 +54,7 @@ type event
 cat repair skill
 hook
 once
-days 4 27
+days 7 27
 weight 10
 roles A
 when cond A ok

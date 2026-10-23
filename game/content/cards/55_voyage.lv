@@ -99,7 +99,7 @@ type beat
 cat life
 due
 once
-days 13 20
+days 13 36
 roles A
 when is A abort_who
 when home A
@@ -427,6 +427,7 @@ due
 once
 days 28 28
 roles A
+when is A ow_theory
 text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, a forklift with a name, on charge at the service port at the foot of a cargo ship's leg. The same handwriting signs off: "Eight of you. Write when you land, every one." {A} clips the forklift inside the logbook.
 do morale A 2
 

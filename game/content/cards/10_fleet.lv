@@ -76,7 +76,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 do mark t_frame
-text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, cut off partway. Its period hasn't moved by a millisecond in a day. One field is a counter that hasn't moved since the first scrap, a week back. Whatever it counts, nothing has given it one.
+text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, cut off partway. Its period holds to the millisecond. One field is a counter, stuck since the first scrap a week back. Whatever it counts, nothing has given it one.
 do morale A -3
 
 # Injury and rescue: needs supplies from another ship.

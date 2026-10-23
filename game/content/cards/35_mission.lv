@@ -165,7 +165,7 @@ option look | Ask for the sequence | The request goes up. {A} writes the apology
   set flash_looked
   morale A -2
   morale B -2
-option leave | Leave it for the ground | The pixel goes into the anomaly file, under a heading {B} writes in capitals. The letters from home arrive on time, all of them.
+option leave | Leave it for the ground | The pixel goes into the anomaly file, under a heading {B} writes in capitals. The letters from home arrive on time.
   set flash_left
   morale B 2
 
@@ -352,7 +352,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks; {A}'s receiver hears it five seconds later. Weeks of late hellos ran that path without waking it, so the flight director cleared two lines off the laminated card: the hello, and a HOLD on the next tick. One tick awake is all a cold battery can spare. {A} sends both. The hello lands inside the tick, barely. By the next pass one lamp burns steady, and a sulking galley screen boots to ONLINE.
+text 04:10:07: Cargo 2 knocks; {A}'s receiver hears it five seconds later. Weeks of late hellos never woke it, so the flight director cleared two lines off the laminated card: the hello, and a HOLD on the next tick. One tick awake is all a cold battery can spare. {A} sends both. The hello lands inside the tick. By the next pass one lamp burns steady, and, by pure coincidence, one galley screen boots to ONLINE.
 do set c2_answered
 do morale A 8
 
