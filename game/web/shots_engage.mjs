@@ -27,6 +27,7 @@ async function page(day, when, crew = 0, colorScheme = "light") {
 }
 async function shot(p, name, full = false) {
   if (full) await p.addStyleTag({ content: "#dock{position:static}main{padding-bottom:0!important}" });
+  if (full) await p.evaluate(() => window.scrollTo(0, 0));
   await p.waitForTimeout(150);
   const f = `${out}/${name}-390x844.png`;
   await p.screenshot({ path: f, fullPage: full });
@@ -80,6 +81,16 @@ p = await page(22, "16:30", 0, "dark");
 await shot(p, "eng-14-home-dark");
 await goto(p, "file");
 await shot(p, "eng-15-file-dark");
+await p.context().close();
+
+p = await page(42, "20:00");
+await p.waitForSelector(".epi");
+await shot(p, "eng-16-ending-reread-full", true);
+await p.context().close();
+p = await page(42, "20:00");
+await p.waitForSelector('[data-go^="log/"]');
+await p.click('[data-go^="log/"]');
+await shot(p, "eng-17-reread-log-day");
 await p.context().close();
 
 await browser.close();
