@@ -46,7 +46,7 @@ try:
     os.mkdir(DATA)
 except OSError:
     pass
-for n in ("log.bin", "local.bin", "days.bin", "done"):    # crew.json: tests/phone_heap.py writes it
+for n in ("log.bin", "local.bin", "days.bin", "done", "clock.json"):    # crew.json: tests/phone_heap.py writes it
     try:
         os.remove(DATA + "/" + n)
     except OSError:
@@ -104,6 +104,10 @@ m_peer = sample()
 cfg = lvship.load_config("/nonexistent")
 cfg["day"] = 42
 cfg["ble"] = FAST
+if PHONE:
+    # The phone game as it runs for real: the day from the calendar (board/lvcal.py), FD 42
+    # once the first request brings the phones' clock (launched long enough ago).
+    cfg["launch_date"] = "2026-09-01"
 # The board keeps each day's story for the phones only when it serves the phone game.
 ship = lvship.Ship(cfg, root=ROOT, data=DATA, ble=w.new(), say=lambda s: None,
                    days=lvdays.Days(DATA + "/days.bin") if WEB else None)
@@ -238,6 +242,9 @@ print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
+    ok = ok and ship.cal is not None and ship.day == 42
+    print("calendar: launch %s, flight day %d from the %s" % (ship.cal.date if ship.cal else None, ship.day,
+                                                          ship.cal.src if ship.cal else "manual day"))
     print("phone: %d requests served (%d while the BLE radio ran), %d refused busy; heap peak includes "
           "/api/state, the page streamed from flash and the taps" % (web.served, during[0], web.refused))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))

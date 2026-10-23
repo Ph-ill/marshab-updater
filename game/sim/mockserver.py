@@ -164,6 +164,7 @@ class Game:
             "story": base64.b64encode(story).decode(),
             "updated": {str(d): a for d, a in sorted(sh.updated.items())},
             "eng": EN.view(self.eng, self.local, p, st, sh.log, you, minute),
+            "start": 360,          # a flight day starts at 06:00 (the board: lvcal.py; None on a fixed bench day)
         }
 
     def gift(self, you, day, item, to, mode):
