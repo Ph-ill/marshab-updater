@@ -211,7 +211,7 @@ const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];
 const KIND={3:"Fleet vote",4:"Private",5:"Anyone can answer"};
 const Q=new URLSearchParams(location.search),DQ=Q.get("day")?"?day="+encodeURIComponent(Q.get("day")):"";
-let T=null,S=null,R=null,tok="",me=-1,codeSet=[],lockUntil={},pin="",draft=null,pick={},net="live",ws=null,poll=0,lines=null,logSeen=0,logCut=-1;
+let T=null,S=null,R=null,tok="",me=-1,codeSet=[],PRE=null,DSTART=360,preT=0,lockUntil={},pin="",draft=null,pick={},net="live",ws=null,poll=0,lines=null,logSeen=0,logCut=-1;
 const RM=matchMedia("(prefers-reduced-motion: reduce)");
 const $=(id)=>document.getElementById(id);
 const h=(s)=>String(s).replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
@@ -577,10 +577,18 @@ function reread(){
 }
 
 // ---- first run ------------------------------------------------------------------------
+// Before launch the ship says {day: 0, launch, until} on /api/crew: a countdown instead of
+// the sign-in, rechecked every 30 s (each check carries this phone's clock to the ship).
+function hm(m){return m%60?pad(m/60|0)+":"+pad(m%60):String(m/60|0)}
+function wait(m){if(m==null)return "soon";if(m<1)return "under a minute";const d=m/1440|0,hh=(m%1440)/60|0,mm=m%60;return d?`${d} day${d>1?"s":""}${hh?` ${hh} h`:""}`:hh?`${hh} h${mm?` ${mm} min`:""}`:`${mm} min`}
+function crewInfo(j){codeSet=j.set||[];if(j.start!=null)DSTART=j.start;PRE=j.day===0&&j.launch?j:null;
+  clearInterval(preT);if(PRE)preT=setInterval(async()=>{try{crewInfo(await api("/api/crew"));if(!tok&&route==="hello")view()}catch(e){}},30000)}
 function hello(){
   bar("THE LONG VOYAGE","8 SHIPS");
   let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Eight ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
-  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"${codeSet[c]===false?" disabled":""}><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span>${codeSet[c]===false?"<span class=lab>Not set up</span>":""}</button>`).join("");
+  if(PRE){let when=PRE.launch;try{when=new Date(PRE.launch+"T12:00").toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"})}catch(e){}
+    o=`<div class="kick pre"><div class=lab>Pre-launch · FD 00</div><h1>Launch in ${wait(PRE.until)}</h1><p>Flight day 01 starts at ${pad(DSTART/60|0)}:${pad(DSTART%60)} on ${h(when)}. Boarding opens then; this page checks by itself.</p></div><section>`}
+  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"${codeSet[c]===false||PRE?" disabled":""}><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span>${codeSet[c]===false?"<span class=lab>Not set up</span>":""}</button>`).join("");
   $("v").innerHTML=o+`</section>`;
   dock("","");
 }
@@ -622,9 +630,9 @@ function tFig(kind){
   return `<div class=fig><svg viewBox="0 0 100 14">${t}</svg><div class=lab><span>Solid: watch</span><span>Dashed: covered</span><span>Rust: today</span></div></div>`;
 }
 function TUT(){
-  const A=h(nm(S.you)),file=EG?"FILE":"CREW";
+  const A=h(nm(S.you)),file=EG?"FILE":"CREW",st0=S.start!=null?S.start:DSTART;
   const st=[
-    ["The voyage","One page a day",`The voyage runs ${S.season} flight days, from Earth orbit to Mars orbit. Each flight day adds one page to the log.`,tFig(1),
+    ["The voyage","One page a day",`The voyage runs ${S.season} flight days, from Earth orbit to Mars orbit. A new flight day starts every ${st0<720?"morning":"day"} at ${hm(st0)}. The voyage takes ${S.season%7?S.season+" days":(["one week","two weeks","three weeks","four weeks","five weeks","six weeks","seven weeks","eight weeks"][S.season/7-1]||S.season/7+" weeks")}. Each flight day adds one page to the log.`,tFig(1),
       [["Your astronaut",`You look after ${A}. Once a flight day you may give ${A} one instruction: a gift, some advice, a task, or rest.`],["Everything else",`${A} decides. Instructions and answers take effect on the next flight day.`]]],
     ["Needs you","Things waiting on you",`Home lists only what is waiting on you. Each item shows the flight day it closes. New ones carry a rust mark.`,"",
       [["Private",`A question only you are asked. Nobody else is told what you picked.`],["Anyone",`Any ship can answer. One tap from anywhere is enough.`],["Fleet vote","Every ship gets a ballot. See next card."]].concat(EG?[["Timed job",`${A}'s job for the day. The result posts at the time shown.`]]:[]).concat([["Left alone",`It settles itself: the crew's lean, or ${A}'s own judgement.`]])],
@@ -768,7 +776,7 @@ function fail(){
   try{T=await (await fetch("/text.json")).json()}catch(e){return fail()}
   await engLoad();
   R=new Renderer(T,EG);
-  try{codeSet=(await (await fetch("/api/crew"+DQ)).json()).set}catch(e){}
+  try{crewInfo(await api("/api/crew"))}catch(e){}
   // Signed in on this phone earlier today? The ship remembers it (by IP and browser) until the next flight day.
   try{const j=await api("/api/me");tok=j.token;me=j.crew;await refresh();live();route="home"}catch(e){}
   view();

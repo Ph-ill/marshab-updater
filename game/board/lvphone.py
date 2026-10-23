@@ -2,7 +2,7 @@
 # PC (web/app.html and web/engage.js call it), backed by this ship's real log and story.
 # lvweb.Server loads this on the first /api/ request and calls Phone.api(req).
 #
-#   GET  /api/crew    {set: [8 bools], day}
+#   GET  /api/crew    {set: [8 bools], day[, start][, launch, until before launch]}
 #   GET  /api/me      a phone that signed in here today: {token, crew, first:false}, else 401
 #   GET  /api/v       {v}: bumps when anything a phone sees may have changed
 #   GET  /api/state   (X-Crew-Token) the whole screen: story, open cards, crew, engagement
@@ -12,9 +12,11 @@
 #   POST /api/gift    {item, to, mode} -> {ok, v} | 409 {err}
 #   POST /api/act     {act, param, tgt}   POST /api/vote {card, opt}   POST /api/answer {card, opt}
 #
-# The board has one flight day (ship.day, from /data/ship.json on the bench); the page's
-# ?day= is ignored. Taps are signed records for today authored by whoever signed in
-# (lvship.Ship.tap), so they sync to the other ships like any record.
+# The board has one flight day (ship.day: from the launch date and the phones' clocks,
+# board/lvcal.py, or ship.json "day" on the bench); the page's ?day= is ignored. Before
+# launch only /api/crew (with the countdown: {day: 0, launch, until, start}) and /api/v
+# answer; the rest is 409. Taps are signed records for today authored by whoever signed
+# in (lvship.Ship.tap), so they sync to the other ships like any record.
 # Crew codes come from data/crew.json (the updater writes it); without it nobody can sign in.
 # What phones opened and saw is kept in /data/local.bin.
 from lv import ops as O
@@ -99,9 +101,19 @@ class Phone:
         d = max(1, sh.day)
         if sh.st is None or sh.days is None:
             return 503, {"err": "The story is switched off on this ship (story: false)."}
+        if sh.day < 1 and sh.cal is not None and p not in ("/api/crew", "/api/v"):
+            return 409, {"err": "The voyage hasn't launched yet.", "until": sh.cal.until()}
         if req.method == "GET":
             if p == "/api/crew":
-                return 200, {"set": [self.book.is_set(c) for c in range(N)], "day": d}
+                j = {"set": [self.book.is_set(c) for c in range(N)], "day": d}
+                cal = sh.cal
+                if cal is not None:
+                    j["start"] = cal.start
+                    if sh.day < 1:     # before launch: the page shows a countdown
+                        j["day"] = 0
+                        j["launch"] = cal.date
+                        j["until"] = cal.until()
+                return 200, j
             if p == "/api/v":
                 return 200, {"v": sh.v}
             if p == "/api/me":
@@ -254,7 +266,7 @@ class Phone:
             "open": opens, "act": act, "ending": st.ending,
             "updated": upd,
             "eng": EN.view(self.eng, self.local, p, st, log, you, minute),
-            "v": sh.v,
+            "v": sh.v, "start": sh.cal.start if sh.cal is not None else None,
         }
 
 

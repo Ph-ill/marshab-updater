@@ -5,6 +5,9 @@
 // first sign-in shows (every card, then Go aboard), story renders, vote (or answer), a gift,
 // a drop opened, a crewmate's tap reaching this phone by polling (the board has no
 // WebSocket), sign out, and a second sign-in that skips the briefing.
+// The ship runs on the calendar (board/lvcal.py): launch date DAY days before a phone date in
+// November at 05:50 CST, so it's flight day DAY; then the phone's clock jumps past 06:00 and
+// the page must show DAY+1 by its next poll. Last, the pre-launch countdown screen.
 // Fails on page exceptions, console errors and unexpected HTTP errors.
 //   node --experimental-websocket tests/app_e2e.mjs [day]          (from game/)
 //   BOARD_PY="/path/to/micropython -X heapsize=1m" ... runs the server on MicroPython
@@ -17,7 +20,10 @@ const fails = [];
 const step = (s) => { if (process.env.E2E_DEBUG) console.log('..', s); };
 const check = (ok, msg) => { if (!ok) { fails.push(msg); console.log('FAIL', msg); } };
 const [py, ...pyArgs] = (process.env.BOARD_PY || 'python3').split(' ');
-const board = spawn(py, [...pyArgs, 'tests/phone_serve.py', String(DAY), String(PORT)], { stdio: ['ignore', 'pipe', 'inherit'] });
+// The phone's clock: 2026-11-10 05:50 CST (UTC-6) ...; before 06:00 it is still the day that began 06:00 on the 9th, so FD 1 = 2026-11-(10-DAY).
+const T0 = Date.UTC(2026, 10, 10, 11, 50), TZ = -360;
+const LAUNCH = new Date(Date.UTC(2026, 10, 10 - DAY)).toISOString().slice(0, 10);
+const board = spawn(py, [...pyArgs, 'tests/phone_serve.py', String(DAY), String(PORT), LAUNCH, String(T0), String(TZ)], { stdio: ['ignore', 'pipe', 'inherit'] });
 let crew = -1;
 await new Promise((res, rej) => {
   let buf = '';
@@ -46,6 +52,9 @@ try {
   const until = async (expr, ms = 8000, what = expr) => { for (let t = 0; t < ms; t += 100) { if (await ev(expr)) return true; await sleep(100); } check(false, 'timed out: ' + what); return false; };
   const click = (sel) => ev(`(()=>{const b=document.querySelector(${JSON.stringify(sel)});if(!b)return false;b.click();return true})()`);
   await send('Runtime.enable'); await send('Network.enable'); await send('Page.enable');
+  // This phone's clock and zone, as the page reads them (Date.now, getTimezoneOffset); __shift(ms) moves it.
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: `(()=>{const r=Date.now.bind(Date);let o=${T0}-r();Date.now=()=>r()+o;` +
+    `Date.prototype.getTimezoneOffset=function(){return ${-TZ}};window.__shift=(m)=>{o+=m}})()` });
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
   await send('Network.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 e2e' });
   step('navigate');
@@ -77,6 +86,8 @@ try {
   await until(`!!document.querySelector('.tut')`, 4000, 'crew briefing card');
   const cards = await ev('TUT().length');
   check(cards === 6, 'briefing has ' + cards + ' cards (expected 6 with engagement)');
+  const lead = await ev(`document.querySelector('.tut .lead').textContent`);
+  check(/every morning at 6\b/.test(lead) && /six weeks/.test(lead), 'briefing card 1 gives the day start and the length: ' + lead);
   let seen = 1;
   for (let i = 1; i < cards; i++) {
     await click('[data-tut=next]');
@@ -130,6 +141,14 @@ try {
   check(r.status === 200, 'other phone act: ' + r.status);
   check(await ev('net') === 'poll', 'no WebSocket on the board: the page should be polling');
   await until(`S.v!==${vb}`, 20000, 'the poll picked up a crewmate\'s tap');
+  if (DAY < 42) {
+    step('06:00');
+    // The phone's clock crosses 06:00: the ship moves to the next flight day and the page,
+    // polling /api/v every 15 s, shows it (and the new day's story) without a reload.
+    await ev('go("home")');
+    await ev('__shift(12*60000)');
+    await until(`S.day===${DAY + 1}&&document.querySelector('#top').textContent.includes('FD ${String(DAY + 1).padStart(2, '0')}')`, 45000, 'the next flight day after 06:00');
+  }
   step('sign out');
   // Sign out, from the crew page (your astronaut).
   await ev(`go("crew")`);
@@ -147,6 +166,12 @@ try {
   await until(`!!document.querySelector('[data-out]')`, 4000, 'sign-out button');
   await click('[data-out]');
   await until(`tok===""`, 4000, 'signed out again');
+  step('pre-launch');
+  // The countdown the page shows before launch ({day: 0, launch, until} from /api/crew): no sign-in.
+  await ev(`(PRE={day:0,launch:"2026-11-12",until:125},hello(),1)`);
+  const pre = JSON.parse(await ev(`JSON.stringify({h:document.querySelector('.pre h1').textContent,p:document.querySelector('.pre p').textContent,on:document.querySelectorAll('[data-who]:not([disabled])').length})`));
+  check(pre.h === 'Launch in 2 h 5 min' && /starts at 06:00/.test(pre.p) && pre.on === 0, 'pre-launch screen: ' + JSON.stringify(pre));
+  await ev('(PRE=null,hello(),1)');
   // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404).
   // (and /api/me's 401 when the page opens signed out).
   const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me'));
@@ -154,7 +179,7 @@ try {
   check(wsTried, 'the page tried the WebSocket and fell back to polling');
   check(problems.length === 0, 'page problems: ' + JSON.stringify(problems));
   console.log(`app e2e on ${py.split('/').pop()}, day ${DAY}, crew ${C}: ${http.length} requests, ` +
-    `${voted ? 'voted card ' + voted[0] : 'nothing to vote on'}, gift sent${drop ? ', drop ' + drop : ''}, poll saw a crewmate, briefing ${cards} cards, 8 portraits, signed out: ${fails.length ? 'FAIL' : 'ok'}`);
+    `${voted ? 'voted card ' + voted[0] : 'nothing to vote on'}, gift sent${drop ? ', drop ' + drop : ''}, poll saw a crewmate, briefing ${cards} cards, 8 portraits${DAY < 42 ? ', FD ' + DAY + ' -> ' + (DAY + 1) + ' at 06:00' : ''}, pre-launch screen, signed out: ${fails.length ? 'FAIL' : 'ok'}`);
   sock.close();
   done(fails.length ? 1 : 0);
 } catch (e) { console.log('FAIL', e.message); done(1); }

@@ -8,7 +8,21 @@ export function defaultShipName(id, pattern = 'Starship-{nn}'){
 
 // Hotspot: the firmware default is WPA2 (config.AP_PASSWORD). A blank password here keeps that default;
 // a new password must be 8-63 characters; an open network has to be asked for explicitly.
-export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotspot_open, role, led_notify }, { count = 8, roles = [] } = {}){
+// Fleet launch date (Long Voyage, game firmware): flight day 1 starts at 06:00 local time on this date and
+// one flight day follows per real day (game/board/lvcal.py). Blank = no calendar: the bench's manual day.
+// Every ship in a fleet should carry the same date.
+export function validLaunchDate(v){
+  const s = String(v || '').trim();
+  if(!s) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if(!m) throw new Error('launch date must be YYYY-MM-DD');
+  const [y, mo, d] = [+m[1], +m[2], +m[3]];
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  if(y < 2000 || y > 2100 || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) throw new Error(`launch date ${s} is not a real date`);
+  return s;
+}
+
+export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotspot_open, role, led_notify, launch_date }, { count = 8, roles = [] } = {}){
   const id = Number.parseInt(ship_id, 10);
   if(!Number.isInteger(id) || id < 1 || id > count) throw new Error(`ship number must be 1-${count}`);
   const name = String(ship_name || '').trim() || defaultShipName(id);
@@ -24,6 +38,8 @@ export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotsp
   // Off unless ticked; older firmware ignores the key.
   const cfg = { schema: 2, ship_id: id, ship_name: name, role: r || null, hotspot_open: open, led_notify: !!led_notify };
   if(pw) cfg.hotspot_password = pw;
+  const launch = validLaunchDate(launch_date);
+  if(launch) cfg.launch_date = launch;
   return cfg;
 }
 
@@ -56,6 +72,11 @@ export function hotspotSummary(cfg){
   return cfg.hotspot_password ? 'WPA2, custom password' : 'WPA2, firmware default password';
 }
 
+// The keys this page owns. Anything else already in data/ship.json (the bench's manual "day",
+// "day_start", "fleet_key", "ble" tuning, ...) is kept when the settings are saved; a key this
+// page owns but no longer sends (a cleared launch date or password) is removed.
+export const SHIP_CONFIG_KEYS = ['schema', 'ship_id', 'ship_name', 'role', 'hotspot_open', 'hotspot_password', 'led_notify', 'launch_date', 'updated_at'];
+
 export async function writeShipConfig(device, cfg){
   const payload = JSON.stringify({ ...cfg, updated_at: new Date().toISOString() });
   const code = `
@@ -65,7 +86,18 @@ except ImportError:
     import os
 import json
 payload = ${JSON.stringify(payload)}
-json.loads(payload)
+new = json.loads(payload)
+try:
+    with open('data/ship.json') as f:
+        old = json.loads(f.read())
+    if not isinstance(old, dict):
+        old = {}
+except Exception:
+    old = {}
+for k in ${JSON.stringify(SHIP_CONFIG_KEYS)}:
+    old.pop(k, None)
+old.update(new)
+payload = json.dumps(old)
 try:
     os.mkdir('data')
 except OSError:
