@@ -25,6 +25,9 @@ Card format (one card per `card` line, indentation only matters for option effec
                                   #   sharing a GROUP are alternatives: one is enough
   reveal                          # the payoff card(s) (text.json "reveal")
   title A Proper Title           # endings: shown as a heading (text.json "ti")
+  each crew                       # clone the card once per astronaut: clone N binds
+                                  #   role A to crew N only and fills {habit} from that
+                                  #   astronaut's `habit "..."` line in roster.lv
   hook                            # cliffhanger event: last line of its day; needs a
                                   #   `due` resolver with `when fired <this card>`
   cooldown 6                      # days before it can fire again (repeatable cards)
@@ -245,7 +248,7 @@ def parse_cards(path, ctx):
                             "weight": 10, "flags": 0, "cooldown": 0, "duration": 0, "nroles": 0,
                             "lean": None, "default": None, "conds": [], "effects": [],
                             "options": [], "text": "", "cat": None, "skill": False, "clue": False,
-                            "core": None, "reveal": False, "title": ""}
+                            "core": None, "reveal": False, "title": "", "each": False}
                     cards.append(card)
                     opt = None
                     continue
@@ -285,6 +288,10 @@ def parse_cards(path, ctx):
                     card["title"] = rest.strip()
                 elif word == "hook":
                     card["flags"] |= O.F_HOOK
+                elif word == "each":
+                    if rest.strip() != "crew":
+                        raise PackError("only `each crew` is supported")
+                    card["each"] = True
                 elif word == "cooldown":
                     card["cooldown"] = ubyte(rest)
                 elif word == "duration":
@@ -319,7 +326,7 @@ def parse_cards(path, ctx):
 
 def parse_crew(t):
     # crew <name> ship <ship words...> [quirk <q>] [tag <t>]... [flagship]
-    cr = {"name": t[1], "quirk": None, "ship": "", "flagship": False, "tags": []}
+    cr = {"name": t[1], "quirk": None, "ship": "", "flagship": False, "tags": [], "habit": None}
     i = 2
     ship = []
     while i < len(t):
@@ -342,6 +349,43 @@ def parse_crew(t):
         i += 1
     cr["ship"] = " ".join(ship)
     return cr
+
+
+HABIT_RE = re.compile(r'\bhabit\s+"([^"]*)"')
+# Used for anyone whose roster line has no habit yet. Deliberately generic: a real
+# habit is something the player sends in, never something the writers invent.
+HABIT_DEFAULT = "{A} keeps one small thing from home within reach of the console."
+
+
+def split_habit(line):
+    # `habit "..."` is free text, so it comes out before the line is split on spaces.
+    m = HABIT_RE.search(line)
+    if not m:
+        return line, None
+    return line[:m.start()] + line[m.end():], m.group(1).strip()
+
+
+def expand_each(cards, crew, ctx):
+    # `each crew` cards become one clone per astronaut, so a per-person detail can live
+    # in roster.lv and the phone renderer never needs a new template slot.
+    out = []
+    for c in cards:
+        if not c["each"]:
+            out.append(c)
+            continue
+        if c["nroles"] < 1:
+            ctx.errors.append("%s: `each crew` needs role A" % c["where"])
+            continue
+        for i, cr in enumerate(crew):
+            habit = cr.get("habit") or HABIT_DEFAULT
+            k = dict(c)
+            k["id"] = "%s_%d" % (c["id"], i + 1)
+            k["each"] = False
+            k["text"] = c["text"].replace("{habit}", habit)
+            k["options"] = [dict(o, text=o["text"].replace("{habit}", habit)) for o in c["options"]]
+            k["conds"] = list(c["conds"]) + [((O.C_CREW, 0, 1 << i, 0), c["where"])]
+            out.append(k)
+    return out
 
 
 def seeded_quirk(key, name):
@@ -376,9 +420,12 @@ def parse_fleet(path, roster=None):
     if roster and os.path.exists(roster):
         with open(roster, encoding="utf-8") as f:
             for raw in f:
-                t = raw.split("#")[0].split()
+                line, habit = split_habit(raw.split("#")[0])
+                t = line.split()
                 if t and t[0] == "crew":
-                    fleet["crew"].append(parse_crew(t))
+                    cr = parse_crew(t)
+                    cr["habit"] = habit
+                    fleet["crew"].append(cr)
     for cr in fleet["crew"]:
         if cr["quirk"] is None and fleet["key"]:
             q = "~" + cr["name"]
@@ -613,6 +660,10 @@ def validate(cards, ctx, fleet, system):
     if len(set(cr["name"] for cr in fleet["crew"])) != len(fleet["crew"]):
         ctx.errors.append("roster.lv: crew names must be unique")
     for cr in fleet["crew"]:
+        h = cr.get("habit")
+        if h is not None and (not h or "{A}" not in h or re.search(r"\{(?!A\})", h)):
+            ctx.errors.append("roster.lv: %s's habit must be one sentence about {A} (no other slots)"
+                              % cr["name"])
         if cr["quirk"] not in fleet["quirks"]:
             ctx.errors.append("fleet.lv: crew %s has unknown quirk %s" % (cr["name"], cr["quirk"]))
     if len(ctx.flags) > 128 or len(ctx.vars) > 32:
@@ -660,6 +711,7 @@ def build(content_dir):
     for name in sorted(os.listdir(cdir)):
         if name.endswith(".lv"):
             cards += parse_cards(os.path.join(cdir, name), ctx)
+    cards = expand_each(cards, fleet["crew"], ctx)
     # Endings must stay in priority order at the end; everything else keeps file order.
     cards = [c for c in cards if c["type"] != O.ENDING] + [c for c in cards if c["type"] == O.ENDING]
     if len(cards) > 250:

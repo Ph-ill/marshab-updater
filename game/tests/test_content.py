@@ -502,5 +502,53 @@ class TestCli(unittest.TestCase):
         self.assertTrue(r.stdout.startswith("ok:"), r.stdout)
 
 
+class TestHabitSlot(unittest.TestCase):
+    """roster.lv `habit "..."` plus `each crew` cards: per-astronaut text, compiled in."""
+
+    SRC = "card hab\ntype beat\neach crew\nonce\nweight 50\nroles A\ntext On shift: {habit}\n"
+
+    def roster(self, habits):
+        names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian"]
+        return "\n".join('crew %s ship Ship 0%d%s' % (n, i + 1, (' habit "%s"' % habits[i]) if habits[i] else "")
+                         for i, n in enumerate(names))
+
+    def test_clones_bind_only_their_astronaut(self):
+        hs = ["{A} hums.", None, "{A} whistles.", None, None, None, None]
+        pack, text, ctx = lvc.build(mini_content(self.SRC, self.roster(hs)))
+        self.assertEqual(ctx.errors, [])
+        ids = [c["id"] for c in text["cards"]]
+        self.assertEqual(ids[:7], ["hab_%d" % i for i in range(1, 8)])
+        self.assertEqual(text["cards"][0]["t"], "On shift: {A} hums.")
+        self.assertEqual(text["cards"][1]["t"], "On shift: " + lvc.HABIT_DEFAULT)
+        self.assertNotIn("{habit}", repr(text))
+        seen = {}
+        for seed in range(40):
+            p = Pack(pack)
+            p.voyage_key = bytes([seed, 3]) + b"habits"
+            _, days = season(p)
+            for out in days:
+                for k in range(7):
+                    for e in events(out, k):
+                        seen.setdefault(k, set()).add(e[3])
+        for k, who in seen.items():
+            self.assertEqual(who, {k})
+
+    def test_bad_habit_is_an_error(self):
+        hs = ["hums a lot", None, None, None, None, None, None]
+        _, _, ctx = lvc.build(mini_content(self.SRC, self.roster(hs)))
+        self.assertTrue(any("habit" in e for e in ctx.errors), ctx.errors)
+
+    def test_habit_slot_outside_each_crew_is_an_error(self):
+        _, _, ctx = lvc.build(mini_content(self.SRC.replace("each crew\n", "")))
+        self.assertTrue(any("habit" in e for e in ctx.errors), ctx.errors)
+
+    def test_real_roster_parses_habits(self):
+        fleet = lvc.parse_fleet(os.path.join(CONTENT, "fleet.lv"), os.path.join(CONTENT, "roster.lv"))
+        self.assertEqual(len(fleet["crew"]), 7)
+        for cr in fleet["crew"]:
+            self.assertIn("{A}", cr["habit"])
+            self.assertTrue(cr["ship"].startswith("Ship 0"), cr["ship"])
+
+
 if __name__ == "__main__":
     unittest.main()

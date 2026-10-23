@@ -2,6 +2,7 @@
 # Edit names here and re-run tools/lvc.py; no code changes needed.
 #
 #   crew <name> ship <ship name> [quirk <quirk from fleet.lv>] [tag <word>]... [flagship]
+#        [habit "<one sentence about {A}>"]
 #
 # Tags are optional flavour hooks for cards: `when tag A mech` only binds role A to crew
 # carrying that tag. Use them to let a card *prefer* someone (pair it with an untagged
@@ -10,11 +11,18 @@
 # With no quirk, the astronaut's starting traits are seeded from the voyage key and
 # their name, so they are stable from build to build but nobody picked them.
 # Card text never assumes anyone's gender: use {A}/{B} or "they".
+#
+# Habits: one small, harmless, real detail per astronaut, sent in by that player and
+# dropped in here. It is a whole sentence about {A}, e.g.
+#   habit "{A} keeps one small thing from home within reach of the console."
+# Cards marked `each crew` print it (one clone per astronaut, compiled in; the phone
+# never sees a new slot). Until a real one arrives, everyone has the same generic
+# placeholder below. Never invent a habit for a real person: leave the placeholder.
 
-crew Phill     ship Ship 01   tag controls  flagship
-crew Jacques   ship Ship 02   tag controls
-crew Kim       ship Ship 03   tag controls
-crew Jai       ship Ship 04   tag controls
-crew Michelle  ship Ship 05   tag controls
-crew Diego     ship Ship 06   tag mech
-crew Dorian    ship Ship 07   tag controls
+crew Phill     ship Ship 01   tag controls  flagship  habit "{A} keeps one small thing from home within reach of the console."
+crew Jacques   ship Ship 02   tag controls           habit "{A} keeps one small thing from home within reach of the console."
+crew Kim       ship Ship 03   tag controls           habit "{A} keeps one small thing from home within reach of the console."
+crew Jai       ship Ship 04   tag controls           habit "{A} keeps one small thing from home within reach of the console."
+crew Michelle  ship Ship 05   tag controls           habit "{A} keeps one small thing from home within reach of the console."
+crew Diego     ship Ship 06   tag mech               habit "{A} keeps one small thing from home within reach of the console."
+crew Dorian    ship Ship 07   tag controls           habit "{A} keeps one small thing from home within reach of the console."
