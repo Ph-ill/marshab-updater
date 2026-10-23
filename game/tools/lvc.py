@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lvc: compile and validate The Long Voyage story pack.
 
-Reads content/fleet.lv, content/system.json and content/cards/*.lv. Writes:
+Reads content/fleet.lv, content/roster.lv, content/system.json and content/cards/*.lv. Writes:
   build/pack.bin       binary logic table the Pico runs (no text at all)
   build/text.json      card text and templates the phone renders (minified)
   build/text.json.gz   what the Pico actually serves to phones
@@ -271,7 +271,36 @@ def parse_cards(path, ctx):
     return cards
 
 
-def parse_fleet(path):
+def parse_crew(t):
+    # crew <name> ship <ship words...> [quirk <q>] [flagship]
+    cr = {"name": t[1], "quirk": None, "ship": "", "flagship": False}
+    i = 2
+    ship = []
+    while i < len(t):
+        if t[i] == "ship":
+            i += 1
+            while i < len(t) and t[i] not in ("quirk", "flagship"):
+                ship.append(t[i])
+                i += 1
+            continue
+        if t[i] == "quirk":
+            cr["quirk"] = t[i + 1]
+            i += 2
+            continue
+        if t[i] == "flagship":
+            cr["flagship"] = True
+        i += 1
+    cr["ship"] = " ".join(ship)
+    return cr
+
+
+def seeded_quirk(key, name):
+    # Starting traits for a crew member with no quirk: stable, spread over -30..30.
+    h = hashlib.sha256(key + b"crew:" + name.encode("utf-8")).digest()
+    return [h[i] % 61 - 30 for i in range(3)]
+
+
+def parse_fleet(path, roster=None):
     fleet = {"crew": [], "ships": [], "quirks": {}, "res": [0, 0, 0], "medkits": 1, "key": None,
              "season": SEASON_DAYS}
     with open(path, encoding="utf-8") as f:
@@ -286,7 +315,7 @@ def parse_fleet(path):
                 vals = dict(zip(t[2::2], t[3::2]))
                 fleet["quirks"][t[1]] = [int(vals.get(a, 0)) for a in O.AXES]
             elif t[0] == "crew":
-                fleet["crew"].append({"name": t[1], "quirk": t[3], "ship": " ".join(t[5:])})
+                fleet["crew"].append(parse_crew(t))
             elif t[0] == "resources":
                 vals = dict(zip(t[1::2], t[2::2]))
                 fleet["res"] = [int(vals[r]) for r in O.RESOURCES]
@@ -294,10 +323,50 @@ def parse_fleet(path):
                 fleet["medkits"] = int(t[1])
             elif t[0] == "season":
                 fleet["season"] = int(t[1])
+    if roster and os.path.exists(roster):
+        with open(roster, encoding="utf-8") as f:
+            for raw in f:
+                t = raw.split("#")[0].split()
+                if t and t[0] == "crew":
+                    fleet["crew"].append(parse_crew(t))
+    for cr in fleet["crew"]:
+        if cr["quirk"] is None and fleet["key"]:
+            q = "~" + cr["name"]
+            fleet["quirks"][q] = seeded_quirk(fleet["key"], cr["name"])
+            cr["quirk"] = q
     return fleet
 
 
+GENDERED = re.compile(r"\b(he|she|him|her|his|hers|himself|herself)\b", re.I)
+
+
+def _strings(x):
+    if isinstance(x, str):
+        yield x
+    elif isinstance(x, dict):
+        for v in x.values():
+            yield from _strings(v)
+    elif isinstance(x, list):
+        for v in x:
+            yield from _strings(v)
+
+
+def check_pronouns(cards, system, ctx):
+    # The crew are real coworkers: card text never assumes anyone's gender.
+    for c in cards:
+        texts = [c["text"]] + [o["label"] for o in c["options"]] + [o["text"] for o in c["options"]]
+        for t in texts:
+            m = GENDERED.search(t)
+            if m:
+                ctx.errors.append("%s: gendered pronoun %r; use a name or 'they'" % (c["where"], m.group(0)))
+    for t in _strings(system):
+        m = GENDERED.search(t)
+        if m:
+            ctx.errors.append("system.json: gendered pronoun %r in %r" % (m.group(0), t[:40]))
+
+
 def validate(cards, ctx, fleet, system):
+    check_pronouns(cards, system, ctx)
     ids = [c["id"] for c in cards]
     for c in cards:
         w = c["where"]
@@ -365,7 +434,9 @@ def validate(cards, ctx, fleet, system):
     if fleet["key"] is None or len(fleet["key"]) != 8:
         ctx.errors.append("fleet.lv: voyage_key must be 8 bytes of hex")
     if len(fleet["crew"]) != 7:
-        ctx.errors.append("fleet.lv: need exactly 7 crew lines")
+        ctx.errors.append("roster.lv: need exactly 7 crew lines")
+    if len(set(cr["name"] for cr in fleet["crew"])) != len(fleet["crew"]):
+        ctx.errors.append("roster.lv: crew names must be unique")
     for cr in fleet["crew"]:
         if cr["quirk"] not in fleet["quirks"]:
             ctx.errors.append("fleet.lv: crew %s has unknown quirk %s" % (cr["name"], cr["quirk"]))
@@ -405,7 +476,7 @@ def encode_card(c, ids):
 
 def build(content_dir):
     ctx = Ctx()
-    fleet = parse_fleet(os.path.join(content_dir, "fleet.lv"))
+    fleet = parse_fleet(os.path.join(content_dir, "fleet.lv"), os.path.join(content_dir, "roster.lv"))
     with open(os.path.join(content_dir, "system.json"), encoding="utf-8") as f:
         system = json.load(f)
     cards = []
@@ -444,6 +515,8 @@ def build(content_dir):
         "pack": pack_id.hex(),
         "crew": [cr["name"] for cr in fleet["crew"]],
         "ships": [cr["ship"] for cr in fleet["crew"]],
+        "flagship": next((i for i, cr in enumerate(fleet["crew"]) if cr["flagship"]), 0),
+        "epi": system.get("epi", {}),
         "cards": [{"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]}
                   for c in cards],
         "actions": system["actions"],

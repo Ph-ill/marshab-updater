@@ -1,5 +1,4 @@
 # Fleet setup: compiled into the pack, so every ship starts from the same roster.
-# Names here are placeholders for the simulator; the real roster is set at gifting.
 season 42
 voyage_key 4c56533130303031        # 8 bytes; seeds every flight day
 resources food 110 fuel 40 spares 6
@@ -13,10 +12,4 @@ quirk grump    brave 10  curious -5  warm -30
 quirk dreamer  brave -20 curious 25  warm 15
 quirk steady   brave -10 curious -20 warm 10
 
-crew Reyes   quirk bold     ship Ship 01
-crew Okafor  quirk grump    ship Ship 02
-crew Lind    quirk dreamer  ship Ship 03
-crew Tanaka  quirk tinkerer ship Ship 04
-crew Brooks  quirk carer    ship Ship 05
-crew Moreau  quirk steady   ship Ship 06
-crew Singh   quirk bold     ship Ship 07
+# The crew roster lives in roster.lv.

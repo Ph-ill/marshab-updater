@@ -2,9 +2,9 @@
  "ending": "end_contact",
  "cards_fired": {
   "galley_pump": 5,
-  "beat_watch": 8,
+  "beat_watch": 9,
   "beat_argue": 7,
-  "quiet_fixer": 9,
+  "quiet_fixer": 10,
   "glint": 4,
   "dec_signal": 1,
   "dil_stash": 7,
@@ -17,53 +17,53 @@
  "decisions": {
   "closed": 1,
   "no_ballots": 0,
-  "tie": 1
+  "tie": 0
  },
  "dilemmas": {
-  "owner": 4,
-  "astronaut": 3
+  "owner": 5,
+  "astronaut": 2
  },
  "rescues": {
   "answered": 1,
   "default": 0
  },
  "story_appearances": {
-  "Reyes": 11,
-  "Okafor": 4,
-  "Lind": 12,
-  "Tanaka": 3,
-  "Brooks": 11,
-  "Moreau": 10,
-  "Singh": 12
+  "Phill": 7,
+  "Jacques": 9,
+  "Kim": 4,
+  "Jai": 15,
+  "Michelle": 9,
+  "Diego": 9,
+  "Dorian": 13
  },
- "entries": 408,
- "out_bytes": 3264,
- "state_bytes": 299,
+ "entries": 405,
+ "out_bytes": 3240,
+ "state_bytes": 307,
  "resources_end": {
-  "food": 89,
-  "fuel": 77,
-  "spares": 64
+  "food": 98,
+  "fuel": 65,
+  "spares": 55
  },
  "crew_condition_end": {
-  "Reyes": "ok",
-  "Okafor": "ok",
-  "Lind": "ok",
-  "Tanaka": "ok",
-  "Brooks": "ok",
-  "Moreau": "ok",
-  "Singh": "ok"
+  "Phill": "ok",
+  "Jacques": "ok",
+  "Kim": "ok",
+  "Jai": "ok",
+  "Michelle": "ok",
+  "Diego": "ok",
+  "Dorian": "ok"
  },
- "reference_digest": "5cca1692bc128b4c",
- "records": 169,
+ "reference_digest": "56bddf505825afed",
+ "records": 170,
  "records_per_player": {
-  "Reyes": 48,
-  "Okafor": 37,
-  "Lind": 20,
-  "Brooks": 31,
-  "Tanaka": 33
+  "Phill": 52,
+  "Jacques": 40,
+  "Kim": 22,
+  "Michelle": 24,
+  "Jai": 32
  },
- "log_bytes": 2197,
- "late_records": 3,
+ "log_bytes": 2210,
+ "late_records": 4,
  "determinism": {
   "instant": {
    "all_7_match": true,
@@ -73,24 +73,24 @@
   },
   "gossip": {
    "all_7_match": true,
-   "replays": 268,
-   "replayed_days": 1276,
-   "deepest_rewrite_days": 8
+   "replays": 264,
+   "replayed_days": 1277,
+   "deepest_rewrite_days": 9
   },
   "reverse": {
    "all_7_match": true,
-   "replays": 270,
-   "replayed_days": 1465,
-   "deepest_rewrite_days": 9
+   "replays": 263,
+   "replayed_days": 1425,
+   "deepest_rewrite_days": 10
   },
   "bursty": {
    "all_7_match": true,
    "replays": 220,
-   "replayed_days": 1111,
-   "deepest_rewrite_days": 12
+   "replayed_days": 1115,
+   "deepest_rewrite_days": 11
   }
  },
- "seconds_reference_season": 0.005,
- "seconds_determinism_runs": 0.32,
- "pack_bytes": 575
+ "seconds_reference_season": 0.004,
+ "seconds_determinism_runs": 0.29,
+ "pack_bytes": 596
 }

@@ -65,5 +65,27 @@
     "res_default": "Nobody answered in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
     "end": "Arrival day."
+  },
+  "epi": {
+    "axis": [
+      [
+        "Volunteered first, every time.",
+        "Checked every seal twice. Nobody minded."
+      ],
+      [
+        "Has a notebook full of things worth a second look.",
+        "Knew where everything was, always."
+      ],
+      [
+        "Made sure nobody ate alone.",
+        "Said the true thing when it needed saying."
+      ]
+    ],
+    "bond": "Closest to {T} by the end.",
+    "plain": "Kept the ship running, quietly and well.",
+    "head": [
+      "Seven landed. Nobody was left behind.",
+      "Seven ships, one planet."
+    ]
   }
 }

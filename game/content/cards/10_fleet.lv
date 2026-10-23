@@ -16,7 +16,7 @@ option open | Open the channel | {A} keys the transmitter and the whole fleet li
   mark t_signal
   res fuel -3
   trait A curious 5
-option log | Log it, move on | The pattern is filed under "later". {A} sulks for a day.
+option log | Log it, move on | The pattern is filed under "later". {A} pins a printout of it above the bunk, just in case.
   set signal_ignored
   mark t_signal
   morale A -5
@@ -57,7 +57,7 @@ roles A
 when cond A ok
 when trait A brave >= 0
 when kit_elsewhere A
-text A micrometeoroid nicks {A}'s suit during an EVA. {A} makes it back inside, but the hand is bad.
+text A micrometeoroid clips the hull during {A}'s EVA. {A} gets everyone's kit stowed and comes back in with a sprained wrist.
 do cond A injured
 do morale A -10
 do open rescue_kit
@@ -70,7 +70,7 @@ default volunteer
 when cond A injured
 when bestbond B A
 text {A} needs a med kit from another ship.
-option send | Send a med kit | A med kit goes over on the next shuttle. {A}'s hand is strapped up by lunch.
+option send | Send a med kit | A med kit goes over on the next shuttle. {A}'s wrist is strapped up by lunch.
   kit A
   morale A 6
 option volunteer | Let {B} go | {B} doesn't wait to be asked and flies a kit over personally.

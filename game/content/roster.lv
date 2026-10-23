@@ -1,0 +1,16 @@
+# The crew: one astronaut per player, one line per ship, in ship order.
+# Edit names here and re-run tools/lvc.py; no code changes needed.
+#
+#   crew <name> ship <ship name> [quirk <quirk from fleet.lv>] [flagship]
+#
+# With no quirk, the astronaut's starting traits are seeded from the voyage key and
+# their name, so they are stable from build to build but nobody picked them.
+# Card text never assumes anyone's gender: use {A}/{B} or "they".
+
+crew Phill     ship Ship 01   flagship
+crew Jacques   ship Ship 02
+crew Kim       ship Ship 03
+crew Jai       ship Ship 04
+crew Michelle  ship Ship 05
+crew Diego     ship Ship 06
+crew Dorian    ship Ship 07

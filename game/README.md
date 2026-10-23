@@ -43,7 +43,7 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
   * Records merge as a set union keyed by `(day, ship, kind, sub)`. `sub` is the card for votes and dilemmas, so one ship can answer two open items on the same day.
   * When two records share a key, the higher seq wins; on equal seq, the larger bytes win. Order and duplicates therefore never matter.
   * Records with an unknown (newer) schema are kept and relayed, but never interpreted.
-* **Effective day.** A record takes effect on `authored day + delay`. The delay is 1 normally, or 3 if the author was out of range on both that day and the day before. Late records are normal: a ship that hears one for a day it has already simulated reloads its last weekly snapshot (299 B) and replays forward.
+* **Effective day.** A record takes effect on `authored day + delay`. The delay is 1 normally, or 3 if the author was out of range on both that day and the day before. Late records are normal: a ship that hears one for a day it has already simulated reloads its last weekly snapshot (about 300 B) and replays forward.
 * **Votes and dilemmas.** These close at a fixed day and resolve with whoever voted. Nothing waits for anyone:
   * No ballots: the crew's lean decides (the fleet's summed trait on the card's axis).
   * Ties: the lean breaks the tie.
@@ -66,15 +66,15 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
 
 ## Results (build 0.1.0, 15 sample cards)
 
-**Determinism.** The reference season authors 169 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 7 independent ships in 4 ways:
+**Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 7 independent ships in 4 ways:
 * instant;
 * gossip (0-2 days of lag);
 * reverse-order with 20% duplicates;
 * bursty, with one ship's links down every 5 days.
 
-Every ship ends on the reference digest `5cca1692bc128b4c` in every scenario. The deepest replay rewrote 12 days.
+Every ship ends on the reference digest `56bddf505825afed` in every scenario. The deepest replay rewrote 11 days.
 
-**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest is `5cca1692bc128b4c`.
+**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest is `56bddf505825afed`.
 
 **Size and RAM** (32-bit MicroPython, `gc.mem_alloc`):
 
@@ -85,7 +85,7 @@ Every ship ends on the reference digest `5cca1692bc128b4c` in every scenario. Th
 | text.json / .gz (phone) | 4.2 KB / 2.0 KB | ≈20 KB / ≈9-10 KB (estimate, real prose) |
 | core code in RAM | 19 KB as .mpy, 20.6 KB from .py | same; ≈0 if frozen into the firmware |
 | choice log | 3.9-4.9 KB for 169 records (≈23-29 B/record) | ≈10 KB for 7 active players; ≈25 KB worst case |
-| state + engine | ≈1.1 KB, snapshot 299 B | same |
+| state + engine | ≈1.1 KB, snapshot about 300 B | same |
 | whole check, peak | runs in a 56 KB heap (.mpy) | ≈50-60 KB of the 157-168 KB free with coex running |
 
 **Tick time** (x86 unix port, 32-bit): the 15-card pack averages 0.16 ms/tick (worst 0.28 ms); the 110-card pack averages 1.3 ms (worst 2.9 ms). A record merge with its HMAC check takes about 15 µs.
@@ -101,6 +101,6 @@ Every ship ends on the reference digest `5cca1692bc128b4c` in every scenario. Th
 2. **The merge key includes `sub`.** The Page says `(ship, day, kind)`. With two decisions open, a ship needs two VOTE records on one day, so the key is `(day, ship, kind, sub)`.
 3. **The "a late signal changed this" marker is ship-local.** A replay can rewrite up to about 12 days of a story the phone has already shown. The core is deterministic, but the page needs a policy: show a "the log was updated" note, or only show days older than N as final.
 4. **32-bit PRNG on the RP2040.** xorshift32 values exceed MicroPython's 31-bit small ints, so some steps allocate bigints. This works and matches on the 32-bit build. If tick time on the board is tight, split the state into two 16-bit halves.
-5. **The crew roster in `content/fleet.lv` is a placeholder.** It needs real names, ships and quirks (one per teammate).
+5. **The crew roster is real and lives in `content/roster.lv`.** Phill (ship 1, flagship), Jacques, Kim, Jai, Michelle, Diego, Dorian. No quirks were given, so each astronaut's starting traits are seeded from the voyage key and their name; add `quirk <name>` to a line to set one. The compiler rejects gendered pronouns in any card or template text, and story beats are kept good-natured (injuries come from the environment, never from someone's mistake).
 6. **The sample content is thin on purpose.** The validator warns that `stash_shared` and `stash_exposed` are set but never read; they are hooks for later cards. With one decision card, every season gets the same vote.
-7. **The weekly snapshot cadence is a guess.** Snapshots take 299 B each, so daily snapshots on flash would make replays almost free.
+7. **The weekly snapshot cadence is a guess.** Snapshots take about 300 B each, so daily snapshots on flash would make replays almost free.

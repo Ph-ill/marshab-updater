@@ -30,9 +30,9 @@ when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
 when same A B
-text {B} finds the wrappers in {A}'s locker. The galley goes very quiet.
-do bond A B -12
-do morale A -4
+text {B} finds the stash in {A}'s locker. {A} shares it out on the spot. Dessert all round.
+do bond A B 6
+do morale A 3
 do set stash_exposed
 
 card beat_watch
@@ -96,6 +96,6 @@ weight 6
 cooldown 8
 roles A
 when res spares >= 1
-text The galley pump fails again. {A} fixes it and complains the entire time.
+text The galley pump fails again. {A} fixes it and narrates the whole repair like a nature documentary.
 do res spares -1
 do morale A -2
