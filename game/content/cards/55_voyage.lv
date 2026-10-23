@@ -38,6 +38,7 @@ days 3 9
 roles A
 text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the logo, a progress bar, the three-note chime, all over before {A} has counted to eleven. Then it logs out again. By departure the whole fleet is humming the chime.
 do morale A 1
+do who abort_who A
 
 card l_dock_hello
 type beat
@@ -195,7 +196,7 @@ once
 days 42 42
 roles A
 when is A ow_song
-text On the morning of entry, with a planet under the fleet again, {A} plays past the four bars, all the way through, and this time on the channel. Six ships hear the fifth bar at last: it falls where they all had it rising, and lands on the last note of the galley chime. "That's the one," {A} says.
+text On the last morning before the air, with a planet under the fleet again, {A} plays past the four bars, all the way through, and this time on the channel. Six ships hear the fifth bar at last: it falls where they all had it rising, and lands on the last note of the galley chime. "That's the one," {A} says.
 do morale A 5
 
 # --- Thread: the garden ------------------------------------------------------------
@@ -256,7 +257,7 @@ days 37 38
 roles A
 when is A ow_garden
 when fired p_garden_sprout
-text The entry checklist says loose items go in the locker. {A} reads it, puts the seedling's tray in the locker, and takes it straight back out. Two loops of tape later it is strapped beside the seat. "It rides with me," {A} tells the flight surgeon, who has stopped arguing.
+text The entry checklist says loose items go in the locker. {A} reads it, puts the seedling's tray in the locker, and takes it straight back out. One cargo strap later it rides beside the seat. "It comes with me," {A} tells the flight surgeon, who has stopped arguing.
 do morale A 3
 
 card p_garden_none
@@ -280,7 +281,7 @@ weight 6
 once
 roles A
 when cond A ok
-text With the cabin lights off, the Sun behind the hull and the shutters open, {A}'s hand throws a faint shadow on the bulkhead. The light source is Venus. {A} stays there for a long time, moving their fingers, making the planet cast them.
+text With the cabin lights off, the Sun behind the hull and the shutters open, {A}'s hand throws a faint shadow on the bulkhead. The light source is Venus. {A} makes a shadow rabbit, then a fist, then just an open hand, letting the planet cast it.
 do trait A curious 3
 
 card w_phosphene
@@ -424,13 +425,13 @@ weight 9
 once
 roles A
 when cond A ok
-text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock no hand has ever touched. {A} saves the frame, then sits with it on the screen a while longer than the job needs.
+text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock no hand has ever touched. {A} saves the frame and sends it to the geology team, subject line: "look".
 do trait A curious 3
 
 card w_phobos
 type event
-cat arrival
-days 40 40
+cat wonder
+days 37 39
 weight 14
 once
 roles A
@@ -525,7 +526,7 @@ type event
 cat arrival
 due
 once
-days 40 40
+days 37 37
 roles A
 when fired crisis_eva
 when is A eva_who
@@ -548,7 +549,7 @@ type event
 cat arrival
 due
 once
-days 41 41
+days 40 40
 roles A B
 when flag stash_exposed
 when is A stash_who
@@ -577,7 +578,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, with the old program key on a card clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key in its crypto slot, the procedure on a card clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
@@ -591,7 +592,7 @@ roles A
 when flag arrive_hold
 when flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At a hundred metres the cameras find a slope, and {A} calls the take-manual and puts the ship down on the flat.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At a hundred metres the cameras find the ground again, a slope, and {A} calls the take-manual and puts the ship down on the flat.
 do morale A 3
 
 card e_entry_hold_q
@@ -651,5 +652,27 @@ weight 10
 once
 roles A
 when cond A ok
-text Through the shade filter the Sun is a coin held further off each week. The solar arrays say it first, a few percent less on every page. {A} turns the cabin heater up a notch, logs why, and stays at the filter a while, watching a star that used to be a sky.
+text Through the shade filter the Sun is a coin held further off each week. The solar arrays say it first, a few percent less on every page. {A} turns the cabin heater up a notch, logs why, and caps the filter on a star that used to be a sky.
 do morale A 2
+
+card w_milky
+type event
+cat wonder
+days 20 20
+due
+once
+roles A
+when cond A ok
+text {A} kills every cabin light, shades the Sun-side window and waits twenty minutes for night eyes. The Milky Way comes up with the dark lanes in it, the ones no backyard ever shows. {A} names the ones in the book, then starts on the rest.
+do trait A curious 2
+
+card w_moon_pair
+type event
+cat wonder
+days 22 22
+due
+once
+roles A
+when cond A ok
+text Through the long lens Earth and the Moon fit in one frame now, a blue dot and a grey one, close as two buttons on a coat. {A} shoots the pair once a shift for a week and sends the frames home as a flipbook, captioned "You are here. Both of you."
+do morale A 3

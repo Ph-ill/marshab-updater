@@ -148,7 +148,7 @@ type beat
 cat arrival
 due
 once
-days 40 40
+days 39 39
 roles A
 when is A ow_letter
 text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, to an empty cabin, then folds it into the left chest pocket, seals the flap, and ticks the box in ink.
@@ -166,7 +166,7 @@ roles A
 when cond A ok
 lean brave tune wait
 text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance lead who owns that loop is off shift; the night console can log it but not sign it.
-option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", and asks for the change as a procedure, under {A}'s name.
+option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning, after a two-page non-conformance report and a long call, and asks for it as a procedure under {A}'s name, with a new rule about doing this alone.
   set gains_tuned
   who gains_who A
   trait A brave 2
@@ -185,7 +185,7 @@ when flag gains_tuned
 when flag trim_done
 when is A gains_who
 when cond A ok
-text On the corridor burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all seven.
+text On the corridor burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all seven, the report stapled to them.
 do morale A 5
 do res fuel 1
 

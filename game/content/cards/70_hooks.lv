@@ -14,8 +14,9 @@ days 30 34
 weight 24
 roles A
 when cond A ok
+when flag flash_seen
 do who hook_who A
-text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} watches the clock run past eleven seconds, then twelve, then thirty.
+text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty. On the night frame from an hour ago, the lit pixel is dark too.
 
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure
@@ -28,7 +29,7 @@ weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 01:50. The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is the only one awake.
+text 01:50. The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is awake to see it first, a minute before the fleet's night watch.
 
 # --- 3. Solar flare ----------------------------------------------------------
 card h_flare
@@ -42,7 +43,7 @@ roles A
 when cond A ok
 when !fired storm_shelter
 do who hook_who A
-text 23:52. The space weather feed flags a major flare on the Sun. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
+text 23:52. The X-ray monitor jumps, and the ground's space weather alert lands minutes later: a major flare. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
 
 # --- 4. Uncommanded thruster --------------------------------------------------
 card h_thruster
@@ -67,7 +68,7 @@ roles A
 when flag valve_out
 when is A valve_who
 when since t_valve >= 6
-text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The flight software has a new line in it with {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
+text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The thruster-select table the ground uplinked has a new row, and the change note carries {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
 do morale A -1
 
 # --- 5. Alarm flood -----------------------------------------------------------

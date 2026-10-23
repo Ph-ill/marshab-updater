@@ -28,7 +28,7 @@ days 18 39
 roles A
 when flag photo_taken
 when cond A ok
-text The fleet portrait is on the front page of every news site on Earth, which from out here means a minute ago. {A} zooms in and counts them all: six ships, and the edge of the photographer's hull, bottom left.
+text The fleet portrait is on the front page of every news site on Earth, which by the time it reaches the fleet is old news at home. {A} zooms in and counts them all: six ships, and the edge of the photographer's hull, bottom left.
 do morale A 5
 
 card photo_stamp
@@ -107,7 +107,7 @@ duration 2
 roles A B
 lean curious shift keep
 text Mission Control proposes moving the fleet's clocks two hours forward, to line up with the ground team's shifts. {A} is for it. {B} has seen this study before.
-option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, exactly as the study predicted and everyone doubted.
+option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, as the study predicted. {B}'s sleep log is the one the ground asks to keep.
   set clock_shifted
 option keep | Keep fleet time | The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza as evidence.
   set clock_kept

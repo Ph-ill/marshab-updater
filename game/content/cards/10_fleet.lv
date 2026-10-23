@@ -28,7 +28,7 @@ days 18 19
 roles A B
 when is A ow_hail
 when since t_carrier >= 3
-text {A} asks {B} to point a second dish at it. Anything aboard would alias differently on each ship. The bursts land on both in the same millisecond, and drift against fleet time like something with its own crystal. "Not us," {A} tells the fleet. "Ignore my last."
+text {A} asks {B} to point a second dish at it. Anything aboard would alias differently on each ship. The bursts land on both in the same millisecond, and drift against fleet time, a few microseconds a day. "Not us," {A} tells the fleet. "Ignore my last."
 do bond A B 3
 do open dec_signal
 

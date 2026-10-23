@@ -162,6 +162,7 @@ once
 roles A B
 when idle A >= 3
 when cond B ok
+when is B abort_who
 text {A} walks {B} through taking the landing by hand over the link: hold, pick a new spot, commit. Step by step, until {B} can call it without the checklist. {A} logs it as training. It is.
 do who abort_who B
 do bond B A 6

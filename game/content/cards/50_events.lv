@@ -31,12 +31,12 @@ do var storms 1
 card storm_dose
 type event
 cat grim
-days 9 14
+days 11 16
 weight 16
 once
 roles A
 when cond A ok
-text {A} runs the dosimeter check. The fleet has now passed fifty millisieverts, more than a nuclear worker in Europe may take in any single year. It was a Tuesday. {A} writes it down and underlines it, and leaves the underline to say the rest.
+text {A} runs the dosimeter check. Every crew member has now passed fifty millisieverts, more than a nuclear worker in Europe may take in any single year. It was a Tuesday. {A} writes it down and underlines it, and leaves the underline to say the rest.
 do trait A curious 1
 
 card comm_delay
@@ -47,7 +47,7 @@ weight 8
 once
 roles A
 when cond A ok
-text The signal delay to Earth passes two minutes each way. {A} sends a joke to the ground team and waits four and a bit minutes to find out whether it landed. It did, on a slight delay, like everything now.
+text The signal delay to Earth passes a minute each way. {A} sends a joke to the ground team and waits two and a bit minutes to find out whether it landed. It did, on a slight delay, like everything now.
 do morale A 4
 
 card comm_delay2
@@ -70,7 +70,7 @@ weight 5
 once
 roles A
 when cond A ok
-text {A} goes to the window to find Earth and has to look for a while. It's a point now, bluish, still one of the brightest things in the sky, and no longer anywhere you could point to a house. {A} stays until the shift change.
+text {A} goes to the window to find Earth and has to look for a while. It's a point now, bluish, still one of the brightest things in the sky, and no longer anywhere you could point to a house. {A} photographs it beside the window frame's bolt heads, for scale.
 do trait A warm 3
 
 # --- Hardware (controls flavor, never named) ----------------------------------
