@@ -162,6 +162,7 @@ roles A B
 when idle A >= 3
 when cond B ok
 text {A} walks {B} through the manual landing abort over the link, step by step, until {B} can call it without the checklist. Neither of them mentions why it matters.
+do who abort_who B
 do bond B A 6
 do trait B brave 2
 

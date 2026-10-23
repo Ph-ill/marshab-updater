@@ -328,7 +328,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07, Mars time: Cargo 2 knocks. The fleet is inside five light-seconds now. {A}'s receiver hears the knock five seconds later and answers on its own, quoting it back, the way it has since the vote. The answer lands at 04:10:17, on the beat, in real time, under a second before the knock times out. Any answer from Earth would have taken minutes. The light stops blinking.
+text 04:10:07, fleet time: Cargo 2 knocks. All night the round trip has been shrinking toward the edge of its window. {A}'s receiver hears the knock 5.4 seconds later and answers on its own, signed, the way it has since the vote. The answer lands 10.94 seconds after the knock, twenty milliseconds inside its window. {A} says "Hi," out loud, ten seconds early. The light stops blinking.
 do set c2_answered
 do morale A 8
 
@@ -341,7 +341,7 @@ days 41 41
 roles A
 when fired a_window_hail
 when !is A ow_hail
-text Then Cargo 2 sends its event recorder down the old channel, two years of it. Near the top, from the first weeks after landing, every hello Earth ever sent, each logged the same way: HELLO RX · REPLAY · DISCARD. At the bottom, one new line: HELLO RX · OK. {A} reads it out to the fleet, slowly, and nobody fills the silence after.
+text Then Cargo 2 sends its event recorder down the old channel, two years of it. From the first weeks after landing, every hello Earth sent, logged the same way: HELLO RX · REPLAY · DISCARD. Then most of a million from the fleet since the vote, every one late. At the bottom, one new line: HELLO RX · OK. {A} reads it out to the fleet, slowly.
 do morale A 2
 
 card a_window_quiet
@@ -353,7 +353,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10:07, Mars time: Cargo 2 knocks. The fleet is inside five light-seconds now. Nothing on its schedule answers; nobody ever put an answer there. Any answer from Earth would take minutes, and the fleet's would take ten seconds. {A} drafts one anyway, and Mission Control asks the fleet to hold it until there are boots beside the thing. In four days, then. In person.
+text 04:10:07, fleet time: Cargo 2 knocks. Nothing on the fleet's schedule answers. An answer from Earth would land minutes after the knock gave up. The fleet's would take ten seconds. The knock lasts eleven. Mission Control asks the fleet to hold anyway: no one knows what a two-year-old fault tree does with its first good handshake, and seven ships are about to land beside it.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------
@@ -365,8 +365,8 @@ once
 days 41 41
 roles A
 when flag arrive_hold
-when !is A ow_hail
-text Entry is four days out, straight in from the crossing. The storm fills the prime zone rim to rim, so the plan retargets to the backup site and gains a line nobody has had to write before: "radar for height, Cargo 2 for place". {A} reads it to the empty cabin, then runs the manual abort once, from memory.
+when is A abort_who
+text The descent brief goes up four days out. The storm fills the prime zone rim to rim, so the plan retargets to the backup site and gains a line no one has had to write before: "radar for height, Cargo 2 for place". {A} reads it to the empty cabin, then runs the manual abort once, from memory.
 do morale A 2
 
 card a_descent_wait
@@ -378,7 +378,7 @@ days 41 41
 roles A
 when flag arrive_wait
 when !is A ow_hail
-text In four days the fleet skims the top of the atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, still on time, and sits down with the ration tables.
+text In four days the fleet dips into the upper atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, still on time, and sits down with the ration tables.
 do morale A -2
 
 card a_descent_clear
@@ -391,5 +391,46 @@ roles A
 when !flag arrive_hold
 when !flag arrive_wait
 when !is A ow_hail
-text Entry is four days out, straight in from the crossing, into clear air. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, a roll of tape, a marker. Old habits.
+text The descent brief goes up four days out: clear air, straight in. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker. Old habits.
 do morale A 3
+# Day 42: the entry itself, one scene per arrival branch, told by whoever was drilled on the manual abort.
+
+card e_entry_hold
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag arrive_hold
+when is A abort_who
+text Entry interface. Four minutes of plasma blackout, seven ships silent at once. At six kilometres the cameras go brown. {A}'s ship slews in a gust the model never had, and the abort call sits on {A}'s tongue, the one drilled over the link and run four days ago from memory. Then the radar finds the ground, and {A} doesn't call it.
+do morale A 3
+
+
+card e_entry_wait
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag arrive_wait
+when is A abort_who
+text Aerocapture. Four minutes of plasma blackout high in the air, seven ships silent at once. Six come out the far side on time. {A}'s comes out eleven seconds late: eleven seconds of nothing on the fleet channel, the abort call ready on {A}'s tongue, as drilled. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
+do morale A 3
+
+
+card e_entry_clear
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when !flag arrive_hold
+when !flag arrive_wait
+when is A abort_who
+text Entry interface in clear air. Four minutes of plasma blackout, seven ships silent at once. At the landing burn one of {A}'s engines lights late, a long half second, and the abort call is half out of {A}'s mouth, word for word as drilled over the link, when it catches. The ground comes up exactly where the maps said.
+do morale A 3
+
