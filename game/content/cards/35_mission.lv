@@ -46,7 +46,7 @@ duration 2
 roles A B
 lean curious record save
 text A gamma-ray burst goes off far past the galaxy, and every ship's X-ray monitor catches it. Timed against detectors near Earth, the raw buffers could pin the source, but pulling them home bumps a day of mail. {A} wants the data sent. {B} wants the letters.
-option record | Send the data | The burst's source shrinks from a smear of sky to a point. {A} saves the confirmation in the photo folder.
+option record | Send the data | The burst's source shrinks from a smear of sky to a thin arc, and the arc runs through one faint galaxy. {A} saves the confirmation in the photo folder.
   morale B -2
   trait A curious 3
   morale A 3
@@ -93,7 +93,7 @@ when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} looks up the grey relay. Its thruster stuck open two years ago; the catalogue has it spinning every 10.96 seconds, its beam crossing Earth 2.4 percent of each turn, numbers fitted to faint flashes heard after it failed, too faint for Doppler. A lighthouse with no keeper. {A} draws it in blue.
+text {A} looks up the grey relay. Its thruster stuck open two years ago; the catalogue has it spinning every 10.96 seconds, its beam on Earth 2.4 percent of a turn, fitted to three short passes of faint flashes after it failed, too faint for Doppler. A lighthouse with no keeper. {A} draws it in blue.
 do who ow_theory A
 do mark t_theory
 do morale A 3
@@ -119,7 +119,7 @@ once
 days 38 38
 roles A
 when is A ow_theory
-text {A} takes the lighthouse drawing down and stops. A relay would drag the knocks early and late by more than a tenth of a second each orbit, and never hide for half a day. These swing by a hundredth, once a day. Under the keeper, in blue: "Wrong lighthouse." Then: "Same keeper?"
+text {A} looks at the lighthouse again. A relay would swing the knocks early and late every couple of hours. These swing by a hundredth of a second once a day, a day thirty-seven minutes longer than ours: Mars, turning against the stars. Under the keeper, in blue: "Wrong lighthouse." Then: "Same keeper?"
 do trait A curious 2
 
 card m_flash1
@@ -178,7 +178,7 @@ due
 once
 days 34 34
 roles A
-text The ground decodes the first whole frame from Mars and sends it to {A}: a link request signed with an old program key, sequence 1, the usual fresh challenge. The ground: "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed." A parser guard goes up by evening.
+text The ground decodes the first whole frame from Mars for {A}: a link request on an old program key, sequence 5,750,112, a fresh challenge, the kind that goes stale. {A} does the sum: two years. The ground: "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed."
 do trait A curious 2
 
 card flash_answer
@@ -220,7 +220,7 @@ days 36 37
 roles A
 when is A flash_who
 when !fired h_band
-text The night frames of the pixel have gaps now, longest in the hour before dawn, the coldest there. Night by night each gap is a few knocks longer, and when it comes back, it is on the beat. Northern midwinter is three weeks off. The landing plan aims for it, for the ice.
+text The night frames of the pixel have gaps now, longest in the hour before dawn, the coldest there. Night by night each gap is a few knocks longer, and when it comes back, it is on the beat. Northern midwinter is three weeks off; the site is that far north for the ice.
 do morale A -2
 
 card m_overlay
@@ -233,7 +233,7 @@ days 36 37
 roles A
 when flag flash_ground
 when is A ow_hail
-text {A} takes the old-channel receiver log, slides it back by the light time from Mars, about half a minute, and lays it over the fast sequence. The carrier peaks on the exact frame the pixel lights. Every time. It isn't two things. {A} puts both traces on the galley screen, side by side.
+text {A} takes the old-channel receiver log, slides it back by the light time from Mars, about half a minute, and lays it over the forty frames. The carrier peaks on the exact frame the pixel lights. Every time. {A} puts both traces on the galley screen, side by side.
 do trait A curious 3
 
 card m_checked
@@ -245,7 +245,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_looked
-text The ground answers the overlay: nothing near that pixel has power. The nearest listed thing is a crash site a few kilometres off. Its last tone came mid-descent; at the end of that track the search found a burn scar, booked as the impact. Six weeks of hails, unanswered. It goes on the survey list.
+text The ground answers the overlay: nothing near that pixel has power. The nearest listed thing: a crash site a few kilometres off. Its last tone came mid-descent; at the end of that track a single survey pass found a burn scar, booked as impact. Six weeks of hails, unanswered. It joins the survey list.
 do morale A 1
 
 card m_checked_g
@@ -257,7 +257,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_left
-text The ground answers the overlay: nothing near that pixel has power. The nearest listed thing is a crash site a few kilometres off. Its last tone came mid-descent; at the end of that track the search found a burn scar, booked as the impact. Six weeks of hails, unanswered. "Surveying it."
+text The ground answers the overlay: nothing near that pixel has power. The nearest listed thing: a crash site a few kilometres off. Its last tone came mid-descent; at the end of that track a single survey pass found a burn scar, booked as impact. Six weeks of hails, unanswered. "Surveying it."
 do morale A 1
 
 card m_listen
@@ -269,7 +269,7 @@ days 38 38
 roles A
 when fired m_overlay
 when is A ow_song
-text With Mars three weeks out, the old-channel carrier is loud enough on the dish to hear without folding. {A} pipes it into the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between the clicks. {A} plays them once on the galley keyboard and doesn't explain.
+text With Mars three weeks out, the old-channel carrier is loud enough on the dish to hear without folding. {A} pipes it into the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between the clicks. {A} plays them once on the galley keyboard, stopping where the fifth should be.
 do morale A -1
 
 card m_count
@@ -281,7 +281,7 @@ days 39 39
 roles A
 when !is A ow_theory
 when !is A ow_hail
-text {A} times the old-channel carrier on the galley clock, like lightning to thunder. Ten, eleven, knock, as on the first night. The fleet's round trip to the planet is half a minute now, and shrinking. {A} writes both on the whiteboard, one above the other. The old pump ripple fits the knock exactly.
+text {A} times the old-channel carrier on the galley clock, like lightning to thunder. Ten, eleven, knock. The fleet's round trip to the planet is half a minute now, and shrinking. {A} writes both on the whiteboard, one above the other, and under them the old pump ripple: 0.09 hertz.
 
 # --- The payoff: fires on day 40 in every season ------------------------------------
 card m_reveal
@@ -296,18 +296,6 @@ when is A ow_theory
 text The first sharp pass over the backup site in two years: behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, dish jammed against its stop, talking through its low-gain antenna: Cargo 2. From above it was always two pixels and a shadow. With each knock its pad strobe flares, the pad crew's sign it's awake, then goes dark while it listens. {A} counts the dark: nine, ten, eleven, flare.
 do trait A curious 3
 
-card m_reveal_any
-type event
-cat mystery
-reveal
-due
-once
-days 40 40
-roles A
-when !fired m_reveal
-text The first sharp pass over the backup site in two years: behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, dish jammed against its stop, talking through its low-gain antenna: Cargo 2. From above it was always two pixels and a shadow. With each knock its pad strobe flares, the pad crew's sign it's awake, then goes dark while it listens. {A} counts the dark: nine, ten, eleven, flare.
-do trait A curious 3
-
 card a_report
 type event
 cat arrival
@@ -317,18 +305,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text Overnight the ground's anomaly board reports. {A} reads the fleet the only paragraph that matters: a last patch before landing gave the cargo ships a divert branch that ends on the pad-test handshake, like the transfer hatches. Only Cargo 2 diverted. A fresh question every 10.96 seconds, and only an answer to that one counts. Earth's were minutes late. For two years it has said thank you, and thrown them away.
-
-card a_report_any
-type event
-cat arrival
-due
-once
-days 40 40
-roles A
-when !fired a_report
-when !is A ow_theory
-text Overnight the ground's anomaly board reports. {A} reads the fleet the only paragraph that matters: a last patch before landing gave the cargo ships a divert branch that ends on the pad-test handshake, like the transfer hatches. Only Cargo 2 diverted. A fresh question every 10.96 seconds, and only an answer to that one counts. Earth's were minutes late. For two years it has said thank you, and thrown them away.
+text The anomaly board reports; {A} reads out what matters. Cargo 2 found boulders on its pad, hovered, and diverted; the hover left the scar. A last patch, tested where answers are instant, sent that branch to the pad test. Every 10.96 seconds it asks a new question and drops the old. No orbiter but the dead relay spoke its channel and key. Earth's answers took minutes: two years of them, logged, thanked, thrown away.
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -340,7 +317,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. {A}'s receiver hears the knock five seconds later and answers at once, signed, under the one condition the ground set: the handshake and nothing else. The answer lands a breath before the next tick, inside the window. {A} says "Hi" out loud as it goes, five seconds before Cargo 2 hears it. By the next orbiter night pass the strobe has stopped; one status lamp burns steady.
+text 04:10:07: Cargo 2 knocks. {A}'s receiver hears the knock five seconds later and answers at once, signed, under the one condition the ground set: the handshake and nothing else, until the review board sits. It lands a breath before the next tick. {A} says "Hi" out loud as it goes, five seconds before Cargo 2 hears it. By the next orbiter night pass the strobe has stopped; one status lamp burns steady.
 do set c2_answered
 do morale A 8
 
@@ -353,7 +330,7 @@ days 41 41
 roles A
 when fired a_window_hail
 when !is A ow_hail
-text Then Cargo 2 sends its event-recorder summary down the old channel, a line at a time. HELLO RX · REPLAY · DISCARD ×31,000: every answer Earth sent, each to a question already gone. Then ×410,000 from the fleet, blind or late. At the bottom, one new line: HELLO RX · OK. {A} reads it out. No reset could reach it: the pad table sits ahead of both decoders, and the dish is jammed.
+text Then Cargo 2 sends its event-recorder summary down the old channel, a line at a time. HELLO RX · REPLAY · DISCARD ×31,000: every answer Earth sent, each to a question already gone. Then ×410,000 from the fleet, blind or late. At the bottom, one new line: HELLO RX · OK. {A} reads it out, then reads the Earth count again, slower: thirty-one thousand answers, every one on time by Earth's clock.
 do morale A 2
 
 card a_window_quiet
@@ -365,7 +342,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. Nothing on the fleet's schedule answers; an answer now would take ten seconds. No reset can reach it: the pad table sits ahead of both decoders, and the dish a hard reset needs is jammed. Mission Control asks the fleet to hold: first contact with two-year-old fault protection wants a review board, which won't sit before landing. Until then, a suit beside it or nothing.
+text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, inside the tick, and nothing on the fleet's schedule is cleared to answer. Mission Control asks the fleet to hold: first contact with two-year-old fault protection wants a review board, and no one wants it waking mid-descent while the fleet steers by its knock. The board won't sit before landing. Until then, a suit beside it or nothing.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------
@@ -404,7 +381,7 @@ roles A
 when flag arrive_wait
 when !is A ow_hail
 when !flag c2_answered
-text In five days the fleet dips into the upper atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, still keeping time, and sits down with the ration tables. Every tile is cleared again, for two passes.
+text In four days the fleet dips into the upper atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, still keeping time, and sits down with the ration tables. Every tile is cleared again, for two passes.
 do morale A -2
 
 card a_descent_wait_a
@@ -417,7 +394,7 @@ roles A
 when flag arrive_wait
 when flag c2_answered
 when !is A ow_hail
-text In five days the fleet dips into the upper atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, steady now, and sits down with the ration tables. Every tile is cleared again, for two passes.
+text In four days the fleet dips into the upper atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, steady now, and sits down with the ration tables. Every tile is cleared again, for two passes.
 do morale A -1
 
 card a_descent_clear
@@ -430,5 +407,5 @@ roles A
 when !flag arrive_hold
 when !flag arrive_wait
 when is A ow_hail
-text The descent brief goes up five days out: clear air, straight in, the formation opening out to two minutes between ships. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker. Cargo 3's ice drill, the one that made it, carries a single bit.
+text The descent brief goes up four days out: clear air, straight in, the formation opening out to two minutes between ships. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, spare batteries, a marker. Cargo 3's ice drill, the one that made it, carries a single bit.
 do morale A 3
