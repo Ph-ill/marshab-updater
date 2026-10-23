@@ -13,7 +13,7 @@
 @media (prefers-color-scheme:dark){:root{--paper:#1C1B19;--ink:#ECE5D6;--graph:#7D796F;--ink2:#B3AC9F;--rule:#3D3A35;--rust:#D9673C;--rust-t:#E07A50}}
 *{box-sizing:border-box;margin:0;padding:0;border-radius:0}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{background:var(--paper);color:var(--ink);font:17px/1.45 var(--sans);-webkit-tap-highlight-color:transparent;min-height:100vh}
+body{background:var(--paper);color:var(--ink);font:17px/1.45 var(--sans);-webkit-tap-highlight-color:transparent;min-height:100vh;min-height:100dvh}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left;touch-action:manipulation}
 button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
 .m{font-family:var(--mono);font-variant-numeric:tabular-nums}
@@ -37,7 +37,7 @@ p{margin:8px 0 0}
 #dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-top:1px solid var(--ink);padding:0 var(--sr) var(--sb) var(--sl)}
 #dock .act{padding:8px 16px}
 .btn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:56px;padding:0 16px;border:1px solid var(--ink);font:700 16px var(--mono);letter-spacing:.06em;text-transform:uppercase}
-.btn i{font-style:normal;font-weight:400;color:var(--ink2)}
+.btn i{font-style:normal;font-weight:400;color:var(--ink2);white-space:nowrap;margin-left:12px}
 .btn.pri{border-width:2px}
 .btn.pri::before{content:"";width:8px;height:8px;background:var(--rust);margin-right:12px;flex:none}
 .btn.pri span{flex:1}
