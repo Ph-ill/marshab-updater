@@ -136,9 +136,9 @@
   "card 183": 1,
   "card 185": 1,
   "card 58": 1,
-  "card 60": 1,
   "card 61": 1,
   "card 62": 1,
+  "card 60": 1,
   "card 65": 1,
   "card 70": 1,
   "card 139": 1,
@@ -164,8 +164,8 @@
   "default": 0
  },
  "story_appearances": {
-  "Phill": 23,
-  "Jacques": 24,
+  "Phill": 24,
+  "Jacques": 23,
   "Kim": 22,
   "Jai": 21,
   "Michelle": 20,
@@ -178,7 +178,7 @@
  "state_bytes": 737,
  "resources_end": {
   "food": 99,
-  "fuel": 66,
+  "fuel": 67,
   "spares": 71
  },
  "crew_condition_end": {
@@ -191,7 +191,7 @@
   "Dorian": "ok",
   "Marco": "ok"
  },
- "reference_digest": "85dce288c77add83",
+ "reference_digest": "96cfea3a286823a7",
  "records": 224,
  "records_per_player": {
   "Phill": 57,
@@ -229,7 +229,7 @@
    "deepest_rewrite_days": 12
   }
  },
- "seconds_reference_season": 0.014,
- "seconds_determinism_runs": 1.58,
+ "seconds_reference_season": 0.015,
+ "seconds_determinism_runs": 1.52,
  "pack_bytes": 6482
 }
