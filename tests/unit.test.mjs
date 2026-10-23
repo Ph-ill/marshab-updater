@@ -29,8 +29,9 @@ t('static release index is Long Voyage only and points at release files', () => 
 t('ship config: WPA2 default, custom password, explicit open network', () => {
   const opts = { count: 7, roles: ['A', 'B'] };
   const def = validateShipConfig({ ship_id: '7', ship_name: ' Starship-07 ', hotspot_password: '', role: 'a' }, opts);
-  assert.deepEqual({ ...def }, { schema: 2, ship_id: 7, ship_name: 'Starship-07', role: 'A', hotspot_open: false });
+  assert.deepEqual({ ...def }, { schema: 2, ship_id: 7, ship_name: 'Starship-07', role: 'A', hotspot_open: false, led_notify: false });
   assert.equal(hotspotSummary(def), 'WPA2, firmware default password');
+  assert.equal(validateShipConfig({ ship_id: 2, led_notify: 'on' }, opts).led_notify, true);
   const custom = validateShipConfig({ ship_id: 2, hotspot_password: 'correcthorse' }, opts);
   assert.equal(custom.hotspot_password, 'correcthorse');
   assert.equal(custom.ship_name, 'Starship-02');

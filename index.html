@@ -105,6 +105,9 @@
           <label class="check"><input id="shipShowPw" type="checkbox"><span>Show password</span></label>
           <label class="check"><input id="shipOpen" type="checkbox" disabled><span>Open hotspot (no password)</span></label>
         </div>
+        <div class="row">
+          <label class="check"><input id="shipLed" type="checkbox" disabled><span>Blink the onboard light when something is waiting (Long Voyage; off 22:00-07:00)</span></label>
+        </div>
         <dl class="readout"><div><dt>Hotspot</dt><dd id="shipHotspot">—</dd></div></dl>
         <div class="actions"><button id="saveShipBtn" type="button" disabled>Save to ship</button></div>
         <p class="hint">Written to <code>data/ship.json</code>, which installs never touch. Takes effect after a restart.</p>
