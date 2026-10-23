@@ -49,9 +49,9 @@ One flight day in the log stands for about five days of real flight (STYLE.md).
 
 | Phase | Mystery content |
 |---|---|
-| 1 (days 1–10) | No mystery cards. Three phase-1 core clues hide in ordinary life: `l_reboot` (day 3, the screen counts eleven and logs out again), `l_manifest` (days 5–7, a shopping list ending on the socks; Cargo 2 is one of two written-off surface landers, beside an old science lander "silent since winter"). Phase 2 adds `l_dock_hello` (days 11–12, a transfer-hatch code goes stale relayed via the ground and opens first time ship to ship; filed as a page-two correction, with its own short tick). |
-| 2 (days 11–24) | The carrier (`m_carrier`, due days 15–19) on the spare dish trained on Mars, called an alias, then retracted (`m_alias`, days 18–19: same millisecond on two ships, drifting against the fleet clock, opens `dec_signal`). The ripple (`m_ripple`, due every season). The crew's theory (`m_theory`, days 21–23): a written-off relay whose catalogued spin and beam width were both fitted to RF flashes heard after it failed. The 37-minute dropout (`m_dropout`, days 24–27, after the theory, so it reads as confirmation). |
-| 3 (days 25–36) | The theory confirmed (`m_theory_confirm`, the decoy holds). The reply (`signal_reply` / `signal_echo`, days 25–27: the half frame, sets mark `t_frame`). The uncanny hooks (ghost and voice from day 25; `h_dark` days 26–29, only after `t_frame`, so the whole frame never precedes the half frame; `r_dark` 31–34). Tested in `test_fair_play_and_endings_over_300_seasons`. The clock (`h_band` / `r_band` days 30–35, or `c2_cold` 36–37): the knock is getting slower to wake. The flash (30), the second sighting and its vote (32), the key (34), the ground answer (35), the overlay (36). |
+| 1 (days 1–10) | No mystery cards. Three phase-1 core clues hide in ordinary life: `l_reboot` (day 3, the screen counts eleven and logs out again), `l_manifest` (days 5–7, a shopping list ending on the socks; Cargo 2 is one of two written-off surface landers, beside an old science lander "silent since winter"). Phase 2 adds `l_dock_hello` (day 12, a transfer-hatch code goes stale relayed via the ground and opens first time ship to ship; filed as a page-two correction, with its own short tick). |
+| 2 (days 11–24) | The carrier (`m_carrier`, due days 15–19) on the spare dish trained on Mars, called an alias, then retracted (`m_alias`, days 20–21: same millisecond on two ships, drifting against the fleet clock, opens `dec_signal`). The ripple (`m_ripple`, day 14, every season). The crew's theory (`m_theory`, days 21–23): a written-off relay whose catalogued spin and beam width were both fitted to RF flashes heard after it failed. The 37-minute dropout (`m_dropout`, days 24–27, after the theory, so it reads as confirmation). |
+| 3 (days 25–36) | The theory confirmed (`m_theory_confirm`, the decoy holds). The reply (`signal_reply` / `signal_echo`, days 25–27: the half frame, sets mark `t_frame`). The uncanny hooks (ghost and voice from day 25; `h_dark` days 26–29, only after `t_frame`, so the whole frame never precedes the half frame; `r_dark` / `r_dark_a` 27–32). Tested in `test_fair_play_and_endings_over_300_seasons`. The clock (`h_band` / `r_band` days 30–35, or `c2_cold` 36–37): the knock is getting slower to wake. The flash (30), the second sighting and its vote (32), the key (34), the ground answer (35), the overlay (36). |
 | 4 (days 37–42) | Checked (the ground hails), listen, count, the reveal (40), the window (41), the entry scene and endings (42). |
 
 Measured (lvc ramp line): mystery cards by first day 0 / 6 / 15 / 6. Per season
@@ -214,7 +214,7 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 | # | Card | Phase | Core | Surface | Truth |
 |---|---|---|---|---|---|
 | 1 | `l_reboot` | 1 | yes | A galley update, an in-joke about the chime | A boot is eleven seconds |
-| 1b | `l_dock_hello` (11–12) | 2 | yes | A hatch-code procedure gets a page-two correction | Late answers are discarded as stale |
+| 1b | `l_dock_hello` (12) | 2 | yes | A hatch-code procedure gets a page-two correction | Late answers are discarded as stale |
 | 2 | `l_manifest` | 1 | yes | A shopping list: cargo ships, then write-offs (drill rig, grey relay, last year's hopper, Cargo 2, socks) | Cargo 2, one of two surface candidates (the hopper is the decoy) |
 | 3 | System text `res_open` | all | – | UI copy | One tap is enough |
 | 4 | `m_carrier` | 2 | yes | An old probe's beacon on the old channel | Cargo 2, every 10.96 s |
@@ -223,7 +223,7 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 | 7 | `m_theory_confirm` | 3 | – | The decoy confirmed | The decoy |
 | 8 | `m_count` (39) | 4 | – | Lightning and thunder | The 11 s gap against the shrinking round trip |
 | 9 | `m_flash1` | 3 | yes | A pixel on the night side | The floodlights at power-up |
-| 10 | key: `m_key` / `r_dark` | 3 | yes | "Old key. Retired with the first batch." | An old program key: it's one of ours |
+| 10 | key: `m_key` / `r_dark` | 3 | yes | "Old key. … only the relay kept it." | An old program key: it's one of ours |
 | 11 | ground: `flash_answer` / `flash_answer_ground` | 3 | yes | The pixel never moves against the rocks | The decoy breaks (no longer said aloud) |
 | 12 | `m_overlay` | 3 | yes | Carrier and flash share a clock | The same machine |
 
@@ -343,16 +343,26 @@ two storm endings open differently; the two orbit endings are scenes (week
 three, week two), not summaries. The recorder paragraph is worded differently
 in each.
 Elapsed time since Cargo 2 landed: two years, everywhere.
-Each needs ≥ 5% of 300 seasons (tested).
+Each needs ≥ 5% of 300 seasons (tested). The 300-season spread is mostly vote
+noise (about ±2 points per ending); judge balance on 1000 seasons.
+
+**Named roles (round 13).** Every ending carries `roles A B`: A is always the
+hail owner (`is A ow_hail`, the one who first heard the carrier); B is the
+abort voice (`abort_who`) in the three storm/orbit endings that turn on holding
+or waiting, and the theory owner (`ow_theory`) in the three that turn on the
+lighthouse. The engine picks the ending on flags first, then fills roles from
+the ending's `is` tests only (no casting, so A and B may be the same person;
+the texts read correctly either way). lvc rejects any other role test on an
+ending, and any role test on the fallback.
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 17.0% (1000: 19.8%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 14.7% (1000: 15.1%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 15.7% (1000: 16.8%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 19.7% (1000: 17.5%) |
-| 5 | *Old Friend* (`end_friend`) | answered, clear air | 18.0% (1000: 15.4%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 15.0% (1000: 15.4%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 12.3% (1000: 16.6%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 16.0% (1000: 17.8%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 16.7% (1000: 15.5%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 20.0% (1000: 16.3%) |
+| 5 | *Old Friend* (`end_friend`) | answered, clear air | 17.3% (1000: 17.9%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 17.7% (1000: 15.9%) |
 
 ## Epilogue
 
@@ -660,3 +670,54 @@ fault protection, a suit beside it, one Mars day, transponder.
   flight director wants the fleet's call." `dust_report` weight 5 (endings
   stay even).
 
+## Round 13 notes
+
+- **Engine (own commit).** `O_END` now carries two crew slots; `render.py`,
+  `web/render.js` and `web/app.html` fill `{A}`/`{B}` in the ending text and
+  title. Hand-off: the web ending screen reads the two slots from the O.END
+  entry. Digest unchanged for decks without ending roles; heap 72.6 KB.
+- **Presence.** A card that puts {A} at their own ship now says so in its
+  conditions (`when home A`, 24 cards), `p_birthday` / `beat_haircut` need
+  {A} away and {B} home, `rescue_kit` needs B and A apart. New test: over 300
+  seasons every A/B whose text implies home/away/together is checked against
+  the ship state when the card fires (6,800+ checks, zero misses; `r_strike`
+  exempt because its "ship" is the entry profile, not a location).
+- **Logic.** `a_report`: the last patch files any touchdown on a surveyed site
+  as a pad, and the backup site was surveyed; on a pad it obeys the pad crew
+  (knock, listen one tick, knock again); Earth is sixteen minutes away, the
+  tick is eleven seconds. `a_log`: five weeks of Earth's hails; the fleet's
+  hellos ran about twenty ticks late at first, one at the last. `m_key`: the
+  first batch was re-keyed after landing; only the relay kept the old key.
+  `p_packer_note` plants "Ours won't arm till someone says hello."
+  `r_dark` is now unanswered-only (channel off the fleet net, dish keeps
+  recording); new `r_dark_a` for answered voyages (sandboxed on the dish).
+  `dec_name` names the grey relay as the only sharp camera at Mars;
+  `m_reveal` is the long lenses' first sharp pass in two years.
+- **Harder who.** `l_manifest` / `m_flash2` / `m_checked*`: the hopper is
+  "tipped, beacon intermittent" (not silent), so it stays a live suspect until
+  `m_key`. `m_carrier` closes on "An alias, probably." `m_theory_confirm`
+  drops the sleeping keeper; `c_theory` is "Under the lighthouse". `g_packer`
+  no longer counts ships out loud.
+- **Clock.** `c2_cold` frames the cold gaps as converging on a date a few
+  nights after landing; `r_band` runs the line forward to entry week.
+  `scrubber_fault` 6–39 (`!fired crisis_air`), `crisis_air` / `dil_interlock`
+  10–36, `h_pressure` 10–27.
+- **Realism.** `storm_dose` "past a hundred millisieverts" (no regulatory
+  comparison); `r_ghost` fifteen metres an hour; `r_pressure` leak detector,
+  suit staged; `dil_dose` light-time per question; `m_overlay` fifteen seconds
+  one way; `m_count` twenty-odd seconds; `w_mars_disc` thumb at the window;
+  `dil_gains` alternate gain set with the owner's signature; `zip_back`
+  "Before arrival"; `a_recall_marker` drops its time phrase.
+- **Endings.** All six rewritten with names. `end_long_orbit` is a scene in
+  week three of the orbit; `end_friend` has a real cost on the drive (no
+  second try if it fails). Epilogue line for the late carrier: "Wanted to
+  answer weeks early, then carried the answer the last stretch in person."
+  Balance knobs used: `dust_report` weight 5 days 28/35, `dec_arrival` lean
+  "warm wait hold", `comm_delay` weight 16 days 15–16.
+- **Pacing.** `m_ripple` day 14, `m_alias` 20–21, `dec_signal` 20–23,
+  `l_dock_hello` day 12, `dec_photo` 2–3, `w_venus_shadow` 7–18, `w_zodiac`
+  8–20, `idle_spares` 13–39 (scrubber cartridge). Blank days ≤3%.
+- **Humor.** `m_dropout` / `m_flash1` end flat; `a_last_night` drops
+  "anyway"; `dil_interlock` override "Both sensors had a point".
+  `g_news` names the neighbour as one of the first call's list, so `c_list`
+  on day 42 still lands.
