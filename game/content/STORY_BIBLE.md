@@ -1313,3 +1313,37 @@ Blind round 22 (hunter, editor). Final content pass; no review rounds follow.
   instruction).
 - **Numbers.** 211 cards, 31 vars, gzip 24,929 B; endings over 300 seasons
   77/66/57/45/29/26.
+
+## Round 24 notes (pass 1)
+
+- **Voices.** roster.lv `voice` slot, rendered for `{Av}`/`{Bv}` (STYLE.md "The
+  voice slot"). Placed in `m_ripple`, `r_flood`, `crisis_air`, `water_good`,
+  `idle_spares`, `dil_gains` (tune) and `trim_callback_late`. Per-season thread
+  ownership was declined: the arcs already have owner vars and the var cap is
+  at 31/32; voices give each crewmate the same sound in every season instead.
+- **Quirk scenes.** `quirk_4` lines rewritten as small scenes, not résumés: Jacques
+  reads a spare board like a letter (career habit); Kim narrates the cat video;
+  Jai's lineup trash talk lands two minutes late; Michelle briefs like a park
+  queue; Diego's trainee is "a stranger for about a minute"; Dorian logs the
+  Uncrustables like fuel; Marco's one spray of cologne before the Saturday club.
+  Michelle habit 2 fixed to "tens of millions of kilometres".
+- **Grimdark.** `g_ledger` (weekly losses ledger, "Tolerance has a column for
+  crew"); hook `h_smoke` → `r_smoke` (the last spare fan); hook `h_tank` →
+  `r_tank` (days 34–37, only when `h_band` didn't fire; water austerity signed
+  each morning). Fold pool: the spoon line is gone; two liturgical lines (water
+  ledger read aloud, forty-line pre-sleep call and answer). The reader now steps
+  through the fold pool once per season, so no fold line repeats.
+- **Misdirection.** `m_hopper` (day 34, after `m_flash2`): the hopper team's
+  tipped-beacon theory fits the flashes "close". Fair: the pixel evidence is
+  unchanged and the WHO/WHY reveal is not earlier.
+- **Endings.** `end_patience` gets a cost and a payoff (the battery skipping
+  knocks, the heater pack, the late click, "The ninth is warm").
+  `end_through` slows the stranded turn (NO GO, the long minute on the rung, the
+  list: habitat, store, mast, neighbour). `end_long_orbit` dramatises the
+  lamp-or-tray-heat roll call ({B} votes last; seven sign the log) and drops the
+  crowding.
+- **Physics.** `beat_watch` days 8–11: Earth "already smaller than the Moon
+  looks from home".
+- **Engine.** Shipped text.json drops card ids (build/text.dev.json keeps them).
+- **Numbers.** 217 cards, 31 vars, gzip 24,796 B; endings over 300 seasons
+  long_orbit 70, through 69, lights 65, patience 57, friend 21, close 18.

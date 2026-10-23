@@ -15,7 +15,7 @@ lv/          the core (this is what goes on the Pico)
   state.py     ship state + canonical dump/digest (snapshots)
   engine.py    the daily tick
 content/     story source: fleet.lv, system.json, cards/*.lv
-tools/lvc.py compiler + validator (CPython only) -> build/pack.bin, text.json(.gz)
+tools/lvc.py compiler + validator (CPython only) -> build/pack.bin, text.json(.gz), text.dev.json
 sim/         PC season simulator, Python renderer, sample output in sim/out/
 web/render.js  phone-side renderer (the Pico never builds sentences)
 tests/       unit tests, MicroPython replay check, JS-vs-Python renderer check
@@ -86,7 +86,7 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
 
 ## Results (build 0.1.0, 15 sample cards)
 
-*Current content pack (211 cards):* pack.bin 6,588 B, text.json 24,929 B gzipped, peak MicroPython heap 76,384 B on the 64-bit unix port (50,720 B on a 32-bit build, like the Pico's), snapshot 737 B, final reference digest `594ae94d54f04003` (authored and reversed merge order). On a 32-bit build the whole check runs in an 84 KB heap from .py and a 68 KB heap as .mpy; the 64-bit port needs 128 KB. The reference season authors 224 records from 6 simulated players (2 never play); the deepest replay in the four delivery scenarios rewrites 12 days, and a ship cut off for a long stretch can need up to about 30. `python3 -m unittest discover -s tests` runs 106 tests (85 content, 21 core). The figures below are the original 15-card measurements.
+*Current content pack (217 cards):* pack.bin 6,752 B, text.json 24,796 B gzipped (card ids are left out of the shipped file; `build/text.dev.json` keeps them for sim/ and the tests), peak MicroPython heap 76,544 B on the 64-bit unix port (50,928 B on a 32-bit build, like the Pico's), snapshot 743 B, final reference digest `24751f12277fc052` (authored and reversed merge order). On a 32-bit build the whole check runs in an 84 KB heap from .py; the 64-bit port needs 128 KB. The reference season authors 214 records from 6 simulated players (2 never play); the deepest replay in the four delivery scenarios rewrites 12 days, and a ship cut off for a long stretch can need up to about 30. `python3 -m unittest discover -s tests` runs 118 tests (97 content, 21 core). The figures below are the original 15-card measurements.
 
 **Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 8 independent ships in 4 ways:
 * instant;
