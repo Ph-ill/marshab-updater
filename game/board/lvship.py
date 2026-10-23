@@ -17,7 +17,7 @@ try:
 except ImportError:  # pragma: no cover
     import uasyncio as asyncio
 
-from lv.pack import load
+from lv.pack import load, Pack
 from lv.chlog import ChoiceLog
 from lv.state import State, N
 from lv.engine import Engine
@@ -32,7 +32,7 @@ except AttributeError:     # CPython (the tests)
     def sleep_ms(ms):
         return asyncio.sleep(ms / 1000)
 
-VERSION = "0.1.0-ble"
+VERSION = "0.1.0-lv-test"
 
 DEFAULTS = {
     "ship_id": 1,                  # 1-8 (ship 1 = crew 0)
@@ -78,6 +78,19 @@ def used():
     return gc.mem_alloc() if hasattr(gc, "mem_alloc") else -1
 
 
+def pack_for(root=""):
+    # The game firmware (tools/build_firmware.sh) freezes the pack into flash as lvdata.PACK:
+    # read in place, it costs no heap. It is used only when it was built with this exact
+    # lvship (a newer lvship copied over the frozen firmware brings its own pack.bin).
+    try:
+        import lvdata
+        if lvdata.VERSION == VERSION:
+            return Pack(lvdata.PACK), "frozen"
+    except ImportError:
+        pass
+    return load(root + "pack.bin"), "file"
+
+
 class Ship:
     SNAP_EVERY = 7
     SNAPS = 3          # weekly snapshots kept (743 B each); older rewinds start from day 0
@@ -87,7 +100,7 @@ class Ship:
         self.say = say
         self.me = cfg["ship_id"] - 1
         self.fk = bytes(cfg["fleet_key"], "utf-8")
-        self.pack = load(root + "pack.bin")
+        self.pack, self.pack_src = pack_for(root)
         self.day = min(max(0, int(cfg["day"])), self.pack.season)
         self.log = ChoiceLog(self.fk)
         self.data = data
