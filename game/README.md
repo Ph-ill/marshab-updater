@@ -32,6 +32,21 @@ python3 game/sim/season.py --seasons 300              # balance stats over many 
 MICROPYTHON=/path/to/micropython game/tests/run.sh    # also replays the season under MicroPython
 ```
 
+## Phone UI prototype
+
+```bash
+python3 game/tools/lvc.py && python3 game/web/build.py   # build/app.html.gz: the one page the Pico serves
+python3 game/sim/mockserver.py --day 8                   # mock Pico on http://localhost:8042/
+```
+
+Open it at phone width (360-430 px). Add `?day=N` to jump to another flight day (mock only). The mock runs the real engine on the simulated season. The page sees only what this ship has heard by gossip, and your taps become signed records that take effect the next day. `web/shots.mjs` takes chrome-less screenshots of every screen at 390x844 and 360x800.
+
+* **One file.** `web/app.html` holds the CSS, the JS and the SVG. `web/build.py` inlines `web/render.js`, strips comments and gzips the result. It comes to about 12.5 KB gzipped, plus `text.json` (about 2.3 KB gzipped, fetched separately so a new story pack doesn't need a page rebuild).
+* **Nothing is stored on the phone.** There's no localStorage and no cookies. You tap your name, enter a 4-digit crew code (the first entry sets it), and the session token lives in page memory, so closing the sheet signs you out.
+* **Live updates.** The page opens a WebSocket at `/ws` that announces a new version. If it can't connect, the page polls `/api/v` every 15 s and says so in a one-line banner.
+* **Privacy.** A private dilemma's text is shown only to the person who looks after that astronaut. Everyone else's log just says a private message arrived.
+* **Late signals.** Nearly every day is re-run once, the next day, as yesterday's taps arrive. The page treats that as normal ("may still change" on today and yesterday). It only marks "Log updated" when a day changed two or more days later.
+
 The `game/` folder is not part of the updater image. The Dockerfile copies only the web app and `firmware/`.
 
 ## How the pieces fit
@@ -43,7 +58,7 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
   * Records merge as a set union keyed by `(day, ship, kind, sub)`. `sub` is the card for votes and dilemmas, so one ship can answer two open items on the same day.
   * When two records share a key, the higher seq wins; on equal seq, the larger bytes win. Order and duplicates therefore never matter.
   * Records with an unknown (newer) schema are kept and relayed, but never interpreted.
-* **Effective day.** A record takes effect on `authored day + delay`. The delay is 1 normally, or 3 if the author was out of range on both that day and the day before. Late records are normal: a ship that hears one for a day it has already simulated reloads its last weekly snapshot (about 300 B) and replays forward.
+* **Effective day.** A record takes effect on `authored day + delay`. The delay is 1 normally, or 3 if the author was out of range on both that day and the day before. Late records are normal: a ship that hears one for a day it has already simulated reloads its last weekly snapshot (about 320 B) and replays forward.
 * **Votes and dilemmas.** These close at a fixed day and resolve with whoever voted. Nothing waits for anyone:
   * No ballots: the crew's lean decides (the fleet's summed trait on the card's axis).
   * Ties: the lean breaks the tie.
@@ -72,9 +87,9 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
 * reverse-order with 20% duplicates;
 * bursty, with one ship's links down every 5 days.
 
-Every ship ends on the reference digest `56bddf505825afed` in every scenario. The deepest replay rewrote 11 days.
+Every ship ends on the reference digest `8782c95070c3682d` in every scenario. The deepest replay rewrote 11 days.
 
-**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest is `56bddf505825afed`.
+**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest is `8782c95070c3682d`.
 
 **Size and RAM** (32-bit MicroPython, `gc.mem_alloc`):
 
@@ -85,7 +100,7 @@ Every ship ends on the reference digest `56bddf505825afed` in every scenario. Th
 | text.json / .gz (phone) | 4.2 KB / 2.0 KB | ≈20 KB / ≈9-10 KB (estimate, real prose) |
 | core code in RAM | 19 KB as .mpy, 20.6 KB from .py | same; ≈0 if frozen into the firmware |
 | choice log | 3.9-4.9 KB for 169 records (≈23-29 B/record) | ≈10 KB for 7 active players; ≈25 KB worst case |
-| state + engine | ≈1.1 KB, snapshot about 300 B | same |
+| state + engine | ≈1.1 KB, snapshot about 320 B | same |
 | whole check, peak | runs in a 56 KB heap (.mpy) | ≈50-60 KB of the 157-168 KB free with coex running |
 
 **Tick time** (x86 unix port, 32-bit): the 15-card pack averages 0.16 ms/tick (worst 0.28 ms); the 110-card pack averages 1.3 ms (worst 2.9 ms). A record merge with its HMAC check takes about 15 µs.
@@ -103,4 +118,4 @@ Every ship ends on the reference digest `56bddf505825afed` in every scenario. Th
 4. **32-bit PRNG on the RP2040.** xorshift32 values exceed MicroPython's 31-bit small ints, so some steps allocate bigints. This works and matches on the 32-bit build. If tick time on the board is tight, split the state into two 16-bit halves.
 5. **The crew roster is real and lives in `content/roster.lv`.** Phill (ship 1, flagship), Jacques, Kim, Jai, Michelle, Diego, Dorian. No quirks were given, so each astronaut's starting traits are seeded from the voyage key and their name; add `quirk <name>` to a line to set one. The compiler rejects gendered pronouns in any card or template text, and story beats are kept good-natured (injuries come from the environment, never from someone's mistake).
 6. **The sample content is thin on purpose.** The validator warns that `stash_shared` and `stash_exposed` are set but never read; they are hooks for later cards. With one decision card, every season gets the same vote.
-7. **The weekly snapshot cadence is a guess.** Snapshots take about 300 B each, so daily snapshots on flash would make replays almost free.
+7. **The weekly snapshot cadence is a guess.** Snapshots take about 320 B each, so daily snapshots on flash would make replays almost free.
