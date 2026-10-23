@@ -499,6 +499,17 @@ document.addEventListener("click",async(ev)=>{
     }catch(e){el.disabled=false;const d=$("dock");d.querySelector(".off")?.remove();d.insertAdjacentHTML("afterbegin",`<div class=off role=alert>${h(e.message)}</div>`)}
   }
 });
+// ?probe: a one-line readout of what the page really gets (for measuring the captive sheet on a real phone).
+if(/[?&]probe\b/.test(location.search)){
+  const z=document.createElement("div");
+  z.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--ink);color:var(--paper);font:12px/16px var(--mono);padding:4px 8px calc(4px + var(--sb))";
+  const sa=document.createElement("div");sa.style.cssText="position:fixed;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)";
+  document.body.append(z,sa);
+  const ua=navigator.userAgent,ios=/iPhone|iPad/.test(ua);
+  const upd=()=>{const c=getComputedStyle(sa),v=window.visualViewport;
+    z.textContent=`${innerWidth}x${innerHeight} vv ${v?Math.round(v.width)+"x"+Math.round(v.height):"-"} safe ${c.paddingTop}/${c.paddingBottom} dpr ${devicePixelRatio} ${ios?(/Safari\//.test(ua)?"iOS Safari":"iOS sheet"):/; wv\)/.test(ua)?"Android WebView":"browser"}`};
+  upd();addEventListener("resize",upd);window.visualViewport?.addEventListener("resize",upd);
+}
 (async()=>{
   T=await (await fetch("/text.json")).json();
   R=new Renderer(T);
