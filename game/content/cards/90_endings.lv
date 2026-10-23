@@ -22,7 +22,7 @@ when is A ow_hail
 when is B abort_who
 title Through the Dust
 when flag arrive_hold
-text Dust to the windows. Height off the radar, bearing off the knock on two antennas, a fix every eleven seconds till the rim swallows it, then the last metre by feel. The gust catches {B}'s ship: it stands on a folded strut, never to fly home. {B} sits on the bottom rung and lists what it can still be: habitat, store, mast. Two sols on, the folded ship's battery rides a sled up the rim; {A} answers inside the tick, then the HOLD off the laminated card. Cargo 2's hold unlocks: panels, a mast, a winch. {B} adds to the list: neighbour. To Starbase: "Landed. Eight down, seven to fly." From a loading bay: "Tell it the bay says hello."
+text Dust to the windows. Radar for height, the knock on two antennas for bearing, the last metre by feel. Contact. Then the gust: {B}'s ship rocks, a strut folds, the horizon tilts and stays. Checklist: return stage, NO GO. {B} sits a long minute on the bottom rung, then lists what it can still be: habitat, store, mast. Two sols on, the folded ship's battery rides a sled up the rim; {A} answers inside the tick, then the HOLD off the laminated card. Cargo 2's hold unlocks: panels, a mast, a winch. {B} adds to the list: neighbour. To Starbase: "Landed. Eight down, seven to fly." From a loading bay: "Tell it the bay says hello."
 
 card end_long_orbit
 type ending
@@ -33,7 +33,7 @@ when is B wait_who
 title The Long Orbit
 when flag signal_answered
 when flag arrive_wait
-text Week three in the long orbit, half rations. Below the storm one lamp holds steady. Each pass Cargo 2 reads its hold up the old channel: tank liners, a glove, a drill bit. Eight hungry people cheer a drill bit they can't reach for a month. Then germination trays. On HOLD it could power the lamp or the trays' heater, not both; {B} put it to the fleet, and all eight chose the lamp. The trays froze in week two; seven signed {B}'s log. On the last night the lamp skips twice; eight galleys hush. {B} flies down first. To Starbase: "Landed. All eight. The ninth kept the porch light on." From a loading bay: "Thank it for the drill bit."
+text Week two in the long orbit, half rations. Each pass Cargo 2 reads its hold up the old channel: tank liners, a glove, a drill bit. Eight hungry people cheer a drill bit they can't reach. Then germination trays, and a line from its power log: ON HOLD, LAMP OR TRAY HEAT. {B} calls the roll, ship by ship. "Lamp." "Lamp." Seven times; {B} votes last. By morning the trays are frozen, and seven sign {B}'s log. The lamp holds, nights past its forecast. On the last night it skips twice. {B} flies down first. To Starbase: "Landed. All eight. The ninth kept the porch light on." From a loading bay: "Thank it for the drill bit."
 
 card end_patience
 type ending
@@ -43,7 +43,7 @@ when is A ow_hail
 when is B ow_theory
 title Patience
 when flag arrive_wait
-text Dawn on the rim, frost on the wing. Two weeks of half rations in orbit; all eight came down last night. Past every chart, a battery under that frost has been choosing which knock to skip, and at midnight the flashes stopped. {A} kneels at the service port with a pack, {B} a step behind, counting. Eleven: nothing. Twenty-two: nothing. {A} clips the pack on anyway. Thirty-three: a click, late and faint. The answer goes in by hand inside the tick, then the HOLD off the laminated card. Its lamp comes on and stays. To Starbase: "Landed. All eight. The ninth is warm." From a loading bay: "Knew it'd keep."
+text Dawn on the rim; all eight came down last night. Under the rim's frost a battery has been choosing which knock to skip; at midnight the flashes stopped. {A} kneels at the service port with the suit's heater pack, {B} a step behind, counting. Eleven: nothing. Twenty-two: nothing. {A} clips it on anyway, fingers numb. Thirty-three: a click, late and faint. The answer goes in by hand inside the tick, then the HOLD off the laminated card. Its log scrolls up the link, two years of one line, NO REPLY, then: REPLY RX. Its lamp comes on and stays. To Starbase: "Landed. All eight. The ninth is warm." From a loading bay: "Knew it'd keep."
 
 card end_friend
 type ending
