@@ -1,4 +1,5 @@
 # Crew and relationship beats, trait reactions, and inactive-friendly events.
+# House style: content/STYLE.md.
 
 # Private dilemma that surfaces later.
 card dil_stash
@@ -9,13 +10,13 @@ duration 3
 roles A
 when cond A ok
 lean warm share keep
-text {A} finds three unlogged ration packs taped behind a panel. Nobody else knows.
-option keep | Keep them quiet | {A} moves them to a locker. For emergencies. Probably.
+text Behind a stowage panel, {A} finds three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie.
+option keep | Keep them quiet | {A} thanks them silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash
   who stash_who A
   morale A 6
-option share | Hand them in | {A} hands them to the galley. Dinner is briefly excellent.
+option share | Hand them in | {A} turns them in. The galley has an unplanned surplus for the first time since launch. An anomaly report is filed anyway.
   set stash_shared
   res food 3
   morale A 2
@@ -30,7 +31,7 @@ when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
 when same A B
-text {B} finds the stash in {A}'s locker. {A} shares it out on the spot. Dessert all round.
+text It's been a long week. {A} opens the locker without a word and splits the Starbase rations with {B}. It's the best meal either of them has had since Earth was more than a dot.
 do bond A B 6
 do morale A 3
 do set stash_exposed
@@ -43,7 +44,7 @@ cooldown 5
 roles A B
 when same A B
 when bond A B >= -20
-text {A} and {B} share the night watch. Mostly they talk about home.
+text {A} and {B} stand the night watch. Earth is a bright dot now, small enough to cover with a thumbnail. They split a coffee anyway.
 do bond A B 6
 
 card beat_argue
@@ -54,7 +55,7 @@ cooldown 6
 roles A B
 when trait A warm <= -10
 when same A B
-text {A} and {B} spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
+text {A} and {B} spend a whole shift arguing about the cabin temperature deadband. {A} wants it tighter. {B} points out that the heater already cycles more than anyone likes. They settle on half a degree and a truce.
 do bond A B -4
 
 # Trait-driven reaction: what happens depends on how brave A is.
@@ -67,11 +68,11 @@ roles A
 when trait A curious >= 15
 when cond A ok
 lean brave closer window
-text {A} spots a glint off the starboard quarter.
-option closer | Go and look | {A} suits up without asking anyone and comes back with a bolt from a much older ship.
+text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
+option closer | Get a closer look | {A} talks Mission Control into a camera slew and a long exposure. It's a chunk of ice shed from the fleet's own tanks, tumbling slowly and going to Mars with everyone else.
   var glints 1
   trait A brave 3
-option window | Watch from the window | {A} logs it and watches from the window until it's gone.
+option window | Track it from the window | {A} logs its bearing every hour until it's gone. The log is neat enough to frame.
   trait A curious 2
 
 # Inactive-friendly: only fires for astronauts whose owner hasn't been in for a while,
@@ -84,7 +85,7 @@ cooldown 4
 roles A
 when idle A >= 3
 when cond A ok
-text {A} quietly fixes the galley pump again. Nobody asked; nobody needed to.
+text {A} rebuilds the galley water pump before anyone notices it was failing. The only evidence is a new entry in the maintenance log, in {A}'s handwriting.
 do res spares 1
 do morale A 3
 
@@ -95,6 +96,6 @@ weight 6
 cooldown 8
 roles A
 when res spares >= 1
-text The galley pump fails again. {A} fixes it and narrates the whole repair like a nature documentary.
+text The galley pump fails for the third time this flight. {A} rebuilds it on the galley table and narrates the whole job like a nature documentary.
 do res spares -1
 do morale A -2
