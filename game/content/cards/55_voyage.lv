@@ -92,7 +92,7 @@ due
 once
 days 7 7
 roles A
-text The ships hold formation a few kilometres apart, trimmed with a puff of RCS. Once a page they close up for a transfer window: a tethered line between hatches, a morning on oxygen first, paid for in gas and time, so no one crosses for fun. {A} rides the line first and calls it "educational".
+text The ships hold formation a few kilometres apart, trimmed with puffs of RCS. One seat a ship, the rest cargo: seven ships, so no one failure takes two people. Once a page they close up: a tethered line between hatches, a morning on oxygen first. {A} rides the line first and calls it "educational".
 do trait A brave 2
 
 card l_handshake
@@ -150,7 +150,7 @@ once
 days 35 36
 roles A
 when is A ow_list
-text {A} copies the list from the first call into the entry log, name by name, and reaches the end feeling it's short. It is: the person who held the phone up that night never made it onto the list, because they were holding the phone. {A} adds them at the top.
+text {A} copies the list from the first call into the entry notes, name by name, and reaches the end feeling it's short. It is: the person who held the phone up that night never made it onto the list, because they were holding the phone. {A} adds them at the top.
 do morale A 3
 
 card a_list
@@ -161,7 +161,7 @@ once
 days 42 42
 roles A
 when is A ow_list
-text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land ten minutes after it's sent. "No pauses this time," {A} says, "no ums, no gaps, no saving the good bit for last," and leaves them out.
+text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land eight minutes after it's sent. "No pauses this time," {A} says, "no ums, no gaps, no saving the good bit for last," and leaves them out.
 do morale A 3
 
 # --- Thread: the song ------------------------------------------------------------
@@ -208,7 +208,7 @@ days 8 20
 weight 10
 roles A
 when is A ow_garden
-text {A} waters the garden tray with a syringe, two millilitres per pod, and checks each one under the lamp. Nothing yet. {A} logs it: "Nothing yet. Good, even nothing." Then tells the pods so.
+text {A} waters the garden tray with a syringe, two millilitres per pod, and checks each one under the lamp. Nothing yet. {A} writes it down: "Nothing yet. Good, even nothing." Then tells the pods so.
 do var garden 1
 
 card p_garden_fail
@@ -352,7 +352,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Once a week the fleet eats together on video: seven tablets on seven galley tables, one meal at one time. {A} is in charge of the toast. It's short, it isn't funny, and it lands.
+text Once a week the fleet eats together on video: seven tablets on seven galley tables, one meal at one time. {A} is in charge of the toast. It's short, it isn't a joke, and it lands.
 do morale A 3
 
 card l_long_table2
@@ -365,7 +365,7 @@ roles A B
 when cond A ok
 when is A ow_list
 when cond B ok
-text Long table night. {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on all six screens at once, the one conversation out here with no delay in it. {A} laughs on the beat, and it counts double.
+text Long table night. {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on every screen at once, the one conversation out here with no delay in it. {A} laughs on the beat, and it counts double.
 do morale A 3
 
 card g_third_quarter
@@ -400,7 +400,7 @@ due
 once
 days 28 28
 roles A
-text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis. The one with the Sharpie signs off: "Packed every cargo ship since the first. Seven of you this time. Write when you land. I'll be counting."
+text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis. The one with the Sharpie signs off: "Packed every cargo ship since the first, and the relay before that. Seven of you this time. Write when you land. I'll be counting."
 do morale A 2
 
 card sharpie2
@@ -449,7 +449,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is holding steady.
+text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -461,7 +461,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is keeping time.
+text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -562,10 +562,10 @@ type event
 cat arrival
 due
 once
-days 42 42
+days 41 41
 roles A
 when is A ow_theory
-text Before strapping in, {A} uncaps the blue marker one last time and adds a second lighthouse to the drawing: small, standing on the ground, and beside it a figure holding a Sharpie. Then {A} folds it into a chest pocket with the marker.
+text On the last night before entry, {A} uncaps the blue marker one last time and adds a second lighthouse to the drawing: small, standing on the ground, and beside it a figure holding a Sharpie. Then {A} folds it into a chest pocket with the marker.
 do morale A 2
 
 card a_suit_plan
@@ -592,7 +592,7 @@ roles A
 when flag arrive_hold
 when flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At a hundred metres the cameras find the ground again, a slope, and {A} calls the take-manual and puts the ship down on the flat.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the storm thins to a slope; {A} calls the take-manual before the plume takes the view, and sets down on the flat.
 do morale A 3
 
 card e_entry_hold_q
@@ -605,7 +605,7 @@ roles A
 when flag arrive_hold
 when !flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At a hundred metres the cameras find a slope under the ship, and {A} calls the take-manual and fights it level. It comes down hard, upright.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres the cameras find a slope under the ship; {A} calls the take-manual before the plume takes the view, and fights it level. It comes down hard, upright.
 do morale A 3
 
 card e_entry_wait
@@ -652,7 +652,7 @@ weight 10
 once
 roles A
 when cond A ok
-text Through the shade filter the Sun is a coin held further off each week. The solar arrays say it first, a few percent less on every page. {A} turns the cabin heater up a notch, logs why, and caps the filter on a star that used to be a sky.
+text Through the shade filter the Sun is a coin held further off each week. The solar arrays say it first, a percent or two less on every page. {A} turns the cabin heater up a notch, notes why, and caps the filter on a star that used to be a sky.
 do morale A 2
 
 card w_milky

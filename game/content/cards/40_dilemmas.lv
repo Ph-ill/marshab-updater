@@ -34,7 +34,7 @@ option report | Tell the surgeon | The meeting runs on most of a minute per ques
   set dose_told
   morale A -2
   trait A warm 2
-option keep | Keep it quiet | {A} logs it privately and moves the sleeping bag to the other wall. It isn't nothing. It isn't a meeting either.
+option keep | Keep it quiet | {A} notes it privately and moves the sleeping bag to the other wall. It isn't nothing. It isn't a meeting either.
   set dose_hidden
 
 card dose_swap
@@ -47,7 +47,7 @@ roles A B
 when flag dose_hidden
 when is A ow_dose
 when cond B ok
-text {B} reads the fleet's dose logs like the news, notices {A}'s numbers, and calls. {B}'s dosimeter has the newer calibration, and the two of them redo {A}'s week with it. It takes an hour. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
+text {B} reads the fleet's dose charts like the news, notices {A}'s numbers, and calls. {B}'s dosimeter has the newer calibration, and the two of them redo {A}'s week with it. It takes an hour. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
 do bond A B 10
 do bond B A 6
 
@@ -99,7 +99,7 @@ duration 3
 roles A
 when !fired dil_letter
 lean warm now save
-text Every cabin has a camera feed to the medical team on the ground; the airlock is the one place aboard without one. Reading it now means reading it in an airlock. Saving it means carrying it unread until a quiet moment that may never come.
+text The airlock is the one place aboard with no camera feed to the ground, so reading it now means reading it there. Saving it means carrying it unread until a quiet moment that may never come.
 option now | Read it now | {A} reads it in the airlock and comes out ten minutes later without saying what it said. That evening {A} calls the other ships one by one, about nothing in particular.
   set letter_read
   morale A 6
@@ -165,8 +165,8 @@ duration 3
 roles A
 when cond A ok
 lean brave tune wait
-text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance lead who owns that loop is off shift; the night console can log it but not sign it.
-option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning, after a two-page non-conformance report and a long call, and asks for it as a procedure under {A}'s name, with a new rule about doing this alone.
+text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance lead who owns that loop is off shift.
+option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning, after a non-conformance report and a long call, and writes it up as a procedure under {A}'s name, with a new rule about doing this alone.
   set gains_tuned
   who gains_who A
   trait A brave 2
@@ -200,7 +200,7 @@ roles A
 when cond A ok
 lean brave zip ticket
 text {A} finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
-option ticket | Open a ticket | Earth wants photos, measurements, and a part number that isn't on any drawing. {A} supplies all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
+option ticket | Open a ticket | Earth wants photos, measurements, and a part number that isn't on any drawing. {A} sends all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
   morale A -1
 option zip | Zip-tie it | {A} lashes the rack in a pattern no design review would pass, and it takes every load the ship can throw at it. The anomaly report calls it "interim". It is not interim.
   set zip_fix

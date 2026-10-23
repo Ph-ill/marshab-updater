@@ -24,7 +24,7 @@ once
 roles A
 when cond A ok
 when var storms >= 1
-text Another flare, another forty minutes. {A} is in the shelter between the water tanks in six, with the cards already dealt for seven screens. By now everyone knows who cheats at what, and the dosimeter has stopped being the most interesting number in the room.
+text Another flare, another forty minutes. {A} is in the shelter between the water tanks in six, with the cards already dealt for seven screens. By now everyone knows which deck cheats at what, and the dosimeter has stopped being the most interesting number in the room.
 do morale A 2
 do var storms 1
 
@@ -36,7 +36,7 @@ weight 16
 once
 roles A
 when cond A ok
-text {A} runs the dosimeter check. Every crew member has now passed fifty millisieverts, more than a nuclear worker in Europe may take in any single year. It was a Tuesday. {A} writes it down and underlines it, and leaves the underline to say the rest.
+text {A} runs the dosimeter check. Every crew member has now passed fifty millisieverts, more than a nuclear worker in Europe may take in any single year. {A} writes it down and underlines it, and leaves the underline to say the rest.
 do trait A curious 1
 
 card comm_delay
@@ -54,12 +54,12 @@ card comm_delay2
 type event
 cat human
 due
-days 33 38
+days 33 34
 weight 6
 once
 roles A
 when cond A ok
-text Earth is six light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
+text Earth is five light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
 do morale A 1
 
 card earth_dot
