@@ -213,7 +213,7 @@ page `www/app.html.gz`, `www/text.json.gz`, `www/engage.json.gz`.
 | Heap peak, unix 32-bit (whole season, story at day 42, sync running) | Variant A | Variant B |
 |---|---|---|
 | Sync only (status page) | about 78 KB | about 51 KB |
-| Sync + two phones playing the game | about 114 KB (so: off) | about 73–74 KB |
+| Sync + two phones playing the game | about 114 KB (so: off) | about 73–76 KB (76 with a launch date set) |
 | Code in the heap | about 51 KB | about 23 KB (31 KB with the phone server) |
 
 **Build** (on the computer, from `game/`; the first run downloads MicroPython and the Pico
@@ -291,16 +291,27 @@ One board is enough. Tick each step.
    `game firmware: frozen lv-core 0.1.0 (core <core>), overrides: []`.
 3. **Section 4**: set the ship number (the hotspot is `LV-<ship number>`), the hotspot
    password, and the **crew codes** (4 digits per crew member; a blank one shows "Not set
-   up" and can't sign in). Save.
+   up" and can't sign in). For the real calendar also set **Launch date** (see step 5 and
+   section 11). Save. Use the updater page from this branch (from the repo root:
+   `python3 -m http.server 8140`, open http://localhost:8140 in Chrome); the deployed page
+   is older: it has no launch date field and its Save overwrites the whole `ship.json`, which
+   clears `launch_date` and a bench `day`.
 4. **Section 2**: pick `0.1.0-lv-test [TEST BUILD]`, Install, confirm. Expect it to finish
    with every file verified. (If an earlier `0.1.0-lv-test` is already on the board,
    install it again anyway: the version number is the same but `www/app.html.gz` is new;
    the board's core and `.uf2` are unchanged.) (On a board without the game firmware it stops here with
    "needs the game firmware …": go back to step 1.)
-5. Optional, **flight day**: the page's ship settings start the bench at day 1. For a
-   later day (more of the story to read):
-   `mpremote connect <PORT> exec "import json; p='/data/ship.json'; c=json.load(open(p)); c['day']=9; open(p,'w').write(json.dumps(c))"`
-   (do this after step 3: saving section 4 again resets it).
+5. **Flight day**. Two ways:
+   - **Calendar** (how the voyage runs): with a **Launch date** set in step 3, flight day 1
+     starts at 06:00 that day and a new one starts every morning at 06:00, local time, up to
+     day 42 (six weeks). The board learns the time from the phones (every page request
+     carries the phone's clock and time zone), so the day is right once a phone has opened
+     the page. Before 06:00 on the launch date the page shows a countdown ("Pre-launch ·
+     FD 00") instead of the crew list. Section 11 has a quick rollover test.
+   - **Manual bench day** (Launch date blank, as before): the board stays on the `day` in
+     `ship.json` (1 if unset). For a later day:
+     `mpremote connect <PORT> exec "import json; p='/data/ship.json'; c=json.load(open(p)); c['day']=9; open(p,'w').write(json.dumps(c))"`.
+     Saving section 4 on this branch's page keeps it.
 6. **Power-cycle** the board. On the console (`mpremote connect <PORT>`), expect
    `firmware: frozen lv-core 0.1.0 …`, then `web: phone game on http://192.168.4.1/`.
 7. **Join `LV-<ship number>`** on the phone with the password. Expect the sign-in sheet
@@ -330,10 +341,53 @@ One board is enough. Tick each step.
     4 requests at once; a fifth at the same moment gets "busy, try again": tap again).
 12. **Sign out** from your astronaut's page; reopening the sheet asks for the code again.
     Reopening without signing out the same flight day goes straight back in.
-13. **Status and heap**: `http://192.168.4.1/status` shows the STAT line;
+13. **Status and heap**: `http://192.168.4.1/status` shows the STAT line (it ends with
+    `day=<flight day>/<source>`: `phone`, `saved`, `peer`, `none` or `manual`);
     `heap_used=` must stay under 80 KB with phones playing and another board syncing
     nearby. Or run `selftest.run(180, wifi=True)` and play during it: `SELFTEST heap used <
     80 KB PASS`.
 
 Send back: the console from step 6 on, the phone models, whether the sheet opened by
 itself (step 7), and any step that didn't do what it says.
+
+## 11. Flight days from the calendar: a quick rollover test
+
+What the board does (`board/lvcal.py`):
+
+- **Day** = days since 06:00 local on the launch date, plus 1, between 1 and 42. Before
+  06:00 on the launch date it is 0 (the countdown). After day 42 it stays 42.
+- **Time** comes from the phones' clock (`X-Phone-Time`, `X-Phone-TZ` on every request), so
+  the phone's time zone and daylight saving are used as they are. With no phone yet since
+  boot, the board continues from the time it saved to flash (`/data/clock.json`, written when
+  the day changes and at most once an hour otherwise, to spare the flash), counting the time
+  it was switched off as zero; a phone then corrects it.
+- **Never backwards**: a phone with a wrong (earlier) clock can't move the day back.
+- **Peers**: with no clock at all, a board takes a nearby board's day only when it is from
+  our fleet (same fleet key; other fleets are ignored by the radio) and exactly one day
+  ahead. One step per board, so one wrong board can't push the fleet ahead.
+- The story is the same: the day only decides how many days are played out, and every
+  board plays the same days from the same records (determinism checks: 8 of 8 ships match).
+- While running, the board checks every 10 s and on every phone request; at 06:00 it plays
+  out the new day and an open page shows it on its next poll (within about 15 s).
+
+**Quick test tonight** (one board, about 10 minutes). Pick a flight day N (e.g. 9) and a
+time T a few minutes from now (e.g. `21:30`).
+
+1. Launch date = today minus N−1 days (today the 23rd, N = 9: the 15th). Set it in
+   section 4 of the updater page (step 3 above) and Save, or by mpremote.
+2. Move the morning to T for the test (`day_start`; only settable by mpremote; default
+   `06:00`):
+   `mpremote connect <PORT> exec "import json; p='/data/ship.json'; c=json.load(open(p)); c['launch_date']='2026-10-15'; c['day_start']='21:30'; open(p,'w').write(json.dumps(c))"`
+3. Power-cycle, join `LV-<ship number>`, open the page. Before T it shows **FD N−1** (today's
+   day hasn't started yet); console: `day: flight day <N−1> (phone)`.
+4. Sign in and leave the page open. At T the console prints `day: flight day N (phone)` and
+   the page shows **FD N** and the new day's story within about 15 s, without reloading.
+5. Reboot keeps the day: power-cycle and, before opening the game page, watch the console
+   STAT lines (or browse to `http://192.168.4.1/status`, which doesn't send the phone's
+   clock): they end `day=N/saved`. After the game page opens: `day=N/phone`. Never N−1.
+6. Countdown: set the launch date to tomorrow (or `day_start` later today with launch date
+   today). The page shows "Pre-launch · FD 00", "Launch in …", and no crew to tap; it
+   switches to the crew list by itself when the time comes.
+7. Afterwards: remove `day_start` (or set it to `"06:00"`) and set the real launch date.
+   Changing the launch date or `day_start` starts the saved clock over (it doesn't carry an
+   old day across). Back to the manual bench day: clear Launch date in section 4 and Save.
