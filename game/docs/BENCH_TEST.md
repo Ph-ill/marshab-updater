@@ -293,7 +293,9 @@ One board is enough. Tick each step.
    password, and the **crew codes** (4 digits per crew member; a blank one shows "Not set
    up" and can't sign in). Save.
 4. **Section 2**: pick `0.1.0-lv-test [TEST BUILD]`, Install, confirm. Expect it to finish
-   with every file verified. (On a board without the game firmware it stops here with
+   with every file verified. (If an earlier `0.1.0-lv-test` is already on the board,
+   install it again anyway: the version number is the same but `www/app.html.gz` is new;
+   the board's core and `.uf2` are unchanged.) (On a board without the game firmware it stops here with
    "needs the game firmware …": go back to step 1.)
 5. Optional, **flight day**: the page's ship settings start the bench at day 1. For a
    later day (more of the story to read):
@@ -306,7 +308,15 @@ One board is enough. Tick each step.
    answers every DNS name with itself and sends the phones' connectivity probes to the
    game. If nothing opens, browse to `http://192.168.4.1/` (or any `http://` address).
 8. **Sign in**: tap your name, enter a wrong code once (expect "That code doesn't match. 4 tries left."), then the
-   right one. Expect the welcome card the first time, then home with today's story.
+   right one. The first time this crew member signs in since the board booted, expect the
+   welcome card (your astronaut's portrait) with **Crew briefing · 6 cards** where "Go
+   aboard" usually is: tap it, step through the six cards with Next (Skip works too), and
+   **Go aboard** on the last one lands on home with today's story. The phone remembers it
+   has read the briefing; a later sign-in goes straight home (it's under FILE › How to
+   play). A phone that forgets (some captive-portal sheets don't keep storage) is offered
+   it again only on the first sign-in after a reboot. Check the eight portraits on the
+   sign-in sheet look distinct and none has a chest symbol (the flagship's chest ring is
+   rust).
 9. **Vote** on an open card, if today has one (the card shows your pick afterwards);
    **send a gift** from Gifts and asks (a second one the same day is refused: "One gift a
    day"); **open** today's drop if there is one; look at the **crew** page and the
