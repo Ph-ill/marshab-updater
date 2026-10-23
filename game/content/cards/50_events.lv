@@ -5,37 +5,62 @@
 card storm_shelter
 type event
 cat grim
-days 5 39
+days 7 24
 weight 7
-cooldown 18
+once
 roles A
 when cond A ok
-text A solar flare is 40 minutes out. {A} packs into the storm shelter between the water tanks with a sleeping bag and a deck of cards, and plays the other six ships over video until the dosimeter settles.
+text A flare has gone off on the Sun, and its protons will reach the fleet in about forty minutes. {A} packs into the storm shelter between the water tanks with a sleeping bag and a deck of cards, and plays the other six ships over video until the dosimeter settles.
 do morale A 3
+do var storms 1
+
+card storm_shelter2
+type event
+cat grim
+days 25 39
+weight 7
+once
+roles A
+when cond A ok
+when var storms >= 1
+text Another flare, another forty minutes. {A} is in the shelter between the water tanks in six, with the cards already dealt for seven screens. By now everyone knows who cheats at what, and the dosimeter has stopped being the most interesting number in the room.
+do morale A 2
 do var storms 1
 
 card storm_dose
 type event
 cat grim
-days 6 39
+days 12 39
 weight 6
-cooldown 18
+once
 roles A
 when var storms >= 1
 when cond A ok
-text {A} runs the dosimeter check. The fleet has taken the radiation of a few dozen chest X-rays so far. {A} writes it down, underlines it, and leaves the underline to say the rest.
+text {A} runs the dosimeter check. Since Starbase the fleet has passed a nuclear worker's dose limit for a whole year. It was a Tuesday. {A} writes it down and underlines it, and leaves the underline to say the rest.
 do trait A curious 1
 
 card comm_delay
 type event
 cat human
-days 18 39
+days 17 23
 weight 6
 once
 roles A
 when cond A ok
-text The signal delay to Earth passes 15 minutes each way. {A} sends a joke to the ground team and spends the next half hour waiting to find out whether it landed. It did.
+text The signal delay to Earth passes a minute each way. {A} sends a joke to the ground team and waits two and a bit minutes to find out whether it landed. It did, on a slight delay, like everything now.
 do morale A 4
+
+card comm_delay2
+type event
+cat human
+due
+days 33 38
+weight 6
+once
+roles A
+when cond A ok
+text Earth is six light-minutes away. {A} asks the ground a yes-or-no question and makes a whole cup of tea before the yes arrives. Conversations have become letters; letters have become weather.
+do morale A 1
 
 card earth_dot
 type event
@@ -54,10 +79,10 @@ type event
 cat repair
 days 2 39
 weight 8
-cooldown 18
+once
 roles A
 when res spares >= 1
-text The CO₂ scrubber on {A}'s ship throws its fourth fault this week. {A} fixes it, then labels it "temperamental" in permanent marker so the next shift knows.
+text The CO₂ scrubber on {A}'s ship throws its fourth fault this week. {A} fixes it, then labels it "temperamental" in permanent marker, under a label in Starbase handwriting that already says "be nice to it".
 do res spares -1
 
 card boiloff
@@ -68,7 +93,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} rolls the ship a few degrees to put the tanks in shade, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
+text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} rolls the ship a few degrees to put the tanks in the ship's own shadow, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
 do res fuel 2
 do morale A 2
 
@@ -124,7 +149,7 @@ weight 6
 roles A
 when cond A ok
 when res spares >= 1
-text The CO₂ scrubber on {A}'s ship fails outright. CO₂ is climbing a fraction of a percent an hour. {A} has the backup running in nine minutes, and the backup is already complaining.
+text The CO₂ scrubber on {A}'s ship fails outright. With one person in a cabin that size, the CO₂ only climbs about a twentieth of a percent a day: not an emergency yet, which is the best time to fix one. {A} has the backup running in nine minutes, and it is already complaining.
 do morale A -4
 do open rescue_air
 
@@ -137,11 +162,13 @@ default send
 when apart B A
 when cond B ok
 text {A}'s ship is breathing on its backup scrubber. It needs a spare cartridge before the backup gives out.
-option send | Send a cartridge | A spare cartridge crosses on the next transfer. {A}'s ship is breathing easy by evening.
+option send | Send a cartridge | A spare cartridge rides the line across in an unscheduled transfer window. {A}'s ship is breathing easy by evening.
   res spares -1
+  res fuel -1
   morale A 4
-option bring | {B} brings it over | {B} carries the cartridge across personally and stays to help rebuild the primary. By midnight both scrubbers are running, and {B} is asleep on {A}'s floor.
+option bring | {B} brings it over | {B} rides the transfer line across with the cartridge in an unscheduled window and stays to help rebuild the primary. By midnight both scrubbers are running, and {B} is asleep on {A}'s floor.
   res spares -1
+  res fuel -1
   move B A
   bond A B 10
   morale B 3

@@ -11,8 +11,8 @@ once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. It costs propellant to fly the formation. The request uses the word "iconic" four times.
-option fly | Fly the formation | Seven ships close to formation distance for twelve minutes. {A} takes the shot from a camera on {A}'s ship. Nobody breathes until the ships are apart again.
+text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. That means closing to portrait distance, tens of metres apart, and propellant to get there and back. The request uses the word "iconic" four times.
+option fly | Fly the formation | Seven ships close to tens of metres for twelve minutes. {A} takes the shot from a camera on {A}'s ship. Nobody breathes until the ships are apart again.
   set photo_taken
   res fuel -2
   morale A 4
@@ -28,7 +28,7 @@ days 18 39
 roles A
 when flag photo_taken
 when cond A ok
-text The fleet portrait made the front page of every news site on Earth, 20 minutes ago. {A} zooms in and finds their own ship: a small bright dot, third from the left.
+text The fleet portrait is on the front page of every news site on Earth, which from out here means a few minutes ago. {A} zooms in and finds their own ship: a small bright dot, third from the left.
 do morale A 5
 
 # --- Water recovery -------------------------------------------------------
@@ -63,7 +63,7 @@ when flag water_rationed
 when is A water_who
 when apart B A
 when cond B ok
-text The degraded water processor on {A}'s ship quits at 04:00. {A} has the rebuild plan taped inside the panel door, already written. {B} crosses over with the spare valve, and the two of them have water flowing by breakfast.
+text The degraded water processor on {A}'s ship quits at 04:00. {A} has the rebuild plan taped inside the panel door, already written. {B} rides the transfer line over in an unscheduled window with the spare valve, and the two of them have water flowing by breakfast.
 do move B A
 do bond A B 8
 do res spares -1
@@ -113,7 +113,7 @@ roles A
 when fired dec_trim
 when cond A ok
 when trait A curious >= -10
-text The final navigation fix comes in: the fleet sits within a few kilometers of the center of the arrival corridor. {A} reads the number, then tapes it up beside Earth's last decent photo.
+text The latest navigation fix comes in: the fleet sits within a few kilometres of the centre of the arrival corridor. {A} reads the number twice, then pins it up beside Earth's last decent photo.
 do morale A 3
 
 # --- Arrival: dust storm over the landing region -------------------------------
@@ -121,11 +121,11 @@ card dust_report
 type event
 cat arrival
 days 29 35
-weight 22
+weight 6
 once
 roles A
 when cond A ok
-text {A} pulls the morning weather from the Mars orbiters: a regional dust storm, building over the landing zone. On the map it's a brown thumbprint. {A} measures it against the zone with a ruler, and then measures it again.
+text {A} pulls the morning weather from the Mars orbiters: a dust storm, building over the landing zone. On the map it's a brown thumbprint. {A} measures it against the zone with a ruler, and then measures it again.
 do set dust_seen
 do mark t_dust
 
@@ -153,10 +153,10 @@ duration 2
 roles A B
 when flag dust_seen
 lean brave hold wait
-text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to burn for a longer capture orbit and wait it out, at a real cost in propellant.
+text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit instead, aerocapture, and wait it out, at a real cost in propellant and food.
 option hold | Hold the plan | The arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
   set arrive_hold
-option wait | Long orbit, wait | The fleet commits to the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
+option wait | Long orbit, wait | The fleet commits to aerocapture and the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
   set arrive_wait
   res fuel -4
 

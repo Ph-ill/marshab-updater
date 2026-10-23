@@ -1,18 +1,56 @@
 # The voyage itself: wonder, home, ship life, the dark, the approach.
-# Arc, motifs and plants: content/STORY_BIBLE.md (spoilers). Voice: content/STYLE.md.
+# Arc, threads and plants: content/STORY_BIBLE.md (spoilers). Voice: content/STYLE.md.
+# Personal threads: each `who ow_*` opener casts a different astronaut (`!is`), and
+# that astronaut carries the thread to its payoff and epilogue line.
 
 # --- Leaving -------------------------------------------------------------------
+card p_live_call
+type beat
+cat human
+due
+once
+days 1 1
+roles A
+text {A} calls home while the delay is still under a second. Someone tells a bad joke and {A} laughs on the beat, in real time, with everyone at the table. Afterwards {A} writes down who was there and what they ate, and folds the list into a flight-suit pocket.
+do who ow_list A
+do mark t_call
+do morale A 5
+
+card p_music
+type beat
+cat human
+due
+once
+days 2 2
+roles A
+when !is A ow_list
+text {A} plays the same four bars on a travel guitar at the end of every watch, into the fleet channel, never the rest of the song. By the end of the week six ships are guessing at the fifth bar, six different ways.
+do who ow_song A
+do trait A warm 1
+
 card l_reboot
 type beat
 cat life
 clue core
 due
 once
-days 2 9
+days 3 9
 roles A
-when cond A ok
-text The galley screen on {A}'s ship installs an update overnight and restarts at breakfast: the cabin lights blink once for the self-test, then the logo, then the chime, all over before {A} has counted to eleven. By the end of the week {A} is humming the chime without noticing.
+text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the cabin lights blink once for the self-test, the logo, the three-note chime, all over before {A} has counted to eleven. By the end of the week the whole fleet is humming the chime.
 do morale A 1
+
+card p_garden_plant
+type beat
+cat life
+due
+once
+days 4 4
+roles A
+when !is A ow_list
+when !is A ow_song
+text {A} plants the garden: six seed pods in a tray the size of a laptop, under a lamp the colour of a plum. {A} labels each pod in tiny capitals and says good night to them on an open channel. Several people say good night back.
+do who ow_garden A
+do var garden 1
 
 card l_manifest
 type beat
@@ -20,74 +58,162 @@ cat life
 clue core
 due
 once
-days 4 9
+days 5 9
 roles A
-when cond A ok
-text {A} reads the arrival manifest while a tanker docks, the way some people read horoscopes. Habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4, which sends weather reports. Cargo 2 gets one line, "lost on landing, written off", and a blurry thumbnail: a smudge and a streak. {A} turns the page.
+text {A} reads the arrival manifest while the last tanker of a month of refuelling docks. Habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4, which sends the weather. Cargo 2 gets one line, "lost on landing, written off", and a coarse thumbnail from well outside the zone: a smudge and a streak.
 do trait A curious 1
 
-card p_live_call
+card l_departure
 type beat
-cat human
-days 1 5
-weight 14
+cat wonder
+due
 once
+days 6 6
 roles A
-when cond A ok
-text {A} calls home while the delay is still under a second. Someone tells a bad joke and {A} laughs on the beat, in real time, with everyone at the table. Afterwards {A} writes down who was there and what they ate.
-do morale A 5
-do mark t_call
+text The last tanker undocks at dawn. Seven ships light their engines for the departure burn, and {A} feels weight come back for the first time since launch. When the engines stop, Earth is already shrinking, and by the next watch {A} can hide it behind a thumb.
+do morale A 3
 
-card p_garden_plant
+card l_transfer
 type beat
 cat life
-days 2 8
-weight 12
+due
 once
-roles A B
-when same A B
-text {A} and {B} plant the garden: six seed pods in a tray the size of a laptop, under a lamp the color of a bruise. {B} labels each pod in tiny capitals. {A} says good night to them, quietly, and nobody comments.
-do set garden_planted
-do var garden 1
-do bond A B 4
+days 7 7
+roles A
+text The ships hold formation a few hundred metres apart. Every fifth day they close up for a transfer window: a tethered line between hatches, scheduled and paid for in propellant, so nobody crosses for fun. An empty ship flies itself. {A} rides it first and calls the middle "educational".
+do trait A brave 2
 
+card l_handshake
+type beat
+cat life
+due
+once
+days 12 13
+roles A
+when !is A ow_list
+text The galley screen on {A}'s ship has started to sulk. On every restart it waits a few seconds for the ground to say hello, gives up, and boots in "offline mode" with a sad little icon. Earth used to answer before the logo finished. {A} files a ticket titled "manners".
+do morale A 1
+
+# --- Thread: the list ------------------------------------------------------------
+card p_list_letter
+type beat
+cat human
+due
+once
+days 18 19
+roles A
+when is A ow_list
+text The delay has turned calls into letters. {A} records one for home and stops halfway, because there's no one to interrupt. {A} starts again and leaves pauses in it, where the laughs would have been. The list from the first call is still in the pocket.
+do morale A 2
+do trait A warm 2
+
+card g_news
+type event
+cat grim
+due
+once
+days 27 28
+roles A
+when is A ow_list
+text A message from home for {A}: a funeral, already over. One of the names on the list from the first call. By the time the message arrived, the people in the photos had gone home and changed their clothes. {A} watches the recording to the end and asks for the next watch.
+do morale A -8
+do trait A warm 3
+
+card a_list
+type beat
+cat arrival
+due
+once
+days 42 42
+roles A
+when is A ow_list
+text {A} starts a message to every name on the list from the first call, and one more to the name that isn't there any more. It will land a few minutes after it's sent. {A} leaves the pauses out.
+do morale A 3
+
+# --- Thread: the song ------------------------------------------------------------
+card p_song_ask
+type beat
+cat human
+due
+once
+days 21 22
+roles A B
+when is A ow_song
+text On the night {B} finally asks about the four bars, {A} says the rest of the song belongs to someone at home and gets played when there's ground under it. {B} says that's a deal, and starts humming a made-up fifth bar on purpose.
+do bond A B 5
+do bond B A 3
+
+card a_song
+type beat
+cat arrival
+due
+once
+days 42 42
+roles A
+when is A ow_song
+text On the morning of entry {A} plays the song all the way through on the fleet channel, past the four bars, for the first time since Starbase. Six ships hear the fifth bar at last. It isn't what any of them guessed.
+do morale A 5
+
+# --- Thread: the garden ------------------------------------------------------------
 card p_garden_tend
 type beat
 cat life
-days 6 38
-weight 6
-cooldown 7
+once
+days 8 20
+weight 10
 roles A
-when flag garden_planted
-when cond A ok
+when is A ow_garden
 text {A} waters the garden tray with a syringe, two millilitres per pod, and checks each one under the lamp. Nothing yet. {A} logs the nothing as carefully as anything else.
 do var garden 1
 
 card p_garden_fail
 type beat
 cat grim
-days 14 28
-weight 9
+due
 once
+days 18 19
 roles A
-when var garden >= 2
-text Four of the six pods in the garden tray have gone soft and grey. {A} lifts them out with tweezers and doesn't say anything for a while. Then {A} refills the syringe for the other two.
+when is A ow_garden
+text Four of the six pods in the garden tray have gone soft and grey. {A} lifts them out with tweezers and is quiet for a while. Then {A} refills the syringe for the other two.
 do morale A -3
 do trait A warm 2
+
+card p_garden_tend2
+type beat
+cat life
+once
+days 21 29
+weight 8
+roles A
+when is A ow_garden
+when !flag water_rationed
+when !fired water_fail
+text {A} waters the last two pods the way you'd check on a sleeping child, and has started reading the seed packet's small print for encouragement. There isn't any. {A} logs that too.
+do var garden 1
 
 card p_garden_sprout
 type beat
 cat wonder
-days 30 39
-weight 16
+due
 once
-roles A B
-when var garden >= 4
-when same A B
-text {A} calls {B} over without a word. In the last pod in the tray, a white thread has split the seed coat and turned, against no gravity at all, toward the lamp.
-do bond A B 6
+days 30 37
+roles A
+when is A ow_garden
+when var garden >= 3
+text {A} opens the fleet channel and turns the camera on the tray. In the last pod, a pale hook of a shoot has split the seed coat and turned, against no gravity at all, toward the lamp. Six ships go quiet to look.
 do morale A 6
-do morale B 6
+
+card p_garden_none
+type beat
+cat grim
+due
+once
+days 38 38
+roles A
+when is A ow_garden
+when !fired p_garden_sprout
+text Rationed water was one squeeze too many: the last pod never came up. {A} keeps watering the tray, two millilitres, on schedule, and on the last night before entry packs the dry seed in a coat pocket. Seeds are patient. So, it turns out, is {A}.
+do trait A warm 2
 
 # --- The middle dark ------------------------------------------------------------
 card w_venus_shadow
@@ -105,7 +231,7 @@ card w_phosphene
 type beat
 once
 cat grim
-days 14 39
+days 14 28
 weight 6
 roles A
 when cond A ok
@@ -121,56 +247,32 @@ weight 6
 once
 roles A
 when cond A ok
-text The magnetometer on {A}'s ship twitches for six hours: the fleet is crossing the ion tail of a comet that rounded the Sun before anyone aboard was born. Nothing to see. {A} sits by the window anyway, with the trace scrolling on a tablet.
+text The magnetometer on {A}'s ship twitches for six hours: the fleet is crossing the ion tail of a comet that rounded the Sun before anyone aboard was born. There's nothing to see. {A} sits by the window regardless, with the trace scrolling on a tablet.
 do trait A curious 3
 do morale A 2
-
-card p_letters
-type beat
-cat human
-days 14 38
-weight 7
-cooldown 18
-roles A
-when cond A ok
-text The delay has turned calls into letters. {A} records one for home and stops halfway, because there's no one to interrupt. {A} starts again and leaves pauses in it anyway, where the laughs would have been.
-do morale A 2
-do trait A warm 2
 
 card p_birthday
 type beat
 cat life
-days 5 39
+days 7 39
 weight 7
 once
 roles A B
 when same A B
-text It's {B}'s birthday by the ground calendar. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet over a week of transfers. {B} keeps the candle.
+text It's {B}'s birthday by the ground calendar, and {A} is aboard for the transfer window. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
 do bond A B 6
 do morale B 5
 
 card p_movie
 type beat
 cat life
-days 6 39
+days 7 39
 weight 7
-cooldown 20
-roles A B
-when same A B
-text Movie night, on a tablet taped to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and {B} and {A} listen until it stops. Nobody presses play again.
-do bond A B 4
-
-card p_music
-type beat
 once
-cat human
-days 3 39
-weight 6
 roles A B
 when same A B
-text {A} plays the same four bars on a travel guitar every evening, never the rest of the song. On the night {B} finally asks, {A} says the rest belongs to someone at home, and plays it all the way through.
-do bond A B 5
-do trait A warm 1
+text Movie night, with a visitor, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Nobody presses play again.
+do bond A B 4
 
 card p_dream
 type beat
@@ -180,19 +282,30 @@ days 10 39
 weight 5
 roles A
 when cond A ok
-text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone, and {A} doesn't mention it.
+text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone, and {A} keeps it to themself.
 do morale A -2
 do trait A warm 2
 
 card l_long_table
 type event
 cat life
-days 7 39
+days 7 20
 weight 6
-cooldown 7
+once
 roles A
 when cond A ok
 text Every seventh flight day the fleet eats together on video: seven tablets on seven galley tables, one meal at one time. {A} is in charge of the toast. It's short, it isn't funny, and it lands.
+do morale A 3
+
+card l_long_table2
+type event
+cat life
+days 26 38
+weight 6
+once
+roles A
+when cond A ok
+text Long table night. {A} has the toast again and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It gets a laugh on a short delay from all six screens, and then a quiet.
 do morale A 3
 
 card g_third_quarter
@@ -204,21 +317,9 @@ once
 roles A B
 when cond A ok
 when cond B ok
-text Past the halfway mark the quiet gets heavier. The flight surgeon calls it the third-quarter effect. On the video link, {A} notices {B} staring at the same page of a checklist for ten minutes, and starts reading it aloud to them.
+text Past the halfway mark the quiet gets heavier. The flight surgeon calls it the third-quarter effect. On the video link, {A} notices {B} staring at the same page of a checklist for ten minutes, and starts reading the page to {B}, slowly, the way you'd read to a child.
 do bond A B 6
 do morale B 3
-
-card g_news
-type event
-cat grim
-days 16 38
-weight 5
-once
-roles A
-when cond A ok
-text A message from home for {A}: a funeral, already over. By the time it arrived, the people in the photos had gone home and changed their clothes. {A} watches the recording to the end and asks for the next watch.
-do morale A -8
-do trait A warm 3
 
 card g_count
 type beat
@@ -231,6 +332,16 @@ when cond A ok
 text {A} counts the medical kit against the manifest: sutures, splints, a defibrillator with one set of pads. {A} counts it again and closes the lid gently, the way you do when someone is sleeping.
 do trait A brave 2
 
+card g_packer
+type event
+cat human
+due
+once
+days 31 31
+roles A
+text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis. The one with the Sharpie signs off: "Packed every cargo ship since the first. Write when you land. One of them never did."
+do morale A 2
+
 card sharpie2
 type beat
 cat human
@@ -240,46 +351,23 @@ once
 roles A
 when fired dil_stash
 when cond A ok
-text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" Beside it, the little ship again. This time it has a number on its side: 2. "Every day," {A} tells the empty locker.
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" Beside it, the little ship again, fingers still crossed. "Every day," {A} tells the empty locker.
 do res spares 1
 do morale A 5
 
 card p_video_late
 type beat
 cat human
-days 30 39
+days 30 36
 weight 8
 once
 roles A
 when since t_call >= 25
-text A video from home reaches {A} twenty minutes after it was sent and a day after the thing it's about. Everyone in it is cheering at something that is already over. {A} cheers back anyway, at the screen, alone.
+when !is A ow_list
+text A video from home reaches {A} a few minutes after it was sent and a day after the thing it's about. Everyone in it is cheering at something that is already over. {A} cheers back at the screen, alone, on a delay of their own.
 do morale A 2
 
 # --- The approach --------------------------------------------------------------
-card w_mars_disc
-type event
-cat wonder
-days 39 39
-weight 14
-once
-roles A
-when cond A ok
-text {A} holds a thumb up to the window, an old habit from the Earth watches. Mars has stopped being a star: it's a disc, rust and a bruise of dark, and it no longer fits behind the nail.
-do morale A 5
-do trait A curious 2
-
-card w_phobos
-type event
-cat arrival
-days 41 41
-weight 14
-once
-roles A
-when cond A ok
-text Phobos comes up over the limb like a potato thrown slowly in front of a lamp. {A} watches it cross a whole world in the time it takes to eat a meal, and can't remember the last time they wanted to stand on something this badly.
-do trait A curious 2
-do morale A 3
-
 card w_aurora
 type event
 cat arrival
@@ -291,25 +379,130 @@ when cond A ok
 text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock nobody has ever touched. {A} saves the frame, then sits with it on the screen a while longer than the job needs.
 do trait A curious 3
 
-card a_last_night
-type beat
+card w_phobos
+type event
 cat arrival
 days 40 40
 weight 14
 once
-roles A B
-when same A B
-text The last night before capture. {A} and {B} check the water tanks that shielded them on the flare nights, one more time, by hand. Neither of them sleeps much. Both pretend to, so the other one will.
-do bond A B 6
-
-# --- Departure (after the tanker flights) ---------------------------------------
-card l_departure
-type beat
-cat wonder
-due
-once
-days 6 6
 roles A
 when cond A ok
-text The last tanker undocks at dawn. Seven ships light their engines for the departure burn, and {A} feels weight come back for the first time since launch. When the engines stop, Earth has quietly stopped filling the window and started fitting in it.
+text Phobos is a speck beside Mars now, sliding across its face in an afternoon. {A} watches it cross a whole world in the time it takes to eat a meal, and can't remember the last time they wanted to stand on something this badly.
+do trait A curious 2
 do morale A 3
+
+card w_mars_disc
+type event
+cat arrival
+due
+once
+days 41 41
+roles A
+when flag c2_answered
+when !is A ow_hail
+text {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Tonight Mars spills out around it on every side, rust and dark, and somewhere on the night side, too small to see, a light is holding steady.
+do morale A 5
+
+card w_mars_disc_q
+type event
+cat arrival
+due
+once
+days 41 41
+roles A
+when !flag c2_answered
+when !is A ow_hail
+text {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Tonight Mars spills out around it on every side, rust and dark, and somewhere on the night side, too small to see, a light is keeping time.
+do morale A 5
+
+card a_last_night
+type beat
+cat arrival
+due
+once
+days 41 41
+roles A B
+when is A ow_dose
+text The last night before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. Neither of them sleeps much. Both pretend to, so the other one will.
+do bond A B 6
+
+# --- Arrival day: what the fleet chose, and what it cost ------------------------------
+card a_recall_home
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag name_home
+text On the entry map {A} finds the crater the fleet named for a small town at home, right where it should be. Cargo 2 has been standing in its shadow the whole time. Somewhere on Earth, a town newspaper is about to need a second front page.
+
+card a_recall_plan
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag name_plan
+text On the entry map {A} finds the crater the fleet named for the first person who ever wrote a Mars plan. Cargo 2 has been standing in its shadow the whole time. Somewhere on Earth, a committee is about to have a great deal more to argue about.
+
+card a_recall_photo
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag photo_taken
+when !fired dec_name
+text {A} stows the tablet with the fleet portrait on it: seven ships, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have today. Worth it, {A} decides, and means it.
+
+card a_recall_wrist
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when fired crisis_eva
+when is A eva_who
+text {A} straps in for entry with the wrist that wouldn't bend, mostly bending now, and doesn't mention the "mostly" to the flight surgeon.
+
+card a_recall_stash
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag stash_shared
+when !fired a_recall_wrist
+when is A stash_who
+text On the morning of entry {A} unpins the empty ration bag from the galley wall and folds it into a pocket, Sharpie side out.
+
+card a_recall_hail
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag signal_answered
+when !fired a_recall_wrist
+when !fired a_recall_stash
+when is A ow_hail
+text The standing hail is still in the comms schedule, one line, weeks old. {A} takes it out by hand, and the big dish turns back to Earth for good, with the letters that waited behind it.
+
+card a_recall_quiet
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag signal_ignored
+when !fired a_recall_wrist
+when !fired a_recall_stash
+when is A ow_hail
+text The big dish never turned away from Earth, and every letter from home arrived on time. {A} answers the last one on the morning of entry and adds a line nobody at home will understand yet: "We're going to say hello in person."

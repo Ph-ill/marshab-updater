@@ -54,8 +54,8 @@
     "Don't do anything brave without me."
   ],
   "sys": {
-    "move": "{A} hitches a ride over to {S}.",
-    "home": "{A} heads back to {S}.",
+    "move": "{A} rides the transfer line across to {S} for a few days, and leaves the home ship flying itself.",
+    "home": "{A} rides the transfer line back home to {S}.",
     "note": "{A} passes {T} a note: “{line}”",
     "dec_open": "Fleet decision open for 48 hours.",
     "dec_close": "Decision closed: {opt}. {n} ballot(s).",
@@ -68,7 +68,8 @@
     "res_close": "Help is on the way: {opt}.",
     "res_default": "Nobody answered in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
-    "end": "Arrival day."
+    "end": "Arrival day.",
+    "fold": "Around the fleet, {who} kept the small things running."
   },
   "epi": {
     "axis": [
@@ -93,12 +94,84 @@
     ],
     "story": [
       [
-        "m_reveal",
-        "Saw the light first, and was there when it had a name."
+        "a_window_hail",
+        "Said hello on every pass until, one morning, something was listening."
       ],
       [
-        "m_reveal_any",
-        "Was the one who saw the ship standing."
+        "a_window_quiet",
+        "Waited until close enough, then went to say hello in person."
+      ],
+      [
+        "m_carrier",
+        "Heard it first, and filed it under retired hardware."
+      ],
+      [
+        "m_reveal",
+        "Drew the wrong spacecraft in blue marker, and counted to the right number."
+      ],
+      [
+        "m_theory",
+        "Drew an orbit in blue marker, and slept through for once."
+      ],
+      [
+        "a_list",
+        "Wrote to every name on the list from the first call, from Mars."
+      ],
+      [
+        "g_news",
+        "Kept a list of who was at the table, and carried it all the way."
+      ],
+      [
+        "p_live_call",
+        "Kept a list of who was at the table."
+      ],
+      [
+        "a_song",
+        "Played the whole song at last, with ground under it."
+      ],
+      [
+        "p_music",
+        "Played four bars a night, all the way to Mars."
+      ],
+      [
+        "p_garden_sprout",
+        "Carried the seedling down in a coat pocket."
+      ],
+      [
+        "p_garden_none",
+        "Carried a seed that never came up all the way to Mars, to plant it properly."
+      ],
+      [
+        "p_garden_plant",
+        "Said good night to a tray of seeds every night."
+      ],
+      [
+        "letter_open",
+        "Saved a letter for the hard day, and read its last line aloud at Mars."
+      ],
+      [
+        "letter_worn",
+        "Wore a letter thin at the fold, and read its last line aloud at Mars."
+      ],
+      [
+        "a_letter",
+        "Read the last line of a letter aloud, at Mars."
+      ],
+      [
+        "dose_swap",
+        "Slept between the water tanks, because someone asked twice."
+      ],
+      [
+        "dose_ok",
+        "Slept between the water tanks, and patted them goodnight on the last night."
+      ],
+      [
+        "a_last_night",
+        "Patted the water tanks goodnight on the last night."
+      ],
+      [
+        "l_dose",
+        "Topped the fleet's dose chart, and flew on."
       ],
       [
         "m_flash1",
@@ -106,47 +179,19 @@
       ],
       [
         "m_overlay",
-        "Taped two traces side by side and never took them down."
-      ],
-      [
-        "m_carrier",
-        "Heard it first, and filed it under courtesy."
-      ],
-      [
-        "signal_reply",
-        "Was the only one awake for the reply."
-      ],
-      [
-        "m_theory",
-        "Drew an orbit in blue marker. Was nearly right."
+        "Pinned two traces side by side and never took them down."
       ],
       [
         "sharpie2",
         "Knows a handwriting from Starbase on sight."
       ],
       [
-        "dil_stash",
+        "l_stash",
         "Found the first of the notes."
-      ],
-      [
-        "l_manifest",
-        "Read the manifest all the way to the end."
-      ],
-      [
-        "l_reboot",
-        "Can still hum the galley chime."
-      ],
-      [
-        "p_garden_sprout",
-        "Carried the seedling down in a coat pocket."
       ],
       [
         "crisis_eva",
         "Landed with a wrist that bends again."
-      ],
-      [
-        "g_news",
-        "Flew the whole way carrying news from home, and flew well."
       ]
     ]
   }

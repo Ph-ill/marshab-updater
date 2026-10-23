@@ -10,12 +10,12 @@ type event
 cat mystery
 hook
 once
-days 25 36
+days 25 33
 weight 10
 roles A
 when cond A ok
 do who hook_who A
-text At 23:40 the dish on {A}'s ship logs a burst on the emergency band. The bearing is Mars.
+text At 23:40 the ship-to-ship receiver on {A}'s ship logs a burst on the old common channel. The bearing is Mars.
 
 card r_band
 type event
@@ -23,11 +23,11 @@ cat mystery
 clue
 due
 once
-days 26 37
+days 26 34
 roles A
 when fired h_band
 when is A hook_who
-text {A} decodes it by breakfast: a spacecraft's safe-mode beacon, asking for instructions nobody sent. The frame is cut off mid-header, every time. What's left looks old. {A} matches it to a science orbiter that went quiet years ago, and is almost sure.
+text {A} decodes it by breakfast: a safe-mode beacon on the old common channel every Mars craft once used, asking for instructions nobody sent. The frame is cut off just before the spacecraft ID, every time. What's left looks old. {A} matches it to the written-off relay, and is almost sure.
 do trait A curious 3
 do morale A 4
 
@@ -37,7 +37,7 @@ type event
 cat repair
 hook
 once
-days 4 36
+days 4 35
 weight 10
 roles A
 when cond A ok
@@ -49,7 +49,7 @@ type event
 cat repair
 due
 once
-days 5 37
+days 5 36
 roles A
 when fired h_pressure
 when is A hook_who
@@ -63,19 +63,19 @@ type event
 cat grim
 hook
 once
-days 4 36
+days 7 33
 weight 9
 roles A
 when cond A ok
 do who hook_who A
-text 23:52. The space weather feed flags a major flare on the Sun. Protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
+text 23:52. The space weather feed flags a major flare on the Sun. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
 
 card r_flare
 type event
 cat grim
 due
 once
-days 5 37
+days 8 34
 roles A
 when fired h_flare
 when is A hook_who
@@ -89,7 +89,7 @@ type event
 cat repair skill
 hook
 once
-days 4 36
+days 4 35
 weight 10
 roles A
 when cond A ok
@@ -101,7 +101,7 @@ type event
 cat repair skill
 due
 once
-days 5 37
+days 5 36
 roles A
 when fired h_thruster
 when is A hook_who
@@ -120,7 +120,7 @@ type event
 cat repair skill
 hook
 once
-days 4 36
+days 4 35
 weight 10
 roles A
 when cond A ok
@@ -132,11 +132,11 @@ type event
 cat repair skill
 due
 once
-days 5 37
+days 5 36
 roles A
 when fired h_flood
 when is A hook_who
-text {A} found it at 01:30, buried on page nine: a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to 11, and nobody is sure when {A} slept.
+text {A} found it at 01:30, buried on page nine: a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and nobody is sure when {A} slept.
 do morale A 5
 do res spares -1
 
@@ -146,23 +146,23 @@ type event
 cat grim
 hook
 once
-days 10 36
+days 10 35
 weight 8
 roles A
 when cond A ok
 do who hook_who A
-text Mission Control misses a scheduled check-in. Then the next one. {A} sends a third hail and starts the clock: forty minutes for an answer.
+text Mission Control misses a scheduled check-in. Then the next one. {A} sends a third hail and starts the clock: twice the light time, plus a minute for someone to put a coffee down.
 
 card r_silence
 type event
 cat grim
 due
 once
-days 11 37
+days 11 36
 roles A
 when fired h_silence
 when is A hook_who
-text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup took all night to come up. The message ends: "All good here. How are you?" {A} reads it slowly before answering.
+text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} reads it slowly before answering.
 do morale A 6
 do trait A warm 2
 
@@ -172,7 +172,7 @@ type event
 cat grim
 hook
 once
-days 4 36
+days 4 35
 weight 9
 roles A
 when cond A ok
@@ -184,7 +184,7 @@ type event
 cat grim
 due
 once
-days 5 37
+days 5 36
 roles A
 when fired h_strike
 when is A hook_who
@@ -198,7 +198,7 @@ type event
 cat mystery
 hook
 once
-days 25 36
+days 25 33
 weight 8
 roles A
 when cond A ok
@@ -210,11 +210,11 @@ type event
 cat mystery
 due
 once
-days 26 37
+days 26 34
 roles A
 when fired h_ghost
 when is A hook_who
-text {A} pinned it down by morning: a spent upper stage from a Mars mission decades ago, tumbling along almost the same path. It will pass forty kilometers off the bow. It has been out here the whole time, and no one is coming for it.
+text {A} pinned it down by morning: a launch cover plate shed by one of the fleet's own ships at departure, turning end over end along almost the same path. It will pass forty kilometres off the bow. It has kept them company the whole way, and no one is coming for it.
 do trait A curious 3
 do morale A -2
 
@@ -225,23 +225,23 @@ type event
 cat mystery
 hook
 once
-days 25 36
+days 25 33
 weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 02:40. The intercom on {A}'s ship opens by itself. A voice says {A}'s name, once, softly. There is nobody else aboard.
+text 02:40. The intercom on {A}'s ship opens by itself and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. There is nobody else aboard.
 
 card r_voice
 type event
 cat human
 due
 once
-days 26 37
+days 26 34
 roles A
 when fired h_voice
 when is A hook_who
-text {A} traced it by dawn: a message from home, recorded the night before launch, set to play on this flight day and then buried under a software update. The rest of it plays at breakfast. {A} listens with the volume very low.
+text {A} traced it by dawn: a message from home, recorded the night before launch and set to play on this flight day, then mangled by the galley-screen update. The rest of it plays at breakfast, kettle and all. {A} listens with the volume very low.
 do morale A 6
 do trait A warm 3
 
@@ -251,23 +251,23 @@ type event
 cat mystery
 hook
 once
-days 27 36
+days 25 33
 weight 8
 roles A
 when cond A ok
 do who hook_who A
-text 23:58. {A}'s ship drops off the fleet net in the middle of a sentence. No beacon, no telemetry, just an empty slot on six displays.
+text 23:58. {A}'s ship drops off the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays.
 
 card r_dark
 type event
 cat mystery
-clue
+clue core key
 due
 once
-days 28 37
+days 26 34
 roles A
 when fired h_dark
 when is A hook_who
-text {A}'s voice came back at 05:40, steady. The main antenna had slewed toward Mars on a pointing request the software accepted as one of ours. It matches no ship in the fleet. Mission Control calls it a replayed packet from launch week and promises a patch. It has said that before.
+text {A}'s voice came back at 05:40. The main antenna had slewed toward Mars on a link request signed with a program key the fleet still trusts, and waited out the timeout. Its sequence number matches one logged years ago. Mission Control calls it a replay: "Not ours. Checked."
 do trait A brave 3
 do morale A -2

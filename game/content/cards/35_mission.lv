@@ -10,12 +10,12 @@ once
 duration 1
 roles A B
 lean warm feast quiet
-text Halfway. Earth and Mars are the same distance behind and ahead, give or take a rounding error. {A} wants to break out the good rations and mark it properly. {B} would rather nobody counted out loud yet.
+text Halfway, by the flight plan's clock. {A} wants to break out the good rations and mark it properly. {B} would rather nobody counted yet.
 option feast | Mark it | The fleet eats the good rations on seven screens at once. {A} gives a toast about the halfway mark, and it turns into a toast about the people who packed the food.
   res food -2
   morale A 4
   morale B 2
-option quiet | Let it pass | Halfway passes without a word on the fleet channel. On every ship, at the same minute, someone looks at the clock anyway.
+option quiet | Let it pass | Halfway passes without a word on the fleet channel. On every ship, at the same minute, someone looks at the clock regardless.
   bond A B 3
 
 card dec_name
@@ -27,41 +27,99 @@ once
 duration 2
 roles A B
 lean curious after home
-text The imaging pass has turned up an unnamed crater near the landing zone, small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants to name it after somewhere at home.
+text The imaging pass has turned up an unnamed crater beside the landing zone, small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants to name it after somewhere at home.
 option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
+  set name_plan
   trait A curious 2
 option home | Name it for home | The crater gets the name of a small town on Earth that nobody outside it has heard of. Within a day, the town's newspaper has a front page about it.
+  set name_home
   trait B warm 3
   morale B 4
 
 card dec_science
 type decision
 cat mission
-days 14 30
+days 14 24
 weight 8
 once
 duration 2
 roles A B
 lean curious record save
-text A gamma-ray burst lights up the sky somewhere past the galaxy, and the fleet is the farthest instrument humanity has. Holding attitude for the measurement costs propellant. {A} wants the data. {B} wants the propellant.
-option record | Hold for the data | Seven ships hold still for twenty minutes, and a burst that left its source before Earth had oceans is triangulated from a baseline nobody has had before. {A} reads the confirmation and lets out a breath nobody else hears.
+text A gamma-ray burst goes off somewhere past the galaxy. Timed against the detectors near Earth, the fleet's sighting could pin the source better than ever before, but only if the ships hold attitude through the next window, and that costs propellant. {A} wants the data. {B} wants the propellant.
+option record | Hold for the data | Seven ships hold still for twenty minutes. Timed against Earth's detectors, a minute or two of light away, the burst's source shrinks from a smear of sky to a point. {A} reads the confirmation and lets out a breath nobody else hears.
   res fuel -2
   trait A curious 3
   morale A 3
-option save | Keep the propellant | The fleet passes. Ground telescopes get the burst anyway, from one angle. {B} logs the propellant saved, and doesn't pretend it was an easy trade.
+option save | Keep the propellant | The fleet passes. Ground telescopes get the burst anyway, less sharply. {B} logs the propellant saved, and doesn't pretend it was an easy trade.
   trait B brave 2
 
-# --- Night-side flashes (part 1-4) -------------------------------------------------
+# --- The mystery chain (fixed days; one beat a day from 35 to 41) ------------------
+card m_ripple
+type event
+cat mystery
+clue
+days 16 21
+weight 14
+once
+roles A
+when cond A ok
+text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A ground loop from the coolant pump, most likely: it's on the same bus. {A} notes it in the margin and moves on to the propellant tables.
+do trait A curious 1
+
+card m_dropout
+type event
+cat mystery
+clue core
+due
+once
+days 20 23
+roles A
+when since t_carrier >= 5
+text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there for about half a day, gone for about half a day, and back thirty-seven minutes later every morning. {A} blames the dish schedule, re-plots it, and the thirty-seven minutes stay.
+do mark t_dropout
+
+card m_theory
+type event
+cat mystery
+due
+once
+days 22 24
+roles A
+when since t_dropout >= 2
+when !is A ow_list
+when !is A ow_song
+when !is A ow_garden
+when !is A ow_letter
+when !is A ow_dose
+when !is A ow_hail
+text {A} finds a match in the catalog of retired spacecraft: a relay orbiter written off after a bad software load, still up there, one orbit per Mars day. A box in a reset loop: waking, shouting once, falling over. {A} draws it on the galley whiteboard in blue marker and sleeps through for once.
+do who ow_theory A
+do mark t_theory
+do morale A 3
+
+card m_theory_confirm
+type event
+cat mystery
+clue
+due
+once
+days 25 27
+roles A
+when since t_theory >= 3
+when is A ow_theory
+text Mission Control runs the old relay's last orbit forward for {A}. One orbit is one Mars day, so it comes round thirty-seven minutes later each morning, and for half of every orbit its antenna faces away from the fleet. The ground team sends a lighthouse drawing. {A} pins it beside the blue marker.
+do morale A 2
+
 card m_flash1
 type event
 cat mystery
 clue core
 due
 once
-days 29 32
+days 30 31
 roles A
-when cond A ok
-text {A} pulls the orbiters' night frames of the landing zone, the way people look at a house before moving in. On dark ground near the edge, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor, almost certainly. {A} writes down both timestamps anyway.
+when !is A ow_theory
+text {A} pulls the orbiters' night frames of the landing region, the way people look at a house before moving in. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor, almost certainly. {A} writes down both timestamps regardless.
 do set flash_seen
 do mark t_flash
 do who flash_who A
@@ -70,88 +128,136 @@ do trait A curious 2
 card m_flash2
 type event
 cat mystery
-days 31 35
-weight 30
+due
 once
+days 32 33
 roles A
 when flag flash_seen
 when since t_flash >= 2
-when cond A ok
-text {A} goes through every night frame of that patch from this month. They're minutes apart, too coarse to show a rhythm, but whenever a pixel there is lit, it's the same pixel. Cosmic rays don't come back to the same address. {A} sends the list to the fleet, and the channel goes quiet.
+when is A flash_who
+text {A} goes through every night frame of that patch from this month. Every pass, on different rows of the sensor, the lit pixel lands on the same spot of ground. Cosmic rays don't return to one address, and a hot pixel would follow the camera, not Mars. {A} sends the list round. The channel goes quiet.
 do set flash_twice
+do open dec_flash
 
 card dec_flash
 type decision
 cat mystery
-days 32 38
-weight 40
+days 32 33
+weight 1
 once
 duration 1
 roles A B
 when flag flash_twice
 lean curious look leave
-text The lit pixel is in the newest frames too. {A} wants to ask the ground to task an orbiter for a fast sequence over it, at the cost of a day of the fleet's downlink: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
+text {A} wants to ask the ground to task an orbiter for a fast sequence over the lit pixel, at the cost of a day of the fleet's downlink: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
 option look | Ask for the sequence | The request goes up. {A} writes the apology to six inboxes personally, and means each one.
   set flash_looked
   morale A -2
   morale B -2
-option leave | Leave it for the ground | The pixel goes into the anomaly log, under a heading {B} writes and then underlines.
+option leave | Leave it for the ground | The pixel goes into the anomaly log, under a heading {B} writes and then underlines. The letters from home arrive on time, all of them.
   set flash_left
+  morale B 2
+
+card m_key
+type event
+cat mystery
+clue core key
+due
+once
+days 34 34
+roles A
+when !fired h_dark
+text In the overnight antenna log {A} finds a link request from the direction of Mars, signed with a program key the fleet still trusts, refused only because the dish was busy with Earth. Its sequence number matches one from years ago. Mission Control calls it a replay: "Not ours. Checked."
+do trait A curious 2
 
 card flash_answer
 type event
 cat mystery
-clue
+clue core ground
 due
 once
-days 34 39
+days 35 36
 roles A
 when flag flash_looked
-when since t_flash >= 4
-when cond A ok
-text The fast sequence comes down overnight: forty frames of dark ground. The pixel lights, goes out, lights again, and never moves against the rocks around it. Whatever it is, it isn't in orbit. {A} counts the frames between flashes, gets the same number every time, and calls the other six ships.
+when since t_flash >= 5
+when is A flash_who
+text The fast sequence comes down overnight: forty frames of dark ground as the orbiter slides over. The pixel lights, goes out, lights again, and never moves against the rocks. Whatever it is, it isn't in orbit. {A} counts the frames between flashes, gets the same number each time, and calls the fleet.
+do set flash_ground
 do trait A curious 4
-do morale A 2
+
+card flash_answer_ground
+type event
+cat mystery
+clue core ground
+due
+once
+days 35 36
+roles A
+when flag flash_left
+when since t_flash >= 5
+when is A flash_who
+text An email reaches {A} from someone on the orbiter team who tasked the fast sequence on a lunch break: forty frames of dark ground, the pixel lighting, going out, lighting again, never moving against the rocks. Whatever it is, it isn't in orbit. The email ends: "You didn't hear this from me."
+do set flash_ground
+do trait A curious 3
 
 card m_overlay
 type event
 cat mystery
-clue
+clue core
 due
 once
-days 37 39
+days 36 37
 roles A
-when fired flash_answer
-when cond A ok
-text {A} lays the old dish log over the fast sequence, frame by frame, because nobody else has had time. The carrier peaks on the exact frame the pixel lights. Every time. {A} prints both traces and tapes them up side by side, and doesn't take them down.
+when flag flash_ground
+when is A ow_hail
+text {A} takes the old-channel receiver log, slides it back by the light time from Mars, seventeen seconds and change, and lays it over the fast sequence. The carrier peaks on the exact frame the pixel lights. Every time. It isn't two things. {A} prints both traces and pins them up side by side.
 do trait A curious 3
 
-# --- Middle-dark plant (a careful reader's detail; ordinary explanations exist) ---
-card m_ripple
-type event
-cat mystery
-clue
-days 13 24
-weight 14
-once
-roles A
-when cond A ok
-text {A} cleans up the dish noise floor for the weekly report and finds a faint ripple in it, period about eleven seconds. Reaction wheel harmonic, most likely. {A} notes it in the margin and moves on to the propellant tables.
-do trait A curious 1
-
-# --- The crew's theory (misdirection; see STORY_BIBLE.md) -------------------------
-card m_theory
+card m_checked
 type event
 cat mystery
 due
 once
-days 17 24
+days 37 38
 roles A
-when fired dec_signal
-when since t_signal >= 4
-when cond A ok
-text {A} finds a match in the public catalog of retired spacecraft: a relay orbiter that went quiet over Mars years ago, last tracked spinning at five and a half turns a minute. Eleven seconds a turn, near enough. {A} draws its orbit on the galley whiteboard and sleeps straight through for once.
-do morale A 3
+when fired m_overlay
+when flag flash_looked
+text Mission Control answers the overlay in one line: nothing on their list within a hundred kilometres of that pixel still has power. They point the next backup-site survey straight at it anyway, because the fleet paid a day of letters for those coordinates. {A} reads the line twice.
+do morale A 1
+
+card m_checked_g
+type event
+cat mystery
+due
+once
+days 37 38
+roles A
+when fired m_overlay
+when flag flash_left
+text Mission Control answers the overlay in one line: nothing on their list within a hundred kilometres of that pixel still has power. Then, a minute later, a second line from the lunch-break stranger: the pixel is on tomorrow's backup-site survey. {A} reads both lines twice.
+do morale A 1
+
+card m_listen
+type event
+cat mystery
+due
+once
+days 38 38
+roles A
+when fired m_overlay
+when !is A ow_theory
+text With Mars a day and a half out, the old-channel carrier is loud enough to hear without folding. {A} pipes it into the cabin speaker for a minute: a click, a hiss, a long pause, a click. {A} turns it off before it starts to sound like anything.
+do morale A -1
+
+card m_count
+type event
+cat mystery
+due
+once
+days 39 39
+roles A
+when !is A ow_theory
+text {A} times the old-channel carrier on the galley clock, the way you count between lightning and thunder. Everything about the fleet's distance from Mars has changed since the first night. The gap hasn't. {A} stops counting before the number means anything.
 
 # --- The payoff: fires on day 40 in every season ------------------------------------
 card m_reveal
@@ -162,9 +268,8 @@ due
 once
 days 40 40
 roles A
-when is A flash_who
-when cond A ok
-text The orbiters' landing-zone survey comes in sharp. Where the old thumbnail showed a smudge and a streak, a ship stands on its legs, tilted a few degrees: Cargo 2. In the night video its lights blink, then blink again eleven seconds later. {A} looks back at the thumbnail. The streak was its shadow.
+when is A ow_theory
+text The backup-site survey comes in sharp. Thirty kilometres past the zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half unfolded, its dish aimed at empty sky: Cargo 2. In the night video its lights blink, then blink again. {A} counts the gap without meaning to and gets to eleven humming the galley chime. The streak was its shadow.
 do trait A curious 3
 
 card m_reveal_any
@@ -176,8 +281,56 @@ once
 days 40 40
 roles A
 when !fired m_reveal
-text The orbiters' landing-zone survey comes in sharp. Where the old thumbnail showed a smudge and a streak, a ship stands on its legs, tilted a few degrees: Cargo 2. In the night video its lights blink, then blink again eleven seconds later. {A} looks back at the thumbnail. The streak was its shadow.
+text The backup-site survey comes in sharp. Thirty kilometres past the zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half unfolded, its dish aimed at empty sky: Cargo 2. In the night video its lights blink, then blink again. {A} counts the gap without meaning to and gets to eleven humming the galley chime. The streak was its shadow.
 do trait A curious 3
+
+card a_report
+type event
+cat arrival
+due
+once
+days 40 40
+roles A
+when fired m_reveal
+when is A flash_who
+text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half. The one {A} starts tonight is at forty pages by midnight, and nobody on seven ships has gone to bed.
+
+card a_report_any
+type event
+cat arrival
+due
+once
+days 40 40
+roles A
+when !fired a_report
+when !is A ow_theory
+text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half. The one {A} starts tonight is at forty pages by midnight, and nobody on seven ships has gone to bed.
+
+# --- Day 41: the window, one card per carrier branch --------------------------------
+card a_window_hail
+type event
+cat arrival
+due
+once
+days 41 41
+roles A
+when flag signal_answered
+when is A ow_hail
+text 04:10. The fleet crosses inside five light-seconds of Mars, the first thing in four years close enough to answer Cargo 2 before its interlock gives up and starts again. Earth's answers always took minutes; it only ever waited eleven seconds. {A}'s standing hail goes out on schedule, the same plain words as every pass, and this time it arrives while something is listening. The light stops blinking.
+do set c2_answered
+do morale A 8
+
+card a_window_quiet
+type event
+cat arrival
+due
+once
+days 41 41
+roles A
+when flag signal_ignored
+when is A ow_hail
+text 04:10. The fleet crosses inside five light-seconds of Mars, the first thing in four years close enough to answer Cargo 2 before its interlock gives up and starts again. Earth's answers always took minutes; it only ever waited eleven seconds. No hail is on the schedule. {A} looks at the old channel for a long time, then at the entry checklist. Tomorrow, then. In person.
+do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------
 card a_descent_hold
@@ -188,8 +341,8 @@ once
 days 41 41
 roles A
 when flag arrive_hold
-when cond A ok
-text Capture burn, on time. The storm fills the landing zone from rim to rim, and tomorrow's entry plan has a line in it nobody has had to write before: "if radar degrades, aim for the light". {A} reads it out loud to the empty cabin, to hear how it sounds.
+when !is A ow_hail
+text Entry is tomorrow, straight in from the crossing. The storm fills the landing zone from rim to rim, and the entry plan has a line nobody has had to write before: "if the cameras go blind, trust the radar for height and the light for place". {A} reads it to the empty cabin, to hear how it sounds.
 do morale A 2
 
 card a_descent_wait
@@ -200,8 +353,8 @@ once
 days 41 41
 roles A
 when flag arrive_wait
-when cond A ok
-text Capture into the long orbit. Below, the storm lies over the landing zone like a hand over a mouth. On the night pass {A} finds the light through the dust, faint and on time, and then sits down with the ration tables to work out how many nights of waiting the fleet can afford.
+when !is A ow_hail
+text Tomorrow the fleet skims the top of the atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, faint and on time, and sits down with the ration tables.
 do morale A -2
 
 card a_descent_clear
@@ -213,7 +366,6 @@ days 41 41
 roles A
 when !flag arrive_hold
 when !flag arrive_wait
-when cond A ok
-text Capture burn, on time, into a clear sky. The landing zone is exactly where the maps said, with one more thing on it than the maps said. {A} packs a bag for a walk: water, a torch, a roll of tape, a marker. Old habits.
+when !is A ow_hail
+text Entry is tomorrow, straight in from the crossing, into clear air. The landing zone is exactly where the maps said, with one more thing beside it than the maps said. {A} packs a bag for a walk: water, a torch, a roll of tape, a marker. Old habits.
 do morale A 3
-

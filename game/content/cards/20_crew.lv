@@ -1,25 +1,37 @@
 # Crew and relationship beats, trait reactions, and inactive-friendly events.
 # House style: content/STYLE.md.
 
-# Private dilemma that surfaces later.
+# The Starbase stash: opened on a fixed day so the Sharpie hand is known by arrival.
+card l_stash
+type event
+cat human
+due
+once
+days 11 11
+roles A
+when cond A ok
+text Behind a stowage panel on {A}'s ship, three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a Starship with its fingers crossed.
+do open dil_stash
+
 card dil_stash
 type dilemma
 once
 cat human
-days 3 30
-weight 8
+days 11 11
+weight 1
 duration 3
 roles A
-when cond A ok
+when !fired dil_stash
 lean warm share keep
-text Behind a stowage panel, {A} finds three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a Starship with its fingers crossed.
-option keep | Keep them quiet | {A} thanks them silently. The packs go into a personal locker, for the bad week every mission eventually has.
+text The three packs from behind the panel are the good rations, the ones the galley ran out of first. Nobody else knows they exist.
+option keep | Keep them quiet | {A} thanks the Sharpie silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash
   who stash_who A
   morale A 6
-option share | Hand them in | {A} turns them in. The galley has an unplanned surplus for the first time since launch. An anomaly report is filed anyway.
+option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch, and the bag goes up on the galley wall.
   set stash_shared
+  who stash_who A
   res food 3
   morale A 2
 
@@ -28,13 +40,12 @@ type beat
 cat human
 due
 once
-days 12 39
+days 24 39
 roles A B
 when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
-when same A B
-text It's been a long week. {A} opens the locker without a word and splits the Starbase rations with {B}. It's the best meal either of them has had since Earth was more than a dot.
+text It's been a long week. {A} opens the locker without a word, sends one pack across to {B} on the transfer line, and they eat together on video, reading the Sharpie on the bag between bites like the back of a cereal box.
 do bond A B 6
 do morale A 3
 do set stash_exposed
@@ -42,25 +53,23 @@ do set stash_exposed
 card beat_watch
 type beat
 cat life
-days 9 30
+once
+days 8 18
 weight 10
-cooldown 16
 roles A B
-when same A B
 when bond A B >= -20
-text {A} and {B} stand the night watch. Earth is a bright dot now, small enough to cover with a thumbnail. They split a coffee anyway.
+text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a bright dot now, small enough to cover with a thumbnail. They each make a coffee at the same minute, as if that counted as sharing one.
 do bond A B 6
 
 card beat_argue
 type beat
 cat life
-days 2 39
+once
+days 9 39
 weight 5
-cooldown 16
 roles A B
 when trait A warm <= 10
-when same A B
-text {A} and {B} spend a whole shift arguing about what plays during the next burn. {A} wants silence, so every noise means something. {B} wants anything with a chorus. They settle on one song, chosen by the ground team, sight unseen. It's worse than either.
+text {A} and {B} spend a whole shift arguing on the fleet channel about what plays during the next burn. {A} wants silence, so every noise means something. {B} wants anything with a chorus. They settle on one song, chosen by the ground team, sight unseen. It's worse than either.
 do bond A B -4
 
 # Trait-driven reaction: what happens depends on how brave A is.
@@ -75,10 +84,10 @@ when trait A curious >= -5
 when cond A ok
 lean brave closer window
 text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
-option closer | Get a closer look | {A} talks Mission Control into a camera slew and a long exposure. It's a chunk of ice shed from the fleet's own tanks, tumbling slowly and going to Mars with everyone else.
+option closer | Get a closer look | {A} talks Mission Control into a camera slew and a long exposure. It's a chunk of ice shed from the fleet's own tanks, turning slowly and going to Mars with everyone else.
   var glints 1
   trait A brave 3
-option window | Track it from the window | {A} logs its bearing every hour. By the fourth hour it's plainly tumbling, each flash a flat face of ice from the fleet's own tanks turning into the sun. The log is neat enough to frame.
+option window | Track it from the window | {A} logs its bearing every hour. By the fourth hour it's plainly turning end over end, each flash a flat face of ice from the fleet's own tanks catching the sun. The log is neat enough to frame.
   trait A curious 2
 
 card galley_pump
@@ -86,10 +95,9 @@ type event
 cat repair
 days 8 39
 weight 6
-cooldown 20
+once
 roles A
 when res spares >= 1
 text The galley pump fails for the third time since Starbase. {A} lays the parts out on a towel in order, rebuilds it, and ends up with one washer it never needed.
 do res spares -1
 do morale A -2
-
