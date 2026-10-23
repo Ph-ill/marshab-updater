@@ -3,7 +3,8 @@
 # Without that file, edit SHIP_ID per board (0 and 1) and copy with mpremote as before.
 SHIP_ID = 0                 # 0 = board A, 1 = board B (B is the GATT central when GATT_TEST is on)
 SSID_PREFIX = "COEX-"       # AP name becomes COEX-0 / COEX-1
-AP_PASSWORD = "CHANGE_ME"   # WPA2, matching the design decision; "" = open network
+AP_PASSWORD = "CHANGE_ME"   # WPA2 placeholder; this file is public, so set the real per-board
+                            # password in /data/ship.json (see data/ship.example.json). "" = open
 AP_CHANNEL = 6              # fixed channel; repeat the soak on 1 and 11 if 6 is crowded
 COUNTRY = "US"
 AP_CYCLE_S = 0              # >0: every AP_CYCLE_S seconds turn the AP off for AP_OFF_S (tests the "hotspot button")

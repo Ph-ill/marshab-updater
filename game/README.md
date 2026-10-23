@@ -19,7 +19,7 @@ tools/lvc.py compiler + validator (CPython only) -> build/pack.bin, text.json(.g
 sim/         PC season simulator, Python renderer, sample output in sim/out/
 web/render.js  phone-side renderer (the Pico never builds sentences)
 tests/       unit tests, MicroPython replay check, JS-vs-Python renderer check
-bench/coex-test/  Wi-Fi + BLE coexistence bench firmware (as published in 0.0.1-coex)
+bench/coex-test/  Wi-Fi + BLE coexistence bench firmware (as published in 0.0.2-coex)
 ```
 
 ## Run it
