@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>The Long Voyage</title>
+<style>
+:root{--paper:#F2ECDF;--ink:#1C1B19;--graph:#8A867E;--ink2:#57534C;--rule:#CBC3B2;--rust:#C8552B;--rust-t:#A8441F;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+--mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono","Droid Sans Mono",monospace;
+--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+@media (prefers-color-scheme:dark){:root{--paper:#1C1B19;--ink:#ECE5D6;--graph:#7D796F;--ink2:#B3AC9F;--rule:#3D3A35;--rust:#D9673C;--rust-t:#E07A50}}
+*{box-sizing:border-box;margin:0;padding:0;border-radius:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font:17px/1.45 var(--sans);-webkit-tap-highlight-color:transparent;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left;touch-action:manipulation}
+button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
+.m{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lab{font:600 13px/16px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lab.r{color:var(--rust-t)}
+.dim{color:var(--ink2)}
+#top{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--ink);padding:var(--st) calc(16px + var(--sr)) 0 calc(16px + var(--sl));display:flex;justify-content:space-between;align-items:center;height:calc(48px + var(--st))}
+#top b{font:700 15px var(--mono);letter-spacing:.06em}
+#top span{font:15px var(--mono)}
+main{padding:0 calc(16px + var(--sr)) calc(152px + var(--sb)) calc(16px + var(--sl))}
+main.nodock{padding-bottom:calc(32px + var(--sb))}
+main.short{padding-bottom:calc(96px + var(--sb))}
+section{padding:24px 0 0}
+section>.lab:first-child{display:flex;justify-content:space-between;border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:8px}
+h1{font:700 32px/40px var(--sans);letter-spacing:-.01em}
+h2{font:600 21px/28px var(--sans)}
+p{margin:8px 0 0}
+.kick{padding-top:24px}
+.kick .lab{margin-bottom:8px}
+#dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-top:1px solid var(--ink);padding:0 var(--sr) var(--sb) var(--sl)}
+#dock .act{padding:8px 16px}
+.btn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:56px;padding:0 16px;border:1px solid var(--ink);font:700 16px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.btn i{font-style:normal;font-weight:400;color:var(--ink2)}
+.btn.pri{border-width:2px}
+.btn.pri::before{content:"";width:8px;height:8px;background:var(--rust);margin-right:12px;flex:none}
+.btn.pri span{flex:1}
+.btn[disabled]{border-color:var(--rule);color:var(--graph)}
+.btn[disabled]::before{background:var(--rule)}
+.btn+.btn{margin-top:8px}
+.btn.sec{border-color:var(--graph);font-weight:600}
+.done{min-height:56px;display:flex;flex-direction:column;justify-content:center;font-size:16px;line-height:22px;padding-left:20px;border-left:2px solid var(--ink)}
+nav{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule)}
+nav button{height:56px;text-align:center;font:600 14px var(--mono);letter-spacing:.1em;color:var(--ink2);border-top:3px solid transparent;margin-top:-1px}
+nav button[aria-current]{color:var(--ink);border-top-color:var(--ink)}
+nav button+button{border-left:1px solid var(--rule)}
+.row{display:flex;gap:16px;align-items:center;min-height:56px;padding:8px 0;border-bottom:1px solid var(--rule);width:100%}
+.row:last-child{border-bottom:0}
+.row .t{flex:1;min-width:0}
+.row .t small{display:block;font-size:15px;line-height:20px;color:var(--ink2)}
+.pt{flex:none;width:48px;height:48px;border:1px solid var(--ink);display:block;background:var(--paper)}
+.pt svg,.port svg{display:block;width:100%;height:100%}
+.go{border:1px solid var(--ink);padding:12px 16px;margin-top:8px;display:block;width:100%;min-height:72px}
+.go .lab{display:flex;justify-content:space-between;margin-bottom:4px}
+.go b{font-weight:600;display:block}
+.log li{list-style:none;padding:8px 0 8px 16px;border-left:1px solid var(--rule);position:relative}
+.log li::before{content:"";position:absolute;left:-4px;top:17px;width:7px;height:7px;background:var(--paper);border:1px solid var(--ink2)}
+.log li.big::before{background:var(--ink);border-color:var(--ink)}
+.log li.you::before{background:var(--rust);border-color:var(--rust)}
+.log li.fold{color:var(--ink2);font-size:16px}
+.day{padding-top:24px}
+.day>.lab{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:8px;color:var(--ink)}
+.upd{border-left:4px solid var(--rust);padding:4px 0 4px 12px;margin:8px 0;font-size:16px;line-height:22px}
+.upd .lab{color:var(--rust-t);margin-bottom:4px}
+.gauge{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:0 8px;padding:8px 0}
+.gauge svg{grid-column:1/4;width:100%;height:24px;display:block;margin-top:4px}
+.gauge .lo{font-size:15px;color:var(--ink2)}
+.gauge .hi{font-size:15px;color:var(--ink2);text-align:right}
+.gauge .v{font:600 15px var(--mono)}
+.gauge .on{color:var(--ink);font-weight:600}
+.me{display:flex;gap:16px;padding-top:24px;align-items:flex-start}
+.port{border:1px solid var(--ink);width:112px;height:112px;flex:none}
+.big .port{width:100%;height:auto;aspect-ratio:1/1;max-width:224px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin-top:8px;font-size:16px}
+.facts dt{font:600 13px/22px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.opt{display:flex;gap:16px;align-items:stretch;width:100%;border:1px solid var(--ink);margin-top:8px;min-height:72px}
+.opt .k{flex:none;width:56px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--ink);font:700 22px var(--mono)}
+.opt .t{flex:1;padding:12px 16px 12px 0;display:flex;flex-direction:column;justify-content:center}
+.opt .t b{display:block;font-weight:600}
+.opt .t small{display:block;font:14px/20px var(--mono);color:var(--ink2);margin-top:4px}
+.opt[aria-pressed=true]{border-width:2px;margin-left:0}
+.opt[aria-pressed=true] .k{background:var(--ink);color:var(--paper)}
+.note{border-top:1px solid var(--rule);margin-top:24px;padding-top:8px;font-size:16px;color:var(--ink2)}
+.card{border:1px solid var(--ink);margin-top:16px}
+.card>.lab{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--ink);color:var(--ink)}
+.card>.lab.r{background:var(--rust);color:var(--paper);border-color:var(--rust)}
+.card .body{padding:16px}
+.card .body p:first-child{margin:0}
+.lead{font-size:20px;line-height:28px}
+.pin{display:grid;grid-template-columns:repeat(4,56px);gap:8px;margin-top:24px}
+.pin span{height:64px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 28px var(--mono)}
+.pin span.cur{border-width:2px}
+.keys{display:grid;grid-template-columns:repeat(3,1fr)}
+.keys button{height:64px;border-bottom:1px solid var(--ink);text-align:center;font:600 26px var(--mono)}
+.keys button.fn{font-size:14px;letter-spacing:.08em;color:var(--ink2)}
+.keys button:not(:nth-child(3n)){border-right:1px solid var(--ink)}
+.keys button:nth-last-child(-n+3){border-bottom:0}
+.keys button:active{background:var(--ink);color:var(--paper)}
+.err{color:var(--rust-t);font:600 15px var(--mono);min-height:24px;margin-top:16px}
+.traj{width:100%;height:40px;display:block;margin-top:16px}
+.tl{position:relative;height:16px;font:13px var(--mono);color:var(--ink2)}
+.tl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.tl span:first-child{transform:none}.tl span:last-child{transform:translateX(-100%)}
+.fleet{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--rule);margin-top:8px}
+.fleet div{min-height:72px;padding:4px 0;text-align:center;font:13px/18px var(--mono)}
+.fleet div+div{border-left:1px solid var(--rule)}
+.fleet div b{display:block;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--rule);padding-bottom:4px;margin-bottom:4px}
+.fleet div.here{outline:2px solid var(--ink);outline-offset:-1px}
+.fleet div.here b{color:var(--ink)}
+.fleet .y{color:var(--rust-t);font-weight:700}
+.stores{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);margin-top:16px}
+.stores div{padding:8px 12px}
+.stores div+div{border-left:1px solid var(--rule)}
+.stores b{display:block;font:600 22px var(--mono)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.grid2 .opt{margin:0;min-height:56px}
+.grid2 .opt .t{padding:8px 12px;display:flex;align-items:center}
+.grid2 .opt .k{width:44px;font-size:16px}
+.epi{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--rule)}
+.epi:last-child{border-bottom:0}
+.epi p{margin:4px 0 0;font-size:16px;line-height:22px}
+.tbl{display:grid;grid-template-columns:1fr auto;border-top:1px solid var(--ink);margin-top:8px}
+.tbl div{padding:8px 0;border-bottom:1px solid var(--rule);font-size:16px}
+.tbl div:nth-child(even){font:600 16px var(--mono);text-align:right}
+.off{padding:8px 16px;font:14px var(--mono);color:var(--ink2);text-align:center;border-bottom:1px solid var(--rule)}
+</style>
+</head>
+<body>
+<div id="top" hidden></div>
+<main id="v"></main>
+<div id="dock" hidden></div>
+<script>
+/*RENDER_JS*/
+const N=7;
+const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
+const COND=["Fit for duty","Injured","Sent home"];
+const KIND={3:"Fleet vote",4:"Private",5:"Anyone can answer"};
+const Q=new URLSearchParams(location.search),DQ=Q.get("day")?"?day="+encodeURIComponent(Q.get("day")):"";
+let T=null,S=null,R=null,tok="",me=-1,claimed=[],pin="",draft=null,pick={},net="live",ws=null,poll=0,lines=null;
+const $=(id)=>document.getElementById(id);
+const h=(s)=>String(s).replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const nm=(c)=>c<N?T.crew[c]:"someone";
+const pad=(n)=>String(n).padStart(2,"0");
+const ship=(c)=>T.ships[c];
+const fill=(s,a,b)=>R.fill(s,a,b);
+const first=(s)=>{const m=s.match(/^.*?[.!?](\s|$)/);return m?m[0].trim():s};
+
+async function api(path,body){
+  const o={headers:{"X-Crew-Token":tok}};
+  if(body){o.method="POST";o.body=JSON.stringify(body);o.headers["Content-Type"]="application/json"}
+  const r=await fetch(path+(path.startsWith("/api/")&&path!=="/api/login"?DQ:""),o);
+  const j=await r.json().catch(()=>({}));
+  if(r.status===401){tok="";me=-1;go("hello");throw new Error("signed out")}
+  if(!r.ok)throw new Error(j.err||"The ship didn't answer. Try again.");
+  return j;
+}
+
+// ---- live updates: WebSocket, falling back to polling ---------------------------------
+function live(){
+  try{
+    ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws");
+    ws.onmessage=(m)=>{const v=JSON.parse(m.data).v;if(S&&v!==S.v)refresh()};
+    ws.onclose=ws.onerror=()=>{ws=null;startPoll()};
+  }catch(e){startPoll()}
+}
+function startPoll(){
+  if(poll)return;net="poll";
+  poll=setInterval(async()=>{try{const j=await api("/api/v");if(S&&j.v!==S.v)refresh()}catch(e){}},15000);
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tok)refresh()});
+
+async function refresh(){
+  S=await api("/api/state");
+  lines=null;
+  view();
+}
+
+// ---- story ----------------------------------------------------------------------------
+function story(){
+  if(lines)return lines;
+  const raw=Uint8Array.from(atob(S.story),(c)=>c.charCodeAt(0));
+  R=new Renderer(T);
+  const days={};
+  for(let i=0;i+8<=raw.length;i+=8){
+    const e=Array.from(raw.slice(i,i+8)),d=e[0],code=e[1];
+    const L=days[d]||(days[d]={big:[],fold:0});
+    if(code===O.ACT&&e[6]===1&&e[4]!==0){L.fold++;continue}
+    let s;
+    // Someone else's instruction: "on your word" would read as if you gave it.
+    if(code===O.ACT&&e[3]!==S.you&&!e[6]){const k=R.t.actions;R.t.actions=k.map((x)=>({...x,you:x.owner||x.you}));s=R.entry(e);R.t.actions=k}
+    else if(code===O.DIL_OPEN&&e[3]!==S.you){R.roles.set(e[2],[e[3],NONE]);s=R.fill(T.sys.dil_open,e[3])}
+    else s=R.entry(e);
+    if(!s)continue;
+    const mine=(code===O.ACT&&e[3]===S.you)||(code===O.DIL_CLOSE&&e[3]===S.you&&!e[5]);
+    L.big.push({s:s.trim(),cls:mine?"you":[O.EVENT,O.DEC_CLOSE,O.RES_CLOSE,O.DIL_CLOSE,O.END,O.DEC_OPEN,O.RES_OPEN].includes(code)?"big":""});
+  }
+  return(lines=days);
+}
+function dayList(d,max){
+  const L=story()[d];
+  if(!L)return"<li class=fold>A quiet day.</li>";
+  let out=L.big.slice(0,max||99).map((x)=>`<li class="${x.cls}">${h(x.s)}</li>`).join("");
+  if(L.fold)out+=`<li class=fold>${L.fold===1?"One chore":L.fold+" chores"} done without being asked.</li>`;
+  return out;
+}
+// A day is normally rewritten once, the next day, as yesterday's taps arrive from
+// other ships. Only a later rewrite is news worth marking.
+function rewritten(d){const a=S.updated[d];return a&&a>=d+2&&d<S.day?a:0}
+
+// ---- drawing --------------------------------------------------------------------------
+function hash(s){let x=2166136261;for(const c of s)x=Math.imul(x^c.charCodeAt(0),16777619)>>>0;return x}
+function portrait(c){
+  const t=S?S.traits[c]:[0,0,0],k=hash(T.crew[c]),cond=S?S.cond[c]:0;
+  const INK="var(--ink)",P="var(--paper)",RU="var(--rust)";
+  const visors=[
+    `<path d="M19 25Q32 17 45 25L43 34Q32 40 21 34Z" fill="${INK}"/><path d="M23 25Q27 22 31 21.5" stroke="${P}" stroke-width="1.5" fill="none"/>`,
+    `<circle cx="32" cy="28" r="10.5" fill="${INK}"/><path d="M25.5 24Q27.5 20.5 31 19.5" stroke="${P}" stroke-width="1.5" fill="none"/>`,
+    `<rect x="17.5" y="23" width="29" height="9" fill="${INK}"/><path d="M21 25.5H29" stroke="${P}" stroke-width="1.5"/>`,
+    `<path d="M20 22H44V30Q32 37 20 30Z" fill="${INK}"/><path d="M23 24.5H28" stroke="${P}" stroke-width="1.5"/>`];
+  let g=`<path d="M6 64C7 52 18 47.5 32 47.5S57 52 58 64" fill="${P}" stroke="${INK}" stroke-width="1.5"/>`;
+  g+=`<path d="M20 47.5L22 64M44 47.5L42 64" stroke="${INK}" stroke-width="1"/>`;
+  g+=`<rect x="${k&1?37:22}" y="52" width="6" height="6" fill="${c===T.flagship?RU:"none"}" stroke="${INK}" stroke-width="1"/>`;
+  g+=`<path d="M20.5 46H43.5V49H20.5Z" fill="${P}" stroke="${INK}" stroke-width="1.5"/>`;
+  g+=`<circle cx="32" cy="28" r="17" fill="${P}" stroke="${INK}" stroke-width="1.5"/>`;
+  if(t[2]>15)g+=`<path d="M17.6 21A17 17 0 0 1 46.4 21" stroke="${RU}" stroke-width="3" fill="none"/>`;
+  else if(t[2]<-15)g+=`<path d="M15 31H17.5M46.5 31H49" stroke="${INK}" stroke-width="2.5"/>`;
+  g+=visors[(k>>>3)%4];
+  if(t[1]>15)g+=`<path d="M41 13.5L46 4" stroke="${INK}" stroke-width="1.5"/><rect x="44.5" y="2" width="3.5" height="3.5" fill="${INK}"/>`;
+  else if(t[1]<-15)g+=`<path d="M23.5 13.3H40.5" stroke="${INK}" stroke-width="1"/>`;
+  if(t[0]>15)g+=`<path d="M17 36L20 34.5M18.5 39L21.5 37.5" stroke="${INK}" stroke-width="1"/>`;
+  else if(t[0]<-15)g+=`<circle cx="32" cy="28" r="14.5" fill="none" stroke="${INK}" stroke-width=".75" stroke-dasharray="1.5 1.5"/>`;
+  if(cond===1)g+=`<path d="M43 37L49 41M43.5 41L48.5 36.5" stroke="${RU}" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"${cond===2?' opacity=".4"':""}>${g}</svg>`;
+}
+function ticks(v,n){
+  // n ticks either side of zero, filled from the centre to the value.
+  const W=2*n,on=Math.round(Math.abs(v)/100*n)*Math.sign(v);
+  let s="";
+  for(let i=-n;i<=n;i++){
+    const x=(i+n)/W*96+2,lit=i===0||(on>0&&i>0&&i<=on)||(on<0&&i<0&&i>=on);
+    const y=i===0?2:lit?6:12;
+    s+=`<line x1="${x.toFixed(2)}" x2="${x.toFixed(2)}" y1="${y}" y2="22" stroke="var(--${lit?"ink":"graph"})" stroke-width="${lit?1.6:.8}" vector-effect="non-scaling-stroke"/>`;
+  }
+  return `<svg viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="100" y1="22" y2="22" stroke="var(--ink)" stroke-width="1" vector-effect="non-scaling-stroke"/>${s}</svg>`;
+}
+function meter(v){
+  // 0-100 as 20 ticks filled from the left (no bars: tick gauges only).
+  let s="";
+  for(let i=0;i<=20;i++){const x=i*4.8+2,lit=i>0&&i*5<=v;s+=`<line x1="${x.toFixed(2)}" x2="${x.toFixed(2)}" y1="${lit?6:i%5?14:10}" y2="22" stroke="var(--${lit?"ink":"graph"})" stroke-width="${lit?1.6:.8}" vector-effect="non-scaling-stroke"/>`}
+  return `<svg viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="100" y1="22" y2="22" stroke="var(--ink)" stroke-width="1" vector-effect="non-scaling-stroke"/>${s}</svg>`;
+}
+function gauge(c,a){
+  const v=S.traits[c][a],w=Math.abs(v)<8?"Even":POLES[a][v>0?1:0];
+  return `<div class=gauge role=img aria-label="${POLES[a][0]} to ${POLES[a][1]}: ${w}"><span class="lo ${v<-7?"on":""}">${POLES[a][0]}</span><span class=v>${v>0?"+":""}${v}</span><span class="hi ${v>7?"on":""}">${POLES[a][1]}</span>${ticks(v,10)}</div>`;
+}
+function traj(){
+  const d=S.day,L=S.season,x=(n)=>8+n/L*(100-16);
+  let s=`<line x1="${x(0)}" x2="${x(d)}" y1="24" y2="24" stroke="var(--ink)" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+  s+=`<line x1="${x(d)}" x2="${x(L)}" y1="24" y2="24" stroke="var(--graph)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`;
+  for(let i=0;i<=L;i+=7)s+=`<line x1="${x(i)}" x2="${x(i)}" y1="${i%14?20:17}" y2="28" stroke="var(--ink)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  return `<div style="position:relative"><svg class=traj viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">${s}<line x1="${x(d)}" x2="${x(d)}" y1="10" y2="34" stroke="var(--rust)" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>
+  <div class=tl><span style="left:0">EARTH</span><span style="left:${x(14)}%">FD 14</span><span style="left:${x(28)}%">FD 28</span><span style="left:100%">MARS</span></div></div>`;
+}
+
+// ---- screens --------------------------------------------------------------------------
+function bar(l,r){$("top").hidden=false;$("top").innerHTML=`<b>${l}</b><span>${r}</span>`}
+function dock(html,tabs){
+  const d=$("dock");
+  d.hidden=!html&&!tabs;
+  d.innerHTML=(html?`<div class=act>${html}</div>`:"")+(tabs?`<nav>${["home","crew","log"].map((t)=>`<button data-go="${t}"${tabs===t?" aria-current=page":""}>${t.toUpperCase()}</button>`).join("")}</nav>`:"");
+  $("v").className=html&&tabs?"":tabs||html?"short":"nodock";
+}
+function shipTop(){bar(`${ship(S.you).toUpperCase()}`,`FD ${pad(S.day)}/${S.season}`)}
+function actDock(){
+  if(S.cond[S.you]===2)return `<div class=done><span class=dim>${h(nm(S.you))} is on the capsule home. Votes still count.</span></div>`;
+  if(S.act){const [a,p,tg]=S.act;return `<div class=done><span><b>Logged:</b> ${h(actLabel(a,p,tg))}</span><span class=dim>Takes effect FD ${pad(S.day+1)}. One a day.</span></div>`}
+  return `<button class="btn pri" data-go="act"><span>Instruct ${h(nm(S.you))}</span><i>1/day</i></button>`;
+}
+function actLabel(a,p,tg){
+  if(a===0)return `Give ${nm(tg)} a gift`;
+  if(a===1)return `Try to be ${T.axis_words[p][tg?0:1]}`;
+  if(a===2)return `Work on ${T.res_words[p]}`;
+  return "Rest";
+}
+function openRow(o){
+  const c=T.cards[o.card],last=o.close-1;
+  const when=last<=S.day?"Last day":`To FD ${pad(last)}`;
+  const tag=o.mine!=null?"Answered":when;
+  return `<button class=go data-go="item/${o.card}"><span class="lab ${o.type===4?"r":""}"><span>${KIND[o.type]}</span><span>${tag}</span></span><b>${h(first(fill(c.t,o.a,o.b)))}</b></button>`;
+}
+function home(){
+  if(S.ending!==NONE)return ending();
+  shipTop();
+  const here=[...Array(N).keys()].filter((c)=>S.loc[c]===S.you&&S.cond[c]!==2);
+  const away=S.loc[S.you]!==S.you;
+  const since=[];for(let d=Math.max(1,S.last+1);d<S.day;d++)since.push(d);
+  const rw=since.filter(rewritten);
+  let o=`<div class=kick><div class=lab>Flight day</div><h1 class=m>${pad(S.day)} <span class=dim style="font-weight:400">/ ${S.season}</span></h1>
+  <p class=dim>${S.season-S.day} days to Mars orbit.</p>${traj()}</div>`;
+  if(S.open.length)o+=`<section><div class=lab><span>Needs you</span><span>${S.open.length}</span></div>${S.open.map(openRow).join("")}</section>`;
+  o+=`<section><div class=lab><span>Who's where</span><span>${N-S.cond.filter((c)=>c===2).length} flying</span></div><div class=fleet>${[...Array(N).keys()].map((s)=>`<div class="${s===S.you?"here":""}"><b>${pad(s+1)}</b>${[...Array(N).keys()].filter((c)=>S.loc[c]===s&&S.cond[c]!==2).map((c)=>`<span class="${c===S.you?"y":""}">${h(nm(c).slice(0,3).toUpperCase())}</span>`).join("<br>")}</div>`).join("")}</div>`;
+  o+=here.map((c)=>`<button class=row data-go="${c===S.you?"crew":"crew/"+c}"><span class=pt>${portrait(c)}</span><span class=t>${h(nm(c))}<small>${c===S.you?"Your astronaut":"Visiting from "+h(ship(c))}${S.cond[c]===1?" · injured":""}</small></span></button>`).join("");
+  if(!here.length)o+=`<div class=row><span class="t dim">Nobody aboard ${h(ship(S.you))} right now.</span></div>`;
+  if(away)o+=`<button class=row data-go="crew"><span class=pt>${portrait(S.you)}</span><span class=t>${h(nm(S.you))}<small>Your astronaut · visiting ${h(ship(S.loc[S.you]))}</small></span></button>`;
+  o+=`</section><section><div class=lab><span>Today</span><span>FD ${pad(S.day)}</span></div><ul class=log>${dayList(S.day)}</ul></section>`;
+  if(since.length){
+    o+=`<section><div class=lab><span>Since your last visit</span><span>FD ${pad(since[0])}–${pad(since[since.length-1])}</span></div><ul class=log>`;
+    for(const d of since.slice().reverse())o+=dayList(d,2);
+    o+=`</ul>${rw.length?`<p class=upd><span class=lab style="display:block">Log updated</span>Late signals re-ran ${rw.length===1?"FD "+pad(rw[0]):rw.length+" days"}. Marked in the log.</p>`:""}<button class="btn sec" style="margin-top:16px" data-go="log"><span>Full log</span><i>${S.day} days</i></button></section>`;
+  }
+  o+=`<section><div class=lab><span>Fleet stores</span><span>shared</span></div><div class=stores>${T.res.map((r,i)=>`<div><span class=lab>${r}</span><b>${S.res[i]}</b></div>`).join("")}</div></section>`;
+  $("v").innerHTML=o;
+  dock(actDock(),"home");
+}
+function bondWord(b){return b>=40?"Close":b>=15?"Friendly":b>-15?"Neutral":b>-40?"Prickly":"At odds"}
+function crew(c){
+  const mine=c===S.you||c==null;c=mine?S.you:c;
+  shipTop();
+  let o=`<div class=me><span class=port>${portrait(c)}</span><div><div class=lab>${mine?"Your astronaut":h(ship(c))}</div><h1>${h(nm(c))}</h1>
+  <dl class=facts><dt>Ship</dt><dd>${h(ship(c))}${c===T.flagship?" · flagship":""}</dd><dt>Aboard</dt><dd>${S.loc[c]===c?"Home ship":h(ship(S.loc[c]))}</dd><dt>Status</dt><dd>${COND[S.cond[c]]}</dd></dl></div></div>`;
+  o+=`<section><div class=lab><span>Character</span><span>−100 / +100</span></div>${[0,1,2].map((a)=>gauge(c,a)).join("")}</section>`;
+  o+=`<section><div class=lab><span>Morale</span><span>${S.morale[c]}</span></div><div class=gauge style="padding-top:0"><span class=lo>Low</span><span></span><span class=hi>High</span>${meter(S.morale[c])}</div></section>`;
+  if(mine){
+    const ord=[...Array(N).keys()].filter((j)=>j!==c).sort((a,b)=>S.bonds[b]-S.bonds[a]);
+    o+=`<section><div class=lab><span>Crewmates</span><span>bond</span></div>`+ord.map((j)=>`<button class=row data-go="crew/${j}"><span class=pt>${portrait(j)}</span><span class=t>${h(nm(j))}<small>${bondWord(S.bonds[j])}${S.cond[j]===2?" · sent home":""}</small></span><span class=m style="width:88px;height:24px">${ticks(S.bonds[j],5)}</span></button>`).join("")+`</section>`;
+  }
+  const mentions=[];
+  for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if(x.s.includes(nm(c))&&mentions.length<3)mentions.push([d,x.s]);
+  o+=`<section><div class=lab><span>Lately</span></div><ul class=log>${mentions.map(([d,s])=>`<li><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(s)}</li>`).join("")||"<li class=fold>Nothing logged yet.</li>"}</ul></section>`;
+  $("v").innerHTML=o;
+  dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to ${h(nm(S.you))}</span><i>←</i></button>`,"crew");
+}
+function log(){
+  shipTop();
+  let o=`<div class=kick><div class=lab>Voyage log · ${h(ship(S.you))}</div><h2>${S.day} days, newest first</h2></div>`;
+  for(let d=S.day;d>=1;d--){
+    const a=rewritten(d);
+    o+=`<div class=day id="d${d}"><div class=lab><span>Flight day ${pad(d)}</span>${d>=S.day-1?`<span class=dim>${d===S.day?"Today · ":""}may still change</span>`:""}</div>`;
+    if(a)o+=`<div class=upd><div class=lab>Log updated FD ${pad(a)}</div>A late signal reached this ship and the day was re-run. Below is what happened.</div>`;
+    o+=`<ul class=log>${dayList(d)}</ul></div>`;
+  }
+  $("v").innerHTML=o;
+  dock("","log");
+}
+function item(card){
+  const o=S.open.find((x)=>x.card===card);
+  if(!o)return go("home");
+  shipTop();
+  const c=T.cards[card],chosen=pick[card]!=null?pick[card]:o.mine;
+  const ballots=o.tally.reduce((a,b)=>a+b,0),last=o.close-1;
+  const head={3:["Fleet vote","Every ship gets one ballot."],4:["Private",`Only you see this. You look after ${nm(o.a)}.`],5:["Anyone can answer","One tap from any ship is enough."]}[o.type];
+  let x=`<div class=card><div class="lab ${o.type===4?"r":""}"><span>${head[0]}</span><span>${last<=S.day?"Last day":"To FD "+pad(last)}</span></div><div class=body><p class=lead>${h(fill(c.t,o.a,o.b))}</p><p class=dim style="font-size:16px">${h(head[1])}</p></div></div>`;
+  x+=`<section style="padding-top:16px">`+c.o.map((op,i)=>{
+    let sub=o.type===3?`${o.tally[i]} ballot${o.tally[i]===1?"":"s"} in`:"";
+    if(i===o.lean)sub+=(sub?" · ":"")+(o.type===4?`${nm(o.a)} leans this way`:o.type===5?"Happens if nobody answers":"The crew leans this way");
+    if(o.mine===i)sub+=(sub?" · ":"")+"your answer";
+    return `<button class=opt data-pick="${card}:${i}" aria-pressed="${chosen===i}"><span class=k>${"ABCD"[i]}</span><span class=t><b>${h(fill(op[0],o.a,o.b))}</b>${sub?`<small>${h(sub)}</small>`:""}</span></button>`;
+  }).join("")+`</section>`;
+  const why={3:`Votes close at the end of FD ${pad(last)}. Most ballots win; a tie or no ballots goes the way the crew leans. Ballots reach other ships as they pass, so counts here may be behind.`,
+    4:`If you don't answer by the end of FD ${pad(last)}, ${nm(o.a)} decides alone, in character. Nobody else is told what you picked.`,
+    5:`Any ship can answer until the end of FD ${pad(last)}. ${ballots?ballots+" already have.":"Nobody has yet."}`}[o.type];
+  x+=`<p class=note>${h(why)}</p>`;
+  $("v").innerHTML=x;
+  const verb={3:"Cast ballot",4:"Send answer",5:"Answer"}[o.type];
+  const changed=chosen!=null&&chosen!==o.mine;
+  dock(o.mine!=null&&!changed?`<div class=done><span><b>Sent:</b> ${h(fill(c.o[o.mine][0],o.a,o.b))}</span><span class=dim>Tap another option to change it until FD ${pad(last)}.</span></div>`:
+    `<button class="btn pri" data-send="${card}"${chosen==null?" disabled":""}><span>${verb}</span><i>${chosen==null?"pick one":"ABCD"[chosen]}</i></button>`,"home");
+}
+function actSheet(){
+  if(S.act)return go("home");
+  $("top").hidden=false;$("top").innerHTML=`<b>INSTRUCTION</b><button data-go="home" class=m style="height:48px;padding:0 0 0 16px;font-size:15px;text-decoration:underline">Cancel</button>`;
+  const d=draft||(draft={a:null,p:null,t:null});
+  const A=nm(S.you);
+  const acts=[["Give a gift","Bond with one crewmate"],["Give advice","Nudge "+A+"'s character"],["Set a task","Top up a fleet store"],["Rest","Morale back up"]];
+  let o=`<div class=kick><div class=lab>One a day · takes effect FD ${pad(S.day+1)}</div><h2>What should ${h(A)} do?</h2></div><section style="padding-top:8px">`;
+  o+=acts.map(([l,s],i)=>d.a!=null&&d.a!==i?"":`<button class=opt data-act="${d.a===i?"x":i}" aria-pressed="${d.a===i}"><span class=k>${i+1}</span><span class=t><b>${l}</b><small>${h(d.a===i?"Tap to choose something else":s)}</small></span></button>`).join("");
+  o+=`</section>`;
+  if(d.a===0){
+    const mates=[...Array(N).keys()].filter((j)=>j!==S.you&&S.cond[j]!==2);
+    o+=`<section><div class=lab><span>To whom</span></div><div class=grid2>${mates.map((j)=>`<button class=opt data-sub="t:${j}" aria-pressed="${d.t===j}"><span class=k>${pad(j+1)}</span><span class=t>${h(nm(j))}</span></button>`).join("")}</div></section>`;
+  }else if(d.a===1){
+    o+=`<section><div class=lab><span>Try to be</span></div><div class=grid2>${[0,1,2].flatMap((p)=>[1,0].map((dir)=>`<button class=opt data-sub="p:${p}:${dir}" aria-pressed="${d.p===p&&d.t===dir}"><span class=k>${dir?"+":"−"}</span><span class=t>${h(T.axis_words[p][dir?0:1])}</span></button>`)).join("")}</div></section>`;
+  }else if(d.a===2){
+    o+=`<section><div class=lab><span>Work on</span></div>${[0,1,2].map((p)=>`<button class=opt data-sub="p:${p}" aria-pressed="${d.p===p}"><span class=k>${T.res[p][0].toUpperCase()}</span><span class=t><b>${h(T.res_words[p])}</b><small>${T.res[p]} now ${S.res[p]}</small></span></button>`).join("")}</section>`;
+  }
+  $("v").innerHTML=o;
+  const ok=d.a===3||(d.a===0&&d.t!=null)||(d.a===1&&d.p!=null)||(d.a===2&&d.p!=null);
+  if(ok)$("v").insertAdjacentHTML("beforeend",`<p class=note><b style="color:var(--ink)">${h(actLabel(d.a,d.p,d.t))}.</b> ${h(A)} does it on FD ${pad(S.day+1)}.</p>`);
+  dock(`<button class="btn pri" data-send="act"${ok?"":" disabled"}><span>Log instruction</span><i>${ok?"FD "+pad(S.day+1):"choose"}</i></button>`,"");
+}
+function ending(){
+  bar("ARRIVAL",`FD ${S.season}/${S.season}`);
+  const c=T.cards[S.ending],E=T.epi||{};
+  let dec=0,res=0,notes=0,acts=0;
+  const b=Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0));
+  for(let i=0;i<b.length;i+=8){const k=b[i+1];dec+=k===O.DEC_CLOSE;res+=k===O.RES_CLOSE;notes+=k===O.NOTE;acts+=k===O.ACT&&b[i+6]===0}
+  const rw=Object.keys(S.updated).filter((d)=>rewritten(+d)).length;
+  const ttl=first(c.t),rest=c.t.slice(ttl.length).trim();
+  let o=`<div class=kick><div class=lab>Mission report · ${h(ship(S.you))}</div><h1>${h(ttl.replace(/\.$/,""))}</h1><p class=lead>${h(rest)}</p></div>`;
+  o+=`<section><div class=lab><span>The voyage</span><span>${S.season} days</span></div><div class=tbl><div>Fleet votes settled</div><div>${dec}</div><div>Calls for help answered</div><div>${res}</div><div>Instructions followed</div><div>${acts}</div><div>Notes passed</div><div>${notes}</div><div>Days re-run by late signals</div><div>${rw}</div></div></section>`;
+  const lost=S.cond.filter((x)=>x===2).length;
+  o+=`<section><div class=lab><span>The crew</span><span>${N-lost} of ${N} landed</span></div><p class=dim style="margin:0 0 8px">${h((E.head||["",""])[lost?1:0])}</p>`;
+  o+=[...Array(N).keys()].map((k)=>{
+    const t=S.traits[k];let a=0;for(let i=1;i<3;i++)if(Math.abs(t[i])>Math.abs(t[a]))a=i;
+    const l1=Math.abs(t[a])<20?E.plain:E.axis[a][t[a]>0?0:1];
+    const l2=R.fill(E.bond||"",NONE,NONE,{T:nm(S.best[k])});
+    return `<div class=epi><span class=pt style="width:56px;height:56px">${portrait(k)}</span><div><b>${h(nm(k))}</b> <span class="m dim" style="font-size:14px">${h(ship(k))}</span><p>${h(l1)} ${h(l2)}</p></div></div>`;
+  }).join("")+`</section>`;
+  $("v").innerHTML=o;
+  dock(`<button class="btn sec" data-go="log"><span>Read the whole log</span><i>${S.season} days</i></button>`,"home");
+}
+
+// ---- first run ------------------------------------------------------------------------
+function hello(){
+  bar("THE LONG VOYAGE","7 SHIPS");
+  let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Seven ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
+  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span><span class="lab">${claimed[c]?"Code":"New"}</span></button>`).join("");
+  $("v").innerHTML=o+`</section>`;
+  dock("","");
+}
+function portraitBare(c){const s=S;S=null;const r=portrait(c);S=s;return r}
+function pinScreen(err){
+  const isNew=!claimed[me];
+  bar(h(ship(me).toUpperCase()),isNew?"STEP 2 OF 3":"SIGN IN");
+  let o=`<div class=kick><div class=lab>${h(nm(me))}</div><h2>${isNew?"Choose a 4-digit crew code":"Your crew code"}</h2><p class=dim>${isNew?"You'll type it each time you open the ship. It stays on this ship; no email, no account.":"The 4 digits you picked the first time."}</p>`;
+  o+=`<div class=pin aria-live=polite>${[0,1,2,3].map((i)=>`<span class="${i===pin.length?"cur":""}">${pin[i]?"•":""}</span>`).join("")}</div><div class=err>${err?h(err):""}</div></div>`;
+  $("v").innerHTML=o;
+  dock(`<div class=keys style="margin:-8px -16px">${["1","2","3","4","5","6","7","8","9","BACK","0","DEL"].map((k)=>`<button class="${k.length>1?"fn":""}" data-key="${k}" aria-label="${k}">${k}</button>`).join("")}</div>`,"");
+  $("v").className="nodock";$("v").style.paddingBottom="calc(280px + var(--sb))";
+}
+function meet(){
+  bar(h(ship(S.you).toUpperCase()),"STEP 3 OF 3");
+  const A=nm(S.you);
+  let o=`<div class="kick big"><div class=lab>Your astronaut</div><div style="display:flex;gap:16px;align-items:flex-end;margin-top:8px"><span class=port style="width:152px;height:152px">${portrait(S.you)}</span><div><h1>${h(A)}</h1><p class=dim style="margin-top:0">${h(ship(S.you))}${S.you===T.flagship?" · flagship":""}</p></div></div>`;
+  o+=`<p>Once a day you can give ${h(A)} one instruction. Everything else, ${h(A)} decides. The voyage carries on while you're away.</p></div>`;
+  o+=`<section><div class=lab><span>Starting character</span></div>${[0,1,2].map((a)=>gauge(S.you,a)).join("")}</section>`;
+  $("v").innerHTML=o;
+  dock(`<button class="btn pri" data-go="home"><span>Go aboard</span><i>FD ${pad(S.day)}</i></button>`,"");
+}
+
+// ---- routing & input ------------------------------------------------------------------
+let route="hello";
+function go(r){if(r!==route){route=r;history.replaceState(null,"","#"+r);scrollTo(0,0)}view()}
+function view(){
+  $("v").style.paddingBottom="";
+  if(!tok&&!["hello","pin"].includes(route))route="hello";
+  const [a,b]=route.split("/");
+  try{
+    if(a==="hello")return hello();
+    if(a==="pin")return pinScreen();
+    if(!S)return;
+    if(a==="meet")return meet();
+    if(a==="crew")return crew(b!=null?+b:null);
+    if(a==="log")return log();
+    if(a==="item")return item(+b);
+    if(a==="act")return actSheet();
+    if(a==="end")return S.ending!==NONE?ending():home();
+    return home();
+  }finally{if(net==="poll"&&tok)$("v").insertAdjacentHTML("afterbegin","<div class=off>Live link down · checking every 15 s</div>")}
+}
+async function key(k){
+  if(k==="BACK"){pin="";return go("hello")}
+  if(k==="DEL")pin=pin.slice(0,-1);
+  else if(pin.length<4)pin+=k;
+  pinScreen();
+  if(pin.length===4){
+    const isNew=!claimed[me];
+    try{
+      const j=await api("/api/login",{crew:me,pin});
+      tok=j.token;pin="";claimed[me]=true;
+      await refresh();live();
+      go(isNew?"meet":"home");
+    }catch(e){pin="";pinScreen(e.message)}
+  }
+}
+document.addEventListener("click",async(ev)=>{
+  const el=ev.target.closest("button");if(!el||el.disabled)return;
+  const D=el.dataset;
+  if(D.go){if(D.go==="act")draft=null;return go(D.go)}
+  if(D.who){me=+D.who;pin="";return go("pin")}
+  if(D.key)return key(D.key);
+  if(D.pick){const [c,i]=D.pick.split(":").map(Number);pick[c]=i;return view()}
+  if(D.act){draft={a:D.act==="x"?null:+D.act,p:null,t:null};return view()}
+  if(D.sub){const p=D.sub.split(":");if(p[0]==="t")draft.t=+p[1];else{draft.p=+p[1];if(p[2]!=null)draft.t=+p[2]}return view()}
+  if(D.send){
+    el.disabled=true;
+    try{
+      if(D.send==="act"){const d=draft;await api("/api/act",{act:d.a,param:d.p||0,tgt:d.t||0});draft=null;await refresh();return go("home")}
+      const c=+D.send,o=S.open.find((x)=>x.card===c);
+      await api(o.type===4?"/api/answer":"/api/vote",{card:c,opt:pick[c]});
+      delete pick[c];await refresh();
+    }catch(e){el.disabled=false;alert(e.message)}
+  }
+});
+(async()=>{
+  T=await (await fetch("/text.json")).json();
+  R=new Renderer(T);
+  try{claimed=(await (await fetch("/api/crew"+DQ)).json()).claimed}catch(e){}
+  view();
+})();
+</script>
+</body>
+</html>
