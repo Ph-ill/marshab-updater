@@ -10,6 +10,7 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
+from lv import codes as K               # noqa: E402
 from lv import record as R              # noqa: E402
 from lv.chlog import ChoiceLog, NEW, DUP, REPLACED, STALE, BAD  # noqa: E402
 from lv.prng import Rng, day_seed       # noqa: E402
@@ -74,6 +75,24 @@ class TestMerge(unittest.TestCase):
         self.assertEqual(log.merge(a), STALE)
         self.assertEqual(log.merge(b[:-1] + bytes([b[-1] ^ 1])), BAD)
         self.assertEqual(len(log), 1)
+        # The log packs records into one bytearray per shard: a replacement is
+        # overwritten in place and every read hands back an immutable copy.
+        self.assertEqual(log.all_records(), [b])
+        self.assertEqual(log.get(R.key(b)), b)
+        self.assertIsInstance(log.get(R.key(b)), bytes)
+        self.assertEqual(len(log.buf[R.key(b) >> 19]), R.LEN)
+        self.assertEqual(list(log.values()), [b])
+
+    def test_replace_moves_effective_day(self):
+        log = ChoiceLog(FK)
+        a = R.encode(FK, R.ACTION, 2, 1, 5, 4, 0, 0, 1)   # delay 1: effective day 5
+        b = R.encode(FK, R.ACTION, 2, 3, 6, 4, 1, 2, 0)   # same key, delay 3: day 7
+        if R.key(a) != R.key(b):
+            self.skipTest("delay is part of the key in this record format")
+        log.merge(a)
+        self.assertEqual(log.merge(b), REPLACED)
+        self.assertEqual(log.effective(R.eff_day(a)), [])
+        self.assertEqual(log.effective(R.eff_day(b)), [b])
 
     def test_two_votes_same_day_both_kept(self):
         log = ChoiceLog(FK)
@@ -85,9 +104,10 @@ class TestMerge(unittest.TestCase):
         rnd = random.Random(3)
         recs = []
         for i in range(300):
-            recs.append(R.encode(FK, rnd.choice((R.ACTION, R.VOTE, R.NOTE)), rnd.randrange(7),
+            # Authors and targets over the whole fleet (K.N ships), the eighth included.
+            recs.append(R.encode(FK, rnd.choice((R.ACTION, R.VOTE, R.NOTE)), rnd.randrange(K.N),
                                  rnd.choice((1, 3)), rnd.randrange(4), rnd.randrange(1, 8),
-                                 rnd.randrange(3), rnd.randrange(2), rnd.randrange(7)))
+                                 rnd.randrange(3), rnd.randrange(2), rnd.randrange(K.N)))
         digests = set()
         for _ in range(5):
             rnd.shuffle(recs)
@@ -183,7 +203,7 @@ class TestCodes(unittest.TestCase):
         self.assertEqual(b.check(0, "1235", 0), (K.WRONG, 4))
         self.assertEqual(b.check(1, "1234", 0), (K.WRONG, 4))   # codes are per person
         self.assertEqual(b.check(2, "1234", 0), (K.NO_CODE, 0))
-        self.assertEqual(b.check(7, "1234", 0), (K.BAD, 0))
+        self.assertEqual(b.check(K.N, "1234", 0), (K.BAD, 0))
         self.assertEqual(b.check(0, "12a4", 0), (K.BAD, 0))
         self.assertEqual(b.check(0, "123", 0), (K.BAD, 0))
 

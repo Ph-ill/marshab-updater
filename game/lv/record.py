@@ -9,7 +9,9 @@
 #
 # Merge key: (authored day, ship, kind, sub). sub is payload a for votes and dilemmas
 # (the card being answered) and 0 otherwise, so one ship can answer two open
-# decisions on the same day. Same key: higher seq wins; equal seq: larger bytes win.
+# decisions on the same day. For gifts sub is mode << 3 | target, so a ship can give
+# one thing, ask for one thing and answer an ask, to each crewmate, per day.
+# Same key: higher seq wins; equal seq: larger bytes win.
 try:
     from hashlib import sha256
 except ImportError:  # pragma: no cover
@@ -22,8 +24,10 @@ ACTION = 1   # a = action (0 gift, 1 advice, 2 task, 3 rest), b = param, c = tar
 VOTE = 2     # a = card index of the decision, b = option index
 DILEMMA = 3  # a = card index of the dilemma, b = option index
 NOTE = 4     # a = preset line (0..2), b = target crew
+GIFT = 5     # a = gift item, b = target crew, c = mode (0 give, 1 ask for, 2 answer an ask)
+GIFT_GIVE, GIFT_ASK, GIFT_ANSWER = 0, 1, 2
 
-ADMIN_SHIP = 7
+ADMIN_SHIP = 15  # outside the crew range 0..7; the author field is 4 bits (0..15)
 
 
 def hmac_sha256(key, msg):
@@ -81,6 +85,11 @@ def eff_day(rec):
 
 def key(rec):
     k = rec[0] >> 4
-    sub = rec[5] if (k == VOTE or k == DILEMMA) else 0
+    if k == VOTE or k == DILEMMA:
+        sub = rec[5]
+    elif k == GIFT:
+        sub = ((rec[7] & 3) << 3) | (rec[6] & 7)
+    else:
+        sub = 0
     # Integer key sorts by authored day, then ship, kind, sub.
     return (rec[4] << 16) | ((rec[1] >> 4) << 12) | (k << 8) | sub

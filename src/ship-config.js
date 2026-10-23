@@ -8,7 +8,7 @@ export function defaultShipName(id, pattern = 'Starship-{nn}'){
 
 // Hotspot: the firmware default is WPA2 (config.AP_PASSWORD). A blank password here keeps that default;
 // a new password must be 8-63 characters; an open network has to be asked for explicitly.
-export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotspot_open, role }, { count = 7, roles = [] } = {}){
+export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotspot_open, role, led_notify }, { count = 8, roles = [] } = {}){
   const id = Number.parseInt(ship_id, 10);
   if(!Number.isInteger(id) || id < 1 || id > count) throw new Error(`ship number must be 1-${count}`);
   const name = String(ship_name || '').trim() || defaultShipName(id);
@@ -20,7 +20,9 @@ export function validateShipConfig({ ship_id, ship_name, hotspot_password, hotsp
   if(/[\x00-\x1f\x7f]/.test(pw)) throw new Error('hotspot password cannot contain control characters');
   const r = String(role || '').toUpperCase();
   if(r && !roles.includes(r)) throw new Error(`bench role must be one of ${roles.join(', ') || '(none for this release)'}`);
-  const cfg = { schema: 2, ship_id: id, ship_name: name, role: r || null, hotspot_open: open };
+  // led_notify: the game blinks the Pico W's onboard LED while something waits for this crew member.
+  // Off unless ticked; older firmware ignores the key.
+  const cfg = { schema: 2, ship_id: id, ship_name: name, role: r || null, hotspot_open: open, led_notify: !!led_notify };
   if(pw) cfg.hotspot_password = pw;
   return cfg;
 }

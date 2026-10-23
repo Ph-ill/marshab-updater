@@ -1,0 +1,21 @@
+{
+  "_doc": "Crewmate gifts and asks, sent as GIFT records (lv/record.py) and merged like any choice. give = can be sent unasked, ask = can be asked for. {A} sender, {T} receiver, {item}. The order of items is part of the record format: append only, never reorder. STUBS: the content pass replaces these.",
+  "items": [
+    {"n": "a pouch of real coffee", "give": 1, "ask": 0},
+    {"n": "a square of chocolate", "give": 1, "ask": 0},
+    {"n": "a playlist from home", "give": 1, "ask": 0},
+    {"n": "a printed photo of Earth", "give": 1, "ask": 0},
+    {"n": "a bottle of hot sauce", "give": 1, "ask": 1},
+    {"n": "a spare 5 A fuse", "give": 1, "ask": 1},
+    {"n": "a calibrated torque wrench", "give": 1, "ask": 1},
+    {"n": "a bag of zip ties", "give": 1, "ask": 1},
+    {"n": "the good multimeter", "give": 1, "ask": 1},
+    {"n": "a roll of Kapton tape", "give": 1, "ask": 1}
+  ],
+  "sys": {
+    "give": "{A} sends {T} {item} on the next cargo transfer.",
+    "ask": "{A} asks {T} for {item}.",
+    "answer": "{A} sends {T} {item}, as asked."
+  },
+  "ask_days": 3
+}

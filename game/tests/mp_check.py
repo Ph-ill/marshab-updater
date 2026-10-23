@@ -3,7 +3,8 @@
 # after every flight day with build/season_expect.txt written by CPython.
 # It merges the log twice, in authored order and reversed, to show order doesn't matter.
 #
-#   micropython -X heapsize=96k tests/mp_check.py     (from game/)
+#   micropython -X heapsize=128k tests/mp_check.py    (from game/; 64-bit unix port)
+#   micropython32 -X heapsize=96k tests/mp_check.py   (32-bit build, like the Pico's)
 import sys
 import gc
 
@@ -39,8 +40,9 @@ pack = load("build/pack.bin")
 m_pack = mem() - m_code
 with open("build/season_log.bin", "rb") as f:
     raw = f.read()
-recs = [raw[i:i + R.LEN] for i in range(0, len(raw), R.LEN)]
-raw = None
+# Kept as the one bytes object it was read as: the log packs what it merges (lv/chlog.py),
+# so a list of 13-byte objects here would only measure the test, not the board.
+n_recs = len(raw) // R.LEN
 expect = [ln.strip() for ln in open("build/season_expect.txt") if ln.strip()]
 
 ok = True
@@ -50,11 +52,11 @@ for order in ("authored", "reversed"):
     log = st = eng = seq = None
     m0 = mem()
     log = ChoiceLog(FLEET_KEY)
-    seq = recs if order == "authored" else list(reversed(recs))
+    seq = range(n_recs) if order == "authored" else range(n_recs - 1, -1, -1)
     t0 = ticks()
     bad = 0
-    for r in seq:
-        if log.merge(r) <= 0:
+    for i in seq:
+        if log.merge(raw[i * R.LEN:(i + 1) * R.LEN]) <= 0:
             bad += 1
     t_merge = diff(ticks(), t0)
     m_log = mem() - m0

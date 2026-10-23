@@ -1,0 +1,192 @@
+# Cliffhangers. A `hook` is the last line of its flight day; its resolver (`due`,
+# `when fired <hook>`) opens the next day. The engine spaces hooks >= 4 days apart.
+# Resolutions: mostly satisfying, sometimes ominous, never "it was nothing".
+# All hooks share hook_who to carry the astronaut over; they never overlap.
+# House style: content/STYLE.md.
+
+# --- 1. The missed knock (late clock) -------------------------------------------
+card h_band
+type event
+cat grim
+hook
+once
+days 33 35
+weight 60
+roles A
+when cond A ok
+when home A
+when fired m_flash2
+when is A ow_hail
+do who hook_who A
+text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty, out loud now, to an empty cabin, and the next knock doesn't come.
+
+# --- 2. Cabin pressure -------------------------------------------------------
+card h_pressure
+type event
+cat repair
+hook
+once
+days 10 27
+weight 10
+roles A
+when cond A ok
+when home A
+do who hook_who A
+text The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is awake at 01:50 to see it first, a minute before the fleet's night watch.
+
+# --- 3. Solar flare ----------------------------------------------------------
+card h_flare
+type event
+cat grim
+hook
+once
+days 7 33
+weight 9
+roles A
+when cond A ok
+when !fired storm_shelter
+do who hook_who A
+text The X-ray monitor jumps at 23:52, and the ground's space weather alert lands minutes later: a major flare. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
+
+# --- 4. Uncommanded thruster --------------------------------------------------
+card h_thruster
+type event
+cat repair skill
+hook
+once
+days 7 27
+weight 10
+roles A
+when cond A ok
+when home A
+do who hook_who A
+text 02:14. {A}'s ship starts to roll with nothing in the command log. The control loop fires a thruster. Then another. {A} is already at the console.
+
+card valve_later
+type event
+cat repair
+due
+once
+days 26 33
+roles A
+when flag valve_out
+when is A valve_who
+when since t_valve >= 6
+when home A
+text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The ground's thruster-select table has a new row with {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
+do morale A -1
+
+# --- 5. Alarm flood -----------------------------------------------------------
+card h_flood
+type event
+cat repair skill
+hook
+once
+days 8 27
+weight 10
+roles A
+when cond A ok
+when home A
+do who hook_who A
+text Just before midnight, 214 alarms hit {A}'s console at once. One of them is real.
+
+# --- 6. Ground silence --------------------------------------------------------
+card h_silence
+type event
+cat grim
+hook
+once
+days 10 27
+weight 8
+roles A
+when cond A ok
+do who hook_who A
+text Mission Control misses a scheduled check-in. Then the next one. {A} sends a third hail and starts the clock: twice the light time, plus a minute for someone to put a coffee down.
+
+# --- 7. Hull strike -----------------------------------------------------------
+card h_strike
+type event
+cat grim
+hook
+once
+days 4 27
+weight 9
+roles A
+when cond A ok
+when home A
+when !is A eva_who
+do who hook_who A
+text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} reads every green twice, then goes to look.
+
+# --- 8. Star tracker ghost (ominous) ---------------------------------------------
+card h_ghost
+type event
+cat mystery
+hook
+once
+days 25 33
+weight 14
+roles A
+when cond A ok
+do who hook_who A
+text {A}'s star tracker drops out of lock in the small hours: one star too many in the field, and the next frame doesn't agree with the first. Attitude hands over to the backup tracker, which has never been asked to fly alone.
+
+# --- 9. A voice on the loop ----------------------------------------------------------
+card h_voice
+type event
+cat mystery
+hook
+once
+days 25 33
+weight 10
+roles A
+when cond A ok
+when home A
+do who hook_who A
+text 02:40. The intercom on {A}'s ship opens and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. The intercom's clock reads tomorrow.
+
+# --- 10. A ship drops off the net -------------------------------------------------
+card h_dark
+type event
+cat mystery
+hook
+once
+days 26 31
+weight 90
+roles A
+when cond A ok
+when !is A ow_hail
+when since t_frame >= 1
+when home A
+do who hook_who A
+text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on seven displays. Through the next ship's long lens, its cabin windows are lit as usual.
+
+
+# --- 11. Smoke (round 24) ---------------------------------------------------------
+card h_smoke
+type event
+cat grim
+hook
+once
+days 14 24
+weight 10
+roles A
+when cond A ok
+when home A
+do who hook_who A
+text 03:05. The smoke alarm on {A}'s ship trips, then the one by the bunk. The air tastes of hot plastic. {A} has the mask on before the second alarm stops, and starts pulling breakers, one at a time, counting.
+
+# --- 12. The tank (round 24; late, when the knock hasn't missed) ---------------------
+card h_tank
+type event
+cat grim
+hook
+once
+days 34 36
+weight 30
+roles A
+when cond A ok
+when home A
+when !fired h_band
+do who hook_who A
+text 04:10. The drinking tank on {A}'s ship reads nine litres lower than at midnight, and falling. No droplets drift in the torch beam; the floor is dry. {A} logs the reading, as procedure demands, and opens the first access panel.

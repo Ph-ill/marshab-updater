@@ -2,11 +2,13 @@
 # the log records that take effect on day d, and the votes/answers in effect by d).
 # Nothing waits on a player: every vote has a default, every astronaut acts alone.
 from lv import ops as O
+from lv import pack as P
 from lv import record as R
 from lv.prng import Rng, day_seed
 from lv.state import N
 
 NONE = O.NONE
+FAIR_BUCKET = 2  # appearances per casting-priority step (see Engine._cast_order)
 
 # Daily instruction menu (payload of an ACTION record)
 A_GIFT, A_ADVICE, A_TASK, A_REST = 0, 1, 2, 3
@@ -16,7 +18,7 @@ FOOD, FUEL, SPARES = 0, 1, 2
 # Which condition ops take roles in a (and b)
 _ROLE_A = (O.C_TRAIT_GE, O.C_TRAIT_LE, O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART,
            O.C_COND, O.C_IDLE_GE, O.C_MORALE_LE, O.C_MORALE_GE, O.C_KIT_ELSE,
-           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY)
+           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY, O.C_CREW, O.C_ISNT)
 _ROLE_B = (O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART, O.C_BESTBOND)
 
 
@@ -84,10 +86,14 @@ class Engine:
             return self._best_bond(rb) == ra
         if op == O.C_IS:
             return s.vars[b] == ra + 1
+        if op == O.C_ISNT:
+            return s.vars[b] != ra + 1
         if op == O.C_HOME:
             return s.loc[ra] == ra
         if op == O.C_AWAY:
             return s.loc[ra] != ra
+        if op == O.C_CREW:
+            return (b >> ra) & 1 == 1
         return False
 
     def _check(self, off, roles):
@@ -121,20 +127,26 @@ class Engine:
         roles = bytearray([NONE] * 4)
         k = 0
         if preset:
-            while k < card.nroles and k < len(preset) and preset[k] != NONE:
+            while k < self.p.h(card, P.H_NROLES) and k < len(preset) and preset[k] != NONE:
                 roles[k] = preset[k]
                 k += 1
         start = self.rng.below(N)
-        if self._bind(card, roles, k, start):
+        if self._bind(card, roles, k, self._cast_order(start)):
             return roles
         return None
 
-    def _bind(self, card, roles, k, start):
-        if k >= card.nroles:
-            return self._check(card.conds, roles)
+    def _cast_order(self, start):
+        # Fair casting: whoever has been in the story least is tried first, in
+        # buckets of FAIR_BUCKET appearances so the dice still mix the order;
+        # ties rotate from the day's random start. Pure function of state + rng.
         s = self.s
-        for i in range(N):
-            c = (start + i) % N
+        return sorted(range(N), key=lambda c: (s.spot[c] // FAIR_BUCKET) * N + (c - start) % N)
+
+    def _bind(self, card, roles, k, order):
+        if k >= self.p.h(card, P.H_NROLES):
+            return self._check(self.p.conds(card), roles)
+        s = self.s
+        for c in order:
             if s.cond[c] == O.COND_HOME:
                 continue
             taken = False
@@ -143,10 +155,10 @@ class Engine:
                     taken = True
             if taken:
                 continue
-            if k == 0 and card.type == O.DILEMMA and not self._can_offer(card, c):
+            if k == 0 and self.p.h(card, P.H_TYPE) == O.DILEMMA and not self._can_offer(card, c):
                 continue
             roles[k] = c
-            if self._check(card.conds, roles) and self._bind(card, roles, k + 1, start):
+            if self._check(self.p.conds(card), roles) and self._bind(card, roles, k + 1, order):
                 return True
         roles[k] = NONE
         return False
@@ -155,7 +167,7 @@ class Engine:
         # At most 2 private dilemmas per player per season, each card once per player,
         # and never two open at once for the same player.
         s = self.s
-        if s.dil_given[c] >= 2 or (s.dil_seen[card.idx] >> c) & 1:
+        if s.dil_given[c] >= 2 or (s.dil_seen[card] >> c) & 1:
             return False
         for it in s.pend:
             if it[0] == O.DILEMMA and it[4] == c:
@@ -165,12 +177,12 @@ class Engine:
     def eligible(self, card):
         s = self.s
         d = s.day
-        if d < card.dmin or d > card.dmax:
+        if d < self.p.h(card, P.H_DMIN) or d > self.p.h(card, P.H_DMAX):
             return None
-        last = s.fired[card.idx]
-        if last and (card.flags & O.F_ONCE):
+        last = s.fired[card]
+        if last and (self.p.h(card, P.H_FLAGS) & O.F_ONCE):
             return None
-        if last and card.cooldown and d - last < card.cooldown:
+        if last and self.p.h(card, P.H_COOL) and d - last < self.p.h(card, P.H_COOL):
             return None
         if last == d:
             return None
@@ -220,7 +232,7 @@ class Engine:
                     s.medkit[src] -= 1
                     s.cond[roles[b]] = O.COND_OK
             elif op == O.E_OPEN:
-                self.open(self.p.cards[a], roles)
+                self.open(a, roles)
 
     def _move(self, c, ship):
         s = self.s
@@ -231,21 +243,22 @@ class Engine:
     # ---- open items: decisions, dilemmas, rescues -------------------------------
     def open(self, card, preset=None):
         s = self.s
-        roles = self.bind(card, preset) if card.nroles else bytearray([NONE] * 4)
+        roles = self.bind(card, preset) if self.p.h(card, P.H_NROLES) else bytearray([NONE] * 4)
         if roles is None:
             return False
-        s.fired[card.idx] = s.day
-        s.pend.append(bytes((card.type, card.idx, s.day, s.day + card.duration,
+        s.fired[card] = s.day
+        s.pend.append(bytes((self.p.h(card, P.H_TYPE), card, s.day, s.day + self.p.h(card, P.H_DUR),
                              roles[0], roles[1], roles[2], roles[3])))
-        if card.type == O.DILEMMA:
+        if self.p.h(card, P.H_TYPE) == O.DILEMMA:
             s.dil_given[roles[0]] += 1
-            s.dil_seen[card.idx] |= 1 << roles[0]
-            s.emit(O.O_DIL_OPEN, card.idx, roles[0])
-        elif card.type == O.RESCUE:
-            s.emit(O.O_RES_OPEN, card.idx, roles[0], roles[1])
+            s.dil_seen[card] |= 1 << roles[0]
+            s.emit(O.O_DIL_OPEN, card, roles[0])
+        elif self.p.h(card, P.H_TYPE) == O.RESCUE:
+            s.emit(O.O_RES_OPEN, card, roles[0], roles[1])
         else:
-            s.emit(O.O_DEC_OPEN, card.idx, roles[0], roles[1])
-        self.apply(card.effects, roles)
+            s.emit(O.O_DEC_OPEN, card, roles[0], roles[1])
+        s.add_spot(roles)
+        self.apply(self.p.eff[card], roles)
         return True
 
     def fleet_lean(self, axis):
@@ -260,8 +273,8 @@ class Engine:
         s = self.s
         ctype, idx, opened, close = item[0], item[1], item[2], item[3]
         roles = bytearray(item[4:8])
-        card = self.p.cards[idx]
-        nopt = card.nopt
+        card = idx
+        nopt = self.p.nopt(card)
         if ctype == O.DILEMMA:
             owner = roles[0]
             opt, by = NONE, 1
@@ -269,7 +282,7 @@ class Engine:
                 if ship == owner and o < nopt:
                     opt, by = o, 0
             if opt == NONE:
-                opt = card.lpos if s.trait(owner, card.laxis) >= 0 else card.lneg
+                opt = self.p.h(card, P.H_LPOS) if s.trait(owner, self.p.h(card, P.H_LAXIS)) >= 0 else self.p.h(card, P.H_LNEG)
             self.apply(self.p.opt(card, opt), roles)
             s.emit(O.O_DIL_CLOSE, idx, owner, opt, by)
             return
@@ -289,11 +302,11 @@ class Engine:
                         opt = i
                 defaulted = 0
             else:
-                opt, defaulted = card.lpos, 1
+                opt, defaulted = self.p.h(card, P.H_LPOS), 1
             self.apply(self.p.opt(card, opt), roles)
             s.emit(O.O_RES_CLOSE, idx, opt, n, defaulted)
             return
-        lean = card.lpos if self.fleet_lean(card.laxis) >= 0 else card.lneg
+        lean = self.p.h(card, P.H_LPOS) if self.fleet_lean(self.p.h(card, P.H_LAXIS)) >= 0 else self.p.h(card, P.H_LNEG)
         if n == 0:
             opt, defaulted = lean, 1
         else:
@@ -324,6 +337,22 @@ class Engine:
             return False
         s.emit(O.O_ACT, NONE, c, act, tgt, 0, param)
         return True
+
+    def _gift(self, ship, rec):
+        # A crewmate gift between players (lv/engage.py has the menu). Small on purpose:
+        # a give or an answered ask warms the bond and the receiver's morale a little;
+        # an ask changes nothing, and an ask nobody answers simply lapses.
+        s = self.s
+        item, tgt, mode = rec[5], rec[6], rec[7]
+        if tgt >= N or tgt == ship or mode > R.GIFT_ANSWER or item > 63:
+            return
+        # An ask stays between the two of them (the gifts screen shows it), so it
+        # has no effect and no story line; nothing happens if nobody answers it.
+        if mode == R.GIFT_ASK or s.cond[tgt] == O.COND_HOME:
+            return
+        s.add_bond(ship, tgt, 4 if mode == R.GIFT_ANSWER else 2)
+        s.add_morale(tgt, 2)
+        s.emit(O.O_GIFT, NONE, ship, item, tgt, mode)
 
     def _auto_action(self, c):
         # An astronaut whose owner gave no instruction acts on their own traits.
@@ -356,38 +385,57 @@ class Engine:
 
     # ---- wandering (simulated, never tied to real proximity) -------------------------
     def _wander(self):
+        # Crossings are deliberate: only in a transfer window, never to a third ship,
+        # and only to a ship that holds just its own astronaut (so at most 2 aboard).
         s, rng = self.s, self.rng
+        d = s.day
+        if d >= O.TRANSFER_HOME:
+            # Entry prep: everyone flies home on day 37, and anyone a late rescue
+            # carried across goes back the next morning. Nobody crosses out.
+            for c in range(N):
+                if s.loc[c] != c and s.cond[c] != O.COND_HOME:
+                    self._move(c, c)
+            return
+        if d < O.TRANSFER_FROM or (d - O.TRANSFER_FROM) % O.TRANSFER_EVERY:
+            return
         for c in range(N):
             if s.cond[c] != O.COND_OK:
                 continue
-            if s.loc[c] != c and rng.chance(12):
-                self._move(c, c)
+            if s.loc[c] != c:
+                if rng.chance(O.TRANSFER_BACK):
+                    self._move(c, c)
+                continue
+            if d > O.TRANSFER_LAST_OUT:
                 continue
             cur = s.trait(c, 1)
-            if not rng.chance(6 + (cur // 5 if cur > 0 else 0)):
+            if not rng.chance(O.TRANSFER_OUT + (cur // 8 if cur > 0 else 0)):
                 continue
+            held = [0] * N
+            for k in range(N):
+                held[s.loc[k]] += 1
             w = []
             for j in range(N):
-                if j == c or s.cond[j] == O.COND_HOME or s.loc[j] == s.loc[c]:
+                if j == c or s.cond[j] == O.COND_HOME or s.loc[j] != j or held[j] != 1:
                     w.append(0)
                 else:
                     v = s.bond(c, j) + 60
                     w.append(v if v > 1 else 1)
             j = rng.weighted(w)
             if j >= 0:
-                self._move(c, s.loc[j])
+                self._move(c, j)
 
     # ---- picking events ---------------------------------------------------------
     def _fire(self, card, roles):
         s = self.s
-        s.fired[card.idx] = s.day
+        s.fired[card] = s.day
         opt = NONE
-        if card.nopt:
+        if self.p.nopt(card):
             a = roles[0] if roles[0] != NONE else 0
-            opt = card.lpos if s.trait(a, card.laxis) >= 0 else card.lneg
+            opt = self.p.h(card, P.H_LPOS) if s.trait(a, self.p.h(card, P.H_LAXIS)) >= 0 else self.p.h(card, P.H_LNEG)
         # Emit first so anything the card opens reads after it in the log.
-        s.emit(O.O_EVENT, card.idx, roles[0], roles[1], opt)
-        self.apply(card.effects, roles)
+        s.emit(O.O_EVENT, card, roles[0], roles[1], opt)
+        s.add_spot(roles)
+        self.apply(self.p.eff[card], roles)
         if opt != NONE:
             self.apply(self.p.opt(card, opt), roles)
 
@@ -399,7 +447,7 @@ class Engine:
         for c in cards:
             r = self.eligible(c)
             bound.append(r)
-            w.append(c.weight if r is not None else 0)
+            w.append(self.p.h(c, P.H_WEIGHT) if r is not None else 0)
         i = self.rng.weighted(w)
         if i < 0:
             return None, None
@@ -433,6 +481,8 @@ class Engine:
             elif k == R.NOTE and rec[6] < N and rec[6] != ship and rec[5] < 3:
                 s.add_bond(ship, rec[6], 3)
                 s.emit(O.O_NOTE, NONE, ship, rec[5], rec[6])
+            elif k == R.GIFT:
+                self._gift(ship, rec)
         # Close whatever is due today, in the order it was opened.
         keep = []
         due = []
@@ -460,39 +510,64 @@ class Engine:
         if before > 20 >= s.res[FOOD]:
             s.emit(O.O_SHORT, NONE, FOOD)
         # Callbacks first, then the day's dice.
-        for c in p.cards:
-            if (c.flags & O.F_DUE) and (c.type == O.EVENT or c.type == O.BEAT):
-                r = self.eligible(c)
-                if r is not None:
-                    self._fire(c, r)
-        events = [c for c in p.cards if c.type == O.EVENT and not (c.flags & O.F_DUE)]
-        c, r = self._pick(events, 55)
+        for c in p.due:
+            r = self.eligible(c)
+            if r is not None:
+                self._fire(c, r)
+        c, r = self._pick(p.events, 55)
         if c is not None:
             self._fire(c, r)
         if not self._open_types(O.DECISION):
-            c, r = self._pick(p.of_type(O.DECISION), 50)
+            c, r = self._pick(p.decisions, 50)
             if c is not None:
                 self.open(c, r)
-        dils = []
-        for c in p.of_type(O.DILEMMA):
-            dils.append(c)
-        c, r = self._pick(dils, 35)
+        c, r = self._pick(p.dilemmas, 35)
         if c is not None:
             self.open(c, r)
-        beats = [c for c in p.cards if c.type == O.BEAT and not (c.flags & O.F_DUE)]
         for _ in range(2):
-            c, r = self._pick(beats, 60)
+            c, r = self._pick(p.beats, 60)
             if c is not None:
                 self._fire(c, r)
+        # Cliffhanger last, so it is the final line of the day. Never on the last two
+        # days: its resolver (a `due` card) needs tomorrow to fire.
+        if d + 1 < p.season:
+            self._hook()
         if d == p.season:
             self._ending()
         return d
 
+    def _hook(self):
+        # At most one cliffhanger every HOOK_GAP days. The gap is read from the hook
+        # cards' own fired days, so there is no extra state to save or merge.
+        s, d = self.s, self.s.day
+        hooks = self.p.hooks
+        if not hooks or d < O.HOOK_GAP:
+            return
+        last = 0
+        for c in hooks:
+            if s.fired[c] > last:
+                last = s.fired[c]
+        if last and d - last < O.HOOK_GAP:
+            return
+        c, r = self._pick(hooks, O.HOOK_PCT)
+        if c is not None:
+            self._fire(c, r)
+
     def _ending(self):
+        # The ending is chosen on flags alone (role conditions pass while unbound).
+        # It may then name crew: each `is X var` condition puts that var's holder in
+        # role X. No casting and no dice, so the choice never changes, and one person
+        # may fill both roles; an unset var leaves the role empty.
         s = self.s
-        for c in self.p.of_type(O.ENDING):
-            if self._check(c.conds, bytearray([NONE] * 4)):
-                s.ending = c.idx
-                s.fired[c.idx] = s.day
-                s.emit(O.O_END, c.idx)
+        ops = self.p.data
+        for c in self.p.endings:
+            off = self.p.conds(c)
+            roles = bytearray([NONE] * 4)
+            if self._check(off, roles):
+                for i in range(off + 1, off + 1 + 4 * ops[off], 4):
+                    if ops[i] == O.C_IS and s.vars[ops[i + 2]]:
+                        roles[ops[i + 1]] = s.vars[ops[i + 2]] - 1
+                s.ending = c
+                s.fired[c] = s.day
+                s.emit(O.O_END, c, roles[0], roles[1])
                 return

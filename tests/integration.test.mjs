@@ -70,7 +70,7 @@ await t('recognises Long Voyage after install', async () => {
 });
 
 await t('ship config written atomically and read back', async () => {
-  const cfg = validateShipConfig({ ship_id: '3', ship_name: 'Starship-03', hotspot_password: 'correcthorse', role: 'B' }, { count: 7, roles: ['A', 'B'] });
+  const cfg = validateShipConfig({ ship_id: '3', ship_name: 'Starship-03', hotspot_password: 'correcthorse', role: 'B' }, { count: 8, roles: ['A', 'B'] });
   await writeShipConfig(dev, cfg);
   const info = await readDeviceInfo(dev);
   assert.equal(info.ship.ship_id, 3);
@@ -81,7 +81,7 @@ await t('ship config written atomically and read back', async () => {
 });
 
 await t('crew codes written to data/crew.json and accepted by the game core', async () => {
-  const cfg = await crewConfig(['1234', '', '0420', '9999', '0000', '1111', '2222'], newSalt());
+  const cfg = await crewConfig(['1234', '', '0420', '9999', '0000', '1111', '2222', '3333'], newSalt());
   await writeCrewConfig(dev, cfg);
   assert.ok(!existsSync(join(root, 'data/crew.tmp')));
   const onBoard = JSON.parse(readFileSync(join(root, 'data/crew.json'), 'utf8'));
@@ -90,9 +90,9 @@ await t('crew codes written to data/crew.json and accepted by the game core', as
   const r = spawnSync('python3', ['-c',
     'import json,sys; sys.path.insert(0, sys.argv[1]); from lv import codes as K\n' +
     'b = K.CodeBook(json.load(open(sys.argv[2])))\n' +
-    'print(b.check(0, "1234", 0), b.check(2, "0420", 0), b.check(0, "4321", 0), b.check(1, "1234", 0))',
+    'print(b.check(0, "1234", 0), b.check(2, "0420", 0), b.check(0, "4321", 0), b.check(1, "1234", 0), b.check(7, "3333", 0))',
     join(repo, 'game'), join(root, 'data/crew.json')], { encoding: 'utf8' });
-  assert.equal(r.stdout.trim(), '(0, 0) (0, 0) (1, 4) (3, 0)', r.stderr);
+  assert.equal(r.stdout.trim(), '(0, 0) (0, 0) (1, 4) (3, 0) (0, 0)', r.stderr);
   await writeCrewConfig(dev, cfg);   // overwriting is fine too
 });
 
@@ -110,19 +110,19 @@ await t('firmware applies data/ship.json: custom WPA2 password', async () => {
 });
 
 await t('firmware keeps its WPA2 default when no password is set', async () => {
-  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A' }, { count: 7, roles: ['A', 'B'] }));
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A' }, { count: 8, roles: ['A', 'B'] }));
   assert.equal(loadConfig(), '0 4 Starship-04 9');
 });
 
 await t('firmware opens the hotspot only when asked explicitly', async () => {
-  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A', hotspot_open: true }, { count: 7, roles: ['A', 'B'] }));
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 4, role: 'A', hotspot_open: true }, { count: 8, roles: ['A', 'B'] }));
   assert.equal(loadConfig(), '0 4 Starship-04 open');
 });
 
 await t('firmware still boots with a corrupt ship.json', async () => {
   writeFileSync(join(root, 'data/ship.json'), '{not json');
   assert.match(loadConfig(), / 9$/);
-  await writeShipConfig(dev, validateShipConfig({ ship_id: 3, role: 'B', hotspot_password: 'correcthorse' }, { count: 7, roles: ['A', 'B'] }));
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 3, role: 'B', hotspot_password: 'correcthorse' }, { count: 8, roles: ['A', 'B'] }));
 });
 
 await t('reinstall (not clean) keeps ship config and logs', async () => {

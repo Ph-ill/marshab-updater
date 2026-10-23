@@ -9,7 +9,7 @@ import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, de
 import { CREW, validateCodes, sharedCodes, crewConfig, writeCrewConfig, randomCode, codeList, newSalt, loadCodes, saveCodes, forgetCodes } from './crew-codes.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
-const SHIP_COUNT = 7;
+const SHIP_COUNT = 8;
 const DEFAULT_LOGS = ['coex_log.csv', 'coex_log.old', 'coex_boot.txt'];
 
 const state = {
@@ -67,6 +67,7 @@ Object.assign(els, {
   shipRoleWarn: $('shipRoleWarn'),
   shipPassword: $('shipPassword'),
   shipOpen: $('shipOpen'),
+  shipLed: $('shipLed'),
   shipShowPw: $('shipShowPw'),
   shipHotspot: $('shipHotspot'),
   saveShipBtn: $('saveShipBtn'),
@@ -140,7 +141,7 @@ function boardLabel(id){
 
 function deviceControls(){
   const list = [];
-  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn, els.saveCodesBtn);
+  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.shipLed, els.saveShipBtn, els.saveCodesBtn);
   list.push(els.refreshLogsBtn, els.downloadAllLogsBtn, ...els.logList.querySelectorAll('button'));
   list.push(els.bootselBtn);
   return list;
@@ -240,6 +241,7 @@ function clearDeviceUi(){
   els.shipName.value = '';
   els.shipPassword.value = '';
   els.shipOpen.checked = false;
+  els.shipLed.checked = false;
   els.shipRole.value = '';
   setText(els.shipHotspot, '—');
   renderShipSsid();
@@ -353,6 +355,7 @@ function renderShipFields(){
     els.shipName.value = cfg.ship_name || '';
     els.shipPassword.value = '';
     els.shipOpen.checked = !!cfg.hotspot_open;
+    els.shipLed.checked = !!cfg.led_notify;
     if(cfg.role && roles.includes(cfg.role)) els.shipRole.value = cfg.role;
   }
   const formKey = state.device ? (state.deviceInfo?.uid || 'board') : null;
@@ -427,6 +430,7 @@ async function saveShipConfig(){
       // blank keeps whatever password the ship already has (or the firmware's WPA2 default)
       hotspot_password: typed || (els.shipOpen.checked ? '' : previous.hotspot_password || ''),
       hotspot_open: els.shipOpen.checked,
+      led_notify: els.shipLed.checked,
       role: els.shipRole.value,
     }, { count: SHIP_COUNT, roles: shipRoles() });
     const clash = roleClash(loadRoleHistory(), state.deviceInfo?.uid || null, cfg.role, shipRoles());
@@ -437,7 +441,7 @@ async function saveShipConfig(){
     if(cfg.hotspot_open && !confirm('Run this ship\'s hotspot as an open network, with no password? Anyone nearby can join it.')){
       log('ship settings not saved'); return;
     }
-    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}`);
+    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}${cfg.led_notify ? ", LED notifier on" : ""}`);
     const written = await writeShipConfig(state.device, cfg);
     recordRole({ uid: state.deviceInfo?.uid || null, role: written.role, ship_id: written.ship_id, ship_name: written.ship_name });
     state.shipIdFollowsRole = false; // the board has a number of its own now

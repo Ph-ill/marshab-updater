@@ -10,7 +10,7 @@ except ImportError:  # pragma: no cover
 from lv import ops as O
 from lv.prng import Rng, day_seed
 
-N = 7
+N = 8  # ships = crew; every per-crew array, the bond matrix and dil_seen's bit-per-crew byte fit 8
 OFF = 128  # signed values are stored +128
 
 
@@ -28,6 +28,7 @@ class State:
         self.vars = bytearray(32)       # 32 counters or day marks, 0..255
         self.last_seen = bytearray(N)   # last flight day each owner acted (0 = never)
         self.dil_given = bytearray(N)   # private dilemmas offered per player
+        self.spot = bytearray(N)        # story appearances per crew (role A or B), for fair casting
         self.fired = bytearray(0)       # per card: last day it fired (0 = never)
         self.dil_seen = bytearray(0)    # per card: bit per crew that was offered this dilemma
         self.pend = []                  # open items: bytes(type, card, open, close, A, B, C, D)
@@ -84,6 +85,12 @@ class State:
         v = self.res[r] + dv
         self.res[r] = 255 if v > 255 else 0 if v < 0 else v
 
+    def add_spot(self, roles):
+        for k in (0, 1):
+            c = roles[k]
+            if c < N and self.spot[c] < 255:
+                self.spot[c] += 1
+
     def flag(self, f):
         return (self.flags[f >> 3] >> (f & 7)) & 1
 
@@ -100,7 +107,7 @@ class State:
     def dump(self):
         parts = [b"LVS1", bytes((self.day, self.ending, len(self.pend), len(self.fired))),
                  self.loc, self.cond, self.morale, self.traits, self.bonds, self.res,
-                 self.medkit, self.flags, self.vars, self.last_seen, self.dil_given, self.fired, self.dil_seen]
+                 self.medkit, self.flags, self.vars, self.last_seen, self.dil_given, self.spot, self.fired, self.dil_seen]
         parts += self.pend
         n = len(self.out)
         parts.append(self.chain)
@@ -118,7 +125,7 @@ class State:
         p = 8
         for name, ln in (("loc", N), ("cond", N), ("morale", N), ("traits", 3 * N),
                          ("bonds", N * N), ("res", 3), ("medkit", N), ("flags", 16),
-                         ("vars", 32), ("last_seen", N), ("dil_given", N), ("fired", nfired), ("dil_seen", nfired)):
+                         ("vars", 32), ("last_seen", N), ("dil_given", N), ("spot", N), ("fired", nfired), ("dil_seen", nfired)):
             setattr(s, name, bytearray(data[p:p + ln]))
             p += ln
         s.pend = []
