@@ -15,7 +15,7 @@ option feast | Mark it | The fleet eats the good rations on seven screens at onc
   res food -2
   morale A 4
   morale B 2
-option quiet | Let it pass | Halfway passes without a word on the fleet channel. On every ship, at the same minute, someone looks at the clock regardless.
+option quiet | Let it pass | Halfway passes without a word on the fleet channel. On every ship, at the same minute, someone looks at the clock anyway.
   bond A B 3
 
 card dec_name
@@ -130,7 +130,7 @@ once
 days 30 31
 roles A
 when !is A ow_theory
-text {A} pulls the orbiters' night frames of the landing region, the way people look at a house before moving in. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor, almost certainly. {A} writes down both timestamps regardless.
+text {A} pulls the orbiters' night frames of the landing region, to look at the neighbourhood before moving in. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor, almost certainly. {A} writes down both timestamps anyway.
 do set flash_seen
 do mark t_flash
 do who flash_who A

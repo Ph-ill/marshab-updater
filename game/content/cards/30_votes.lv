@@ -181,7 +181,7 @@ weight 6
 once
 roles A
 when cond A ok
-text {A} pulls the morning weather from the Mars orbiters: a dust storm, building over the landing zone. On the map it's a brown thumbprint. {A} measures it against the zone with a ruler, and then measures it again.
+text {A} pulls the morning weather from the Mars orbiters: a dust storm, building over the landing zone. On the map it's a brown thumbprint. {A} lays a ruler across it, then lays the ruler across the backup site.
 do set dust_seen
 do mark t_dust
 

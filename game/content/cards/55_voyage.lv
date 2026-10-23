@@ -221,7 +221,7 @@ roles A
 when is A ow_garden
 when !flag water_rationed
 when !fired water_fail
-text {A} waters the last two pods the way you'd check on a sleeping child, and has started reading the seed packet's small print for encouragement. There isn't any. {A} logs that too.
+text {A} waters the last two pods morning and night, and has started reading the seed packet's small print for encouragement. There isn't any. {A} logs that too.
 do var garden 1
 
 card p_garden_sprout
@@ -348,9 +348,10 @@ cat life
 days 26 38
 weight 6
 once
-roles A
+roles A B
 when cond A ok
-text Long table night. {A} has the toast again and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It gets a laugh on a short delay from all six screens, and then a quiet.
+when cond B ok
+text Long table night. This time {B} has the toast and gives it to the empty chair at each of the seven tables, the one where a second crew member would sit on a normal ship. It lands on a short delay on all six screens. {A} laughs last.
 do morale A 3
 
 card g_third_quarter
@@ -362,7 +363,7 @@ once
 roles A B
 when cond A ok
 when cond B ok
-text Past the halfway mark the quiet gets heavier. The flight surgeon calls it the third-quarter effect. On the video link, {A} notices {B} staring at the same page of a checklist for ten minutes, and starts reading the page to {B}, slowly, the way you'd read to a child.
+text Past the halfway mark the days get heavier. The flight surgeon calls it the third-quarter effect. On the video link, {A} notices {B} staring at one checklist page for ten minutes, and starts calling out the steps, the way {A} would on a pass, until {B} answers them.
 do bond A B 6
 do morale B 3
 
@@ -374,7 +375,7 @@ weight 5
 once
 roles A
 when cond A ok
-text {A} counts the medical kit against the manifest: sutures, splints, a defibrillator with one set of pads. {A} counts it again and closes the lid gently, the way you do when someone is sleeping.
+text {A} counts the medical kit against the manifest: sutures, splints, pain tablets in neat blister rows. {A} counts it once more and closes the lid gently.
 do trait A brave 2
 
 card g_packer
@@ -500,7 +501,7 @@ once
 days 42 42
 roles A
 when flag photo_taken
-text {A} stows the tablet with the fleet portrait on it: seven ships, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have today. Worth it, {A} decides, and means it.
+text {A} stows the tablet with the fleet portrait on it: seven ships, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have today. Worth it, {A} decides.
 
 card a_recall_wrist
 type event
@@ -560,7 +561,7 @@ when flag signal_answered
 when !fired a_recall_wrist
 when !fired a_recall_stash
 when is A ow_hail
-text The standing hail is still in the comms schedule, one line, weeks old. {A} takes it out by hand, and the big dish turns back to Earth for good, with the letters that waited behind it.
+text The auto-answer is still in the comms schedule, one line, weeks old. {A} takes it out by hand before entry, and the comms computer goes back to the letters that waited behind it.
 
 card a_recall_quiet
 type event
@@ -573,4 +574,4 @@ when flag signal_ignored
 when !fired a_recall_wrist
 when !fired a_recall_stash
 when is A ow_hail
-text The big dish never turned away from Earth, and every letter from home arrived on time. {A} answers the last one on the morning of entry and adds a line nobody at home will understand yet: "We're going to say hello in person."
+text The comms computer never left the letters, and every one from home arrived on time. {A} answers the last on the morning of entry and adds a line nobody at home will understand yet: "We're going to say hello in person."

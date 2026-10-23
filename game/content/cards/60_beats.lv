@@ -22,7 +22,7 @@ weight 8
 once
 roles A B
 when same A B
-text {A} teaches {B} a card game from home across a galley table, for once, instead of across a screen. By the end of the shift {B} is winning, and the rules have been amended twice.
+text {A} teaches {B} a card game from home across a real galley table, not a screen. By the end of the shift {B} is winning, and the rules have been amended three times.
 do bond A B 5
 
 card beat_window
@@ -148,7 +148,7 @@ once
 roles A
 when idle A >= 3
 when cond A ok
-text {A} spends a quiet day re-stowing the whole ship to the arrival plan, locker by locker, ticking each one off. When the others finally get to theirs, {A}'s list is already on the fleet channel, with tips.
+text {A} spends a slow day re-stowing the whole ship to the arrival plan, locker by locker. When the others get to theirs, {A}'s list is already on the fleet channel, with tips.
 do morale A 2
 do trait A brave 1
 
@@ -161,7 +161,7 @@ once
 roles A B
 when idle A >= 3
 when cond B ok
-text {A} walks {B} through the backup docking procedure over the link, step by step, until {B} can do it without the checklist. Neither of them mentions why it matters.
+text {A} walks {B} through the manual landing abort over the link, step by step, until {B} can call it without the checklist. Neither of them mentions why it matters.
 do bond B A 6
 do trait B brave 2
 
@@ -174,5 +174,5 @@ weight 8
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in Sharpie. {A} logs it and says a quiet thank-you to whoever it was.
+text {A} inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in Sharpie. {A} logs it, with a thank-you in the margin.
 do res spares 1

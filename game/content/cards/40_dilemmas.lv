@@ -47,7 +47,7 @@ roles A B
 when flag dose_hidden
 when is A ow_dose
 when cond B ok
-text {B} reads the fleet's dosimeter logs the way other people read the news, notices {A}'s numbers, and calls. It takes an hour and the word "please" twice. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
+text {B} reads the fleet's dosimeter logs the way other people read the news, notices {A}'s numbers, and calls. It takes an hour and the word "please" more than once. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
 do bond A B 10
 do bond B A 6
 
@@ -60,7 +60,7 @@ days 17 24
 roles A
 when flag dose_told
 when is A ow_dose
-text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." {A} pins it beside the bunk, between the water tanks.
+text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." {A} tapes it beside the bunk, between the water tanks.
 do morale A 4
 
 card c_dose
@@ -117,7 +117,7 @@ roles A
 when flag letter_saved
 when is A ow_letter
 when since t_letter >= 18
-text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock, twice, and comes out with the last line by heart. Whatever it said, it was enough.
+text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock, slowly, and comes out with the last line by heart. Whatever it said, it was enough.
 do morale A 12
 
 card letter_worn
