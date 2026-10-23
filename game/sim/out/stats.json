@@ -1,47 +1,103 @@
 {
- "ending": "end_contact",
+ "ending": "end_followed",
  "cards_fired": {
-  "galley_pump": 5,
-  "beat_watch": 9,
+  "galley_pump": 3,
+  "beat_window": 1,
+  "beat_early_watch": 2,
   "beat_argue": 6,
-  "quiet_fixer": 10,
-  "glint": 4,
+  "scrubber_fault": 2,
+  "beat_coffee": 1,
+  "quiet_fixer": 8,
+  "h_flare": 1,
+  "r_flare": 1,
+  "glint": 3,
   "dec_signal": 1,
-  "dil_stash": 7,
-  "crisis_eva": 1,
-  "rescue_kit": 1,
-  "signal_reply": 1,
-  "stash_found": 1,
-  "end_contact": 1
+  "dil_manual": 4,
+  "beat_cards": 3,
+  "idle_watch": 6,
+  "beat_interlock": 1,
+  "storm_dose": 2,
+  "dec_header": 1,
+  "stale_value": 1,
+  "beat_torque": 1,
+  "idle_mentor": 4,
+  "storm_shelter": 2,
+  "dil_credit": 3,
+  "beat_watch": 6,
+  "dec_clock": 1,
+  "dil_gains": 1,
+  "beat_home_msg": 3,
+  "beat_shelter_night": 3,
+  "h_thruster": 1,
+  "r_thruster": 1,
+  "idle_spares": 3,
+  "nuisance_alarm": 1,
+  "dec_trim": 1,
+  "beat_gym": 3,
+  "beat_zipties": 1,
+  "idle_logs": 4,
+  "beat_haircut": 1,
+  "h_header": 1,
+  "r_header": 1,
+  "crisis_air": 1,
+  "rescue_air": 1,
+  "dec_photo": 1,
+  "gains_payoff": 1,
+  "dec_water": 1,
+  "dil_letter": 1,
+  "dil_bracket": 1,
+  "h_ghost": 1,
+  "r_ghost": 1,
+  "earth_dot": 1,
+  "signal_echo": 1,
+  "hdr_sensor": 1,
+  "dec_cargo": 1,
+  "dil_interlock": 1,
+  "dil_eva_cam": 1,
+  "h_strike": 1,
+  "r_strike": 1,
+  "dil_dose": 2,
+  "trim_callback": 1,
+  "h_band": 1,
+  "r_band": 1,
+  "tol_stack_m": 1,
+  "dec_arrival": 1,
+  "h_silence": 1,
+  "r_silence": 1,
+  "margin_plenty": 1,
+  "hatch_sun": 1,
+  "h_pressure": 1,
+  "r_pressure": 1,
+  "end_followed": 1
  },
  "decisions": {
-  "closed": 1,
+  "closed": 8,
   "no_ballots": 0,
-  "tie": 0
+  "tie": 3
  },
  "dilemmas": {
-  "owner": 5,
-  "astronaut": 2
+  "owner": 9,
+  "astronaut": 5
  },
  "rescues": {
   "answered": 1,
   "default": 0
  },
  "story_appearances": {
-  "Phill": 2,
-  "Jacques": 13,
-  "Kim": 8,
-  "Jai": 14,
-  "Michelle": 8,
-  "Diego": 11,
-  "Dorian": 8
+  "Phill": 11,
+  "Jacques": 22,
+  "Kim": 20,
+  "Jai": 38,
+  "Michelle": 17,
+  "Diego": 33,
+  "Dorian": 19
  },
- "entries": 404,
- "out_bytes": 3232,
- "state_bytes": 323,
+ "entries": 491,
+ "out_bytes": 3928,
+ "state_bytes": 459,
  "resources_end": {
-  "food": 100,
-  "fuel": 65,
+  "food": 95,
+  "fuel": 52,
   "spares": 55
  },
  "crew_condition_end": {
@@ -53,17 +109,17 @@
   "Diego": "ok",
   "Dorian": "ok"
  },
- "reference_digest": "8782c95070c3682d",
- "records": 170,
+ "reference_digest": "fb6966393edc0e25",
+ "records": 218,
  "records_per_player": {
-  "Phill": 52,
-  "Jacques": 40,
-  "Kim": 22,
-  "Michelle": 24,
-  "Jai": 32
+  "Phill": 63,
+  "Jacques": 46,
+  "Kim": 24,
+  "Michelle": 37,
+  "Jai": 48
  },
- "log_bytes": 2210,
- "late_records": 4,
+ "log_bytes": 2834,
+ "late_records": 14,
  "determinism": {
   "instant": {
    "all_7_match": true,
@@ -73,24 +129,24 @@
   },
   "gossip": {
    "all_7_match": true,
-   "replays": 264,
-   "replayed_days": 1277,
+   "replays": 267,
+   "replayed_days": 1289,
    "deepest_rewrite_days": 9
   },
   "reverse": {
    "all_7_match": true,
-   "replays": 263,
-   "replayed_days": 1425,
-   "deepest_rewrite_days": 10
+   "replays": 277,
+   "replayed_days": 1506,
+   "deepest_rewrite_days": 9
   },
   "bursty": {
    "all_7_match": true,
-   "replays": 220,
-   "replayed_days": 1115,
-   "deepest_rewrite_days": 11
+   "replays": 230,
+   "replayed_days": 1103,
+   "deepest_rewrite_days": 12
   }
  },
- "seconds_reference_season": 0.005,
- "seconds_determinism_runs": 0.3,
- "pack_bytes": 592
+ "seconds_reference_season": 0.011,
+ "seconds_determinism_runs": 1.02,
+ "pack_bytes": 2898
 }
