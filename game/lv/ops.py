@@ -17,6 +17,13 @@ F_HOOK = 4     # cliffhanger: picked last in the day, at most one every HOOK_GAP
 HOOK_GAP = 4   # days between cliffhangers (so never two days running)
 HOOK_PCT = 50  # daily chance of a cliffhanger once the gap has passed
 
+# Crew crossings between ships happen only in scheduled transfer windows: every
+# TRANSFER_EVERY days from TRANSFER_FROM (content/STYLE.md, "Home ships").
+TRANSFER_FROM = 7
+TRANSFER_EVERY = 5
+TRANSFER_OUT = 7     # base percent chance an astronaut at home crosses in a window
+TRANSFER_BACK = 60   # percent chance a visitor crosses back in a window
+
 # Conditions
 C_FLAG = 1        # a = flag
 C_NOFLAG = 2
@@ -44,6 +51,7 @@ C_DAY_GE = 23     # b = day
 C_HOME = 24       # a = role is aboard its own ship
 C_AWAY = 25
 C_CREW = 26       # a = role, b = bitmask of crew indices (compiled from roster tags)
+C_ISNT = 27       # a = role, b = var: role is not the crew member the var names
 
 # Effects
 E_SET = 1         # a = flag

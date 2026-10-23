@@ -18,7 +18,7 @@ FOOD, FUEL, SPARES = 0, 1, 2
 # Which condition ops take roles in a (and b)
 _ROLE_A = (O.C_TRAIT_GE, O.C_TRAIT_LE, O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART,
            O.C_COND, O.C_IDLE_GE, O.C_MORALE_LE, O.C_MORALE_GE, O.C_KIT_ELSE,
-           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY, O.C_CREW)
+           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY, O.C_CREW, O.C_ISNT)
 _ROLE_B = (O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART, O.C_BESTBOND)
 
 
@@ -86,6 +86,8 @@ class Engine:
             return self._best_bond(rb) == ra
         if op == O.C_IS:
             return s.vars[b] == ra + 1
+        if op == O.C_ISNT:
+            return s.vars[b] != ra + 1
         if op == O.C_HOME:
             return s.loc[ra] == ra
         if op == O.C_AWAY:
@@ -367,26 +369,35 @@ class Engine:
 
     # ---- wandering (simulated, never tied to real proximity) -------------------------
     def _wander(self):
+        # Crossings are deliberate: only in a transfer window, never to a third ship,
+        # and only to a ship that holds just its own astronaut (so at most 2 aboard).
         s, rng = self.s, self.rng
+        d = s.day
+        if d < O.TRANSFER_FROM or (d - O.TRANSFER_FROM) % O.TRANSFER_EVERY:
+            return
         for c in range(N):
             if s.cond[c] != O.COND_OK:
                 continue
-            if s.loc[c] != c and rng.chance(12):
-                self._move(c, c)
+            if s.loc[c] != c:
+                if rng.chance(O.TRANSFER_BACK):
+                    self._move(c, c)
                 continue
             cur = s.trait(c, 1)
-            if not rng.chance(6 + (cur // 5 if cur > 0 else 0)):
+            if not rng.chance(O.TRANSFER_OUT + (cur // 8 if cur > 0 else 0)):
                 continue
+            held = [0] * N
+            for k in range(N):
+                held[s.loc[k]] += 1
             w = []
             for j in range(N):
-                if j == c or s.cond[j] == O.COND_HOME or s.loc[j] == s.loc[c]:
+                if j == c or s.cond[j] == O.COND_HOME or s.loc[j] != j or held[j] != 1:
                     w.append(0)
                 else:
                     v = s.bond(c, j) + 60
                     w.append(v if v > 1 else 1)
             j = rng.weighted(w)
             if j >= 0:
-                self._move(c, s.loc[j])
+                self._move(c, j)
 
     # ---- picking events ---------------------------------------------------------
     def _fire(self, card, roles):
