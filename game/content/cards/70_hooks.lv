@@ -17,18 +17,6 @@ when cond A ok
 do who hook_who A
 text 23:40. The old-channel carrier on {A}'s dish misses a knock, the first miss in weeks. {A} watches the clock run past eleven seconds, then twelve, then thirty.
 
-card r_band
-type event
-cat grim
-due
-once
-days 31 35
-roles A
-when fired h_band
-when is A hook_who
-text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the coldest hour of the night side's coldest night. If the source has a battery heater, it skips knocks rather than wake short of power. It is getting harder to wake.
-do morale A -2
-
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure
 type event
@@ -41,19 +29,6 @@ roles A
 when cond A ok
 do who hook_who A
 text 01:50. The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is the only one awake.
-
-card r_pressure
-type event
-cat repair
-due
-once
-days 5 36
-roles A
-when fired h_pressure
-when is A hook_who
-text {A} spent four hours with an ultrasonic leak detector and a roll of tape. The culprit was a cable feedthrough whose seal shrank in the cold of the shaded side. It's resealed, the pressure holds, and the trend line is taped above the console like a fish someone caught.
-do res spares -1
-do morale A 5
 
 # --- 3. Solar flare ----------------------------------------------------------
 card h_flare
@@ -69,19 +44,6 @@ when !fired storm_shelter
 do who hook_who A
 text 23:52. The space weather feed flags a major flare on the Sun. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
 
-card r_flare
-type event
-cat grim
-due
-once
-days 8 34
-roles A
-when fired h_flare
-when is A hook_who
-text Every crew spent the night in their storm shelter between the water tanks, seven faces in a video grid, listening to the dosimeters tick. By morning the fleet had taken a month's dose in six hours. {A} logged the peak and slept until noon.
-do var storms 1
-do morale A 3
-
 # --- 4. Uncommanded thruster --------------------------------------------------
 card h_thruster
 type event
@@ -94,32 +56,6 @@ roles A
 when cond A ok
 do who hook_who A
 text 02:14. {A}'s ship starts to roll with nothing in the command log. The control loop fires a thruster to stop it. Then another. {A} is already at the console.
-
-card r_thruster
-type event
-cat repair skill
-due
-once
-days 5 36
-roles A
-when fired h_thruster
-when is A hook_who
-lean brave manual watch
-text The ship was steady again within a quarter of an hour.
-option manual | Hand control | {A} took attitude into manual and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
-  trait A brave 2
-  morale A 4
-  set valve_out
-  who valve_who A
-  mark t_valve
-  res fuel -1
-option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night is pinned up with the leak circled in red.
-  trait A curious 2
-  morale A 4
-  set valve_out
-  who valve_who A
-  mark t_valve
-  res fuel -1
 
 card valve_later
 type event
@@ -147,19 +83,6 @@ when cond A ok
 do who hook_who A
 text Just before midnight, 214 alarms hit {A}'s console at once. One of them is real.
 
-card r_flood
-type event
-cat repair skill
-due
-once
-days 5 36
-roles A
-when fired h_flood
-when is A hook_who
-text The log for that night: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and the sleep log for that night is blank.
-do morale A 5
-do res spares -1
-
 # --- 6. Ground silence --------------------------------------------------------
 card h_silence
 type event
@@ -172,19 +95,6 @@ roles A
 when cond A ok
 do who hook_who A
 text Mission Control misses a scheduled check-in. Then the next one. {A} sends a third hail and starts the clock: twice the light time, plus a minute for someone to put a coffee down.
-
-card r_silence
-type event
-cat grim
-due
-once
-days 11 36
-roles A
-when fired h_silence
-when is A hook_who
-text The reply arrived before breakfast. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} starts the answer with the weather.
-do morale A 6
-do trait A warm 2
 
 # --- 7. Hull strike -----------------------------------------------------------
 card h_strike
@@ -199,19 +109,6 @@ when cond A ok
 do who hook_who A
 text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} doesn't trust green.
 
-card r_strike
-type event
-cat grim
-due
-once
-days 5 36
-roles A B
-when fired h_strike
-when is A hook_who
-text {A}'s morning EVA, {B} suited at the hatch, found a crater the size of a fingernail in a heat-shield tile, short of the bondline. The entry team clears it on one condition: {A}'s ship flies entry two degrees shallower, a longer, hotter ride, in every brief from now on. {A} shot it next to a ruler.
-do trait A brave 2
-do morale A 3
-
 # --- 8. Star tracker ghost (ominous) ---------------------------------------------
 card h_ghost
 type event
@@ -224,20 +121,6 @@ roles A
 when cond A ok
 do who hook_who A
 text 02:10. {A}'s star tracker drops out of lock: one star too many in the field, and the next frame doesn't agree with the first. Attitude hands over to the backup tracker, which has never been asked to fly alone.
-
-card r_ghost
-type event
-cat mystery
-due
-once
-days 26 34
-roles A
-when fired h_ghost
-when is A hook_who
-text {A} pinned it down by morning: a launch cover plate shed by one of the fleet's own ships at departure, turning end over end along almost the same path. It will pass forty kilometres off the bow. It has drifted alongside them the whole way, and no one is coming for it.
-do trait A curious 3
-do morale A -2
-
 
 # --- 9. A voice on the loop ----------------------------------------------------------
 card h_voice
@@ -252,42 +135,17 @@ when cond A ok
 do who hook_who A
 text 02:40. The intercom on {A}'s ship opens and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. Nothing in the comms log says a call came in.
 
-card r_voice
-type event
-cat human
-due
-once
-days 26 34
-roles A
-when fired h_voice
-when is A hook_who
-text {A} traced it the next morning: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. {A} listens with the volume very low.
-do morale A 6
-do trait A warm 3
-
 # --- 10. A ship drops off the net -------------------------------------------------
 card h_dark
 type event
 cat mystery
 hook
 once
-days 25 33
+days 26 29
 weight 14
 roles A
 when cond A ok
+when since t_frame >= 1
 do who hook_who A
-text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays, and on the camera feed its cabin lights burning as usual.
+text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays. Through the next ship's long lens, its cabin windows are lit as usual.
 
-card r_dark
-type event
-cat mystery
-clue core key
-due
-once
-days 26 34
-roles A
-when fired h_dark
-when is A hook_who
-text {A} was back within the hour: the comms computer had hung on the first whole frame from Mars to decode, a link request signed with an old program key. Sequence 1; the challenge, new. The ground: "Old key, no ID. Nothing we still fly." A parser guard goes up that night.
-do trait A brave 3
-do morale A -2

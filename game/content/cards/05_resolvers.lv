@@ -1,0 +1,145 @@
+# Cliffhanger resolvers. They live in their own file, sorted ahead of every other
+# deck file, so a resolver is the first callback of its day. Hooks: 70_hooks.lv.
+
+card r_band
+type event
+cat grim
+due
+once
+days 31 35
+roles A
+when fired h_band
+when is A hook_who
+text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the coldest hour of the night side's coldest night. If the source has a battery heater, it skips knocks rather than wake short of power. It is getting harder to wake.
+do morale A -2
+
+card r_pressure
+type event
+cat repair
+due
+once
+days 5 36
+roles A
+when fired h_pressure
+when is A hook_who
+text {A} spent four hours suited, helmet on, with an ultrasonic leak detector. The culprit was a cable feedthrough whose seal shrank in the cold of the shaded side. It's resealed, the pressure holds, and the trend line goes in the logbook like a fish someone caught.
+do res spares -1
+do morale A 5
+
+card r_flare
+type event
+cat grim
+due
+once
+days 8 34
+roles A
+when fired h_flare
+when is A hook_who
+text Every crew spent the night in their storm shelter between the water tanks, seven faces in a video grid, listening to the dosimeters tick. By morning the fleet had taken a month's dose in six hours. {A} logged the peak and slept until noon.
+do var storms 1
+do morale A 3
+
+card r_thruster
+type event
+cat repair skill
+due
+once
+days 5 36
+roles A
+when fired h_thruster
+when is A hook_who
+lean brave manual watch
+text The ship was steady again within a quarter of an hour.
+option manual | Hand control | {A} took attitude into manual and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
+  trait A brave 2
+  morale A 4
+  set valve_out
+  who valve_who A
+  mark t_valve
+  res fuel -1
+option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night has the leak circled in red.
+  trait A curious 2
+  morale A 4
+  set valve_out
+  who valve_who A
+  mark t_valve
+  res fuel -1
+
+card r_flood
+type event
+cat repair skill
+due
+once
+days 5 36
+roles A
+when fired h_flood
+when is A hook_who
+text The log for that night: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and the sleep log for that night is blank.
+do morale A 5
+do res spares -1
+
+card r_silence
+type event
+cat grim
+due
+once
+days 11 36
+roles A
+when fired h_silence
+when is A hook_who
+text The reply arrived before breakfast. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. For nine hours the fleet was on its own, and the checklist for that is one page long. The message ends: "All good here. How are you?" {A} starts with the weather.
+do morale A 6
+do trait A warm 2
+
+card r_strike
+type event
+cat grim
+due
+once
+days 5 36
+roles A B
+when fired h_strike
+when is A hook_who
+text {A}'s morning EVA, {B} suited at the next ship's hatch, found a fingernail crater in a heat-shield tile, short of the bondline. The entry team clears it on one condition: {A}'s ship flies entry a few tenths of a degree shallower, easier at peak heat, a longer soak, in every brief from now on.
+do trait A brave 2
+do morale A 3
+
+card r_ghost
+type event
+cat mystery
+due
+once
+days 26 34
+roles A
+when fired h_ghost
+when is A hook_who
+text {A} pinned it down by morning: a launch cover plate shed by one of the fleet's own ships at departure, turning end over end along almost the same path. It will pass forty kilometres off the bow. It has drifted alongside them the whole way, and no one is coming for it.
+do trait A curious 3
+do morale A -2
+
+card r_voice
+type event
+cat human
+due
+once
+days 26 34
+roles A
+when fired h_voice
+when is A hook_who
+text {A} traced it the next morning: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. {A} listens with the volume very low.
+do morale A 6
+do trait A warm 3
+
+card r_dark
+type event
+cat mystery
+clue core key
+due
+once
+days 31 34
+roles A
+when fired h_dark
+when is A hook_who
+text {A} was back within the hour: the comms computer hung on the first whole frame from Mars, a link request signed with an old program key, sequence 1, the usual fresh challenge. The ground: "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed."
+do trait A brave 3
+do morale A -2
