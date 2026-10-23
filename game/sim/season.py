@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Fast-forward a 42-day season with 7 simulated players.
+"""Fast-forward a 42-day season with 8 simulated players.
 
   python3 sim/season.py                 # one season: narrative + stats + determinism check
   python3 sim/season.py --seasons 300   # many seasons with different voyage keys: stats only
 
 Writes sim/out/narrative.txt, sim/out/stats.json, build/season_story.bin, build/season_log.bin +
 build/season_expect.txt for the MicroPython check (tests/mp_check.py).
+
+  --spoilers   print the full summaries and write ending and card ids into
+               sim/out/stats.json and sim/out/multi_season.json. Without it (the committed
+               copies) endings are named by deck position ("ending 3") and cards by
+               number ("card 117"), so the files can be browsed without spoiling the story.
 """
 import json
 import os
@@ -23,7 +28,7 @@ from lv.chlog import ChoiceLog              # noqa: E402
 from lv.engine import Engine, A_GIFT, A_ADVICE, A_TASK, A_REST  # noqa: E402
 from lv.pack import load as load_pack       # noqa: E402
 from lv.state import State, N               # noqa: E402
-from sim.render import Renderer             # noqa: E402
+from sim.render import Renderer, page_heading  # noqa: E402
 
 FLEET_KEY = b"test-fleet-key-not-secret"
 
@@ -36,7 +41,9 @@ PROFILES = [
     {"name": "casual", "p": 0.50},
     {"name": "never plays", "p": 0.0},
     {"name": "never plays", "p": 0.0},
+    {"name": "weekend", "p": 0.45},
 ]
+assert len(PROFILES) == N, "one activity profile per ship"
 
 
 def offline(ship, day):
@@ -50,7 +57,18 @@ class Players:
 
     def __init__(self, seed):
         self.r = random.Random(seed)
-        self.seq = [0] * N
+        self.g = random.Random(seed * 7919 + 5)   # gifts: own stream, so the rest of
+        self.seq = [0] * N                         # each player's habits stay the same
+        self.asks = []                              # (day, from, to, item) not yet answered
+        try:
+            from lv.engage import load_table
+            t = load_table(os.path.join(ROOT, "build", "engage.bin"))
+            self.give_items = [i for i, f in enumerate(t.gift_flags) if f & 1]
+            self.ask_items = [i for i, f in enumerate(t.gift_flags) if f & 2]
+            self.ask_days = t.ask_days
+        except OSError:
+            self.give_items = self.ask_items = []
+            self.ask_days = 3
 
     def act(self, day, st, pack):
         recs = []
@@ -88,6 +106,20 @@ class Players:
                     rec(R.DILEMMA, idx, self.r.randrange(nopt))
             if self.r.random() < 0.15:
                 rec(R.NOTE, self.r.randrange(3), self.r.choice([j for j in range(N) if j != s]))
+            # Crewmate gifts: answer an ask now and then, give or ask now and then.
+            # Asking a crewmate who never plays is allowed and simply lapses.
+            for a in list(self.asks):
+                if a[2] == s and a[0] < day < a[0] + self.ask_days and self.g.random() < 0.6:
+                    rec(R.GIFT, a[3], a[1], R.GIFT_ANSWER)
+                    self.asks.remove(a)
+            others = [j for j in range(N) if j != s and st.cond[j] != O.COND_HOME]
+            if others and self.give_items and self.g.random() < 0.25:
+                rec(R.GIFT, self.g.choice(self.give_items), self.g.choice(others), R.GIFT_GIVE)
+            if others and self.ask_items and self.g.random() < 0.10:
+                to, it = self.g.choice(others), self.g.choice(self.ask_items)
+                rec(R.GIFT, it, to, R.GIFT_ASK)
+                self.asks.append((day, s, to, it))
+        self.asks = [a for a in self.asks if a[0] + self.ask_days > day]
         return recs
 
 
@@ -160,7 +192,7 @@ class Ship:
 
 
 def deliver(pack, authored, scenario, seed=7, upto=None, cls=None):
-    """Replay a fixed set of authored records to 7 ships under a delivery scenario.
+    """Replay a fixed set of authored records to 8 ships under a delivery scenario.
     Returns the ships. With upto, stop after that day's deliveries (the mock Pico
     server uses this to show what one ship knows on a given day)."""
     rnd = random.Random(seed)
@@ -255,17 +287,64 @@ def stats_for(pack, st, text):
     }
 
 
+def ending_label(text, cid):
+    """Spoiler-free name for an ending: its deck position ("ending 3"), never its id."""
+    if cid is None:
+        return None
+    ends = [c["id"] for c in text["cards"] if c["id"].startswith("end_")]
+    return "ending %d" % (ends.index(cid) + 1) if cid in ends else "ending ?"
+
+
+def card_label(text, cid):
+    """Spoiler-free name for a card: its deck position ("card 117"), never its id."""
+    return "card %d" % [c["id"] for c in text["cards"]].index(cid)
+
+
+def redact_stats(stats, text):
+    """stats.json without --spoilers: no ending id and no card ids (sim/out is committed,
+    and card ids name the mystery). Counts survive; names become deck positions."""
+    stats = dict(stats)
+    stats["ending"] = ending_label(text, stats["ending"])
+    stats["cards_fired"] = {card_label(text, k): v for k, v in stats["cards_fired"].items()}
+    return stats
+
+
+def redact_report(report, text):
+    """multi_season.json without --spoilers: endings by deck position, cards by number."""
+    report = dict(report)
+    report["endings"] = {ending_label(text, k): v for k, v in report["endings"].items()}
+    report["seasons_where_card_fired"] = {card_label(text, k): v
+                                          for k, v in report["seasons_where_card_fired"].items()}
+    report["cards_never_fired"] = [card_label(text, k) for k in report["cards_never_fired"]]
+    report["unfair_seasons"] = [{"season": u["season"], "missing_groups": len(u["missing"])}
+                                for u in report["unfair_seasons"]]
+    return report
+
+
+def fair_play(st, text):
+    """Core clue groups (lvc `clue core [group]`) with no card fired before the first
+    reveal card (lvc `reveal`). Empty means the season played fair."""
+    rv = [st.fired[i] for i in text.get("reveal", []) if st.fired[i]]
+    if not rv:
+        return ["(no reveal)"] if text.get("reveal") else []
+    day = min(rv)
+    return ["/".join(text["cards"][i]["id"] for i in g) for g in text.get("core", [])
+            if not any(0 < st.fired[i] < day for i in g)]
+
+
 def main(argv):
     pack_path = os.path.join(ROOT, "build", "pack.bin")
-    text = json.load(open(os.path.join(ROOT, "build", "text.json"), encoding="utf-8"))
+    text = json.load(open(os.path.join(ROOT, "build", "text.dev.json"), encoding="utf-8"))
     outdir = os.path.join(HERE, "out")
     os.makedirs(outdir, exist_ok=True)
     seasons = int(argv[argv.index("--seasons") + 1]) if "--seasons" in argv else 0
+    spoilers = "--spoilers" in argv  # otherwise summaries never print ending or card ids
 
     if seasons:
         endings, fired_any, t0 = {}, {}, time.time()
         dil = {"owner": 0, "astronaut": 0}
         dec = {"closed": 0, "no_ballots": 0}
+        unfair = []
         for i in range(seasons):
             pack = load_pack(pack_path)
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"
@@ -278,13 +357,31 @@ def main(argv):
                 dil[k] += s["dilemmas"][k]
             dec["closed"] += s["decisions"]["closed"]
             dec["no_ballots"] += s["decisions"]["no_ballots"]
+            missing = fair_play(st, text)
+            if missing:
+                unfair.append({"season": i, "missing": missing})
         dt = time.time() - t0
         never = [c["id"] for c in text["cards"] if c["id"] not in fired_any]
         report = {"seasons": seasons, "seconds": round(dt, 2), "endings": endings,
+                  "core_clues_before_reveal": seasons - len(unfair), "unfair_seasons": unfair,
                   "seasons_where_card_fired": dict(sorted(fired_any.items())),
                   "cards_never_fired": never, "dilemmas": dil, "decisions": dec}
-        print(json.dumps(report, indent=1))
-        json.dump(report, open(os.path.join(outdir, "multi_season.json"), "w"), indent=1)
+        # Ending and card ids are spoilers; they reach the file only with --spoilers.
+        json.dump(report if spoilers else redact_report(report, text),
+                  open(os.path.join(outdir, "multi_season.json"), "w"), indent=1)
+        if spoilers:
+            print(json.dumps(report, indent=1))
+        else:
+            # Spoiler-free: endings by deck position, no card ids (use --spoilers).
+            ends = [c["id"] for c in text["cards"] if c["id"] in endings or c["id"].startswith("end_")]
+            print("seasons: %d in %.1f s" % (seasons, dt))
+            print("core clues before the reveal: %d/%d seasons" % (seasons - len(unfair), seasons))
+            print("endings: " + ", ".join("ending %d %.1f%%" % (k + 1, 100.0 * endings.get(e, 0) / seasons)
+                                        for k, e in enumerate(ends)))
+            print("cards never fired: %d" % len(never))
+        if unfair:
+            print("FAIR PLAY FAILED in %d season(s): see sim/out/multi_season.json" % len(unfair))
+            return 1
         return 0
 
     pack = load_pack(pack_path)
@@ -293,20 +390,59 @@ def main(argv):
     t_ref = time.time() - t0
 
     # Narrative
-    rd = Renderer(text)
+    try:
+        eng_text = json.load(open(os.path.join(ROOT, "build", "engage.json"), encoding="utf-8"))
+    except OSError:
+        eng_text = None
+    rd = Renderer(text, eng_text)
     lines = []
     lastday = -1
     for day, s in rd.lines(st.story):
         if day != lastday:
             lines.append("")
-            lines.append("FLIGHT DAY %02d" % day)
+            lines.append(page_heading(day))
             lastday = day
         lines.append("  " + s)
     open(os.path.join(outdir, "narrative.txt"), "w", encoding="utf-8").write("\n".join(lines).strip() + "\n")
+    rlines, lastday = [], -1
+    for day, s in Renderer(text).reader(st.story):
+        if day != lastday:
+            rlines += ["", page_heading(day)]
+            lastday = day
+        rlines.append("  " + s)
+    open(os.path.join(outdir, "reader.txt"), "w", encoding="utf-8").write("\n".join(rlines).strip() + "\n")
+    epi = rd.epilogue(st.story, st)
+    open(os.path.join(outdir, "epilogue.txt"), "w", encoding="utf-8").write(
+        "".join("%s: %s\n" % (text["crew"][c], epi[c]) for c in sorted(epi))
+        + ("%s: %s\n" % rd.coda(st.story) if rd.coda(st.story) else ""))
 
     # The raw story bytes, so tests/render_check.mjs can prove web/render.js says the same.
     with open(os.path.join(ROOT, "build", "season_story.bin"), "wb") as f:
         f.write(st.story)
+    # The epilogue fallback (no story lines: everything from the final state) as render.py
+    # gives it, for the reference season's state and two flattened copies (bonds only,
+    # then nothing past the cut), so render_check.mjs can test web/render.js on each path.
+    n = len(text["crew"])
+
+    class Flat:
+        def __init__(self, traits, bonds):
+            self.traits, self.bonds = traits, bonds
+
+        def trait(self, c, a):
+            return self.traits[c][a]
+
+        def bond(self, c, j):
+            return self.bonds[c][j]
+
+    tr = [[st.trait(c, a) for a in range(3)] for c in range(n)]
+    bo = [[st.bond(c, j) for j in range(n)] for c in range(n)]
+    zero = [[0] * 3 for _ in range(n)]
+    cases = []
+    for t_, b_ in ((tr, bo), (zero, bo), (zero, [[0] * n for _ in range(n)])):
+        lines = Renderer(text).epilogue(b"", Flat(t_, b_))
+        cases.append({"traits": t_, "bonds": b_, "lines": {str(c): l for c, l in sorted(lines.items())}})
+    with open(os.path.join(ROOT, "build", "season_end.json"), "w", encoding="utf-8") as f:
+        json.dump(cases, f)
 
     # MicroPython check inputs
     with open(os.path.join(ROOT, "build", "season_log.bin"), "wb") as f:
@@ -322,7 +458,7 @@ def main(argv):
     for scen in ("instant", "gossip", "reverse", "bursty"):
         ships = deliver(pack, authored, scen)
         ok = all(s.st.digest() == ref for s in ships)
-        det[scen] = {"all_7_match": ok,
+        det[scen] = {"all_ships_match": ok,
                      "replays": sum(s.replays for s in ships),
                      "replayed_days": sum(s.replayed_days for s in ships),
                      "deepest_rewrite_days": max(s.max_depth for s in ships)}
@@ -344,13 +480,18 @@ def main(argv):
         "seconds_determinism_runs": round(t_det, 2),
         "pack_bytes": pack.size,
     })
-    json.dump(stats, open(os.path.join(outdir, "stats.json"), "w"), indent=1)
-    print(json.dumps(stats, indent=1))
-    bad = [k for k, v in det.items() if not v["all_7_match"]]
+    json.dump(stats if spoilers else redact_stats(stats, text),
+              open(os.path.join(outdir, "stats.json"), "w"), indent=1)
+    if spoilers:
+        print(json.dumps(stats, indent=1))
+    else:
+        print("reference season: digest %s, %d entries, %d records; details in sim/out/stats.json"
+              % (stats["reference_digest"], stats["entries"], stats["records"]))
+    bad = [k for k, v in det.items() if not v["all_ships_match"]]
     if bad:
         print("DETERMINISM FAILED:", bad)
         return 1
-    print("determinism: all 7 ships match the reference in every scenario")
+    print("determinism: all %d ships" % N + " match the reference in every scenario")
     return 0
 
 

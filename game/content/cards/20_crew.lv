@@ -1,100 +1,81 @@
 # Crew and relationship beats, trait reactions, and inactive-friendly events.
+# House style: content/STYLE.md.
 
-# Private dilemma that surfaces later.
-card dil_stash
-type dilemma
-days 3 30
-weight 8
-duration 3
+# The Starbase stash: opened on a fixed day so the Sharpie hand is known by arrival.
+card l_stash
+type event
+cat human
+due
+once
+days 10 10
 roles A
 when cond A ok
+when home A
+text Behind a stowage panel on {A}'s ship, three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a Starship with its fingers crossed.
+do open dil_stash
+
+card dil_stash
+type dilemma
+once
+cat human
+days 10 10
+weight 1
+duration 3
+roles A
+when !fired dil_stash
 lean warm share keep
-text {A} finds three unlogged ration packs taped behind a panel. Nobody else knows.
-option keep | Keep them quiet | {A} moves them to a locker. For emergencies. Probably.
+text The three packs from behind the panel are the good rations, the ones the galley ran out of first. They aren't on any inventory.
+option keep | Keep them quiet | {A} thanks the packer silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash
   who stash_who A
   morale A 6
-option share | Hand them in | {A} hands them to the galley. Dinner is briefly excellent.
-  set stash_shared
+option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch.
+  who stash_who A
   res food 3
   morale A 2
 
 card stash_found
 type beat
+cat human
 due
 once
-days 12 41
+days 23 31
 roles A B
 when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
-when same A B
-text {B} finds the stash in {A}'s locker. {A} shares it out on the spot. Dessert all round.
+text {A} opens the locker before breakfast, tags one pack for {B} for the next crossing window, and eats another on video with {B}, reading the bag aloud like the back of a cereal box.
 do bond A B 6
 do morale A 3
 do set stash_exposed
+do who stash_b B
 
 card beat_watch
 type beat
-days 1 42
+cat wonder
+once
+days 8 11
 weight 10
-cooldown 5
 roles A B
-when same A B
 when bond A B >= -20
-text {A} and {B} share the night watch. Mostly they talk about home.
+text {A} and {B} stand the night watch over the fleet link, each in a dark cabin. Earth is a thin bright crescent now, low beside the Sun's glare, already smaller than the Moon looks from home. They make coffee at the same minute, as if that counted.
 do bond A B 6
-
-card beat_argue
-type beat
-days 2 42
-weight 8
-cooldown 6
-roles A B
-when trait A warm <= -10
-when same A B
-text {A} and {B} spend a whole shift debating the thermostat. They settle on 21 degrees and a truce.
-do bond A B -4
 
 # Trait-driven reaction: what happens depends on how brave A is.
 card glint
 type event
-days 4 38
+cat wonder
+days 11 30
 weight 8
-cooldown 9
+once
 roles A
-when trait A curious >= 15
+when trait A curious >= -5
 when cond A ok
 lean brave closer window
-text {A} spots a glint off the starboard quarter.
-option closer | Go and look | {A} suits up without asking anyone and comes back with a bolt from a much older ship.
-  var glints 1
+text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
+option closer | Get a closer look | {A} talks Mission Control into a camera slew: a flake of ice from the last waste-water dump, tumbling, a little smaller every hour.
   trait A brave 3
-option window | Watch from the window | {A} logs it and watches from the window until it's gone.
+option window | Track it from the window | {A} notes its bearing hourly: ice from the last waste-water dump, tumbling, smaller each hour.
   trait A curious 2
 
-# Inactive-friendly: only fires for astronauts whose owner hasn't been in for a while,
-# and makes them look good.
-card quiet_fixer
-type beat
-days 3 42
-weight 12
-cooldown 4
-roles A
-when idle A >= 3
-when cond A ok
-text {A} quietly fixes the galley pump again. Nobody asked; nobody needed to.
-do res spares 1
-do morale A 3
-
-card galley_pump
-type event
-days 1 42
-weight 6
-cooldown 8
-roles A
-when res spares >= 1
-text The galley pump fails again. {A} fixes it and narrates the whole repair like a nature documentary.
-do res spares -1
-do morale A -2

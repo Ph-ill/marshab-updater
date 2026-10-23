@@ -50,6 +50,14 @@ async function signIn(p, size, day) {
   if (await p.$(".big")) { await p.click('[data-go="home"]'); await p.waitForSelector("#dock nav, .tbl"); }
 }
 const goto = (p, r) => p.evaluate((r) => go(r), r);
+// Open the first card of a kind (3 vote, 4 private, 5 anyone) on the signed-in day, so the
+// shots follow the content instead of fixed card numbers. Returns its card index.
+async function openKind(p, type) {
+  const c = await p.evaluate((t) => (S.open.find((o) => o.type === t) || {}).card, type);
+  if (c === undefined) throw new Error(`no open card of type ${type} on this day`);
+  await goto(p, "item/" + c);
+  return c;
+}
 
 for (const [n, size] of SIZES.entries()) {
   let p = await page(size);
@@ -86,20 +94,24 @@ for (const [n, size] of SIZES.entries()) {
   await p.click('[data-act="0"]');
   await p.click('[data-sub="t:2"]');
   await shot(p, size, "06-instruct");
-  await goto(p, "item/5");
+  await p.context().close();
+
+  p = await page(size);
+  await signIn(p, size, 9);
+  await openKind(p, 4);
   await shot(p, size, "08-dilemma");
   await p.context().close();
 
   p = await page(size);
-  await signIn(p, size, 7);
-  await goto(p, "item/0");
-  await p.click('[data-pick="0:0"]');
+  await signIn(p, size, 5);
+  const v = await openKind(p, 3);
+  await p.click(`[data-pick="${v}:0"]`);
   await shot(p, size, "07-vote");
   await p.context().close();
 
   p = await page(size);
-  await signIn(p, size, 11);
-  await goto(p, "item/4");
+  await signIn(p, size, 14);
+  await openKind(p, 5);
   await shot(p, size, "09-rescue");
   await p.context().close();
 
@@ -116,6 +128,9 @@ for (const [n, size] of SIZES.entries()) {
   await signIn(p, size, 42);
   await shot(p, size, "11-ending");
   if (size.width === 390 && !cna) await shot(p, size, "11-ending-full", true);
+  await goto(p, "epilogue");
+  await shot(p, size, "11b-epilogue");
+  if (size.width === 390 && !cna) await shot(p, size, "11b-epilogue-full", true);
   await p.context().close();
 
   // Automatic dark mode (prefers-color-scheme): the phone's setting, nothing to switch on the page.

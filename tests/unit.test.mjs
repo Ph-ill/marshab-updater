@@ -27,10 +27,12 @@ t('static release index is Long Voyage only and points at release files', () => 
   for(const r of index.releases) assert.match(r.path, /^\/firmware\/releases\/[^/]+\/release\.json$/);
 });
 t('ship config: WPA2 default, custom password, explicit open network', () => {
-  const opts = { count: 7, roles: ['A', 'B'] };
+  const opts = { count: 8, roles: ['A', 'B'] };
+  assert.equal(validateShipConfig({ ship_id: '8' }, opts).ship_id, 8, 'ship 8 (Marco) is valid');
   const def = validateShipConfig({ ship_id: '7', ship_name: ' Starship-07 ', hotspot_password: '', role: 'a' }, opts);
-  assert.deepEqual({ ...def }, { schema: 2, ship_id: 7, ship_name: 'Starship-07', role: 'A', hotspot_open: false });
+  assert.deepEqual({ ...def }, { schema: 2, ship_id: 7, ship_name: 'Starship-07', role: 'A', hotspot_open: false, led_notify: false });
   assert.equal(hotspotSummary(def), 'WPA2, firmware default password');
+  assert.equal(validateShipConfig({ ship_id: 2, led_notify: 'on' }, opts).led_notify, true);
   const custom = validateShipConfig({ ship_id: 2, hotspot_password: 'correcthorse' }, opts);
   assert.equal(custom.hotspot_password, 'correcthorse');
   assert.equal(custom.ship_name, 'Starship-02');
@@ -40,7 +42,7 @@ t('ship config: WPA2 default, custom password, explicit open network', () => {
   assert.ok(!('hotspot_password' in open), 'open network carries no password');
   assert.equal(hotspotSummary(open), 'open network');
   assert.equal(hotspotSummary(null), 'firmware default (WPA2)');
-  for(const bad of [{ ship_id: 8 }, { ship_id: 0 }, { ship_id: 1, hotspot_password: 'short' }, { ship_id: 1, ship_name: 'a"b' },
+  for(const bad of [{ ship_id: 9 }, { ship_id: 0 }, { ship_id: 1, hotspot_password: 'short' }, { ship_id: 1, ship_name: 'a"b' },
     { ship_id: 1, ship_name: 'x'.repeat(25) }, { ship_id: 1, role: 'C' }, { ship_id: 1, hotspot_password: 'x'.repeat(64) }]){
     assert.throws(() => validateShipConfig({ ship_name: 'S', hotspot_password: '', role: '', ...bad }, opts), JSON.stringify(bad));
   }
@@ -107,7 +109,8 @@ t('role memory: suggest the other role, warn on a repeat, tell boards apart by u
 // Crew codes: the browser must hash exactly like game/lv/codes.py (same vector as its tests).
 const SALT = '000102030405060708090a0b0c0d0e0f';
 const vec = await digest(SALT, 0, '1234');
-const cfg = await crewConfig(['1234', '', '0420', '9999', '0000', '1111', '2222'], SALT);
+const vec7 = await digest(SALT, 7, '3333');
+const cfg = await crewConfig(['1234', '', '0420', '9999', '0000', '1111', '2222', '3333'], SALT);
 t('crew codes: digest matches the board (game/lv/codes.py)', () => {
   assert.equal(vec, '0cc8d81bab788a28b5390ce71859e989a5b3e623b8e1cb44c6bfadccc5ff03e4');
   assert.equal(cfg.schema, 1);
@@ -115,6 +118,9 @@ t('crew codes: digest matches the board (game/lv/codes.py)', () => {
   assert.equal(cfg.codes[0], vec);
   assert.equal(cfg.codes[1], null, 'blank = not set up');
   assert.match(cfg.codes[2], /^[0-9a-f]{64}$/);
+  assert.equal(cfg.codes.length, 8, 'eight crew, Marco last');
+  assert.equal(vec7, '3c7e888a232925ef63cc815b1b52ca9e278224df35b7702bb77ed755dcd5f643', 'crew byte 7 (Marco), same as lv/codes.py');
+  assert.equal(cfg.codes[7], vec7);
   assert.ok(!JSON.stringify(cfg).includes('0420'), 'no plain codes in the board file');
 });
 t('crew codes: roster matches game/content/roster.lv', () => {
@@ -122,20 +128,20 @@ t('crew codes: roster matches game/content/roster.lv', () => {
   assert.deepEqual([...lv.matchAll(/^crew\s+(\S+)/gm)].map(m => m[1]), CREW);
 });
 t('crew codes: validation, shared codes, random codes, list, browser memory', () => {
-  assert.deepEqual(validateCodes([' 1234', '', '0000', '', '', '', '']), ['1234', '', '0000', '', '', '', '']);
-  assert.throws(() => validateCodes(['123', '', '', '', '', '', '']), /Phill's code must be 4 digits/);
-  assert.throws(() => validateCodes(['', '12a4', '', '', '', '', '']), /Jacques/);
-  assert.throws(() => validateCodes(['', '', '', '', '', '', '']), /at least one/);
-  assert.throws(() => validateCodes(['1234']), /need 7/);
-  assert.deepEqual(sharedCodes(['1234', '5678', '1234', '', '', '', '']), [['Phill', 'Kim']]);
+  assert.deepEqual(validateCodes([' 1234', '', '0000', '', '', '', '', '']), ['1234', '', '0000', '', '', '', '', '']);
+  assert.throws(() => validateCodes(['123', '', '', '', '', '', '', '']), /Phill's code must be 4 digits/);
+  assert.throws(() => validateCodes(['', '12a4', '', '', '', '', '', '']), /Jacques/);
+  assert.throws(() => validateCodes(['', '', '', '', '', '', '', '']), /at least one/);
+  assert.throws(() => validateCodes(['1234']), /need 8/);
+  assert.deepEqual(sharedCodes(['1234', '5678', '1234', '', '', '', '', '']), [['Phill', 'Kim']]);
   for(let i = 0; i < 200; i++) assert.match(randomCode(), /^\d{4}$/);
-  assert.match(codeList(['1234', '', '', '', '', '', '']), /^Phill +1234\nJacques +\(not set up\)/);
+  assert.match(codeList(['1234', '', '', '', '', '', '', '']), /^Phill +1234\nJacques +\(not set up\)/);
   const mem = new Map(); const storage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v), removeItem: k => mem.delete(k) };
   assert.equal(loadCodes(storage), null);
-  saveCodes({ salt: SALT, codes: ['1234', '', '', '', '', '', ''] }, storage);
+  saveCodes({ salt: SALT, codes: ['1234', '', '', '', '', '', '', ''] }, storage);
   assert.deepEqual(loadCodes(storage).codes[0], '1234');
   mem.set(CODES_MEMORY_KEY, '{broken'); assert.equal(loadCodes(storage), null, 'corrupt storage is ignored');
-  saveCodes({ salt: SALT, codes: ['1234', '', '', '', '', '', ''] }, storage); forgetCodes(storage);
+  saveCodes({ salt: SALT, codes: ['1234', '', '', '', '', '', '', ''] }, storage); forgetCodes(storage);
   assert.equal(loadCodes(storage), null);
 });
 console.log(`\n${n} unit checks passed`);

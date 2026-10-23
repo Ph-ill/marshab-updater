@@ -40,7 +40,7 @@ FLASH_LOG_MAX = 180_000     # bytes; rotates to /coex_log.old
 USE_WDT = True              # hardware watchdog (8 s); a reset counts as a failure in the results
 
 # ---------------------------------------------------------------- per-ship overrides (web updater)
-# /data/ship.json survives firmware updates. Keys: ship_id (1-7), ship_name, role ("A"/"B"),
+# /data/ship.json survives firmware updates. Keys: ship_id (1-8), ship_name, role ("A"/"B"),
 # hotspot_password (optional, 8-63 chars), hotspot_open (optional, true = no password).
 SHIP_NUM = 0
 SHIP_NAME = ""

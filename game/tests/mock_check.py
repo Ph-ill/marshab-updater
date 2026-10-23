@@ -18,7 +18,7 @@ from sim import mockserver as M   # noqa: E402
 from lv import codes as K          # noqa: E402
 
 M.G = M.Game(8)
-M.G.book = K.CodeBook(K.make_config(["1234", "2468", "1357", None, "0000", "1111", "2222"], b"0123456789abcdef"))
+M.G.book = K.CodeBook(K.make_config(["1234", "2468", "1357", None, "0000", "1111", "2222", "3333"], b"0123456789abcdef"))
 srv = M.ThreadingHTTPServer(("127.0.0.1", 0), M.H)
 srv.daemon_threads = True
 threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -42,10 +42,17 @@ def check(cond, what):
 
 
 s, j = call("/api/crew?day=8")
-check(j["set"] == [True, True, True, False, True, True, True], "crew list shows who is set up")
+check(j["set"] == [True, True, True, False, True, True, True, True], "crew list shows who is set up (all 8)")
 check(call("/api/me?day=8")[0] == 401, "unknown phone isn't signed in")
 check(call("/api/login?day=8", {"crew": 3, "pin": "1234"})[0] == 409, "no code set up -> 409")
 check(call("/api/login?day=8", {"crew": 0, "pin": "12x4"})[0] == 400, "non-digits -> 400")
+s, j = call("/api/login?day=8", {"crew": 7, "pin": "3333"}, ua="phone-m")
+check(s == 200 and j["crew"] == 7, "Marco (crew 7, ship 8) signs in")
+s, st = call("/api/state?day=8", tok=j["token"])
+check(s == 200, "Marco's token works")
+check(len(st["best"]) == len(st["bestb"]) == 8 and all(b != c for c, b in enumerate(st["best"])),
+      "state has each astronaut's closest crewmate and that bond (epilogue fallback)")
+check(call("/api/login?day=8", {"crew": 8, "pin": "1234"})[0] == 400, "crew 8 doesn't exist -> 400")
 
 s, j = call("/api/login?day=8", {"crew": 0, "pin": "1234"})
 check(s == 200 and j["crew"] == 0 and j["first"] is True, "right code signs in, first time")

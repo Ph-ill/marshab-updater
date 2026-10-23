@@ -12,6 +12,20 @@ ENDING = 6     # checked in pack order on the last flight day
 # Card flag bits
 F_ONCE = 1
 F_DUE = 2      # fires whenever eligible, before the random picks (callbacks)
+F_HOOK = 4     # cliffhanger: picked last in the day, at most one every HOOK_GAP days
+
+HOOK_GAP = 4   # days between cliffhangers (so never two days running)
+HOOK_PCT = 50  # daily chance of a cliffhanger once the gap has passed
+
+# Crew crossings between ships happen only in scheduled transfer windows: every
+# TRANSFER_EVERY days from TRANSFER_FROM (content/STYLE.md, "Home ships").
+TRANSFER_FROM = 7
+TRANSFER_EVERY = 5
+TRANSFER_OUT = 7     # base percent chance an astronaut at home crosses in a window
+TRANSFER_BACK = 60   # percent chance a visitor crosses back in a window
+TRANSFER_LAST_OUT = 32  # last window anyone may cross out in (entry prep follows)
+TRANSFER_HOME = 37   # from this day every visitor goes home (the day-37 window is
+                     # return-only); no crossings at all in the last days before entry
 
 # Conditions
 C_FLAG = 1        # a = flag
@@ -39,6 +53,8 @@ C_IS = 22         # a = role, b = var holding crew index + 1
 C_DAY_GE = 23     # b = day
 C_HOME = 24       # a = role is aboard its own ship
 C_AWAY = 25
+C_CREW = 26       # a = role, b = bitmask of crew indices (compiled from roster tags)
+C_ISNT = 27       # a = role, b = var: role is not the crew member the var names
 
 # Effects
 E_SET = 1         # a = flag
@@ -77,7 +93,8 @@ O_DIL_CLOSE = 5   # card, A, option, by (0 = owner, 1 = astronaut in character)
 O_ACT = 6         # crew, action, target, auto (1 = astronaut chose), param
 O_MOVE = 7        # crew, from ship, to ship
 O_NOTE = 8        # crew, line, target
-O_END = 9         # card
+O_END = 9         # card, A, B (crew named by the ending's `is` conditions)
 O_RES_OPEN = 10   # card, A, B
 O_RES_CLOSE = 11  # card, option, ballots, defaulted
 O_SHORT = 12      # resource running low
+O_GIFT = 13       # from crew, item, to crew, mode (record.GIFT_*): a crewmate gift or ask
