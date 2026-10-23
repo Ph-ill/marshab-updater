@@ -181,6 +181,22 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 @media (max-height:640px){:root{--key:52px}#top{height:calc(44px + var(--st))}#dock .act{padding:6px var(--s4)}.btn,.done{min-height:52px}nav button{height:48px;gap:1px}nav svg{width:16px;height:16px}nav .bd{top:3px}section{padding-top:var(--s4)}.kick{padding-top:var(--s4)}.pin{margin-top:var(--s4)}.err{margin-top:var(--s2)}}
 @media (max-height:520px){.kick .help{display:none}}
 @media (prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important}}
+.tsteps{display:flex;gap:var(--s1);list-style:none;margin:var(--s3) 0 var(--s4);padding:0}
+.tsteps li{flex:1;height:4px;background:var(--rule)}
+.tsteps li.d{background:var(--ink)}
+.tsteps li.c{background:var(--rust)}
+.tut h1{outline-offset:4px}
+.tut .lead{font-size:17px;line-height:26px}
+.fig{margin-top:var(--s4);padding:var(--s3);border:1px solid var(--rule)}
+.fig svg{display:block;width:100%;height:auto;overflow:visible}
+.fig .lab{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s2);margin:var(--s2) 0 0;font-size:12px}
+.bl{list-style:none;margin:var(--s4) 0 0;padding:0;border-top:1px solid var(--ink)}
+.bl li{display:grid;grid-template-columns:104px 1fr;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--rule);font-size:16px;line-height:22px}
+.bl b{font:600 12px/22px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.fine{margin-top:var(--s4);font:13px/18px var(--mono);letter-spacing:.04em;color:var(--ink2)}
+.tnav{display:grid;grid-template-columns:2fr 3fr;gap:var(--s2)}
+.tnav .btn+.btn{margin-top:0}
+@media (max-width:359px){.bl li{grid-template-columns:1fr;gap:0}.tut .lead{font-size:16px;line-height:24px}}
 </style>
 </head>
 <body>
@@ -273,27 +289,54 @@ function rewritten(d){const a=S.updated[d];return a&&a>=d+2&&d<S.day?a:0}
 
 // ---- drawing --------------------------------------------------------------------------
 function hash(s){let x=2166136261;for(const c of s)x=Math.imul(x^c.charCodeAt(0),16777619)>>>0;return x}
+// Crew portraits: one suit and helmet ring for everyone, then each astronaut's own visor,
+// helmet detail and chest patch (by roster order), then trait and condition marks. Suits,
+// helmets and patches only: no faces. The flagship's patch has a rust ring.
+const PI="var(--ink)",PP="var(--paper)",PR="var(--rust)";
+const pL=(d,w=1.5,c=PI)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}"/>`;
+const pF=(d,c=PI)=>`<path d="${d}" fill="${c}"/>`;
+const pC=(x,y,r,f=PI,st="")=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"${st}/>`;
+const pK=(x,y,r,w=1.1,da="")=>`<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${PI}" stroke-width="${w}"${da?` stroke-dasharray="${da}"`:""}/>`;
+const VIS=[
+  pF("M19 25Q32 17 45 25L43 34Q32 40 21 34Z")+pL("M23 25Q27 22 31 21.5",1.5,PP),
+  pC(32,28,10.5)+pL("M25.5 24Q27.5 20.5 31 19.5",1.5,PP),
+  pF("M17.5 23H46.5V32H17.5Z")+pL("M21 25.5H29",1.5,PP),
+  pF("M20 22H44V30Q32 37 20 30Z")+pL("M23 24.5H28",1.5,PP),
+  pF("M18 25H46V30.5Q32 33.5 18 30.5Z")+pL("M21.5 27.2H27",1.5,PP),
+  pF("M16.5 24Q32 20.5 47.5 24L45.5 33Q32 39 18.5 33Z")+pL("M37 31L40 28M40.5 32.5L42.5 30.5",1.2,PP)];
+let chk="";for(let i=0;i<4;i++)for(let j=0;j<3;j++)if((i+j)%2===0)chk+=`M${28.5+i*1.75} ${54+j*1.67}h1.75v1.67h-1.75Z`;
+// [visor, helmet detail, patch glyph]. Patches are drawn at the chest, centre 32,57.
+const CREW=[
+  // Phill: a garden brim on the helmet; a house with a d-pad window.
+  [0,pL("M13.5 21.5Q32 12.5 50.5 21.5",2),pL("M27.8 57.4L32 53.6L36.2 57.4M28.9 56.4V60.6H35.1V56.4",1.1)+pL("M32 57.2V60M30.6 58.6H33.4",1)],
+  // Jacques: a squared service helmet with rank chevrons and a side rail; a circuit trace that climbs.
+  [2,pL("M19 16.5L21.5 18.5L24 16.5M19 19.5L21.5 21.5L24 19.5",1.2)+pL("M15 26.5H12.5V31.5H15"),pL("M27.5 60.5H29.8L32.3 58H33.8L36.3 54M34.4 54.1L36.5 53.6L37 55.6",1.1)+pC(27.5,60.5,1)+pC(32.3,58,1)],
+  // Kim: a mecha-pilot V-fin; a sparkle.
+  [1,pL("M32 12L25.5 5M32 12L38.5 5",2)+pF("M29.5 11.8L32 8.5L34.5 11.8Z"),pF("M32 52.6Q32.6 56.4 36.4 57Q32.6 57.6 32 61.4Q31.4 57.6 27.6 57Q31.4 56.4 32 52.6Z")+pC(35.4,53.6,.7)],
+  // Jai: a racing stripe and a narrow slot visor; a chequered flag.
+  [4,pL("M29.5 11.3V24.5M34.5 11.3V24.5",1.2),pF(chk)+pL("M28.5 54H35.5V59H28.5M28.5 54V61.2",.8)],
+  // Michelle: a bubble helmet and a lightning-bolt shoulder decal; a paw print.
+  [3,pK(32,28,19.75,.75)+pF("M50.5 51.5L46.8 56.2H49.3L47.4 60.5L52.4 54.6H49.8Z"),`<ellipse cx="32" cy="58.8" rx="2.3" ry="1.8" fill="${PI}"/>`+pC(29.4,56.1,.9)+pC(31.1,54.6,.9)+pC(32.9,54.6,.9)+pC(34.6,56.1,.9)],
+  // Diego: a comms headset (always up for a chat) and bolted collar; a cog.
+  [0,`<rect x="47" y="23" width="3.5" height="10" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`+pL("M48.7 33Q48.7 40.5 41 41",1.2)+pC(39.7,41,1.6)+pC(23.5,47.5,.9)+pC(40.5,47.5,.9),pK(32,57,3.7,2,"1.45 1.455")+pC(32,57,2.3,PP,` stroke="${PI}" stroke-width="1.1"`)+pC(32,57,.8)],
+  // Dorian: a little network of nodes; a crimped, crustless sandwich.
+  [3,pL("M19.5 19.5L23 14L27.5 17ZM27.5 17L31.5 12.5",1)+pC(19.5,19.5,1.3)+pC(23,14,1.3)+pC(27.5,17,1.3)+pC(31.5,12.5,1.3),pK(32,57,4.6,1.1,".8 .65")+pK(32,57,3.2)+pC(32,57,1)],
+  // Marco: level-meter bars and a wraparound visor; an atomiser bottle.
+  [5,pL("M41 22V18.5M43.5 22V15.5M46 22V19",1.6),`<rect x="29.3" y="55.6" width="5.4" height="5.6" rx="1.2" fill="none" stroke="${PI}" stroke-width="1.1"/>`+pL("M31.2 55.6V54.2H32.8V55.6",1)+pF("M30.6 54.2H33.4V52.6H30.6Z")+pC(35.6,53.4,.45)+pC(36.7,52.5,.45)+pC(36.6,54.4,.45)]];
 function portrait(c){
-  const t=S?S.traits[c]:[0,0,0],k=hash(T.crew[c]),cond=S?S.cond[c]:0;
-  const INK="var(--ink)",P="var(--paper)",RU="var(--rust)";
-  const visors=[
-    `<path d="M19 25Q32 17 45 25L43 34Q32 40 21 34Z" fill="${INK}"/><path d="M23 25Q27 22 31 21.5" stroke="${P}" stroke-width="1.5" fill="none"/>`,
-    `<circle cx="32" cy="28" r="10.5" fill="${INK}"/><path d="M25.5 24Q27.5 20.5 31 19.5" stroke="${P}" stroke-width="1.5" fill="none"/>`,
-    `<rect x="17.5" y="23" width="29" height="9" fill="${INK}"/><path d="M21 25.5H29" stroke="${P}" stroke-width="1.5"/>`,
-    `<path d="M20 22H44V30Q32 37 20 30Z" fill="${INK}"/><path d="M23 24.5H28" stroke="${P}" stroke-width="1.5"/>`];
-  let g=`<path d="M6 64C7 52 18 47.5 32 47.5S57 52 58 64" fill="${P}" stroke="${INK}" stroke-width="1.5"/>`;
-  g+=`<path d="M20 47.5L22 64M44 47.5L42 64" stroke="${INK}" stroke-width="1"/>`;
-  g+=`<rect x="${k&1?37:22}" y="52" width="6" height="6" fill="${c===T.flagship?RU:"none"}" stroke="${INK}" stroke-width="1"/>`;
-  g+=`<path d="M20.5 46H43.5V49H20.5Z" fill="${P}" stroke="${INK}" stroke-width="1.5"/>`;
-  g+=`<circle cx="32" cy="28" r="17" fill="${P}" stroke="${INK}" stroke-width="1.5"/>`;
-  if(t[2]>15)g+=`<path d="M17.6 21A17 17 0 0 1 46.4 21" stroke="${RU}" stroke-width="3" fill="none"/>`;
-  else if(t[2]<-15)g+=`<path d="M15 31H17.5M46.5 31H49" stroke="${INK}" stroke-width="2.5"/>`;
-  g+=visors[(k>>>3)%4];
-  if(t[1]>15)g+=`<path d="M41 13.5L46 4" stroke="${INK}" stroke-width="1.5"/><rect x="44.5" y="2" width="3.5" height="3.5" fill="${INK}"/>`;
-  else if(t[1]<-15)g+=`<path d="M23.5 13.3H40.5" stroke="${INK}" stroke-width="1"/>`;
-  if(t[0]>15)g+=`<path d="M17 36L20 34.5M18.5 39L21.5 37.5" stroke="${INK}" stroke-width="1"/>`;
-  else if(t[0]<-15)g+=`<circle cx="32" cy="28" r="14.5" fill="none" stroke="${INK}" stroke-width=".75" stroke-dasharray="1.5 1.5"/>`;
-  if(cond===1)g+=`<path d="M43 37L49 41M43.5 41L48.5 36.5" stroke="${RU}" stroke-width="2"/>`;
+  const t=S?S.traits[c]:[0,0,0],cond=S?S.cond[c]:0,[vi,det,pat]=CREW[c%8],sq=c%8===1,fl=c===T.flagship;
+  let g=`<path d="M6 64C7 52 18 47.5 32 47.5S57 52 58 64" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`+pL("M20 47.5L22 64M44 47.5L42 64",1);
+  g+=`<path d="M20.5 46H43.5V49H20.5Z" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`;
+  g+=sq?`<path d="M15 28V20Q15 11 24 11H40Q49 11 49 20V28Q49 45 32 45Q15 45 15 28Z" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`:pC(32,28,17,PP,` stroke="${PI}" stroke-width="1.5"`);
+  if(t[2]>15)g+=pL("M17.6 21A17 17 0 0 1 46.4 21",3,PR);
+  else if(t[2]<-15)g+=pL("M15 31H17.5M46.5 31H49",2.5);
+  g+=VIS[vi]+det;
+  if(t[1]>15)g+=pL("M41 13.5L46 4")+`<rect x="44.5" y="2" width="3.5" height="3.5" fill="${PI}"/>`;
+  else if(t[1]<-15)g+=pL("M23.5 13.3H40.5",1);
+  if(t[0]>15)g+=pL("M17 36L20 34.5M18.5 39L21.5 37.5",1);
+  else if(t[0]<-15)g+=pK(32,28,14.5,.75,"1.5 1.5");
+  g+=pC(32,57,6.5,PP,` stroke="${fl?PR:PI}" stroke-width="${fl?2:1.2}"`)+pat;
+  if(cond===1)g+=pL("M43 37L49 41M43.5 41L48.5 36.5",2,PR);
   return `<svg viewBox="0 0 64 64" aria-hidden="true"${cond===2?' opacity=".4"':""}>${g}</svg>`;
 }
 function ticks(v,n){
@@ -403,7 +446,7 @@ function crew(c){
   const mentions=[];
   for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if(x.s.includes(nm(c))&&mentions.length<3)mentions.push([d,x.s]);
   o+=`<section><div class=lab><span>Lately</span></div><ul class=log>${mentions.map(([d,s])=>`<li><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(s)}</li>`).join("")||"<li class=fold>Nothing logged yet.</li>"}</ul></section>`;
-  if(mine)o+=`<section><button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
+  if(mine)o+=`<section>${EG?"":`<button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button>`}<button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
   $("v").innerHTML=o;
   dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to ${h(nm(S.you))}</span><i>←</i></button>`,"crew");
 }
@@ -548,13 +591,76 @@ function meet(){
   o+=`<p>Once a day you can give ${h(A)} one instruction. Everything else, ${h(A)} decides. The voyage carries on while you're away.</p></div>`;
   o+=`<section><div class=lab><span>Starting character</span></div>${[0,1,2].map((a)=>gauge(S.you,a)).join("")}</section>`;
   $("v").innerHTML=o;
-  dock(`<button class="btn pri" data-go="home"><span>Go aboard</span><i>FD ${pad(S.day)}</i></button>`,"");
+  dock(tutDue?`<button class="btn pri" data-go="how"><span>Crew briefing</span><i>${EG?6:4} cards</i></button>`:`<button class="btn pri" data-go="home"><span>Go aboard</span><i>FD ${pad(S.day)}</i></button>`,"");
 }
+
+// ---- crew briefing (how to play) -------------------------------------------------------
+// Mechanics only, never story. Shown once after a first sign-in (the ship says `first`),
+// then filed under FILE (or your own crew page) as "How to play". The one thing this page
+// keeps on the phone is that it has been read; if the browser forgets, nothing breaks.
+const TK="lv-briefed";
+const briefed=()=>{try{return localStorage.getItem(TK)==="1"}catch(e){return false}};
+let tutDue=false,tutFrom="home";
+function briefDone(){try{localStorage.setItem(TK,"1")}catch(e){}tutDue=false;go(tutFrom)}
+function tFig(kind){
+  if(kind===1){let t="";const Q=S.season;for(let i=1;i<=Q;i++){const x=(i-.5)*100/Q,on=S&&i<=S.day,now=S&&i===S.day;t+=`<line x1="${x}" x2="${x}" y1="${now?2:i%7?10:6}" y2="22" stroke="${now?PR:on?PI:"var(--rule)"}" stroke-width="${now?2:1}" vector-effect="non-scaling-stroke"/>`}
+    return `<div class=fig><svg viewBox="0 0 100 24" preserveAspectRatio="none" style="height:24px">${t}</svg><div class=lab><span>FD 01</span><span>Today FD ${pad(S.day)}</span><span>FD ${pad(Q)}</span></div></div>`}
+  if(kind===3){let t="";for(let i=0;i<8;i++){const x=1+i*12.4;t+=`<rect x="${x}" y="1" width="9" height="9" fill="${[0,1,3,4,6].includes(i)?PI:"none"}" stroke="${PI}" stroke-width="1"/>`;if(i<7)t+=`<path d="M${x+9.5} 5.5H${x+12.4}" stroke="${PI}" stroke-dasharray="1 1" stroke-width=".75"/>`}
+    return `<div class=fig><svg viewBox="0 0 100 11">${t}</svg><div class=lab><span>8 ships</span><span>5 ballots heard here</span></div></div>`}
+  let t="";["w","w","c","w","w","w","t"].forEach((k,i)=>{t+=`<rect x="${1+i*14}" y="1" width="12" height="12" fill="${k==="w"?PI:"none"}" stroke="${k==="t"?PR:PI}" stroke-width="${k==="t"?2:1}"${k==="c"?' stroke-dasharray="2 1.5"':""}/>`});
+  return `<div class=fig><svg viewBox="0 0 100 14">${t}</svg><div class=lab><span>Solid: watch</span><span>Dashed: covered</span><span>Rust: today</span></div></div>`;
+}
+function TUT(){
+  const A=h(nm(S.you)),file=EG?"FILE":"CREW";
+  const st=[
+    ["The voyage","One page a day",`The voyage runs ${S.season} flight days, from Earth orbit to Mars orbit. Each flight day adds one page to the log.`,tFig(1),
+      [["Your astronaut",`You look after ${A}. Once a flight day you may give ${A} one instruction: a gift, some advice, a task, or rest.`],["Everything else",`${A} decides. Instructions and answers take effect on the next flight day.`]]],
+    ["Needs you","Things waiting on you",`Home lists only what is waiting on you. Each item shows the flight day it closes. New ones carry a rust mark.`,"",
+      [["Private",`A question only you are asked. Nobody else is told what you picked.`],["Anyone",`Any ship can answer. One tap from anywhere is enough.`],["Fleet vote","Every ship gets a ballot. See next card."]].concat(EG?[["Timed job",`${A}'s job for the day. The result posts at the time shown.`]]:[]).concat([["Left alone",`It settles itself: the crew's lean, or ${A}'s own judgement.`]])],
+    ["Fleet votes","One ship, one ballot",`A fleet vote goes to all eight ships. The most ballots by the closing day wins. A tie, or no ballots at all, goes the way the crew leans.`,tFig(3),
+      [["Ballots travel","Ships pass ballots along whenever they are in range of each other. Your count is what your ship has heard so far, so it may lag. It catches up."],["Second thoughts","You can change your ballot until the vote closes."]]]];
+  if(EG)st.push(
+    ["Deliveries","Drops and cargo",`Small extras. None of them are required.`,"",
+      [["Daily drop","One sealed item for your ship each flight day. It keeps. Open it whenever you like."],["Gifts","Send one crewmate one gift a flight day. It warms the bond and lifts their morale a little."],["Asks","Ask for one thing a flight day. Anyone may answer it for 3 days, after which it lapses quietly."],["Cargo in","Anything sent to you waits on Home."]]],
+    ["Watch duty","Keeping watch",`Anything you send on a flight day counts as a watch: an instruction, a ballot, an answer, a gift or an ask.`,tFig(5),
+      [["Grace days",`Miss a day and ${A} covers it, up to twice a flight week. Today never counts against you.`],["Badges",`Awarded at ${EG.badges.map((b)=>b[0]).join(", ").replace(/, (\d+)$/," and $1")} days.`],["Broken run","A new watch starts with your next tap. No paperwork."]]]);
+  st.push(["The log","At your own pace",`The log reads newest page first. Pages new since your last visit carry a rust square.`,"",
+    [["Late signals","Today's and yesterday's pages may still change as word arrives from other ships. That is normal."],["Days off",`Miss a day, or a week. ${A} carries on in character, votes close with whoever voted, and nothing waits on anyone.`],["Filed under",`${file} › How to play, for when you need it again.`]]]);
+  return st;
+}
+function how(n){
+  const L=TUT();n=Math.min(Math.max(0,n|0),L.length-1);
+  const [k,t,p,fig,li]=L[n],last=n===L.length-1;
+  $("top").hidden=false;$("top").innerHTML=`<b>CREW BRIEFING</b>${last?`<span>${pad(n+1)}/${pad(L.length)}</span>`:`<button data-tut=skip class=m style="height:48px;padding:0 0 0 16px;font-size:15px;text-decoration:underline">Skip</button>`}`;
+  let o=`<section class="kick tut" aria-labelledby=th aria-roledescription="briefing card"><div class=lab style="display:flex;justify-content:space-between;gap:var(--s3)"><span>Briefing ${pad(n+1)}/${pad(L.length)}</span><span>${k}</span></div>`;
+  o+=`<ol class=tsteps aria-hidden=true>${L.map((_,i)=>`<li class="${i<n?"d":i===n?"c":""}"></li>`).join("")}</ol>`;
+  o+=`<h1 id=th tabindex=-1><span class=sr>Step ${n+1} of ${L.length}: </span>${t}</h1><p class=lead>${p}</p>${fig?fig.replace("<svg",'<svg aria-hidden="true"'):""}`;
+  o+=`<ul class=bl>${li.map(([a,b])=>`<li><b>${a}</b><span>${b}</span></li>`).join("")}</ul>`;
+  if(last)o+=`<p class=fine>Issued to all crews. Retain this card, or don't: it is filed under How to play.</p>`;
+  $("v").innerHTML=o+`</section>`;
+  dock(`<div class=tnav>${n?`<button class="btn sec" data-tut=back aria-label="Previous card"><span>Back</span></button>`:`<button class="btn sec" data-tut=skip><span>Skip</span></button>`}<button class="btn pri" data-tut="${last?"done":"next"}"><span>${last?"Go aboard":"Next"}</span><i>${last?"done":pad(n+2)+"/"+pad(L.length)}</i></button></div>`,"");
+  requestAnimationFrame(()=>$("th")&&$("th").focus({preventScroll:true}));
+}
+function tutStep(){return +(route.split("/")[1]||0)}
+function tutKey(v){
+  const n=tutStep();
+  if(v==="next")return go("how/"+(n+1));
+  if(v==="back")return go("how/"+Math.max(0,n-1));
+  briefDone();
+}
+document.addEventListener("keydown",(e)=>{
+  if(!route.startsWith("how")||e.altKey||e.ctrlKey||e.metaKey)return;
+  const n=tutStep(),m=TUT().length-1;
+  if(e.key==="ArrowRight"&&n<m){e.preventDefault();tutKey("next")}
+  else if(e.key==="ArrowLeft"&&n>0){e.preventDefault();tutKey("back")}
+  else if(e.key==="Escape"){e.preventDefault();briefDone()}
+});
 
 // ---- routing & input ------------------------------------------------------------------
 let route="hello";
 function go(r){
   const n=r!==route;
+  if(n&&r.startsWith("how")&&!route.startsWith("how"))tutFrom=route.startsWith("meet")||route.startsWith("pin")?"home":route;
   if(n){route=r;history.replaceState(null,"","#"+r);scrollTo(0,0);if(!r.startsWith("log"))logCut=-1}
   view();
   if(n&&!RM.matches&&$("v").animate)$("v").animate([{opacity:0,transform:"translateY(6px)"},{opacity:1,transform:"none"}],{duration:140,easing:"cubic-bezier(.2,.7,.3,1)"});
@@ -571,6 +677,7 @@ function view(){
     if(a==="log")return log(b!=null?+b:0);
     if(a==="item")return item(+b);
     if(a==="act")return actSheet();
+    if(a==="how")return how(+b||0);
     if(EG&&S.eng&&ENG[a])return ENG[a](b);
     if(a==="end")return S.ending!==NONE?ending():home();
     if(a==="epilogue")return epilogue();
@@ -592,7 +699,7 @@ async function key(k){
     busy=true;
     try{
       const j=await api("/api/login",{crew:me,pin});
-      tok=j.token;pin="";busy=false;
+      tok=j.token;pin="";busy=false;tutDue=!!j.first&&!briefed();
       await refresh();live();
       go(j.first?"meet":"home");
     }catch(e){
@@ -608,6 +715,7 @@ document.addEventListener("click",async(ev)=>{
   const D=el.dataset;
   if(D.go){if(D.go==="act")draft=null;return go(D.go)}
   if(D.eng)return engClick(el,D.eng);
+  if(D.tut)return tutKey(D.tut);
   if(D.who){me=+D.who;pin="";if(lockLeft())lockTick();return go("pin")}
   if(D.out){
     try{await api("/api/logout",{})}catch(e){}
