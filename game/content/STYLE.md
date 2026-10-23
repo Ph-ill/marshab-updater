@@ -41,12 +41,13 @@ players).
   the high-gain antenna, Starbase, Mission Control, anomaly reports.
 - Distance is the antagonist. One-way light time to Earth (engineer's table,
   2033-05-08 departure, cross-checked by the round 15 engineer's model):
-  seconds in Earth orbit, about a minute by days 19-21, about 3 at day 25, 5 at
+  seconds in Earth orbit, 1.5-2 minutes by days 19-21 (93-116 s, round 16 engineer), about 3 at day 25, 5 at
   day 33, 6-7 at day 40 (round trip "a quarter of an hour"), 8 at arrival
   (day 42). Mars one-way: ~100 s at day 22 (round trip 18 ticks), 30-40 s at
   day 34, just under half a minute at day 36, 15 s at day 39, 10 s round trip
-  at day 41 (5 s one-way). The carrier slides against fleet time by nearly two
-  seconds a day around day 20. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
+  at day 41 (5 s one-way). The carrier slides against fleet time by about 1.65
+  seconds a day around day 20. The tick is 10.96 s; in prose say "about eleven
+  seconds", never a rounder or sharper figure. Storm dose: past 100 mSv by days 17-21. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
   season. Earth shrinks to a dot you can cover with a thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
   Mars "under three weeks out" in real flight. Day 41: inside five

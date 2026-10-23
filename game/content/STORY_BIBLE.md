@@ -99,11 +99,12 @@ after it failed"), and why its beam width × spin gives exactly the flash duty c
 the catalogue was fitted to Cargo 2's flashes, so it matches by construction.
 `a_report` closes it: the dead relay was the only orbiter on that channel.
 Why the crash site was catalogued kilometres off: "the last fix before the
-divert" (told in `m_checked`: "its last tone came mid-descent; at the end of that
-track the search found a burn scar, booked as the impact. Six weeks of hails,
-unanswered." The scar is the plume mark from the divert hover; `l_manifest` only lists
+divert". Since round 16 `m_checked` no longer mentions a scar (it only says
+nothing on file near the pixel has power, and two weeks of hails on the old key
+went unanswered); the "impact scar" is named once, in `a_report`, as Cargo 2's
+aft skirt, shed uprange before the divert. `l_manifest` only lists
 Cargo 2's drill spares, which `end_friend` / `end_long_orbit` / `end_close` pay off).
-Why the search missed it: it found the hover scar at the end of the predicted track and booked it as the impact.
+Why the search missed it: it found the shed aft skirt on the predicted track and booked it as the impact, and its three short passes read the knock as the relay's spin (`a_report`).
 Why the fleet never had the same fault: every ship dumped its own fault table
 (the last patch gave the cargo ships a divert branch, and only Cargo 2 ever
 diverted, which is why Cargo 3 and Cargo 4 landed and work; `a_report`). Why the light
@@ -117,8 +118,7 @@ bypass or hard reset: the replay check sits ahead of every command path, and the
 dish a hard reset needs is jammed (bible only since round 10; the cards no longer
 say it). Why no working orbiter answered: none carries the old channel and key;
 only the dead relay did (`a_report`). Why Cargo 2 diverted: boulders on its pad;
-the hover burn left the scar the search booked as the impact (`a_report`,
-`m_checked`). Why Earth never caught the half-sol outages: the catalogue fit used
+the aft skirt it shed uprange is what the search booked as the impact (`a_report`). Why Earth never caught the half-sol outages: the catalogue fit used
 three short passes (`m_theory`); the 37 minutes is decoded once, late, in
 `c_theory` (day 38). Why the old
 key: first batch, the relay, the early cargo, all dead or
@@ -322,8 +322,14 @@ Endings cite the votes. The packer's loss is on the page (`g_packer`).
 ## Endings: hail × arrival (the core truth never changes)
 
 Checked in deck order on day 42; first match wins. Titles come from `title`
-(text.json `ti`). Every ending closes on the first crate ("You'll thank me.")
-and the first message off the surface, to a loading bay at Starbase. Since
+(text.json `ti`). Every ending closes on the first message off the surface,
+to a loading bay at Starbase, and since round 16 on the loading bay's reply
+("From a loading bay, later: "Told them it sulks.""). The first crate ("You'll
+thank me.") stays in `end_lights`; the Sharpie hand also returns on day 38
+(`a_recall_shared`). The renderer prefixes every ending with `sys.end`, now
+"From the log:" (was "Arrival day.", which clashed with endings set sols later).
+Every answer is HELLO then HOLD on the next tick (the patch says ON HELLO: WAKE
+ALL), and every power draw in an ending has a named source. Since
 round 14 every ending pays a price, answered or not. Answered endings: *Lights
 On* spends Cargo 2's floodlights ("All seven. The eighth kept the lights on."),
 *The Long Orbit* loses the seed stock in Cargo 2's hold (the lamp stayed lit,
@@ -335,7 +341,7 @@ Found the eighth, in time." Endings may run to 640 characters (lint MAX_ENDING).
 
 **Geometry:** day 41 is about four days before atmospheric entry (at an arrival v∞ of about 4.2 km/s that is about 1.45 million km, 4.8 s one-way, 9.7 s round trip, inside the 10.96 s tick; five days would be about 12 s and miss it). Hold the plan
 = retarget to the backup site, about three kilometres from Cargo 2, with radar
-for height and Cargo 2's radio/transponder for place. The backup site is no
+for height, the last orbiter fix for place and Cargo 2's radio as a cross-check (round 16). The backup site is no
 clearer than the prime zone, but it is flat, surveyed, and has a landmark that
 answers. Aerocapture = a long orbit, then
 the prime zone and a rover drive (Cargo 4's rover). Clear air = prime zone,
@@ -630,7 +636,7 @@ The eighth was waiting.
   `a_window_quiet`: the ground drafted a reply the day the key decoded; it
   reached the board a day into entry week, and the board won't wake Cargo 2
   until every ship is down, in orbit or not (covers slot 4 and pre-staging).
-  `a_window_hail`: handshake only; Cargo 2 stays in its safe hold. `r_dark`:
+  `a_window_hail`: handshake only (since round 16: the hello, then a HOLD on the next tick). `r_dark`:
   back "before the third hour was out" (two reboots), frame relayed from the
   listening dish, and the ground puts the old channel under review and
   filters it.
@@ -858,6 +864,69 @@ it, so from page 7: a = 7 + 5·(NN−7), b = a + 4 (page 7 = days 7–11, page 4
 days 182–186). Cheaper fallback: "LOG PAGE NN" with no day range. Same change in `sim/render.py` so
 `tests/render_check.mjs` keeps matching. Keep "FLIGHT DAY" in the save/codes
 UI only if it's an internal index.
+
+## Round 16 notes
+
+- **Concealment.** `m_checked`/`_g` drop the scar: "nothing on file near that
+  pixel has power", the hopper "ninety kilometres south, its beacon as patchy
+  as ever", two weeks of hails on the old key. The scar is explained once, in
+  `a_report`, as the shed aft skirt. `m_dropout` says only "a little later each
+  morning"; the 37 minutes stays in `c_theory` (day 38, 300/300).
+  `m_theory_confirm`, `flash_answer_ground` and `m_flash2` stop dismissing the
+  pixel with the same stock line. `h_band` ends "It could be cloud." `r_dark`
+  and `r_dark_a` say "a link request with a field the new stack had never seen"
+  (the word challenge waits for `m_key`).
+- **WAKE ALL.** The patch says ON HELLO: WAKE ALL, so every answer is HELLO,
+  then HOLD on the next tick: `a_window_hail` (wakes everything for one tick,
+  then sleeps), `a_suit_plan` (procedure card), `end_through`, `end_close` (the
+  HOLD never gets a listen), `end_patience`. "Safe hold" is gone.
+  `a_window_quiet` ends UNDERSTOOD. COUNTING. New test
+  `test_wake_all_is_always_followed_by_a_hold`.
+- **Battery forecast.** `r_band` and `c2_cold` (mutually exclusive) say "a
+  week or two after landing"; `c2_clock` (day 39) steepens it to "a few nights
+  after landing, not weeks". It may only shorten: new test
+  `test_battery_forecast_only_shortens`.
+- **`a_report`** is now the board finding (standing on the surveyed site, the
+  aft skirt, three passes that read the knock as spin, which answers why the
+  ground went quiet for two years) plus the patch; the light-time and tick
+  sums are gone ("works out where Earth is, and stops"). `a_log` keeps only the
+  counters.
+- **Numbers.** `comm_delay` days 17–21, "closing on two minutes each way"
+  (engineer: 93–116 s at days 19–21). `storm_dose` days 17–21, "past a hundred
+  millisieverts". Tick "about every eleven seconds" in `a_descent_hold_q`.
+  `m_alias` "over a second and a half a day" (1.65 s/day at day 20).
+  `w_phobos` under an hour behind the disc. The epilogue blackout line says
+  nine seconds late, matching `e_entry_wait`. `a_descent_hold` demotes the
+  beacon: radar for height, last orbiter fix for place, Cargo 2's radio to
+  cross-check.
+- **Endings.** Each closes on the loading bay's reply. `end_lights`: the crew
+  watches the last lamp go out at noon. `end_long_orbit`: the hold draws less
+  than the knocking did; the lamp cost the hold its heater. `end_friend`:
+  battery past half at the halfway point, a stop at the drive-back limit, the
+  waiver sixteen minutes later, the charge port fed off the half-open wing.
+  `end_close`: Cargo 2 obeys WAKE ALL on the hello. `sys.end` "From the log:".
+- **Casting and pacing.** `a_descent_wait*`, `w_mars_disc*` skip the dose
+  owner; `a_log` skips the dose, abort and theory owners; `w_mars_disc*` skip
+  the theory owner. No one now has three day-41 lines (was 11/300).
+  `beat_cards` needs `!fired beat_coffee`, `p_movie` needs `!fired beat_cards`.
+  Editor windows: `photo_back` 20–39, `earth_dot` 19–26, `g_count` 21–39,
+  `gains_payoff` 19–39, `water_fail` 19–36, `p_garden_fail` 19–20,
+  `l_handshake` 13–20, `dec_water` 13–26, `galley_pump` 14–39, `stash_found`
+  23–31. `a_recall_shared` moves to day 38. `p_birthday` / `beat_haircut` say
+  "happens to be aboard" / "aboard on a visit" (presence test covers both); new
+  test `test_no_visit_lines_on_the_day_of_a_crossing`.
+- **Craft.** `signal_reply`/`signal_echo` add a housekeeping counter (the
+  deniable shiver for days 25–36). `sys.dec_open` "Fleet vote:"; `l_transfer`
+  says votes are advice to the flight director. `g_count` "closes the lid on
+  the count"; `hb_leaf` to the thigh pocket; `p_garden_none` ends "Seeds keep.";
+  `g_news` a retirement party. The garden epilogue plants "in the lee of the
+  ship".
+- **Declined.** p36 Mars "about a minute" (reference ephemeris: 29.4 s one-way,
+  so "just under half a minute" stays). The two-year-silence line in
+  `m_theory` (too strong a day-17 clue; it lives in `a_report`). The hunter's
+  `g_packer` clause (a WHO clue). `beat_watch` "a seventh of the Moon" (the
+  engineer's figures support "less than half"). Moving `a_recall_home/plan` to
+  day 41 (day 41 is full; `a_recall_shared` moved to 38 instead).
 
 ## Replay: the mystery spine reads the same every season (note, not built)
 
