@@ -30,7 +30,19 @@ ROOT = Path(__file__).resolve().parent.parent
 TEXT_SUFFIXES = {".py", ".json", ".html", ".css", ".js", ".mjs", ".txt", ".md", ".csv", ".svg"}
 DEFAULT_EXCLUDE_DIRS = {"host", "data", "__pycache__", ".git", "tests", "docs"}
 DEFAULT_EXCLUDE_GLOBS = ["*.md", "*.pyc", "*.tmp", ".*", "*.orig", "*.bak"]
-VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
+VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
+# Channels a release can be published on. "test" builds are listed for hand-picked installs only:
+# they never become the index "latest" (what "Install latest" and the update notice use).
+CHANNELS = ("stable", "beta", "bench", "test")
+NOT_LATEST = ("test",)
+
+
+def pick_latest(releases: list[dict], channels: dict):
+    """The stable release, else the newest release outside the test channels, else None."""
+    if channels.get("stable"):
+        return channels["stable"]
+    rest = [r["version"] for r in releases if r.get("channel") not in NOT_LATEST]
+    return rest[0] if rest else None
 # Pico W littlefs is about 848 KB; Pico 2 W about 2.9 MB. Leave room for logs and saves.
 FLASH_WARN_BYTES = 600 * 1024
 PROJECT = "LongVoyage"
@@ -41,7 +53,8 @@ NEVER_SHIP = {"ship.json", "crew.json", "device.json", "secrets.py", "secrets.js
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--version", required=True, help="semver, e.g. 0.0.1-coex")
-    ap.add_argument("--channel", default="stable", help="stable | beta | bench")
+    ap.add_argument("--channel", default="stable", choices=CHANNELS,
+                    help="stable | beta | bench | test (test never becomes 'latest')")
     ap.add_argument("--label", required=True)
     ap.add_argument("--source", required=True, type=Path, help="folder copied to the device root")
     ap.add_argument("--include", action="append", default=[], help="only package these paths (repeatable)")
@@ -49,6 +62,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--preserve", action="append", default=[], help="device path never deleted/overwritten (data/ is always kept)")
     ap.add_argument("--delete", action="append", default=[], help="device path removed before writing")
     ap.add_argument("--log", action="append", default=[], help="device file the UI can download; also preserved (repeatable)")
+    ap.add_argument("--hotspot-prefix", default="", help="hotspot name prefix the release's firmware uses (name = prefix + ship number), shown by the UI")
     ap.add_argument("--roles", default="", help="comma list of bench roles offered in ship config, e.g. A,B")
     ap.add_argument("--runtime", default="1.29.0", help="minimum MicroPython version")
     ap.add_argument("--boards", default="RPI_PICO_W,RPI_PICO2_W")
@@ -164,6 +178,7 @@ def main() -> None:
         "delete": a.delete,
         "logs": a.log,
         "shipConfig": {"roles": [r for r in a.roles.split(",") if r]},
+        **({"hotspot": {"prefix": a.hotspot_prefix}} if a.hotspot_prefix else {}),
         "payload_bytes": total,
         "files": files,
     }
@@ -187,7 +202,7 @@ def main() -> None:
         channels.setdefault(r["channel"], r["version"])
     index["channels"] = channels
     if not a.no_latest:
-        index["latest"] = channels.get("stable") or releases[0]["version"]
+        index["latest"] = pick_latest(releases, channels)
     index_path.write_text(json.dumps(index, indent=2) + "\n")
 
     print(f"wrote {out.relative_to(root)}: {len(files)} files, {total} bytes payload, {out.stat().st_size} bytes json")

@@ -32,3 +32,17 @@ export function compareVersions(a, b){
   if(!y.pre) return -1;
   return x.pre < y.pre ? -1 : 1;
 }
+
+// Channels. A "test" release is listed (labelled TEST BUILD) for a hand-picked install only: it is
+// never the latest, so "Install latest" and the update notice ignore it even if an index says so.
+export const NOT_LATEST_CHANNELS = ['test'];
+export function isTestRelease(release){ return NOT_LATEST_CHANNELS.includes(release?.channel); }
+export function latestVersion(index){
+  const releases = index?.releases || [];
+  const named = releases.find(r => r.version === index?.latest);
+  if(index?.latest && named && !isTestRelease(named)) return index.latest;
+  const stable = releases.find(r => r.channel === 'stable');
+  if(stable) return stable.version;
+  const rest = releases.filter(r => !isTestRelease(r)).sort((a, b) => compareVersions(b.version, a.version));
+  return rest.length ? rest[0].version : null;
+}

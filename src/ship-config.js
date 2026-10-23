@@ -35,6 +35,15 @@ export function hotspotForRole(role, roles = ['A', 'B']){
   return `${HOTSPOT_PREFIX}${i < 0 ? 0 : i}`;
 }
 
+// A release can name its hotspot itself (release.json "hotspot": {"prefix": "LV-"}): the game firmware
+// broadcasts prefix + ship number. Null when the release does not say (the coex roles apply).
+export function hotspotForRelease(release, cfg){
+  const prefix = release?.hotspot?.prefix;
+  if(!prefix) return null;
+  const id = Number.parseInt(cfg?.ship_id, 10);
+  return `${prefix}${Number.isInteger(id) && id > 0 ? id : 1}`;
+}
+
 // Bench convention: role A is ship 1, role B is ship 2 (null for no role or an unknown one).
 export function shipNumberForRole(role, roles = ['A', 'B']){
   const i = roles.indexOf(String(role || '').toUpperCase());

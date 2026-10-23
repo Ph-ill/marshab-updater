@@ -39,6 +39,10 @@ if [ -n "$MP" ]; then
   if [ -n "$MPY_CROSS" ]; then
     MPY_CROSS="$MPY_CROSS" sh tools/board_build.sh
     "$MP" -X heapsize=256k tests/mp_sync_heap.py build/board
+    # The game firmware's frozen set, if a unix build of it is given (tools/build_firmware.sh unix32).
+    if [ -n "$LV_FROZEN_MP" ]; then
+      "$LV_FROZEN_MP" -X heapsize=256k tests/mp_sync_heap.py frozen
+    fi
   else
     echo "mpy-cross not found: heap measured from source (set MPY_CROSS=...)"
     "$MP" -X heapsize=256k tests/mp_sync_heap.py

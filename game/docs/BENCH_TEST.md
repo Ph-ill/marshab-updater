@@ -40,7 +40,7 @@ ship), and copies `lv/*.mpy`, `lvship.mpy`, `selftest.mpy`, `lvwifi.mpy`, `pack.
 `main.py`. It removes stale `.py` copies of those modules first (a `.py` would be imported
 instead of the `.mpy`), never touches `/data/ship.json`, and ends with
 `board: flash free … KB, heap free … B`. About 50 KB of flash; a running ship uses about
-76 KB of heap with a sync in progress (well inside the 96 KB budget; section 7).
+77 KB of heap with a sync in progress (well inside the 96 KB budget; section 7).
 
 Without a port it only builds into `build/board/`. `MPY_CROSS=` / `MPREMOTE=` override the
 tool paths.
@@ -93,9 +93,10 @@ check 6, and `epoch=<UNIX_TIME>` to give the board the time (otherwise only a ph
 Every 10 s a board prints a `STAT` line; at the end, a summary and one line per check:
 
 ```
-SELFTEST lvship 0.1.0-ble on rp2, MicroPython 3.4.0; MicroPython v1.29.0 …
+SELFTEST lvship 0.1.0-lv-test on rp2, MicroPython 3.4.0; MicroPython v1.29.0 …
 SELFTEST config: ship 1, day 3, story True, hotspot False, led_notify False
 SELFTEST heap before start: free <N>
+SELFTEST code: lvship.mpy (filesystem), pack: file
 SELFTEST ble: active True, advert 020106 10ff ffff4c56 01 00 03 …
 SELFTEST log: 1 records, digest <8 hex>, story <16 hex>
 SELFTEST gift out: ship 1 -> ship 2, record <26 hex>
@@ -183,7 +184,73 @@ reordering, mid-transfer disconnects, power-off, out-of-date and wedged peers; 3
   (3 s of scanning per 12 s, 30 ms window per 300 ms interval, ~2.5 % of airtime).
 - **IRQ timing**: the IRQ handler only queues; work happens in `poll()` from the asyncio
   loop. Long blocking work elsewhere would delay acks (the retry timer allows 1.5 s).
-- **Real heap.** The unix-port measurement is 76 KB peak for a board with the whole
+- **Real heap.** The unix-port measurement is 77 KB peak (31 KB with the game firmware, section 8) for a board with the whole
   season, the story, the status server and a sync running (32-bit, `.mpy`); the board
   number is in `SELFTEST heap:`.
 - **Range** and how often boards actually meet in practice.
+
+## 8. Variant B: the game firmware (game frozen into MicroPython)
+
+Variant A (sections 1–2) is stock MicroPython plus the game copied over as `.mpy` files.
+Variant B is one `.uf2`: MicroPython v1.29.0 with the game **frozen in**, so its code and
+constant data (the pack, and the phone's gzipped `app.html`, `text.json`, `engage.json`)
+run from flash instead of being loaded into the heap. Same game, same self-test; the
+difference to look for is the heap.
+
+| | Variant A (`.mpy` copy) | Variant B (game firmware) |
+|---|---|---|
+| Heap peak with a sync running (unix 32-bit) | about 77 KB | about 31 KB |
+| Code in the heap | about 50 KB | about 12 KB |
+| Pack in the heap | loaded from `pack.bin` (6.7 KB) | read in place from flash |
+
+**Build** (on the computer, from `game/`; first run downloads MicroPython and the Pico SDK,
+about 10 minutes): `sh tools/build_firmware.sh`. It needs `gcc-arm-none-eabi`,
+`libnewlib-arm-none-eabi`, `cmake`, `make` and Python 3, and writes
+`build/firmware/lv-<version>-RPI_PICO_W.uf2` plus its `.sha256`. Or use the `.uf2` you were given.
+
+**Flash** (each board):
+
+1. Clear the old files first, because the filesystem survives a flash and a leftover
+   `main.py` or `lvship`/`lv` module would run instead of the frozen game. Keeps `/data`
+   (settings, log) and bench logs: `mpremote connect <PORT> run tools/fw/clean_fs.py`
+2. Hold BOOTSEL, plug in, release: the `RPI-RP2` drive appears.
+3. Drag `lv-<version>-RPI_PICO_W.uf2` onto it. The board reboots. Its frozen `boot.py`
+   sees no `main.py` and writes a one-line one (`import lvmain`), and the ship starts.
+   (The frozen `boot.py` replaces any `boot.py` on the filesystem; the game needs none.)
+
+**Configure**: as in section 3. `/data/ship.json` is not part of the firmware; a board
+keeps its settings across a flash. On a fresh board, copy `ship.json` as in section 3, or
+use section 4 of the updater page. Then reset the board.
+
+**Self-test**: same commands as section 4. The extra line should read
+`SELFTEST code: lvship.py (frozen), pack: frozen`. If it says `filesystem` or `file`,
+old files are still on the board: run step 1 again.
+
+**Compare with Variant A** (same board, same `ship.json`, same day):
+
+- `SELFTEST log:` digest and story hash: **identical** (same game, same records).
+- `SELFTEST heap before start: free`: B should be about 40 KB **higher**.
+- `SELFTEST heap: … peak …` and `heap_used=` in the STAT lines: B should be about 45 KB **lower**.
+- Checks 1–10 in section 5 behave the same, sync times included.
+- Flash: B leaves about 50 KB more of the filesystem free (no `.mpy` files on it).
+
+Send back both runs' `SELFTEST heap` lines and `heap_free=` columns; those are the numbers
+the phone game server's budget is planned from.
+
+**Roll back** to stock MicroPython: BOOTSEL as above and drag the stock
+`RPI_PICO_W-…-v1.29.0.uf2` from micropython.org (the updater page, section 3, links it with
+its sha256). `/data` is kept. The one-line `main.py` then fails with `ImportError: no module
+named 'lvmain'` and the board sits at the REPL: harmless. Copy Variant A over it
+(section 2) or install a release from the updater page, which replaces `main.py`.
+
+The updater page can't flash a `.uf2` (Web Serial only writes files), so Variant B is
+installed by hand only. Its release list carries Variant A as a test build (section 9).
+
+## 9. The test build on the updater page
+
+The updater lists `0.1.0-lv-test` as **[TEST BUILD]** in section 2: the same files as
+Variant A (`.mpy`, `pack.bin`, `main.py`), installed over USB from the browser instead of
+`mpremote`. It is never "latest": "Install latest" and the update notice ignore it, and
+installing it asks first. Pick it in the list, Install, then set the ship number in
+section 4 (each board its own; the hotspot is `LV-<ship number>`). Ship settings in `data/`
+and the coex logs are kept. To go back, install `0.0.2-coex`.
