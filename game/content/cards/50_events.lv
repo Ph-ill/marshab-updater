@@ -55,37 +55,6 @@ when res spares >= 1
 text The CO₂ scrubber on {A}'s ship throws its fourth fault this week. {A} fixes it, then labels it "temperamental" in permanent marker so the next shift knows.
 do res spares -1
 
-card nuisance_alarm
-type event
-days 4 38
-weight 6
-once
-roles A
-when cond A ok
-text A nuisance alarm on {A}'s ship has gone off 340 times since launch. {A} traces it to a pressure switch with no deadband, chattering every time the cabin fans breathe. Two lines of config later, the cabin is quiet for the first time since Starbase.
-do morale A 5
-
-card stale_value
-type event
-days 6 38
-weight 6
-once
-roles A
-when cond A ok
-text {A} notices that the propellant temperature on the status page hasn't moved a tenth of a degree in six hours. Space is cold, but not that steady. A frozen gateway has been replaying the last good value. {A} restarts it, and the real number comes up two degrees warmer.
-do trait A curious 2
-do res fuel 1
-
-card sensor_vote
-type event
-days 5 38
-weight 5
-once
-roles A
-when cond A ok
-text Two of the cabin oxygen sensors on {A}'s ship disagree by half a percent. {A} wakes up the third, which sides with neither. By morning all three are recalibrated, with a note on the panel: "They voted. Nobody won."
-do trait A curious 1
-
 card boiloff
 type event
 days 8 36
@@ -135,17 +104,6 @@ roles A
 when cond A ok
 text The hatch on {A}'s ship sticks whenever the sunward side warms up. {A} works it out on the back of a checklist: the frame grows a millimeter in the sun and the seal doesn't. One new shim, and the door swings the way it did at Starbase.
 do morale A 3
-
-card margin_plenty
-type event
-days 15 38
-weight 5
-once
-roles A
-when cond A ok
-text {A} reruns the structural margins on the cargo rack with the loads it actually sees, not the loads on paper. The margin was "plenty". It is now "enough". {A} adds two straps and doesn't make a speech about it.
-do res spares -1
-do morale A 2
 
 # --- Rescue: CO2 scrubber failure -------------------------------------------
 card crisis_air

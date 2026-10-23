@@ -1,48 +1,6 @@
 # Fleet votes with callbacks days or weeks later. House style: content/STYLE.md.
 # Both sides of every vote are reasonable people being reasonable.
 
-# --- Header tank pressure ---------------------------------------------------
-card dec_header
-type decision
-days 3 20
-weight 10
-once
-duration 2
-roles A B
-lean brave watch vent
-text A sensor on {A}'s header tank reports a slow pressure rise. {A} wants to vent now. {B} wants to watch it one more day, because the trend looks like sensor drift.
-option vent | Vent now | The vent is clean, and the fleet loses methane it would have liked to keep. Mission Control replies 22 minutes later: "Concur."
-  set hdr_vented
-  who hdr_who A
-  res fuel -2
-option watch | Watch it a day | The pressure levels off overnight. It was drift, from a sensor with a failing reference. {B} swaps it on the next shift and manages not to mention it for nearly an hour, a fleet record for restraint.
-  set hdr_watched
-  who hdr_who B
-  bond A B 3
-
-card hdr_review
-type event
-due
-once
-days 21 40
-roles A
-when flag hdr_vented
-when is A hdr_who
-text The propellant review arrives from Earth. The methane vented from {A}'s header tank is listed to three decimal places, under the heading "Prudent". {A} prints it out and tapes it to the tank access panel.
-do morale A 4
-
-card hdr_sensor
-type event
-due
-once
-days 21 40
-roles A
-when flag hdr_watched
-when is A hdr_who
-text Earth sends the teardown report on the header sensor {A} pulled: a reference resistor had cracked from launch vibration. Two more ships in the fleet carry the same batch. {A} has their replacements bagged and labelled by dinner.
-do res spares -1
-do morale A 4
-
 # --- Fleet portrait -----------------------------------------------------------
 card dec_photo
 type decision
@@ -106,36 +64,6 @@ do move B A
 do bond A B 8
 do res spares -1
 do clr water_rationed
-
-# --- Cargo shift (mechanical) ------------------------------------------------
-card dec_cargo
-type decision
-days 10 30
-weight 8
-once
-duration 2
-roles A B
-lean warm restow trim
-text A mass check shows the center of mass on {A}'s ship has moved a few centimeters. Cargo shifted on a bracket that was fine in the model. {A} wants to re-stow it all by hand. {B} suggests trimming it out with the engines and saving everyone a day of lifting.
-option restow | Re-stow by hand | Eleven hours of strapping and unstrapping. The center of mass is back where the model said it would be, and the bracket gets redesigned on the spot with zip ties and spite.
-  set cargo_restowed
-  res spares -1
-  morale A -2
-  bond A B 4
-option trim | Trim with engines | The engines soak up the offset, at a small propellant cost on every burn for the rest of the flight. {B} keeps a running total. It is not small.
-  set cargo_trimmed
-  res fuel -2
-
-card cargo_after
-type event
-due
-once
-days 22 40
-roles A
-when flag cargo_restowed
-when cond A ok
-text During the big correction burn, the zip-tied bracket on {A}'s ship is the only mount in the bay that doesn't move a millimeter. Earth asks for the design. {A} sends a photo and the word "spite".
-do morale A 4
 
 # --- Clocks -----------------------------------------------------------------
 card dec_clock

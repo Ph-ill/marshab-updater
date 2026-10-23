@@ -75,20 +75,6 @@ option closer | Get a closer look | {A} talks Mission Control into a camera slew
 option window | Track it from the window | {A} logs its bearing every hour until it's gone. The log is neat enough to frame.
   trait A curious 2
 
-# Inactive-friendly: only fires for astronauts whose owner hasn't been in for a while,
-# and makes them look good.
-card quiet_fixer
-type beat
-days 3 42
-weight 12
-cooldown 8
-roles A
-when idle A >= 3
-when cond A ok
-text {A} rebuilds the galley water pump before anyone notices it was failing. The only evidence is a new entry in the maintenance log, in {A}'s handwriting.
-do res spares 1
-do morale A 3
-
 card galley_pump
 type event
 days 1 42

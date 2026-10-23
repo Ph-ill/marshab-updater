@@ -63,26 +63,6 @@ when bond A B >= 0
 text {A} cuts {B}'s hair with the vacuum clippers. The result is logged as "within tolerance". {B} agrees and tips in coffee.
 do bond A B 5
 
-card beat_torque
-type beat
-days 5 42
-weight 5
-once
-roles A
-when cond A ok
-text {A} discovers that the torque value for the galley panel fasteners isn't written down anywhere: not in the manual, not on the drawings. {A} measures one, writes the number on the panel in marker, and that is now the spec.
-do morale A 2
-
-card beat_interlock
-type beat
-days 4 42
-weight 5
-once
-roles A B
-when same A B
-text An interlock on {A}'s ship won't let the water heater run while the service hatch is open. It is correct. It is also why {A} and {B} have been drinking cold coffee all week. Neither of them will touch it.
-do bond A B 3
-
 card beat_home_msg
 type beat
 days 8 42
@@ -127,18 +107,6 @@ when cond A ok
 text {A} takes an extra night watch so everyone else can sleep before the burn. Nobody asked. The log entry is two lines long and perfectly neat.
 do morale A 2
 do trait A warm 2
-
-card idle_logs
-type beat
-days 5 42
-weight 9
-cooldown 7
-roles A
-when idle A >= 3
-when cond A ok
-text {A} spends a quiet shift on the fault logs nobody has time for, and finds the common cause behind three intermittent alarms. The fix list on the galley wall gets three lines shorter.
-do res spares 1
-do morale A 2
 
 card idle_mentor
 type beat
