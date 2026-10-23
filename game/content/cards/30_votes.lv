@@ -11,7 +11,7 @@ once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. That means closing to a careful hundred metres apart, and propellant to get there and back. The request uses the word "iconic" four times.
+text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. That means all seven ships at once, a careful hundred metres apart, and propellant to get there and back. The request uses the word "iconic" four times.
 option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: six ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
   set photo_taken
   res fuel -2
@@ -28,7 +28,7 @@ days 18 39
 roles A
 when flag photo_taken
 when cond A ok
-text The fleet portrait is on the front page of every news site on Earth, which from out here means a minute ago. {A} zooms in and finds the edge of their own hull, bottom left.
+text The fleet portrait is on the front page of every news site on Earth, which from out here means a minute ago. {A} zooms in and counts them all: six ships, and the edge of the photographer's hull, bottom left.
 do morale A 5
 
 card photo_stamp
@@ -130,7 +130,7 @@ once
 days 31 34
 roles A
 when flag clock_kept
-text Since the fleet kept its own clock, the ground's night shift has become the fleet's day shift. {A} knows them all by name now, and they know {A}'s coffee order, which is no use to anyone across this much space.
+text Since the fleet kept its own clock, the ground's handover lands in the fleet's first coffee, and the night crew's last hour is the fleet's first. {A} knows them all by name now, and they know {A}'s coffee order, which is no use to anyone across this much space.
 
 # --- Course correction -------------------------------------------------------
 card dec_trim

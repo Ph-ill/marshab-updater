@@ -57,7 +57,7 @@ days 8 18
 weight 10
 roles A B
 when bond A B >= -20
-text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a bright dot now, small enough to cover with a thumbnail. They each make a coffee at the same minute, as if that counted as sharing one.
+text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a small bright disc now, a third the width of the Moon from home, easy to cover with a thumbnail. They each make a coffee at the same minute, as if that counted as sharing one.
 do bond A B 6
 
 card beat_argue
