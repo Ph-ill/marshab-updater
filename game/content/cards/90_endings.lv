@@ -9,14 +9,14 @@ cat ending
 title Lights On
 when flag signal_answered
 when flag arrive_hold
-text The fleet holds the plan it voted for, retargeted to the backup site. Cameras blind in the dust, radar sure of the ground; then Cargo 2, answered at last, sends a ranging tone and turns on every light it has. Seven ships land a careful three kilometres off. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Retargeted to the backup site, as voted, the fleet goes down into the storm. The cameras are brown from six kilometres; the radar is sure of the ground. Then Cargo 2, answered last night, sends a ranging tone and turns on every floodlight it has, a white smudge in the dust to steer by. Seven ships land three kilometres off, and no one calls an abort. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_through
 type ending
 cat ending
 title Through the Dust
 when flag arrive_hold
-text Retargeted to the backup site, as voted, the fleet goes down into the storm. The radar ranges on forty metres of standing steel; out of the brown, every eleven seconds, a light, still asking. Seven ships land three kilometres off. The first suit out carries the hail box and answers from close enough. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Retargeted to the backup site, as voted, the fleet goes down into the storm. The radar ranges on fifty metres of standing steel; out of the brown, every eleven seconds, a light, still asking. Seven ships land three kilometres off. The first suit out carries the hail box and answers from two hundred metres, and the event recorder comes down: two years of HELLO RX · REPLAY · DISCARD, every hello from home filed as late, and at the bottom one new line: HELLO RX · OK. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_long_orbit
 type ending
@@ -24,24 +24,24 @@ cat ending
 title The Long Orbit
 when flag signal_answered
 when flag arrive_wait
-text Aerocapture, as voted, then four nights of ration math in a long orbit. Answered at last, Cargo 2 sends a little more of its manifest every pass, and the fleet reads it aloud like letters from home. When the sky clears, seven ships land in the prime zone and drive the rover out to it. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Aerocapture, as voted, then four nights of ration maths in the long orbit. Answered at last, Cargo 2 sends a little more of its manifest every pass, and the fleet reads it aloud at dinner like letters from home. When the dust settles, seven ships land in the prime zone, and the rover drives out to a ship whose floodlights hold steady. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_patience
 type ending
 cat ending
 title Patience
 when flag arrive_wait
-text Aerocapture, as voted, and four nights of half portions in orbit. On the third night the light skips a beat and seven people stop breathing; on the fourth it is back, faint in the dust, on time. When the sky clears the fleet lands, drives out, and answers the next knock from close enough. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Aerocapture, as voted, and four nights of half portions in orbit. On the third night the light skips a beat and seven people stop breathing; on the fourth it is back, faint in the dust, on time. When the sky clears the fleet lands, drives out, and answers the next knock from two hundred metres. On the drive back the recorder comes down: two years of HELLO RX · REPLAY · DISCARD, every hello from home filed as late, and at the bottom one new line: HELLO RX · OK. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_friend
 type ending
 cat ending
 title Old Friend
 when flag signal_answered
-text Seven ships come down in clear air in the prime zone and drive out to a ship that waited two years for someone close enough to answer in time. Its lights hold steady now. On the drive out, Cargo 2 sends its whole manifest, slowly, like something that has been rehearsing. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Seven ships come down in clear air, one landing burn a long half second late, into the prime zone exactly where the maps said. Thirty kilometres off, a ship that waited two years for someone close enough to answer in time holds its floodlights steady. On the drive out it sends its whole manifest, slowly, like something that has been rehearsing. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_close
 type ending
 cat ending
 title Close Enough
-text Seven ships land in clear air. Then they drive Cargo 4's rover out to Cargo 2 with a radio retuned for the purpose and answer the next knock from two hundred metres: the first answer in two years to arrive while it's listening. The light stops blinking and stays on. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Seven ships land in clear air. Then they drive Cargo 4's rover out to Cargo 2 with a radio retuned for the purpose and answer the next knock from two hundred metres: the first answer in two years to arrive while it's listening. The light stops blinking. The recorder comes down: two years of HELLO RX · REPLAY · DISCARD, every hello from home filed as late, and at the bottom one new line: HELLO RX · OK. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
