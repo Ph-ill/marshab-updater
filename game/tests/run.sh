@@ -18,6 +18,8 @@ bad = [k for k, v in d.items() if not v["all_7_match"]]
 print("determinism:", "FAIL " + ", ".join(bad) if bad else "all 7 ships match in " + ", ".join(d))
 sys.exit(1 if bad else 0)
 PY
+python3 tests/test_engage.py
+python3 tests/mp_engage.py --write > /dev/null
 node tests/render_check.mjs
 python3 web/build.py
 python3 tests/mock_check.py
@@ -25,6 +27,7 @@ MP="${MICROPYTHON:-$(command -v micropython || true)}"
 if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py
   "$MP" tests/mp_codes.py
+  "$MP" -X heapsize=160k tests/mp_engage.py
 else
   echo "micropython not found: skipped tests/mp_check.py (set MICROPYTHON=...)"
 fi
