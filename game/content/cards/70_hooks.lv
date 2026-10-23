@@ -10,12 +10,12 @@ type event
 cat mystery
 hook
 once
-days 25 33
+days 30 33
 weight 10
 roles A
 when cond A ok
 do who hook_who A
-text At 23:40 the ship-to-ship receiver on {A}'s ship logs a burst on the old common channel. The bearing is Mars.
+text At 23:40 {A}'s dish logs a burst on the old common channel. The bearing is Mars, near enough; at this range the dish can't say more.
 
 card r_band
 type event
@@ -23,11 +23,11 @@ cat mystery
 clue
 due
 once
-days 26 34
+days 31 34
 roles A
 when fired h_band
 when is A hook_who
-text {A} decodes it: a safe-mode beacon asking for instructions nobody sent. It cuts off at the same byte every time, before the spacecraft ID; a sweeping beam would clip it somewhere new each turn. Its Doppler swing is smaller than an orbiter's should be. {A} notes both, and still bets on the relay.
+text {A} decodes it: a safe-mode beacon asking for instructions no one sent. It cuts off at the same byte every time, before the spacecraft ID; a sweeping beam would clip it somewhere new each turn. {A} notes it, and still bets on the relay.
 do trait A curious 3
 do morale A 4
 

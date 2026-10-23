@@ -257,7 +257,7 @@ days 38 38
 roles A
 when fired m_overlay
 when is A ow_song
-text With Mars under three weeks out, the old-channel carrier is loud enough to hear without folding. {A} pipes it into the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between the clicks. {A} turns it off before it starts to sound like anything.
+text With Mars under three weeks out, the old-channel carrier is loud enough on the dish to hear without folding. {A} pipes it into the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between the clicks. {A} plays them once on the galley keyboard and doesn't explain.
 do morale A -1
 
 card m_count
