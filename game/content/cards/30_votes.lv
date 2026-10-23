@@ -12,7 +12,7 @@ duration 2
 roles A B
 lean warm fly decline
 text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. That means closing to a careful hundred metres apart, and propellant to get there and back. The request uses the word "iconic" four times.
-option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes the shot from their own hull camera. {A} holds a breath until the ships are apart again.
+option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: six ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
   set photo_taken
   res fuel -2
   morale A 4
@@ -28,7 +28,7 @@ days 18 39
 roles A
 when flag photo_taken
 when cond A ok
-text The fleet portrait is on the front page of every news site on Earth, which from out here means a few minutes ago. {A} zooms in and finds their own ship: a small bright dot, third from the left.
+text The fleet portrait is on the front page of every news site on Earth, which from out here means a minute ago. {A} zooms in and finds the edge of their own hull, bottom left.
 do morale A 5
 
 card photo_stamp
@@ -61,7 +61,7 @@ option strip | Strip it now | The processor spends nine hours in pieces on the d
   mark t_water
   res spares -1
   trait A curious 3
-option degrade | Run it degraded | The fleet goes on water rationing. The complaints stay off the channel. {A} logs the recovery rate every hour, which is its own kind of complaint.
+option degrade | Run it degraded | The fleet goes on water rationing. The complaints stay off the channel. {A} logs the recovery rate every hour; it slips a tenth at a time.
   set water_rationed
   who water_who A
   morale A -3
@@ -179,7 +179,7 @@ card dust_report
 type event
 cat arrival
 days 29 35
-weight 6
+weight 4
 once
 roles A
 when cond A ok
