@@ -5,13 +5,13 @@
 card dec_photo
 type decision
 cat mission
-days 2 5
+days 2 3
 weight 8
 once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: seven ships in one frame, with Earth filling the frame behind them. That means all seven ships at once, a careful hundred metres apart, and propellant to get there and back. The request says "iconic" four times.
+text Public affairs wants a fleet portrait: seven ships in one frame, with Earth filling the frame behind them. That means seven ships a careful hundred metres apart, and propellant to get there and back. The request says "iconic" four times.
 option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: six ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
   set photo_taken
   res fuel -2
@@ -54,6 +54,7 @@ duration 2
 roles A B
 lean brave degrade strip
 when cond A ok
+when home A
 text Water recovery on {A}'s ship is down to 93 percent from 98. {A} wants to strip the processor now. {B} wants to run it degraded and fix it when things are calmer.
 option strip | Strip it now | The processor spends nine hours in pieces on the deck. {A} finds a clogged filter and a check valve installed backwards at the factory. Recovery is back to 98 percent by dinner.
   set water_fixed
@@ -77,6 +78,7 @@ when flag water_rationed
 when is A water_who
 when apart B A
 when cond B ok
+when home A
 text The degraded water processor on {A}'s ship quits at 04:00. {B} rides the transfer line over in an unscheduled window with the spare valve, and the two of them have water flowing by breakfast. It tops out at ninety-five percent, for good now.
 do move B A
 do bond A B 8
@@ -93,6 +95,7 @@ roles A
 when flag water_fixed
 when is A water_fix_who
 when since t_water >= 9
+when home A
 text The water processor on {A}'s ship passes its thousandth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it again.
 do morale A 2
 
@@ -180,7 +183,7 @@ do morale A 2
 card dust_report
 type event
 cat mission
-days 29 35
+days 28 35
 weight 5
 once
 roles A
@@ -212,7 +215,7 @@ once
 duration 2
 roles A B
 when flag dust_seen
-lean brave hold wait
+lean warm wait hold
 text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit and wait it out, at a real cost in food.
 option hold | Hold the plan | The arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
   set arrive_hold

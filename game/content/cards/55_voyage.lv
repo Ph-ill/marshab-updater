@@ -46,7 +46,7 @@ cat life
 clue core
 due
 once
-days 11 12
+days 12 12
 roles A
 text Transfer window. The next ship's hatch takes a code that goes stale in a fifth of a second. The procedure still says to read them up via the ground. {A} does, once: CODE STALE. Ship to ship it opens first time, and {A} files a correction to page two.
 do trait A curious 1
@@ -72,7 +72,7 @@ due
 once
 days 5 7
 roles A
-text {A} reads the manifest like a shopping list: water on Cargo 3, the rover on Cargo 4. Then write-offs: a drill rig left in Earth orbit; a grey relay, "thruster stuck open"; last year's hopper, "tipped over, last heard sol 9"; Cargo 2, drill spares, "lost on landing"; socks, "reason unknown".
+text {A} reads the manifest like a shopping list: water on Cargo 3, rover on Cargo 4. Write-offs: a drill rig left in Earth orbit; a grey relay, "thruster stuck open"; the last window's hopper, "tipped, beacon intermittent"; Cargo 2, drill spares, "lost on landing, scar imaged"; socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -103,6 +103,7 @@ once
 days 12 20
 roles A
 when !is A ow_list
+when home A
 text The galley screen on {A}'s ship has started to sulk: after every restart it sits on its logo longer than it used to, then boots with a sad cloud icon and the word OFFLINE. {A} files a ticket titled "manners".
 do morale A 1
 
@@ -127,7 +128,7 @@ once
 days 16 17
 roles A
 when !is A ow_list
-text A voice note from the Starbase loading crew turns up in {A}'s data drop, forty seconds long, recorded on a forklift by the sound of it. The one with the Sharpie: "Eat the good rations first. The bad ones keep." {A} checks the locker. It's true.
+text A voice note from the Starbase loading crew reaches {A}, recorded on a forklift by the sound of it. The one with the Sharpie: "Eat the good rations first. The bad ones keep. And if anything blinks at you, wave. Ours won't arm till someone says hello." {A} checks the locker. True.
 do morale A 2
 
 card g_news
@@ -138,7 +139,7 @@ once
 days 27 28
 roles A
 when is A ow_list
-text A message from home for {A}: a funeral, already over. One of the names on the list from the first call. By the time the message arrived, the people in the photos had gone home and changed their clothes. {A} watches the recording to the end and asks for the next watch.
+text A message from home for {A}: a funeral, already over, for the neighbour who always brought the folding chairs, a name from the first call's list. By the time it arrived, everyone in the photos had gone home and changed. {A} watches the recording to the end and asks for the next watch.
 do morale A -8
 do trait A warm 3
 
@@ -276,7 +277,7 @@ do trait A warm 2
 card w_venus_shadow
 type event
 cat wonder
-days 10 18
+days 7 18
 weight 6
 once
 roles A
@@ -315,6 +316,7 @@ weight 6
 once
 roles A
 when cond A ok
+when home A
 text The magnetometer on {A}'s ship twitches for six hours: the fleet is crossing the ion tail of a comet that last came this way before anyone aboard was born. There's nothing to see. {A} sits by the window anyway, with the trace scrolling on a tablet.
 do trait A curious 3
 do morale A 2
@@ -328,6 +330,8 @@ once
 roles A B
 when same A B
 when !fired beat_haircut
+when away A
+when home B
 text It's {B}'s birthday by the ground calendar, and {A} is still aboard from the last crossing. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
 do bond A B 6
 do morale B 5
@@ -411,7 +415,7 @@ due
 once
 days 28 28
 roles A
-text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis. The one with the Sharpie signs off: "Packed every cargo ship since the first, and the relay before that. Seven of you this time. Write when you land. I'll be counting."
+text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis, a forklift with a name painted on it. The one with the Sharpie signs off: "Seven of you this time. Write when you land." {A} pins the forklift above the console.
 do morale A 2
 
 card sharpie2
@@ -423,7 +427,7 @@ once
 roles A
 when fired dil_stash
 when cond A ok
-text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list, and under it a key card in a bag, labelled in the same Sharpie hand: "Old manners, for old hardware." Beside it, the little ship again, fingers still crossed.
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list, and under it a laminated card in a bag: an old handshake procedure, step by step, headed in the same Sharpie hand: "Old manners, for old hardware." Beside it, the little ship again, fingers crossed.
 do res spares 1
 do morale A 5
 
@@ -460,7 +464,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is holding steady.
+text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -472,7 +476,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is keeping time.
+text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -484,7 +488,7 @@ days 41 41
 roles A B
 when is A ow_dose
 when !flag arrive_wait
-text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. {B} sets an alarm for it anyway.
+text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. {B} sets an alarm for it.
 do bond A B 6
 
 card a_last_night_o
@@ -576,7 +580,7 @@ once
 days 41 41
 roles A
 when is A ow_theory
-text On the last night before entry, {A} uncaps the blue marker one last time and adds a second lighthouse to the drawing: small, standing on the ground, and beside it a figure holding a Sharpie. Then {A} folds it into a chest pocket with the marker.
+text {A} uncaps the blue marker one last time and adds a second lighthouse to the drawing: small, standing on the ground, and beside it a figure holding a Sharpie. Then {A} folds it into a chest pocket with the marker.
 do morale A 2
 
 card a_suit_plan
@@ -589,7 +593,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key in its crypto slot, the procedure on a card clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key loaded by the ground, a procedure card with two signatures clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
@@ -603,7 +607,7 @@ roles A
 when flag arrive_hold
 when flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the storm thins to a slope; {A} calls the manual takeover before the plume takes the view.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the brown thins and a slope comes up under the ship; {A} calls the manual takeover before the plume takes the view.
 do morale A 3
 
 card e_entry_hold_q
@@ -647,7 +651,7 @@ do morale A 3
 card w_zodiac
 type event
 cat wonder
-days 12 20
+days 8 20
 weight 10
 once
 roles A

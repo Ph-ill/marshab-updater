@@ -357,6 +357,54 @@ class TestFairCasting(unittest.TestCase):
         for v in tot:
             self.assertLess(abs(v - mean) / mean, 0.10, tot)
 
+    def test_presence_matches_text_over_300_seasons(self):
+        # Text that places someone must agree with where the engine has them. Over the
+        # same 300 seasons as the fair-play test, replaying each season's crossings:
+        # "{A}'s ship" in an opening line means A is at home; "{A}, visiting" or "{A} is
+        # still aboard" means A is away, on B's ship; a rescue option where "{B} brings
+        # it over" or "{B} rides the line" means B was on another ship when it opened.
+        # r_strike is exempt: it is about the ship's own entry profile, a day after the
+        # hook, and A may have crossed in between.
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        _, text, _ = lvc.build(CONTENT)
+        cards = text["cards"]
+        exempt = {"r_strike"}
+        opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
+        checks, bad = 0, []
+        for i in range(300):
+            key = bytes([(i >> 8) & 255, i & 255]) + b"season"
+            out = reference_season(Pack(self.p.data), seed=1000 + i, voyage_key=key)[0].story
+            loc, opened = list(range(7)), {}
+            for k in range(0, len(out), 8):
+                d, code, card, a, b = out[k:k + 5]
+                if code == O.O_MOVE:
+                    loc[a] = out[k + 5]
+                    continue
+                if code in opens:
+                    cid, t = cards[card]["id"], cards[card]["t"]
+                    if code == O.O_DIL_OPEN:
+                        b = O.NONE
+                    if code == O.O_RES_OPEN:
+                        opened[card] = (a, b, loc[a] if a < 7 else None, loc[b] if b < 7 else None)
+                    if a < 7 and "{A}'s ship" in t and cid not in exempt:
+                        checks += 1
+                        if loc[a] != a:
+                            bad.append((i, d, cid, "A not home"))
+                    if a < 7 and re.search(r"\{A\},? (visiting|is still aboard)", t):
+                        checks += 1
+                        if loc[a] == a or (b < 7 and (loc[b] != b or loc[a] != b)):
+                            bad.append((i, d, cid, "A not visiting B"))
+                if code == O.O_RES_CLOSE and card in opened:
+                    a0, b0, la, lb = opened.pop(card)
+                    o = cards[card]["o"]
+                    if b0 < 7 and a < len(o) and re.search(r"\{B\} (brings|rides)", o[a][1]):
+                        checks += 1
+                        if la == lb:
+                            bad.append((i, d, cards[card]["id"], "B already aboard"))
+        self.assertGreater(checks, 5000)
+        self.assertEqual(bad, [], "%d of %d presence checks failed" % (len(bad), checks))
+
     def test_fair_play_and_endings_over_300_seasons(self):
         # Every season must deliver the core clue set before the reveal, and every
         # ending must be reachable at a real rate (>= 5%). Same seasons and keys as
@@ -378,7 +426,7 @@ class TestFairCasting(unittest.TestCase):
         thread_beats = {ids.index(x) for x in ("c_letter", "c_dose", "c_list", "c_song", "c_theory", "c_hail")}
         entry = {ids.index(x) for x in ("e_entry_hold", "e_entry_hold_q", "e_entry_wait", "e_entry_clear")}
         half = {ids.index(x) for x in ("signal_reply", "signal_echo")}
-        whole = {ids.index(x) for x in ("m_key", "r_dark")}
+        whole = {ids.index(x) for x in ("m_key", "r_dark", "r_dark_a")}
         ends = {}
         for i in range(300):
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"

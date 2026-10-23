@@ -10,6 +10,7 @@ once
 days 11 11
 roles A
 when cond A ok
+when home A
 text Behind a stowage panel on {A}'s ship, three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a Starship with its fingers crossed.
 do open dil_stash
 

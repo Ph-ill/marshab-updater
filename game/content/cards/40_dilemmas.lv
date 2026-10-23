@@ -15,6 +15,7 @@ when !is A ow_list
 when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
+when home A
 text The weekly radiation summary puts {A}'s dosimeter at the top of the fleet's list, a little higher every week. The bunk on {A}'s ship sits on the bare hull, the one wall with no tanks or stowage behind it.
 do who ow_dose A
 do open dil_dose
@@ -30,7 +31,7 @@ roles A
 when !fired dil_dose
 lean warm report keep
 text Moving the bunk means telling the flight surgeon, who will want a meeting, and a meeting with the ground gets slower every week.
-option report | Tell the surgeon | The meeting runs on most of a minute per question, and everyone learns to ask two at once. {A}'s bunk moves in beside the water tanks, and the reading drops by a fifth.
+option report | Tell the surgeon | The meeting runs at more than a minute per question, and everyone learns to ask two at once. {A}'s bunk moves in beside the water tanks, and the reading drops by a fifth.
   set dose_told
   morale A -2
   trait A warm 2
@@ -164,9 +165,10 @@ weight 9
 duration 3
 roles A
 when cond A ok
+when home A
 lean brave tune wait
-text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance lead who owns that loop is off shift.
-option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning, after a non-conformance report and a long call, and writes it up as a procedure under {A}'s name, with a second signature line added for next time.
+text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A switch to the alternate gain set in the onboard library would probably settle it. Procedure says the guidance team signs off any switch, and the console on shift wants the owner's signature.
+option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles. The ground signs off in the morning, after a non-conformance report and a long call, and adds a second signature line for next time.
   set gains_tuned
   who gains_who A
   trait A brave 2
@@ -185,6 +187,7 @@ when flag gains_tuned
 when flag trim_done
 when is A gains_who
 when cond A ok
+when home A
 text On the corridor burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all seven, the report stapled to them.
 do morale A 5
 do res fuel 1
@@ -217,7 +220,8 @@ days 34 39
 roles A
 when flag zip_fix
 when is A zip_who
-text The stowage rack on {A}'s ship has carried its zip ties through every burn since. Before entry {A} checks them all, adds one more for luck, and updates the anomaly report: "still interim".
+when home A
+text The stowage rack on {A}'s ship has carried its zip ties through every burn since. Before arrival {A} checks them all, adds one more for luck, and updates the anomaly report: "still interim".
 
 card dil_eva_cam
 type dilemma
@@ -228,9 +232,10 @@ weight 7
 duration 3
 roles A
 when cond A ok
+when home A
 lean brave go wait
 text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. No one would blame {A} for waiting.
-option go | Close up and go out | The ground's GO comes up on the next pass. The next ship closes up, its astronaut suited at the hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
+option go | Close up and go out | The ground's GO comes up on the next pass. With the next ship closed up and a suit at its hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
   res fuel -1
   trait A brave 3
   morale A 4
@@ -241,15 +246,17 @@ card dil_interlock
 type dilemma
 once
 cat repair skill
-days 4 36
+days 10 36
 weight 8
 duration 3
 roles A
 when cond A ok
+when home A
 lean brave override vote
 text The airlock on {A}'s ship won't cycle. One door sensor says "closed". The other says "ajar". The interlock won't move until they agree. The door is obviously closed, and {A} has the override code.
-option override | Use the override | {A} overrides and starts the cycle; it stalls at ten kilopascals on a slow leak. The sensor was right: a seal had crept a millimetre. {A} reseats it and opens a ticket before anyone needs that airlock in a hurry.
+option override | Use the override | {A} overrides and starts the cycle; it stalls at ten kilopascals on a slow leak. Both sensors had a point: the door was closed, and a seal had crept a millimetre. {A} reseats it and opens a ticket before anyone needs that airlock in a hurry.
   trait A brave 2
 option vote | Find a third opinion | {A} pulls the lock's pressure trace as a tiebreaker. The door is sealed, and the "ajar" sensor is lying. {A} swaps it, the interlock is satisfied, and nothing was overridden.
   trait A curious 2
   res spares -1
+

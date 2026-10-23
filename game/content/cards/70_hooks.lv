@@ -24,10 +24,11 @@ type event
 cat repair
 hook
 once
-days 4 27
+days 10 27
 weight 10
 roles A
 when cond A ok
+when home A
 do who hook_who A
 text 01:50. The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is awake to see it first, a minute before the fleet's night watch.
 
@@ -55,6 +56,7 @@ days 4 27
 weight 10
 roles A
 when cond A ok
+when home A
 do who hook_who A
 text 02:14. {A}'s ship starts to roll with nothing in the command log. The control loop fires a thruster to stop it. Then another. {A} is already at the console.
 
@@ -68,6 +70,7 @@ roles A
 when flag valve_out
 when is A valve_who
 when since t_valve >= 6
+when home A
 text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The thruster-select table the ground uplinked has a new row, and the change note carries {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
 do morale A -1
 
@@ -107,6 +110,7 @@ days 4 27
 weight 9
 roles A
 when cond A ok
+when home A
 do who hook_who A
 text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} doesn't trust green.
 
@@ -133,6 +137,7 @@ days 25 33
 weight 10
 roles A
 when cond A ok
+when home A
 do who hook_who A
 text 02:40. The intercom on {A}'s ship opens and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. Nothing in the comms log says a call came in.
 
@@ -148,6 +153,7 @@ roles A
 when cond A ok
 when !is A ow_hail
 when since t_frame >= 1
+when home A
 do who hook_who A
 text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays. Through the next ship's long lens, its cabin windows are lit as usual.
 
