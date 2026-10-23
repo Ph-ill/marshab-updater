@@ -40,7 +40,7 @@ type beat
 cat human
 due
 once
-days 24 39
+days 23 31
 roles A B
 when flag stash_kept
 when since t_stash >= 10
@@ -93,7 +93,7 @@ option window | Track it from the window | {A} notes its bearing hourly. By the 
 card galley_pump
 type event
 cat repair
-days 8 39
+days 14 39
 weight 6
 once
 roles A

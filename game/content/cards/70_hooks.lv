@@ -17,7 +17,7 @@ when cond A ok
 when flag flash_seen
 when home A
 do who hook_who A
-text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty. The orbiter's pass over that patch comes down an hour later: in its frame, the lit pixel is dark too.
+text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty. The orbiter's pass over that patch comes down an hour later: the lit pixel is dark in that frame too. It could be cloud.
 
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure

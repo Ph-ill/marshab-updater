@@ -91,7 +91,7 @@ due
 once
 days 2 2
 roles A
-text The ships hold formation a few kilometres apart. One seat a ship, so no one failure takes two people, and the next ship reads back every critical command. Every few days they close up: a tethered line, after a morning of prebreathe. {A} has the first crossing and already calls it "educational".
+text The ships fly a few kilometres apart, one seat a ship, so no failure takes two people. The next ship reads back every critical command; votes are advice to the flight director. Every few days they close up on a tethered line, after prebreathe. {A} has the first crossing and calls it "educational".
 do trait A brave 2
 
 card l_handshake
@@ -99,7 +99,7 @@ type beat
 cat life
 due
 once
-days 12 20
+days 13 20
 roles A
 when !is A ow_list
 when home A
@@ -152,7 +152,7 @@ once
 days 27 28
 roles A
 when is A ow_list
-text A message from home for {A}: a funeral, already over, for the neighbour who always brought the folding chairs, a name from the first call's list. By the time it arrived, everyone in the photos had gone home and changed. {A} watches the recording to the end and asks for the next watch.
+text A message from home for {A}: a retirement party, already over, for the neighbour who always brought the folding chairs, a name from the first call's list. By the time it arrived, everyone in the photos had gone home and changed. {A} watches the recording to the end and asks for the next watch.
 do morale A -8
 do trait A warm 3
 
@@ -230,7 +230,7 @@ type beat
 cat grim
 due
 once
-days 18 19
+days 19 20
 roles A
 when is A ow_garden
 text Four of the six pods have gone soft and grey: drowned. The schedule came from a book written for windowsills, where water drains away. Up here it just sits. {A} lifts them out with tweezers. "Wrong book," {A} tells the tray. "Let's go again." Half a dose, now, for the other two.
@@ -283,7 +283,7 @@ days 37 37
 roles A
 when is A ow_garden
 when !fired p_garden_sprout
-text Rationed water was one squeeze too many: the last pod never came up. {A} keeps watering the tray, two millilitres, on schedule, and packs the dry seed in a coat pocket for the ground. Seeds are patient. So, it turns out, is {A}.
+text Rationed water was one squeeze too many: the last pod never came up. {A} keeps watering the tray, two millilitres, on schedule, and packs the dry seed in a coat pocket for the ground. Seeds keep.
 do trait A warm 2
 
 # --- The middle dark ------------------------------------------------------------
@@ -346,7 +346,7 @@ when same A B
 when !fired beat_haircut
 when away A
 when home B
-text It's {B}'s birthday by the ground calendar, and {A} is still aboard from the last crossing. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
+text It's {B}'s birthday by the ground calendar, and {A} happens to be aboard. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
 do bond A B 6
 do morale B 5
 
@@ -358,6 +358,7 @@ weight 7
 once
 roles A B
 when same A B
+when !fired beat_cards
 text Movie night with {B}, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun. {A} pauses it, and the two of them listen until it stops. Then {A} puts on something with a sky in it.
 do bond A B 4
 
@@ -414,12 +415,12 @@ do morale B 3
 card g_count
 type beat
 cat grim
-days 18 39
+days 21 39
 weight 5
 once
 roles A
 when cond A ok
-text {A} counts the medical kit against the manifest: sutures, splints, pain tablets in neat blister rows. {A} counts it once more and closes the lid gently.
+text {A} counts the medical kit against the manifest: sutures, splints, pain tablets in neat blister rows. {A} closes the lid on the count.
 do trait A brave 2
 
 card g_packer
@@ -465,7 +466,7 @@ weight 14
 once
 roles A
 when cond A ok
-text Phobos is a speck beside Mars on the long-lens camera now, crossing its face in under an hour. {A} watches it cross a whole world in the time it takes to eat a meal, and wants weight, suddenly, more than sleep.
+text Phobos is a speck beside Mars on the long-lens camera now, slipping behind the disc and out the other side in under an hour. {A} watches it cross a whole world in the time it takes to eat a meal, and wants weight, suddenly, more than sleep.
 do trait A curious 2
 do morale A 3
 
@@ -478,6 +479,8 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
+when !is A ow_dose
+when !is A ow_theory
 text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: three parts rust, one part dark, the dawn line curved along one edge. Just past that line, too small to see, a light is holding steady.
 do morale A 5
 
@@ -490,6 +493,8 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
+when !is A ow_dose
+when !is A ow_theory
 text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: three parts rust, one part dark, the dawn line curved along one edge. Just past that line, too small to see, a light is keeping time.
 do morale A 5
 
@@ -578,12 +583,12 @@ type event
 cat arrival
 due
 once
-days 40 40
+days 38 38
 roles A B
 when flag stash_exposed
 when is A stash_who
 when !is B stash_b
-text {A} sent {B} the last pack from the locker on the last crossing, with a note on the bag in borrowed handwriting: "You'll thank me." {B} opens it tonight.
+text Before the crossings closed, the last of the extra ration packs from {A}'s locker went over to {B}, the bag signed in borrowed handwriting: "You'll thank me." Tonight, with Mars a disc in the window, {B} opens it.
 do bond B A 3
 
 card a_recall_marker
@@ -607,7 +612,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key loaded by the ground, a procedure card with two signatures clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key re-loaded and checked by the ground, a procedure card, HELLO then HOLD, with two signatures clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for line of sight, says yes.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
@@ -646,7 +651,7 @@ days 42 42
 roles A
 when flag arrive_wait
 when is A abort_who
-text Aerocapture. Four minutes of plasma blackout, seven ships silent in turn. Six come out the far side on time. {A}'s comes out eleven seconds late: eleven seconds of nothing on the fleet channel, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
+text Aerocapture. Four minutes of plasma blackout, seven ships silent in turn. Six come out the far side on time. {A}'s comes out nine seconds late: nine seconds of nothing on the fleet channel, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
 do morale A 3
 
 card e_entry_clear

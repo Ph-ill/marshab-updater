@@ -301,6 +301,69 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
                 self.assertIn(i[:-2], ids)
 
 
+
+class TestThreadConsistency(unittest.TestCase):
+    """Facts the late thread states more than once must agree wherever they appear."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.text, _ = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] for c in cls.text["cards"]}
+        pack, _, _ = lvc.build(CONTENT)
+        cls.pack = pack
+
+    def _seasons(self, n=300):
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        for i in range(n):
+            key = bytes([(i >> 8) & 255, i & 255]) + b"season"
+            yield i, reference_season(Pack(self.pack), seed=1000 + i, voyage_key=key)[0].story
+
+    def test_wake_all_is_always_followed_by_a_hold(self):
+        # The patch says ON HELLO: WAKE ALL. Every scene that answers with a hello must
+        # send the HOLD on the next tick, and no card may fall back to a "safe hold".
+        self.assertIn("ON HELLO: WAKE ALL", self.t["a_report"])
+        for cid in ("a_window_hail", "a_suit_plan", "end_through", "end_close", "end_patience"):
+            self.assertIn("HOLD", self.t[cid], cid)
+        strs = [c["t"] for c in self.text["cards"]] + \
+            [o[1] for c in self.text["cards"] for o in c.get("o", [])]
+        self.assertEqual([s for s in strs if re.search(r"safe[- ]hold", s, re.I)], [])
+
+    def test_battery_forecast_only_shortens(self):
+        # The battery forecast may tighten as data comes in, never lengthen: "a week or
+        # two after landing" (r_band / c2_cold) before "a few nights after landing".
+        rank = {"r_band": ("a week or two after", 2), "c2_cold": ("a week or two after", 2),
+                "c2_clock": ("a few nights after landing, not weeks", 1)}
+        for cid, (phrase, _) in rank.items():
+            self.assertIn(phrase, self.t[cid], cid)
+        ids = [c["id"] for c in self.text["cards"]]
+        bad, full = [], 0
+        for i, out in self._seasons():
+            seen = [ids[out[k + 2]] for k in range(0, len(out), 8)
+                    if out[k + 1] == O.O_EVENT and ids[out[k + 2]] in rank]
+            rs = [rank[c][1] for c in seen]
+            full += len(seen) >= 2
+            if rs != sorted(rs, reverse=True):
+                bad.append((i, seen))
+        self.assertGreater(full, 250)
+        self.assertEqual(bad, [])
+
+    def test_no_visit_lines_on_the_day_of_a_crossing(self):
+        # Someone who crossed today has not been aboard "since the last crossing".
+        ids = [c["id"] for c in self.text["cards"]]
+        pat = re.compile(r"\{A\}[^.]*\b(still aboard|since the last crossing|visiting since)", re.I)
+        bad = []
+        for i, out in self._seasons():
+            moved = set()
+            for k in range(0, len(out), 8):
+                d, code, card, a = out[k:k + 4]
+                if code == O.O_MOVE:
+                    moved.add((d, a))
+                elif code == O.O_EVENT and (d, a) in moved and pat.search(self.t[ids[card]]):
+                    bad.append((i, d, ids[card]))
+        self.assertEqual(bad, [])
+
+
 class TestCompactPack(unittest.TestCase):
     """Cards are indices into Pack.data; the decoded Card view and the engine's
     per-category lists must agree with a straight read of the header bytes."""
@@ -383,8 +446,9 @@ class TestFairCasting(unittest.TestCase):
     def test_presence_matches_text_over_300_seasons(self):
         # Text that places someone must agree with where the engine has them. Over the
         # same 300 seasons as the fair-play test, replaying each season's crossings:
-        # "{A}'s ship" in an opening line means A is at home; "{A}, visiting" or "{A} is
-        # still aboard" means A is away, on B's ship; a rescue option where "{B} brings
+        # "{A}'s ship" in an opening line means A is at home; "{A}, visiting", "{A} is
+        # still aboard", "{A}, aboard on a visit" or "{A} happens to be aboard" means A is
+        # away, on B's ship; a rescue option where "{B} brings
         # it over" or "{B} rides the line" means B was on another ship when it opened.
         sys.path.insert(0, os.path.join(ROOT, "sim"))
         from season import reference_season
@@ -412,7 +476,7 @@ class TestFairCasting(unittest.TestCase):
                         checks += 1
                         if loc[a] != a:
                             bad.append((i, d, cid, "A not home"))
-                    if a < 7 and re.search(r"\{A\},? (visiting|is still aboard)", t):
+                    if a < 7 and re.search(r"\{A\},? (visiting|is still aboard|aboard on a visit|happens to be aboard)", t):
                         checks += 1
                         if loc[a] == a or (b < 7 and (loc[b] != b or loc[a] != b)):
                             bad.append((i, d, cid, "A not visiting B"))

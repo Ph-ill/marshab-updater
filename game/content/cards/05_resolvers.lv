@@ -10,7 +10,7 @@ days 31 35
 roles A
 when fired h_band
 when is A hook_who
-text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It reaches entry week.
+text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It runs past entry week, to a week or two after landing.
 do morale A -2
 
 card r_pressure
@@ -144,7 +144,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when !flag signal_answered
-text {A} was back inside three hours. An old-channel frame, a link request with a challenge field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground takes the old channel off the fleet net. The listening dish keeps recording.
+text {A} was back inside three hours. An old-channel frame, a link request with a field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground takes the old channel off the fleet net. The listening dish keeps recording.
 do trait A brave 3
 do morale A -2
 
@@ -158,7 +158,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when flag signal_answered
-text {A} was back inside three hours. An old-channel frame, a link request with a challenge field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground moves the channel to a sandbox; the hellos go on from a box that can't hang a radio.
+text {A} was back inside three hours. An old-channel frame, a link request with a field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground moves the channel to a sandbox; the hellos go on from a box that can't hang a radio.
 do trait A brave 3
 do morale A -2
 

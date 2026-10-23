@@ -73,7 +73,7 @@ days 33 38
 roles A
 when is A ow_dose
 when home A
-text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it." Then, because the flight surgeon once asked: "Thanks for checking."
+text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it." Then, because someone once checked on {A}: "Thanks for checking."
 do trait A warm 1
 
 # --- Thread: the letter ---------------------------------------------------------
@@ -182,7 +182,7 @@ type event
 cat repair skill
 due
 once
-days 18 39
+days 19 39
 roles A
 when flag gains_tuned
 when flag trim_done

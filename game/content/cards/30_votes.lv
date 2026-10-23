@@ -24,7 +24,7 @@ type beat
 cat human
 due
 once
-days 18 39
+days 20 39
 roles A
 when flag photo_taken
 when cond A ok
@@ -47,7 +47,7 @@ do morale A 3
 card dec_water
 type decision
 cat repair
-days 8 26
+days 13 26
 weight 9
 once
 duration 2
@@ -72,7 +72,7 @@ type event
 cat repair
 due
 once
-days 18 36
+days 19 36
 roles A B
 when flag water_rationed
 when is A water_who
