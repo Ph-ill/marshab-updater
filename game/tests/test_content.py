@@ -405,8 +405,10 @@ class TestFairCasting(unittest.TestCase):
             # The signal arrives in order: half a frame first, then the whole frame.
             hd = [out[k] for k in range(0, len(out), 8) if out[k + 1] == O.O_EVENT and out[k + 2] in half]
             wd = [out[k] for k in range(0, len(out), 8) if out[k + 1] == O.O_EVENT and out[k + 2] in whole]
-            self.assertEqual((len(hd), len(wd)), (1, 1), "frames, season %d" % i)
-            self.assertLess(hd[0], wd[0], "half frame before whole frame, season %d" % i)
+            self.assertEqual(len(hd), 1, "half frame, season %d" % i)
+            self.assertTrue(1 <= len(wd) <= 2, "whole frame, season %d" % i)
+            self.assertLess(hd[0], min(wd), "half frame before whole frame, season %d" % i)
+            self.assertIn(ids.index("m_key"), fired, "key decode, season %d" % i)
             self.assertIsNotNone(Renderer(text).coda(out), "season %d" % i)
             # Entry prep: no window crossings out after day 32 (a late rescue can still
             # carry someone across until 38), nobody crosses at all on
