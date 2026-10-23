@@ -116,7 +116,7 @@ when cond A ok
 when home A
 when !is A eva_who
 do who hook_who A
-text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} doesn't trust green.
+text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} reads every green twice, then goes to look.
 
 # --- 8. Star tracker ghost (ominous) ---------------------------------------------
 card h_ghost

@@ -12,23 +12,11 @@ duration 2
 roles A B
 lean warm fly decline
 text Public affairs wants a fleet portrait: eight ships in one frame, with Earth filling the sky behind them. That means eight ships a hundred metres apart, and the propellant to get there. The request says "iconic" four times.
-option fly | Fly the formation | Eight ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: seven ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
+option fly | Fly the formation | Eight ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: seven ships, Earth, and the edge of {A}'s own hull. {A} breathes again when they part.
   set photo_taken
   res fuel -2
   morale A 4
 option decline | Politely decline | The fleet sends a polite no and a very good photo of a single ship. Public affairs replies with one word: "Noted."
-
-card photo_back
-type beat
-cat human
-due
-once
-days 20 39
-roles A
-when flag photo_taken
-when cond A ok
-text The clippings arrive: the fleet portrait made every front page on Earth. {A} zooms in past seven ships and the edge of the eighth to the blue behind them and finds, just, the coastline where one of those papers was printed.
-do morale A 5
 
 # --- Water recovery -------------------------------------------------------
 card dec_water
@@ -92,25 +80,6 @@ do bond A B 8
 do res spares -1
 do clr water_rationed
 
-card water_fail3
-type event
-cat repair
-due
-once
-days 32 32
-roles A B
-when flag water_rationed
-when is A water_who
-when apart B A
-when cond B ok
-when home A
-when !is B eva_who
-text The degraded water processor on {A}'s ship quits at 04:00 on a crossing day. {A} drinks from the reserve bag through a morning of {B}'s prebreathe while the next ship closes up. By afternoon {B} is across with the spare valve; water flows by dinner. It tops out at ninety-five percent, for good.
-do move B A
-do bond A B 8
-do res spares -1
-do clr water_rationed
-
 card water_good
 type beat
 cat repair
@@ -159,7 +128,7 @@ once
 days 31 34
 roles A
 when flag clock_kept
-text Since the fleet kept its own clock, the ground's handover lands in the fleet's first coffee. {A} knows them all by name now, and they know {A}'s coffee order, which is no use to anyone across this much space.
+text Since the fleet kept its own clock, the ground's handover lands in the fleet's first coffee. {A} knows them all by name now, and they know {A}'s coffee order, for all the good it does.
 
 # --- Course correction -------------------------------------------------------
 card dec_trim
@@ -172,7 +141,7 @@ duration 2
 roles A B
 lean brave now wait
 text Navigation shows the fleet drifting toward the edge of the arrival corridor. {A} wants a small correction burn now. {B} wants to wait for the scheduled burn, which costs more but leaves time to check the solution three times.
-option now | Burn now | A short, clean burn. {A} watches the residuals come in under a millimetre per second and allows a single fist pump.
+option now | Burn now | A short, clean burn. {A} watches the residuals come in under a millimetre per second, and writes the number on the back of a hand.
   set trim_early
   set trim_done
   res fuel -1
@@ -244,9 +213,9 @@ roles A B
 when flag dust_seen
 lean warm wait hold
 text The storm over the landing zone is still growing; the flight director wants the crew's call. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit and wait it out, at a real cost in food.
-option hold | Hold the plan | The flight director takes it: the arrival plan stands. {A} posts the entry numbers for the worst-case dust load where everyone can see.
+option hold | Hold the plan | The arrival plan stands. {A} posts the entry numbers for the worst-case dust load where everyone can see.
   set arrive_hold
-option wait | Long orbit, wait | The flight director takes it: aerocapture and the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
+option wait | Long orbit, wait | Aerocapture, then the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
   set arrive_wait
   who wait_who B
   res fuel -4

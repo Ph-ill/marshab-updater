@@ -81,7 +81,7 @@ due
 once
 days 6 6
 roles A
-text The last tanker undocks at dawn. Eight ships light their engines for departure, and {A} feels weight come back. The timeline calls the burn COMMIT: after it, every way home runs past Mars. From here the log keeps one page for every five days; by the next page {A} can hide Earth behind a thumb.
+text The last tanker undocks at dawn. Eight ships light their engines, and {A} feels weight come back. The timeline calls the burn COMMIT: after it, every way home runs past Mars. From here the log keeps one page for every five days; by the next page {A} can hide Earth behind a thumb.
 do morale A 3
 
 card l_transfer
@@ -91,7 +91,7 @@ due
 once
 days 2 2
 roles A
-text Ships fly a few kilometres apart, one seat a ship, so no single failure takes two; a visit bends the rule and is logged. The next ship reads back every critical command; votes only advise the flight director. Every few weeks ships close up for a tethered crossing. {A} goes first: "educational".
+text Ships fly a few kilometres apart, one seat a ship, so no single failure takes two people; a visit bends the rule and is logged. Votes advise; the flight director decides. Every few weeks ships close up for a tethered crossing. {A} goes first, and logs it: "Recommended. Hold on."
 do trait A brave 2
 
 card l_handshake
@@ -319,7 +319,7 @@ days 20 28
 roles A
 when cond A ok
 when home A
-text The protein crystals in {A}'s locker, a lab's two years of work, cooks overnight when its freezer fan seizes. {A} calls the lab, who ask for photos anyway. There is no second batch, and no second flight for it.
+text The protein crystals in {A}'s locker, two years of a lab's work, cook overnight when the freezer fan seizes. {A} calls the lab, who ask for photos anyway. There is no second batch, and no second flight for it. {A} lights the photos properly, like evidence.
 do morale A -3
 
 card p_birthday
@@ -381,7 +381,7 @@ roles A B
 when cond A ok
 when is A ow_list
 when cond B ok
-text Long table night. {B} has the toast and gives it to the empty chair at each of the eight tables, the one where a second crew member would sit on a normal ship. It lands on every screen at once, the one conversation out here with no delay. {A} laughs on the beat, and it counts double.
+text Long table night. {B} has the toast and gives it to the empty second chair at each of the eight tables. It lands on every screen at once, the one conversation out here with no delay. {A} laughs on the beat, and it counts double.
 do morale A 3
 
 card g_third_quarter
@@ -398,6 +398,17 @@ text The flight surgeon calls it the third-quarter effect. On the video link {A}
 do bond A B 6
 do morale B 3
 
+card g_margin
+type beat
+cat grim
+days 18 26
+weight 6
+once
+roles A
+when cond A ok
+text The flight surgeon's weekly sheet grows a column: days each ship lasts alone if the next crossing fails. {A}'s number is the shortest. {A} folds the sheet, numbers in, and files it behind the spare socks.
+do trait A brave 1
+
 card g_count
 type beat
 cat grim
@@ -406,7 +417,7 @@ weight 5
 once
 roles A
 when cond A ok
-text {A} counts the medical kit against the manifest: sutures, splints, pain tablets in neat blister rows, and at the bottom, folded flat and vacuum-sealed, the line item the manifest calls "contingency, crew, 1". There is one on every ship. {A} closes the lid on the count, and signs for it.
+text {A} counts the medical kit against the manifest: sutures, splints, pain tablets in neat blister rows, and at the bottom, folded flat and vacuum-sealed, the line item the manifest calls "contingency, crew, 1". There is one on every ship. {A} signs for the count and closes the lid.
 do trait A brave 2
 
 card g_packer

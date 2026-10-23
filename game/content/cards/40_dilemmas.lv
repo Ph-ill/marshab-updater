@@ -31,7 +31,7 @@ roles A
 when !fired dil_dose
 lean warm report keep
 text Moving the bunk means telling the flight surgeon, who will want a meeting, and a meeting with the ground gets slower every week.
-option report | Tell the surgeon | At a minute a question, everyone learns to ask two at once. {A}'s bunk moves in beside the water tanks, and the reading drops by a fifth.
+option report | Tell the surgeon | At half a minute a question, everyone learns to ask two at once. {A}'s bunk moves in beside the water tanks, and the reading drops by a fifth.
   set dose_told
   morale A -2
   trait A warm 2
@@ -169,7 +169,7 @@ when cond A ok
 when home A
 lean brave tune wait
 text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A switch to the alternate gain set would probably settle it. Procedure says the guidance team signs off any switch.
-option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles. The ground signs off in the morning, after a non-conformance report and a long call, and adds a second signature line for next time.
+option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles. The ground signs off in the morning, and adds a second signature line for next time.
   set gains_tuned
   who gains_who A
   trait A brave 2
@@ -204,7 +204,7 @@ roles A
 when cond A ok
 lean brave zip ticket
 text {A} finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
-option ticket | Open a ticket | Earth wants photos, measurements, and a part number that isn't on any drawing. {A} sends all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
+option ticket | Open a ticket | Earth wants photos, measurements, and a part number that isn't on any drawing. {A} sends all three. The approved repair arrives days later and is, in every way that matters, a zip tie.
   morale A -1
 option zip | Zip-tie it | {A} lashes the rack in a pattern no design review would pass, and it takes every load the ship can throw at it. The anomaly report calls it "interim". It is not interim.
   set zip_fix
@@ -236,7 +236,7 @@ when cond A ok
 when home A
 when !is A eva_who
 lean brave go wait
-text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. No one would blame {A} for waiting.
+text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end.
 do who cam_who A
 option go | Close up and go out | With the next ship closed up and a suit at its hatch, {A} clears the lens in twenty minutes. On the way in, {A} photographs the fleet strung out against the dark. It becomes everyone's wallpaper.
   res fuel -1

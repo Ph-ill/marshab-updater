@@ -17,7 +17,8 @@ do bond A B 5
 card beat_zipties
 type beat
 cat life skill
-days 11 39
+due
+days 11 11
 weight 6
 once
 roles A B
@@ -95,7 +96,7 @@ once
 roles A
 when idle A >= 3
 when cond A ok
-text {A} stands the night watch for the whole fleet so the other seven can sleep. Unasked. The watch report is two lines long and perfectly neat.
+text {A} stands the night watch for the whole fleet so the other seven can sleep. Unasked. The watch report is two lines long and neat.
 do morale A 2
 do trait A warm 2
 
@@ -109,7 +110,7 @@ roles A B
 when idle A >= 3
 when cond B ok
 when is B abort_who
-text {A} walks {B} through taking the landing by hand over the link: hold, pick a new spot, commit. Step by step, until {B} can call it without the checklist. {A} logs it as training. It is.
+text {A} walks {B} through taking the landing by hand over the link: hold, pick a new spot, commit. Step by step, until {B} can call it without the checklist. {A} logs the hours in {B}'s book as training.
 do who abort_who B
 do bond B A 6
 do trait B brave 2
