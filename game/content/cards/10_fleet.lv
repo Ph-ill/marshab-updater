@@ -15,27 +15,41 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
-text {A}'s ship-to-ship receiver, which still scans every channel any Mars craft ever used, logs a carrier too faint to see in any one sweep. Folded over a night at 10.96 seconds, 2.4 percent duty, it stands up out of the noise like a fence post. {A} files it under "retired hardware, probably".
+text {A}'s ship-to-ship receiver still scans the old common channel, which nothing on Earth listens to. It logs a carrier too faint to lock: power in a channel, no Doppler to read. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
 do who ow_hail A
 do mark t_carrier
+
+card m_alias
+type event
+cat mystery
+clue
+due
+once
+days 18 19
+roles A B
+when is A ow_hail
+when since t_carrier >= 3
+text {A} asks {B} to fold the same channel on {B}'s own receiver, against {B}'s own clock. An alias of something aboard would come out at a different period on a different ship. It comes out at 10.96 seconds, to the millisecond. "Not us," {A} tells the fleet channel. "Ignore my last."
+do bond A B 3
 do open dec_signal
 
 card dec_signal
 type decision
 cat mystery
-days 15 19
-weight 5
+days 18 19
+weight 1
 once
 duration 2
 roles A B
 lean curious open log
-text The old-channel carrier is still there, patient as a dripping tap. {A} wants to answer it, if only to be polite: a plain hail on every pass. {B} points out that every hail turns the big dish off Earth for a few minutes, and the letters from home wait behind a conversation with a machine.
-option open | Hail it every pass | {A} adds one line to the comms schedule: a plain hail on the old channel, every pass, until someone says stop. The first goes out at 14:02. Then static. The carrier comes and goes as before, and {A} logs the hail times to the second, out of habit.
+when fired m_alias
+text Whatever the carrier is, it isn't the fleet's. {A} wants to answer it: set the receiver to reply to every burst, automatically, quoting each one's header back. {B} points out that every reply ties up the comms computer, and the letters from home queue behind a conversation with a machine.
+option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst on the old channel, quote it back, until someone says stop. The first answer goes out at 14:02. Then static. The carrier comes and goes as before, and {A} logs every answer to the millisecond, out of habit.
   set signal_answered
   mark t_signal
   morale B -3
   trait A curious 5
-option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} pins a printout of the folded trace above the bunk, just in case, and lets the dish stay on Earth.
+option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} tapes a printout of the folded trace above the bunk, just in case, and the comms computer stays on the letters.
   set signal_ignored
   mark t_signal
   morale A -5

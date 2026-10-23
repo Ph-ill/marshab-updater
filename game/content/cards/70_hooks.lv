@@ -27,7 +27,7 @@ days 26 34
 roles A
 when fired h_band
 when is A hook_who
-text {A} decodes it by breakfast: a safe-mode beacon on the old common channel every Mars craft once used, asking for instructions nobody sent. The frame is cut off just before the spacecraft ID, every time. What's left looks old. {A} matches it to the written-off relay, and is almost sure.
+text {A} decodes it: a safe-mode beacon asking for instructions nobody sent. It cuts off at the same byte every time, before the spacecraft ID; a sweeping beam would clip it somewhere new each turn. Its Doppler swing is smaller than an orbiter's should be. {A} notes both, and still bets on the relay.
 do trait A curious 3
 do morale A 4
 

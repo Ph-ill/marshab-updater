@@ -75,7 +75,7 @@ once
 days 20 23
 roles A
 when since t_carrier >= 5
-text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there for about half a day, gone for about half a day, and back thirty-seven minutes later every morning. {A} blames the dish schedule, re-plots it, and the thirty-seven minutes stay.
+text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there most of a day, gone for a few hours, and back thirty-seven minutes later every morning. {A} blames the receiver's scan schedule, re-plots it, and the thirty-seven minutes stay.
 do mark t_dropout
 
 card m_theory
@@ -92,7 +92,7 @@ when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} finds a match in the catalog of retired spacecraft: a relay orbiter written off after a bad software load, still up there, one orbit per Mars day. A box in a reset loop: waking, shouting once, falling over. {A} draws it on the galley whiteboard in blue marker and sleeps through for once.
+text {A} finds the grey relay from the manifest in the catalog: its stuck thruster left it spinning, one turn every 10.96 seconds, one orbit for every turn of Mars against the stars. Its beam, nine degrees wide, is 2.4 percent of a circle. A lighthouse nobody keeps. {A} draws it in blue marker.
 do who ow_theory A
 do mark t_theory
 do morale A 3
@@ -107,7 +107,7 @@ days 25 27
 roles A
 when since t_theory >= 3
 when is A ow_theory
-text Mission Control runs the old relay's last orbit forward for {A}. One orbit is one Mars day, so it comes round thirty-seven minutes later each morning, and for half of every orbit its antenna faces away from the fleet. The ground team sends a lighthouse drawing. {A} pins it beside the blue marker.
+text Mission Control runs the grey relay's last orbit forward for {A}: it comes round thirty-seven minutes later each morning and hides behind Mars for a few hours at a time. The ground team sends a drawing of a lighthouse. {A} tapes it beside the blue marker and sleeps through the night.
 do morale A 2
 
 card m_flash1
