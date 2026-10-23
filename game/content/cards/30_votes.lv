@@ -12,7 +12,7 @@ duration 2
 roles A B
 lean warm fly decline
 text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. It costs propellant to fly the formation. The request uses the word "iconic" four times.
-option fly | Fly the formation | Seven ships close to formation distance for eleven minutes. {A} takes the shot from a camera on {A}'s ship. Nobody breathes until the ships are apart again.
+option fly | Fly the formation | Seven ships close to formation distance for twelve minutes. {A} takes the shot from a camera on {A}'s ship. Nobody breathes until the ships are apart again.
   set photo_taken
   res fuel -2
   morale A 4
@@ -24,7 +24,7 @@ type beat
 cat human
 due
 once
-days 18 40
+days 18 39
 roles A
 when flag photo_taken
 when cond A ok
@@ -42,7 +42,7 @@ duration 2
 roles A B
 lean brave degrade strip
 when cond A ok
-text Water recovery on {A}'s ship is down to 93 percent from 98. {A} wants to strip the processor now. {B} wants to run it degraded and fix it when things are calmer. Out here, things don't get calmer.
+text Water recovery on {A}'s ship is down to 93 percent from 98. {A} wants to strip the processor now. {B} wants to run it degraded and fix it when things are calmer.
 option strip | Strip it now | The processor spends nine hours in pieces on the deck. {A} finds a clogged filter and a check valve installed backwards at the factory. Recovery is back to 98 percent by dinner.
   set water_fixed
   res spares -1
@@ -57,7 +57,7 @@ type event
 cat repair
 due
 once
-days 18 40
+days 18 39
 roles A B
 when flag water_rationed
 when is A water_who
@@ -108,25 +108,40 @@ type event
 cat mission
 due
 once
-days 29 40
+days 29 39
 roles A
 when fired dec_trim
 when cond A ok
 when trait A curious >= -10
-text The final navigation fix comes in: the fleet sits within a few kilometers of the center of the arrival corridor. {A} reads the number twice, then pins it to the wall beside Earth's last decent photo.
+text The final navigation fix comes in: the fleet sits within a few kilometers of the center of the arrival corridor. {A} reads the number, then tapes it up beside Earth's last decent photo.
 do morale A 3
 
 # --- Arrival: dust storm over the landing region -------------------------------
 card dust_report
 type event
 cat arrival
-days 29 36
+days 29 35
 weight 22
 once
 roles A
 when cond A ok
 text {A} pulls the morning weather from the Mars orbiters: a regional dust storm, building over the landing zone. On the map it's a brown thumbprint. {A} measures it against the zone with a ruler, and then measures it again.
 do set dust_seen
+do mark t_dust
+
+card dust_worse
+type event
+cat arrival
+due
+once
+days 32 38
+roles A
+when flag dust_seen
+when since t_dust >= 3
+when !fired dec_arrival
+when cond A ok
+text The new weather frames come down: the dust storm over the landing zone has doubled overnight, and the brown thumbprint now covers the zone with room to spare. {A} puts the ruler away.
+do open dec_arrival
 
 card dec_arrival
 type decision
@@ -144,3 +159,4 @@ option hold | Hold the plan | The arrival plan stands. {A} runs the entry number
 option wait | Long orbit, wait | The fleet commits to the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
   set arrive_wait
   res fuel -4
+

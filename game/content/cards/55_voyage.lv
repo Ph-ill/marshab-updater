@@ -5,25 +5,25 @@
 card l_reboot
 type beat
 cat life
-clue
-days 1 9
-weight 12
+clue core
+due
 once
-roles A B
-when same A B
-text The galley screen on {A}'s ship installs an update overnight and restarts at breakfast: the cabin lights blink once for the self-test, then the logo, then the chime. Eleven seconds. {B} times it twice to be sure. Within a week the whole ship hums the chime.
-do bond A B 3
+days 2 9
+roles A
+when cond A ok
+text The galley screen on {A}'s ship installs an update overnight and restarts at breakfast: the cabin lights blink once for the self-test, then the logo, then the chime, all over before {A} has counted to eleven. By the end of the week {A} is humming the chime without noticing.
+do morale A 1
 
 card l_manifest
 type beat
 cat life
-clue
-days 2 8
-weight 12
+clue core
+due
 once
-roles A B
-when same A B
-text {A} reads the arrival manifest aloud over breakfast, the way some people read horoscopes: habitat frames on Cargo 1, water on Cargo 3. Cargo 2 gets one line: "lost on landing, written off". {B} asks what was on it. Spares, mostly. And water.
+days 4 9
+roles A
+when cond A ok
+text {A} reads the arrival manifest while a tanker docks, the way some people read horoscopes. Habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4, which sends weather reports. Cargo 2 gets one line, "lost on landing, written off", and a blurry thumbnail: a smudge and a streak. {A} turns the page.
 do trait A curious 1
 
 card p_live_call
@@ -78,7 +78,7 @@ do trait A warm 2
 card p_garden_sprout
 type beat
 cat wonder
-days 30 41
+days 30 39
 weight 16
 once
 roles A B
@@ -103,13 +103,13 @@ do trait A curious 3
 
 card w_phosphene
 type beat
+once
 cat grim
-days 14 40
+days 14 39
 weight 6
-cooldown 14
 roles A
 when cond A ok
-text {A} closes their eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light. {A} counts eleven of them before sleep.
+text {A} closes their eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light; cameras see them too, as single bright pixels. {A} counts them like sheep and loses count somewhere in the twenties.
 do trait A curious 2
 do morale A -1
 
@@ -130,7 +130,7 @@ type beat
 cat human
 days 14 38
 weight 7
-cooldown 12
+cooldown 18
 roles A
 when cond A ok
 text The delay has turned calls into letters. {A} records one for home and stops halfway, because there's no one to interrupt. {A} starts again and leaves pauses in it anyway, where the laughs would have been.
@@ -140,7 +140,7 @@ do trait A warm 2
 card p_birthday
 type beat
 cat life
-days 5 40
+days 5 39
 weight 7
 once
 roles A B
@@ -152,20 +152,20 @@ do morale B 5
 card p_movie
 type beat
 cat life
-days 6 40
+days 6 39
 weight 7
-cooldown 12
+cooldown 20
 roles A B
 when same A B
-text Movie night, on a tablet taped to the ceiling. {A} picked a film set on a submarine. Every time something creaks on screen, {A} and {B} look at the hull and then at each other.
+text Movie night, on a tablet taped to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and {B} and {A} listen until it stops. Nobody presses play again.
 do bond A B 4
 
 card p_music
 type beat
+once
 cat human
-days 3 42
+days 3 39
 weight 6
-cooldown 13
 roles A B
 when same A B
 text {A} plays the same four bars on a travel guitar every evening, never the rest of the song. On the night {B} finally asks, {A} says the rest belongs to someone at home, and plays it all the way through.
@@ -174,10 +174,10 @@ do trait A warm 1
 
 card p_dream
 type beat
+once
 cat human
-days 10 40
+days 10 39
 weight 5
-cooldown 15
 roles A
 when cond A ok
 text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone, and {A} doesn't mention it.
@@ -203,7 +203,8 @@ weight 9
 once
 roles A B
 when cond A ok
-text Past the halfway mark the quiet gets heavier. The flight surgeon calls it the third-quarter effect. {A} finds {B} staring at the same page of a checklist for ten minutes, and sits down next to them and starts reading it aloud.
+when cond B ok
+text Past the halfway mark the quiet gets heavier. The flight surgeon calls it the third-quarter effect. On the video link, {A} notices {B} staring at the same page of a checklist for ten minutes, and starts reading it aloud to them.
 do bond A B 6
 do morale B 3
 
@@ -215,14 +216,14 @@ weight 5
 once
 roles A
 when cond A ok
-text A message from home for {A}: a funeral, already over. By the time it arrived, the people in the photos had gone home and changed their clothes. {A} watches the recording twice and asks for the next watch.
+text A message from home for {A}: a funeral, already over. By the time it arrived, the people in the photos had gone home and changed their clothes. {A} watches the recording to the end and asks for the next watch.
 do morale A -8
 do trait A warm 3
 
 card g_count
 type beat
 cat grim
-days 18 40
+days 18 39
 weight 5
 once
 roles A
@@ -233,20 +234,20 @@ do trait A brave 2
 card sharpie2
 type beat
 cat human
-days 26 41
+days 26 39
 weight 12
 once
 roles A
 when fired dil_stash
 when cond A ok
-text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" Beside it, the little ship again, with its 2. {A} is, out loud, to an empty locker.
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" Beside it, the little ship again. This time it has a number on its side: 2. "Every day," {A} tells the empty locker.
 do res spares 1
 do morale A 5
 
 card p_video_late
 type beat
 cat human
-days 30 41
+days 30 39
 weight 8
 once
 roles A
@@ -258,7 +259,7 @@ do morale A 2
 card w_mars_disc
 type event
 cat wonder
-days 28 36
+days 39 39
 weight 14
 once
 roles A
@@ -270,7 +271,7 @@ do trait A curious 2
 card w_phobos
 type event
 cat arrival
-days 37 41
+days 41 41
 weight 14
 once
 roles A
@@ -282,21 +283,33 @@ do morale A 3
 card w_aurora
 type event
 cat arrival
-days 36 41
+days 33 39
 weight 9
 once
 roles A
 when cond A ok
-text On the night side of Mars, a faint green smear sits over the dark ground: aurora, patchy, pinned to old magnetized rock nobody has ever touched. {A} photographs it, then puts the camera away and keeps looking.
+text In one of the orbiters' night frames {A} finds a faint green smear over dark ground: Martian aurora, patchy, pinned to old magnetized rock nobody has ever touched. {A} saves the frame, then sits with it on the screen a while longer than the job needs.
 do trait A curious 3
 
 card a_last_night
 type beat
 cat arrival
-days 40 41
+days 40 40
 weight 14
 once
 roles A B
 when same A B
 text The last night before capture. {A} and {B} check the water tanks that shielded them on the flare nights, one more time, by hand. Neither of them sleeps much. Both pretend to, so the other one will.
 do bond A B 6
+
+# --- Departure (after the tanker flights) ---------------------------------------
+card l_departure
+type beat
+cat wonder
+due
+once
+days 6 6
+roles A
+when cond A ok
+text The last tanker undocks at dawn. Seven ships light their engines for the departure burn, and {A} feels weight come back for the first time since launch. When the engines stop, Earth has quietly stopped filling the window and started fitting in it.
+do morale A 3

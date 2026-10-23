@@ -1,37 +1,47 @@
 # Fleet votes and their callbacks. House style: content/STYLE.md.
 
+card m_carrier
+type event
+cat mystery
+clue core
+due
+once
+days 13 16
+roles A
+when cond A ok
+text The high-gain antenna on {A}'s ship logs a weak carrier on a channel the fleet stopped using years ago, coming and going every 11 seconds. {A} files it for the morning report under "retired hardware, probably", and then, because the form has a box for it, under "courtesy".
+do open dec_signal
+
 card dec_signal
 type decision
 cat mystery
-clue
-days 12 17
+days 13 16
 weight 5
 once
 duration 2
 roles A B
 lean curious open log
-text The high-gain antenna logs a weak carrier on a frequency the fleet stopped using years ago, coming and going every 11 seconds: some retired probe's beacon, probably. {A} wants to turn a dish and answer it. {B} points out that turning the dish costs propellant the fleet hasn't got to spare.
-option open | Answer it | {A} spends the propellant, and the whole fleet listens to static for an hour. Then the carrier changes pitch.
+text The old-channel carrier is still there this morning, patient as a dripping tap. {A} wants to turn a dish and answer it, if only to be polite. {B} points out that turning the dish costs propellant the fleet hasn't got to spare, for a conversation with a machine.
+option open | Answer it | {A} spends the propellant, and the fleet sends one plain hail on the old channel. Then an hour of static. The carrier comes and goes exactly as before. {A} logs the time the hail went out, to the second, out of habit.
   set signal_answered
   mark t_signal
   res fuel -3
   trait A curious 5
-option log | Log it, keep going | The signal goes into the anomaly log under "later". {A} tapes a printout of the waveform above their bunk, just in case.
+option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} tapes a printout of the waveform above the bunk, just in case.
   set signal_ignored
   mark t_signal
   morale A -5
 
-# Weeks later: the callback for whichever way the fleet voted.
 card signal_reply
 type event
 cat mystery
 due
 once
-days 25 41
+days 25 39
 roles A
 when flag signal_answered
 when since t_signal >= 14
-text At 03:12 the dish locks onto a reply: a burst of housekeeping telemetry in a format nobody has used in years, answering a hail it shouldn't have been able to hear. {A} is the first one awake. Mission Control's reply comes 40 minutes later, in full: "say again??"
+text At 03:12 the dish catches a reply on the old channel: half a frame of housekeeping telemetry in a format nobody has flown in years, cut off mid-header, as if the sender restarted mid-sentence. {A} is the only one awake. Mission Control answers 40 minutes later: "say again??"
 do set signal_contact
 do trait A curious 4
 
@@ -40,11 +50,11 @@ type event
 cat mystery
 due
 once
-days 25 41
+days 25 39
 roles A
 when flag signal_ignored
 when since t_signal >= 14
-text {A} finds the carrier in the dish logs again. It's stronger now, and its bearing has drifted toward the arrival corridor. Nobody uses the word "following". The anomaly report uses the word "persistent".
+text {A} finds the carrier in the dish logs again. It's stronger now, and its bearing has crept toward the arrival corridor, a little more each day. Nobody uses the word "following". The anomaly report uses the word "persistent", and leaves it there.
 do set echo_heard
 do morale A -3
 
@@ -75,7 +85,7 @@ text {A} needs a medical kit from another ship, and the next transfer window is 
 option send | Send the kit | A kit crosses on the next transfer. {A}'s wrist is splinted by lunch, and the anomaly report runs to four pages.
   kit A
   morale A 6
-option volunteer | {B} brings it over | {B} doesn't wait for the paperwork, makes the crossing in the next window, and splints the wrist personally. The mission log calls it "nominal". Everyone aboard knows it was more than that.
+option volunteer | {B} brings it over | {B} doesn't wait for the paperwork, makes the crossing in the next window, and splints the wrist personally. The mission log calls it "nominal". Six ships read the log, and every one of them knows better.
   kitfrom B A
   move B A
   bond A B 12
