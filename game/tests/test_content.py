@@ -203,7 +203,10 @@ class TestHouseStyle(unittest.TestCase):
                 r"\bpin(s|ned)\b[^.]*\b(above|up\b|wall)", r"\bpinned up\b", r"galley wall",
                 r"\b(go|goes|went|gone|going) quiet\b", r"since Starbase", r"\bslowly\b",
                 r"doesn't mention", r"\bNeither of them\b", r"\bby itself\b", r"it has moved",
-                r"\bsleeve\b[^.]*\bsleeve\b"]
+                r"\bsleeve\b[^.]*\bsleeve\b",
+                # round 20: shared habit openers, the doubled tie clause, the training tag
+                r"Every data drop", r"\bLast (mail|video) before entry", r"\bno strays\b",
+                r"flight director takes it", r"as training\. It is\."]
         strs = []
 
         def walk(x, where):
@@ -1081,7 +1084,7 @@ class TestRound19(unittest.TestCase):
         self.assertIn("and answers anyway", self.t["end_close"])
         self.assertIn("spare power in hand", self.t["end_close"])
         self.assertNotIn("argued to wait", self.t["end_long_orbit"])
-        self.assertIn("All eight, and the ninth plugged in", self.t["end_friend"])
+        self.assertIn("All eight. The ninth shared its night.", self.t["end_friend"])
         for cid in ("end_through", "a_descent_hold", "a_descent_hold_q"):
             self.assertIn("two antennas", self.t[cid], cid)
             self.assertIn("rim", self.t[cid], cid)
@@ -1220,6 +1223,120 @@ class TestEightShips(unittest.TestCase):
             self.assertIn("ninth", self.t[cid], cid)
         self.assertIn("Eight down, seven to fly", self.t["end_through"])
         self.assertIn("Eight ships light their engines", self.t["l_departure"])
+
+
+class TestRound20(unittest.TestCase):
+    """Round 20: engineer corrections, loose threads closed, endings, habit lines, tie wording."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.p, cls.text, cls.ctx = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] for c in cls.text["cards"]}
+        cls.o = {c["id"]: [o[1] for o in c.get("o", [])] for c in cls.text["cards"]}
+        cls.blob = json.dumps(cls.text, ensure_ascii=False)
+
+    def test_engineer_corrections(self):
+        self.assertIn("Every crew spent the night", self.t["r_flare"])
+        self.assertNotIn("Seven crews", self.blob)
+        self.assertIn("about half the width of the Moon", self.t["beat_watch"])
+        self.assertIn("half a minute a question", self.o["dil_dose"][0])
+        self.assertIn("five days out", self.t["a_descent_clear"])
+        self.assertIn("a shade under 10.96 seconds", self.t["m_carrier"])
+        self.assertIn("No two-hour orbit", self.t["m_alias"])
+        self.assertIn("past a hundred millisieverts", self.t["storm_dose"])
+        self.assertIn("five days of HOLD", self.t["end_lights"])
+        # Dry seed survives freezing; wet-packed germination trays do not.
+        self.assertIn("germination trays", self.t["end_long_orbit"])
+        self.assertNotIn("seed stock", self.t["end_long_orbit"])
+        self.assertIn("eight hands chose the lamp", self.t["end_long_orbit"])
+
+    def test_loose_threads_closed(self):
+        # The hopper's "intermittent beacon" was the knock, booked to the wrong name.
+        self.assertIn("booked to the hopper's beacon", self.t["a_report"])
+        self.assertIn("Nothing in Mars orbit speaks the old channel", self.t["a_report"])
+        # The relay's last-week pulse was Cargo 2 in cruise; only Cargo 2 has a landing ellipse.
+        self.assertIn("the relay's \"spin\" was it", self.t["m_reveal"])
+        self.assertIn("landing ellipse", self.t["m_reveal"])
+        self.assertNotIn("relay's misses", self.t["m_reveal"])
+        self.assertIn("only for the hopper's beacon", self.t["m_carrier"])
+        # p_dream's margin note pays off where the clicks are heard.
+        self.assertIn("rain, car roof", self.t["p_dream"])
+        self.assertIn("log margin", self.t["m_listen"])
+        # The flashing pixel is the patch's lamp.
+        self.assertIn("a lamp for eyes, a knock for radios", self.t["a_patch"])
+        self.assertNotIn("TIMEOUT", self.t["a_patch"])
+
+    def test_wording_bugs(self):
+        self.assertNotIn("flight director takes it", self.blob)
+        for opt in self.o["dec_arrival"]:
+            self.assertNotIn("flight director", opt)
+        self.assertIn("crystals", self.t["l_crystals"])
+        self.assertIn("cook overnight", self.t["l_crystals"])
+        self.assertIn("since the first scrap", self.t["signal_echo"])
+        self.assertNotIn("It's been a long week", self.t["stash_found"])
+
+    def test_tie_wording_varies(self):
+        tie = self.text["sys"]["dec_tie"]
+        self.assertIsInstance(tie, list)
+        self.assertGreaterEqual(len(tie), 4)
+        self.assertEqual(len(set(tie)), len(tie))
+        for x in tie:
+            self.assertIn("{n} ballots", x)
+            self.assertIn("{opt}", x)
+            self.assertNotIn("votes", x)
+        self.assertNotIn("Help is on the way", self.text["sys"]["res_close"])
+
+    def test_tie_wording_steps_through_the_pool(self):
+        # Each tie close takes the next wording, so a season repeats one only after
+        # using them all; the reader and the phone (render.js) count the same way.
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        from render import Renderer
+        pool = self.text["sys"]["dec_tie"]
+        heads = [x.split("{n}")[0] + "|" + x.split("{n}")[1].split("{opt}")[0] for x in pool]
+        seen_tie = 0
+        for i in range(40):
+            key = bytes([(i >> 8) & 255, i & 255]) + b"season"
+            st = reference_season(Pack(self.p), seed=1000 + i, voyage_key=key)[0]
+            used = []
+            for _, s in Renderer(self.text).lines(st.story):
+                for j, h in enumerate(heads):
+                    a, b = h.split("|")
+                    if s.startswith(a) and b in s:
+                        used.append(j)
+            seen_tie += bool(used)
+            self.assertEqual(used, [k % len(pool) for k in range(len(used))], "season %d" % i)
+        self.assertGreater(seen_tie, 20)
+
+    def test_habit_lines_round_20(self):
+        fleet = lvc.parse_fleet(os.path.join(CONTENT, "fleet.lv"), os.path.join(CONTENT, "roster.lv"))
+        habits = [h for cr in fleet["crew"] for h in cr["habits"]]
+        joined = " ".join(habits)
+        for banned in ("Every data drop", "Last mail before entry", "Last video before entry",
+                       "no strays", "retunes the pump", "names things", "measures twice",
+                       "like a breach", "no cutscenes"):
+            self.assertNotIn(banned, joined, banned)
+        # Habit lines never touch life-support settings for a joke.
+        self.assertIn("builds the week's playlist around it", joined)
+        # Kittens stay at home: any habit line about them arrives as mail.
+        for h in habits:
+            if "kitten" in h or "litter" in h:
+                self.assertTrue("mail" in h or "word reaches" in h, h)
+
+    def test_endings_round_20(self):
+        self.assertIn("It never could stand being ignored.", self.t["end_lights"])
+        self.assertNotIn("sulks", self.t["end_lights"])
+        self.assertTrue(self.t["end_through"].startswith("Dust to the windows."))
+        self.assertNotIn("wanted to answer all along", self.t["end_through"])
+        self.assertIn("none for the way back", self.t["end_friend"])
+        self.assertIn("forklift photo", self.t["end_friend"])
+        self.assertIn("puts a glove flat on the cold hull", self.t["end_close"])
+        self.assertIn("By then it has nothing left to hear it with.", self.t["end_close"])
+
+    def test_fold_pool_has_people(self):
+        pool = self.text["sys"]["fold_pool"]
+        self.assertFalse([x for x in pool if "spare fuses" in x])
+        self.assertTrue([x for x in pool if "bedtime stories" in x])
 
 
 if __name__ == "__main__":
