@@ -61,7 +61,7 @@
     "dec_close": "Decision closed: {opt}. Votes cast: {n}.",
     "dec_lean": "No votes came in, so the crew decided: {opt}.",
     "dec_tie": "A tie, {n} votes in all. The crew broke it themselves: {opt}.",
-    "dil_open": "For whoever at home looks after {A}, and nobody else:",
+    "dil_open": "For whoever at home looks after {A}, and only them:",
     "dil_you": "{A} went with your call: {opt}.",
     "dil_self": "No word from home in time, so {A} chose: {opt}.",
     "res_open": "Anyone can answer this one. One tap is enough.",
@@ -69,13 +69,13 @@
     "res_default": "No answer in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
     "end": "Arrival day.",
-    "fold": "Around the fleet, {who} kept the small things running.",
+    "fold": "On the other ships, {who} ran the checklists and the water rounds.",
     "fold_pool": [
-      "Around the fleet, {who} kept the small things running.",
-      "Elsewhere on the fleet net: {who}, busy.",
-      "The rest of the log belongs to {who}.",
-      "Meanwhile {who} kept the lights on.",
-      "Off the main thread, {who} had a full day."
+      "On the other ships, {who} ran the checklists and the water rounds.",
+      "{who} logged a quiet day: filters, pumps, sleep.",
+      "{who} took the routine watches and wrote home.",
+      "{who} swapped a scrubber cartridge and called it a day.",
+      "{who} kept the fans turning and the logs current."
     ]
   },
   "epi": {
@@ -89,7 +89,7 @@
         "Knew where everything was, always."
       ],
       [
-        "Made sure nobody ate alone.",
+        "Kept a seat free at every long table.",
         "Said the true thing when it needed saying."
       ]
     ],

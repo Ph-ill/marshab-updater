@@ -156,7 +156,7 @@ days 5 36
 roles A
 when fired h_flood
 when is A hook_who
-text {A} found it at 01:30, buried on page nine: a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and nobody is sure when {A} slept.
+text {A} found it at 01:30, buried on page nine: a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and the sleep log for that night is blank.
 do morale A 5
 do res spares -1
 
@@ -182,7 +182,7 @@ days 11 36
 roles A
 when fired h_silence
 when is A hook_who
-text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} reads it slowly before answering.
+text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} reads it twice before answering.
 do morale A 6
 do trait A warm 2
 

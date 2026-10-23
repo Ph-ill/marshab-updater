@@ -114,7 +114,7 @@ once
 days 18 19
 roles A
 when is A ow_list
-text The delay has turned calls into letters. {A} records one for home and talks straight through the gaps, then deletes it and does it again with pauses, which is worse. The list from the first call is still in the pocket.
+text The delay has turned calls into letters. {A} records one for home and talks straight through the gaps, then deletes it and does it again with pauses, which is worse, and then a third time at speed, list and all, which is the one that goes. The list from the first call is still in the pocket.
 do morale A 2
 do trait A warm 2
 
@@ -160,7 +160,7 @@ once
 days 42 42
 roles A
 when is A ow_list
-text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land ten minutes after it's sent. "No pauses this time," {A} says, and leaves them out.
+text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land ten minutes after it's sent. "No pauses this time," {A} says, "no ums, no gaps, no saving the good bit for last," and leaves them out.
 do morale A 3
 
 # --- Thread: the song ------------------------------------------------------------
@@ -184,7 +184,7 @@ once
 days 36 37
 roles A
 when is A ow_song
-text Alone, with the channel off, {A} plays past the four bars for the first time since Starbase and gets the fifth one wrong. Then wrong again, differently. {A} puts the guitar back in its bag. "Not yet," {A} tells the empty cabin. "Entry morning."
+text Alone, with the channel off, {A} tries a fifth bar after the four and gets it wrong. Then wrong again, differently. {A} puts the guitar back in its bag. "Not yet," {A} tells the guitar. "Entry morning."
 do trait A warm 1
 
 card a_song
@@ -207,7 +207,7 @@ days 8 20
 weight 10
 roles A
 when is A ow_garden
-text {A} waters the garden tray with a syringe, two millilitres per pod, and checks each one under the lamp. Nothing yet. {A} logs the nothing as carefully as anything else.
+text {A} waters the garden tray with a syringe, two millilitres per pod, and checks each one under the lamp. Nothing yet. {A} logs it: "Nothing yet. Good, even nothing." Then tells the pods so.
 do var garden 1
 
 card p_garden_fail
@@ -218,7 +218,7 @@ once
 days 18 19
 roles A
 when is A ow_garden
-text Four of the six pods have gone soft and grey: drowned. The schedule came from a book written for windowsills, where water drains away. Up here it just sits. {A} lifts them out with tweezers. "My fault," {A} tells the tray. "Let's go again." Half a dose, now, for the other two.
+text Four of the six pods have gone soft and grey: drowned. The schedule came from a book written for windowsills, where water drains away. Up here it just sits. {A} lifts them out with tweezers. "Wrong book," {A} tells the tray. "Let's go again." Half a dose, now, for the other two.
 do morale A -3
 do trait A warm 2
 
@@ -232,7 +232,7 @@ roles A
 when is A ow_garden
 when !flag water_rationed
 when !fired water_fail
-text {A} waters the last two pods morning and night, and has started reading the seed packet's small print for encouragement. There isn't any. {A} logs that too.
+text {A} waters the last two pods morning and night, and has started reading the seed packet's small print for encouragement. There isn't any, so {A} reads them the planting depth instead, with feeling.
 do var garden 1
 
 card p_garden_sprout
@@ -328,7 +328,7 @@ weight 7
 once
 roles A B
 when same A B
-text Movie night, with a visitor, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Nobody presses play again.
+text Movie night, with a visitor, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Neither of them presses play again.
 do bond A B 4
 
 card p_dream
@@ -446,7 +446,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since Starbase everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is holding steady.
+text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -458,7 +458,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since Starbase everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is keeping time.
+text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night

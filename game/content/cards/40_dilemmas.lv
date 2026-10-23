@@ -47,7 +47,7 @@ roles A B
 when flag dose_hidden
 when is A ow_dose
 when cond B ok
-text {B} reads the fleet's dosimeter logs the way other people read the news, notices {A}'s numbers, and calls. It takes an hour and the word "please" more than once. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
+text {B} reads the fleet's dosimeter logs the way other people read the news, notices {A}'s numbers, and calls. It takes an hour of {B}'s numbers against {A}'s, and {B}'s are better. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
 do bond A B 10
 do bond B A 6
 
@@ -60,7 +60,7 @@ days 17 24
 roles A
 when flag dose_told
 when is A ow_dose
-text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." {A} clips it beside the bunk, between the water tanks.
+text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." "Fair," {A} writes back, and clips it beside the bunk.
 do morale A 4
 
 card c_dose
@@ -71,7 +71,7 @@ once
 days 34 35
 roles A
 when is A ow_dose
-text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it, and runs the dose numbers to prove the point. With this little cruise left they prove the opposite. "Fine," {A} tells the ground. "Pump it." Then, because someone once asked twice: "Thanks for checking."
+text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it." Then, because someone once spent an hour on the numbers: "Thanks for checking."
 do trait A warm 1
 
 # --- Thread: the letter ---------------------------------------------------------
@@ -117,7 +117,7 @@ roles A
 when flag letter_saved
 when is A ow_letter
 when since t_letter >= 18
-text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock, slowly, and comes out with the last line by heart. {A} logs the airlock cycle and nothing else.
+text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock, once, and comes out with the last line by heart. {A} logs the airlock cycle and nothing else.
 do morale A 12
 
 card letter_worn
@@ -140,7 +140,7 @@ once
 days 34 35
 roles A
 when is A ow_letter
-text In the restow for entry the letter isn't in the left chest pocket. {A} empties the locker, the sleeping bag, the bin of wipes, then works the restow list again from the top, item by item. It's in the checklist binder, marking the page for entry, where {A} put it last week. "There you are," {A} says.
+text In the restow for entry the letter isn't in the left chest pocket. {A} empties the locker, the sleeping bag, the bin of wipes, then the restow list. It's in the checklist binder at the entry page, where step fourteen of the ground's procedure files personal papers. "Item located," {A} logs.
 do morale A 2
 
 card a_letter

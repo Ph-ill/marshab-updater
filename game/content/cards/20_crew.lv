@@ -83,7 +83,7 @@ when trait A curious >= -5
 when cond A ok
 lean brave closer window
 text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
-option closer | Get a closer look | {A} talks Mission Control into a camera slew: a chunk of ice shed from the fleet's own tanks, turning slowly, going to Mars with everyone else.
+option closer | Get a closer look | {A} talks Mission Control into a camera slew: a chunk of ice shed from the fleet's own tanks, tumbling, going to Mars with everyone else.
   var glints 1
   trait A brave 3
 option window | Track it from the window | {A} logs its bearing hourly. By the fourth hour it's plainly tumbling, each flash a face of ice from the fleet's own tanks. The log is neat enough to frame.
@@ -97,6 +97,6 @@ weight 6
 once
 roles A
 when res spares >= 1
-text The galley pump fails for the third time since Starbase. {A} lays the parts out on a towel in order, rebuilds it, and ends up with one washer it never needed.
+text The galley pump fails for the third time this voyage. {A} lays the parts out on a towel in order, rebuilds it, and ends up with one washer it never needed.
 do res spares -1
 do morale A -2

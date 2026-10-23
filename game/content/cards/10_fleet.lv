@@ -86,7 +86,7 @@ once
 days 39 39
 roles A
 when is A ow_hail
-text {A} works out how many times the old-channel carrier has knocked since the fleet first heard it: close to half a million, and not one missed. "Somebody is very patient," {A} tells the fleet channel. On the ground, the key-rotation ticket has quietly been moved to after landing.
+text {A} works out how many times the old-channel carrier has knocked since the fleet first heard it: close to half a million, and not one missed. "Half a million. No misses. Patient. Out," {A} sends. On the ground, the key-rotation ticket has quietly been moved to after landing.
 do trait A curious 1
 
 card crisis_eva

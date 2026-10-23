@@ -107,7 +107,7 @@ duration 2
 roles A B
 lean curious shift keep
 text Mission Control proposes moving the fleet's clocks two hours forward, to line up with the ground team's shifts. {A} is for it. {B} has seen this study before.
-option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, exactly as the study predicted and nobody believed.
+option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, exactly as the study predicted and everyone doubted.
   set clock_shifted
 option keep | Keep fleet time | The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza as evidence.
   set clock_kept

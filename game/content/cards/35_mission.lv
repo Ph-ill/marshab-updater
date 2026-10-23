@@ -93,7 +93,7 @@ when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} finds the grey relay from the manifest in the catalog, spinning since its thruster stuck: a turn every 10.96 seconds, a beam eight and a half degrees wide, 2.4 percent of a turn. Both numbers were fitted to RF flashes heard after it failed. A lighthouse, unkept. {A} draws it in blue marker.
+text {A} finds the grey relay from the manifest in the catalog, spinning since a thruster stuck: a turn every 10.96 seconds, a beam eight and a half degrees wide, 2.4 percent of a turn. Both numbers were fitted to RF flashes heard after it failed. A lighthouse, unkept. {A} draws it in blue: who keeps it?
 do who ow_theory A
 do mark t_theory
 do morale A 3
