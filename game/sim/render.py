@@ -116,9 +116,9 @@ class Renderer:
             return self.fill(pool[day % len(pool)], who=who, n=len(names))
 
         def flush(day, lines, folded, seen, hook_at):
-            # Thinned: on odd days with two or more story lines the fold is left out,
-            # so it reads as an occasional note rather than a closing tic.
-            f = None if (day % 2 and len(lines) >= 2) else fold(day, folded, seen)
+            # Thinned: the fold appears on quiet days (at most one story line) and on
+            # every third day otherwise, so it reads as an occasional note, not a tic.
+            f = fold(day, folded, seen) if (len(lines) <= 1 or day % 3 == 0) else None
             if f:
                 lines.insert(len(lines) if hook_at is None else hook_at, f)
             for s in lines:

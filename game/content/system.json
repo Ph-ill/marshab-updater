@@ -69,18 +69,18 @@
     "res_default": "No answer in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
     "end": "Arrival day.",
-    "fold": "On the other ships, {who} ran the checklists and the water rounds.",
+    "fold": "On the other ships, {who} ran the water rounds: recovery at ninety-three percent.",
     "fold_pool": [
-      "On the other ships, {who} ran the checklists and the water rounds.",
-      "{who} logged a quiet day: filters, pumps, sleep.",
-      "{who} took the routine watches and wrote home.",
-      "{who} swapped a scrubber cartridge and called it a day.",
-      "{who} kept the fans turning and the logs current.",
-      "{who} ran the pump checks and cleaned the galley.",
-      "{who} spent the shift on maintenance, and logged it in full.",
-      "{who} did the water rounds and answered mail from home.",
-      "{who} worked through the inventory, one locker at a time.",
-      "{who} checked the seals, then the seals again."
+      "On the other ships, {who} ran the water rounds: recovery at ninety-three percent.",
+      "{who} chased a rattle behind a panel and found a pen.",
+      "{who} swapped a scrubber cartridge two days early, because the trend line said so.",
+      "{who} answered mail from home: weather, a dog, a fence that needs mending.",
+      "{who} reran a pump check that came back two tenths off, then on.",
+      "{who} cleaned the galley filter and found most of last week's bread.",
+      "{who} counted the spare fuses twice and got the same number both times.",
+      "{who} recalibrated a cabin sensor reading half a degree warm.",
+      "{who} swept the cabin with the leak detector and found nothing, which is the point.",
+      "{who} re-torqued a hatch hinge to spec and logged the number."
     ]
   },
   "epi": {
@@ -107,7 +107,7 @@
     "story": [
       [
         "e_entry_hold_q",
-        "Put a ship down upright on a slope in the dust. Flies home in someone else's."
+        "Took the landing back from a gust on a slope, and walked the crew out."
       ],
       [
         "a_window_hail",
@@ -131,7 +131,7 @@
       ],
       [
         "a_list",
-        "Got an answer from every name on the list, and read each one aloud, pauses included."
+        "Got an answer from every name on the list but one, and read each aloud, pauses included."
       ],
       [
         "g_news",
@@ -187,7 +187,7 @@
       ],
       [
         "dose_ok",
-        "Took the bunk by the habitat's water wall, out of habit now."
+        "Thanked the ground for checking. Sleeps beside the water wall, and sleeps."
       ],
       [
         "a_last_night",
