@@ -113,8 +113,14 @@ blinks: a low-duty pad strobe with each knock, the pad crew's "awake" sign
 the rover (`end_friend`), which fits the battery rationing (`r_band`) and the cold
 endings. Why no Doppler fix: the
 flashes were too faint in short ground passes (`m_theory`). Why no hardware
-bypass or hard reset: the pad table sits ahead of both decoders, and the dish a
-hard reset needs is jammed (`a_log`, `a_window_quiet`). Why the old
+bypass or hard reset: the replay check sits ahead of every command path, and the
+dish a hard reset needs is jammed (bible only since round 10; the cards no longer
+say it). Why no working orbiter answered: none carries the old channel and key;
+only the dead relay did (`a_report`). Why Cargo 2 diverted: boulders on its pad;
+the hover burn left the scar the search booked as the impact (`a_report`,
+`m_checked`). Why Earth never caught the half-sol outages: the catalogue fit used
+three short passes (`m_theory`); the 37 minutes is decoded once, late, in
+`c_theory` (day 38). Why the old
 key: first batch, the relay, the science lander, the early cargo, all dead or
 crashed (`m_key`, day 34, every season; `r_dark` resolves `h_dark` on the next page with the hang only, no clue). Why no other orbiter
 heard it: the relay was the only listener on that band. Why the relay was gone
@@ -149,7 +155,7 @@ the old program key (`dec_signal`, `a_log`: "every one signed, every one late").
 |---|---|---|
 | Earth (comms) | Six weeks of ground hails, no acknowledgement | Every answer arrived minutes late and was discarded; Cargo 2's replies went out only on the old band, which Earth stopped listening to; X-band OVERTEMP, dish jammed (`m_checked`, `a_report`) |
 | Earth (old band) | Flashes every 10.96 s in the first weeks | Attributed to the tumbling relay, written into its catalogue entry as a spin rate (`m_theory`, `a_report`) |
-| Earth (security) | Signed link requests, sequence number 1, an old program key, no spacecraft ID | "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed." A parser guard goes up (answers keep going out); the first whole frame had hung the comms computer until a watchdog cleared it (`m_key`, `r_dark`) |
+| Earth (security) | Signed link requests, sequence 5,750,112 (a boot counter kept in flash: one per knock, so ×10.96 s ≈ two years, dating the source to the cargo landings), an old program key, no spacecraft ID | "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed." The first whole frame had hung the comms computer: a healthy thread kept its watchdog fed, the hourly health check rebooted it, and the backup string, fed the same frame, hung too (`m_key`, `r_dark`) |
 | Orbiter imaging | One coarse afternoon frame: a smudge and a streak | Backup-site maps predate the cargo landings (`dec_name`); from straight above a standing Starship is two pixels and a shadow; day 40 is the first sharp pass since (`m_reveal`) |
 | The fleet, first look | A carrier on the dish, too faint to lock | Decoy 1: an alias of something aboard (`m_carrier`), killed when it lands on two ships' unsynchronised machinery in the same millisecond (`m_alias`) |
 | The fleet, middle | 37-minute drift, out of view half the day | Decoy 2: the spinning relay "lighthouse" (`m_theory`, `m_theory_confirm`) |
@@ -229,7 +235,7 @@ change, so every branch agrees the averaged beat never moves).
 ## The reveal itself
 
 `m_reveal` (`reveal`, day 40) is cast to the theory owner (`ow_theory`);
-`m_reveal_any` is the fallback and never fires in 300 seasons. Understated: the
+the old fallbacks (`m_reveal_any`, `a_report_any`) were removed in round 10, because `m_theory` and `m_flash1` fire in every season, so the owners always exist (checked over 1,000 seasons). Understated: the
 first sharp pass since before the cargo ships flew, Cargo 2 named once, dish
 jammed against its stop, a pad strobe at each knock, the galley chime
 fitting the gap. `a_report` (day 40) carries the sting and the root cause: the
@@ -316,7 +322,7 @@ ships and Cargo 2). Unanswered endings pay a cost and close differently:
 "All seven, one for good. Found the eighth." / "All seven. Found the eighth." /
 "All seven. Found the eighth, in time." Endings may run to 640 characters (lint MAX_ENDING).
 
-**Geometry:** day 41 is about five days (one log page) before atmospheric entry. Hold the plan
+**Geometry:** day 41 is about four days before atmospheric entry (at an arrival v∞ of about 4.2 km/s that is about 1.45 million km, 4.8 s one-way, 9.7 s round trip, inside the 10.96 s tick; five days would be about 12 s and miss it). Hold the plan
 = retarget to the backup site, about three kilometres from Cargo 2, with radar
 for height and Cargo 2's radio/transponder for place. The backup site is no
 clearer than the prime zone, but it is flat, surveyed, and has a landmark that
@@ -420,7 +426,7 @@ watchdog, nonce, challenge (of a link request), ranging tone, hail box, event
 recorder, REPLAY, DISCARD, HELLO RX, backup site, Landed. All eight., thruster
 stuck open, against the stars, alias, Not us, afternoon orbit,
 key rotation, auto-answer, fleet time, lost-link timer, boot ROM, OVERTEMP,
-ground hails, sequence number 1, standard handshake, floodlights, dish jammed,
+ground hails, sequence number, standard handshake, floodlights, dish jammed,
 first sharp pass, two pixels, relay tumble, entry interface, plasma blackout,
 The window after each knock is eleven, half a million, half the day, abort
 call, keeper, Same keeper, Wrong lighthouse, eight and a half degrees, I'll be
@@ -467,3 +473,37 @@ fault protection, a suit beside it, one Mars day, transponder.
 - Casting: `p_live_call` is even over 300 seasons (37–49 each). The take-manual
   trainee (`idle_mentor` B) leans to whoever is least featured mid-voyage, which
   is engine fairness at work; unchanged.
+
+## Round 10 notes
+
+- **Reveal room.** Day 40 now carries only `m_reveal`, `a_report`, the crater
+  recall (`a_recall_home` / `a_recall_plan`) and, sometimes, `a_recall_shared`.
+  `a_letter` moved to day 39, `a_recall_wrist` to day 37, and `w_phobos` (now
+  wonder) to days 37–39.
+- **`a_report`** has a speaker, one idea per sentence, the orbiter answer, the
+  divert cause, and "logged, thanked, thrown away".
+- **Day 41 timing.** `a_window_quiet`: ten seconds there and back is *inside*
+  the tick; nothing is cleared to answer, and the ground doesn't want fault
+  protection waking mid-descent while the fleet steers by the knock (this is why
+  a suit beside it after landing is acceptable). `a_window_hail`: "the handshake
+  and nothing else, until the review board sits". "Four days out" everywhere.
+- **Command authority.** The board sits before entry and clears one more
+  command: lights (`end_lights`, sent by the one who answered) or the manifest
+  dump (`end_long_orbit`). In `end_friend` nothing is commanded: the rover's
+  radio on the old channel triggers the pad crew's arrival routine.
+- **Light delay.** `comm_delay` is a minute each way (days 16–19); `photo_back`
+  no longer names a delay; `h_flare` has the fleet's own X-ray monitor first.
+- **Flight rules.** Solo loop changes now cost a non-conformance report
+  (`dil_gains`, `gains_payoff`); the valve fix is an uplinked thruster-select
+  table (`valve_later`); the key rides in a crypto slot (`a_suit_plan`).
+- **Casting.** `l_reboot` (day 3–9, cast evenly) now sets `abort_who`, and
+  `idle_mentor` requires `is B abort_who`, so the take-manual trainee is even
+  across the crew (37–48 each over 300 seasons).
+- **Blank days.** `w_milky` (day 20) and `w_moon_pair` (day 22) are due wonder
+  cards; blank story days on 20 and 22 drop to 0.
+- **Fold lines** (sim reader only) appear on quiet days and every third day,
+  and the pool is ten specific lines rather than stock phrases.
+- Retired gestures: "stays a while", "doesn't explain", "It isn't two things",
+  "harder to wake", "fits the knock exactly".
+- `h_band` waits for `flash_seen` and ends on the dark pixel; `r_band` ends
+  "Each cold night the gap is a knock or two longer."

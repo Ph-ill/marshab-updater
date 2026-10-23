@@ -46,7 +46,7 @@ players).
   thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
   Mars "under three weeks out" in real flight. Day 41: inside five
-  light-seconds, about five days before atmospheric entry ("the last night
+  light-seconds, about four days before atmospheric entry ("the last night
   before entry" belongs to day 41). Day 42: entry morning. Arrival is direct
   entry from the crossing, or aerocapture into a long orbit if the fleet votes
   to wait.
