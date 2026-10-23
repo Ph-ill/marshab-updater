@@ -21,7 +21,7 @@ players).
 
 - Real SpaceX Starships flying to Mars. Seven ships, **each astronaut belongs to
   a home ship; a ship may briefly hold 0 or 2.** Crossings happen only in a
-  transfer window (every fifth day from day 7: a tethered line between hatches,
+  crossing window (every fifth day from day 7: a tethered line between hatches,
   paid for in propellant) or an unscheduled rescue window, and an empty ship
   flies itself. No crossing out after day 32, everyone home from day 37, none
   on days 40–42. A card set on an ordinary day says "the last/next transfer
@@ -40,14 +40,17 @@ players).
   tanks, solar particle events, micrometeoroids, EVAs, tethers, star trackers,
   the high-gain antenna, Starbase, Mission Control, anomaly reports.
 - Distance is the antagonist. One-way light time to Earth (engineer's table,
-  2033-05-08 departure): seconds in Earth orbit, about a minute by day 16
-  (1.1 min), about 3 at day 25, 3.7 at day 28, 5 at day 33, 6 at day 36, 8 at
-  arrival (8.2 min at day 42). Mars one-way: 29 s at day 36, 25 s at day 37,
-  15 s at day 39, 5 s at day 41. Never more than 9 minutes each way in this
+  2033-05-08 departure, cross-checked by the round 15 engineer's model):
+  seconds in Earth orbit, about a minute by days 19-21, about 3 at day 25, 5 at
+  day 33, 6-7 at day 40 (round trip "a quarter of an hour"), 8 at arrival
+  (day 42). Mars one-way: ~100 s at day 22 (round trip 18 ticks), 30-40 s at
+  day 34, just under half a minute at day 36, 15 s at day 39, 10 s round trip
+  at day 41 (5 s one-way). The carrier slides against fleet time by nearly two
+  seconds a day around day 20. Write the shrinking numbers, never a fixed one. Never more than 9 minutes each way in this
   season. Earth shrinks to a dot you can cover with a thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
   Mars "under three weeks out" in real flight. Day 41: inside five
-  light-seconds (Mars half-lit, dawn line toward the fleet), about four days before atmospheric entry ("the last night
+  light-seconds (Mars gibbous, about three-quarters lit, the dawn line along one edge), about four days before atmospheric entry ("the last night
   before entry" belongs to day 41). Day 42: entry morning. Arrival is direct
   entry from the crossing, or aerocapture into a long orbit if the fleet votes
   to wait.
@@ -61,9 +64,13 @@ players).
 - No aliens, no magic, no killer AI. Mysteries resolve into something real: an
   old spacecraft, physics, a failing part, a ground station down in a storm.
 - **Time:** the season is 42 flight days. One flight day in the log is about
-  five days of real flight, so write "flight day", "this week", "a few days
-  later", "since Starbase". Don't write "month three" or "halfway through
-  the sixth month". Hours and minutes inside a scene are fine.
+  five days of real flight (one log page), so write "this week", "a few days
+  later", "by the next log page". Don't write "month three" or "halfway through
+  the sixth month". Hours and minutes inside a scene are fine. Counts that
+  span pages (knocks, hellos) are real-day counts; say the span in days ("a
+  hundred and twenty days back") so a numerate reader doesn't divide by
+  pages. Until the web header shows the page convention (see the bible's web
+  hand-off note), avoid "in N days" that lands inside one page.
 
 ## Tone: thrilling first, deadpan second
 

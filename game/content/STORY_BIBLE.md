@@ -144,7 +144,8 @@ the ground's one condition (the handshake and nothing else). By the next
 orbiter night pass the strobe has stopped; one status lamp burns steady. `HELLO RX · OK`. In the
 log-it branch (`a_window_quiet`): it listens until its next tick; the fleet's
 answer would take about ten seconds; the ground holds (no standing answer, a
-review board that won't sit before landing, and a suit beside it).
+review board that won't sit before landing, and a ruling: AFTER LANDING. LINE OF
+SIGHT, INSIDE THE TICK; `end_through` answers from two hundred metres on the rim).
 **Blind hellos:** after the vote (and the ground's clearance: hello only,
 nothing that commands) the fleet sends standard hellos blind; a whole frame
 decodes later (`m_key`/`r_dark`). Every hello is signed with
@@ -174,7 +175,8 @@ screen that logs out again (`l_reboot`); the docking computer that discards a
 the transfer-hatch code that goes stale relayed via the ground and opens
 ship to ship (`l_dock_hello`);
 the eleven-second gap and the shrinking round trip side by side on a
-whiteboard (`m_count`);
+whiteboard (`m_count`, cut in round 15; the shrinking round trip now lives in
+`m_overlay` and `a_window_*`, and day 39 carries `c2_clock`, the cold clock);
 the galley screen that waits for the ground's hello (`l_handshake`), the
 comm-delay cards (`comm_delay`, `comm_delay2`, `h_silence`), "the interlock
 won't move until they agree" (`dil_interlock`), the system text "One tap is
@@ -221,7 +223,7 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 | 5 | `m_ripple` | 2 | – | A coolant-pump control loop hunting | The same rhythm in the noise floor |
 | 6 | `m_dropout` | 2 | yes | Gone 37 minutes later each day: a one-sol orbit | Mars's own day: it turns with the ground |
 | 7 | `m_theory_confirm` | 3 | – | The decoy confirmed | The decoy |
-| 8 | `m_count` (39) | 4 | – | Lightning and thunder | The 11 s gap against the shrinking round trip |
+| 8 | `c2_clock` (39) | 4 | – | The beat is running out | The cold gap and the weaker knock: Cargo 2 is losing its battery, so arrival day matters |
 | 9 | `m_flash1` | 3 | yes | A pixel on the night side | The floodlights at power-up |
 | 10 | key: `m_key` / `r_dark` | 3 | yes | "Old key. … only the relay kept it." | An old program key: it's one of ours |
 | 11 | ground: `flash_answer` / `flash_answer_ground` | 3 | yes | The pixel never moves against the rocks | The decoy breaks (no longer said aloud) |
@@ -325,8 +327,9 @@ and the first message off the surface, to a loading bay at Starbase. Since
 round 14 every ending pays a price, answered or not. Answered endings: *Lights
 On* spends Cargo 2's floodlights ("All seven. The eighth kept the lights on."),
 *The Long Orbit* loses the seed stock in Cargo 2's hold (the lamp stayed lit,
-the heater didn't; "All eight."), *Old Friend* ruins the rover's pack (half
-range for the mission; "All eight."). Unanswered endings close "All seven, one
+the heater didn't; "Landed. All seven. The eighth was waiting."), *Old Friend*
+ruins the rover's pack (half range for the mission, a ground waiver for the
+drive; "All eight.", the only ending that says it). Unanswered endings close "All seven, one
 for good. Found the eighth." / "All seven. Found the eighth." / "All seven.
 Found the eighth, in time." Endings may run to 640 characters (lint MAX_ENDING).
 
@@ -351,8 +354,9 @@ noise (about ±2 points per ending); judge balance on 1000 seasons.
 
 **Named roles (round 13).** Every ending carries `roles A B`: A is always the
 hail owner (`is A ow_hail`, the one who first heard the carrier); B is the
-abort voice (`abort_who`) in the three storm/orbit endings that turn on holding
-or waiting, and the theory owner (`ow_theory`) in the three that turn on the
+gust pilot (`abort_who`, set by `e_entry_hold*`) in `end_lights` and
+`end_through`, the one who argued to wait (`wait_who`, set by `dec_arrival`'s
+wait option since round 15) in `end_long_orbit`, and the theory owner (`ow_theory`) in the three that turn on the
 lighthouse. The engine picks the ending on flags first, then fills roles from
 the ending's `is` tests only (no casting, so A and B may be the same person;
 the texts read correctly either way). lvc rejects any other role test on an
@@ -360,12 +364,12 @@ ending, and any role test on the fallback.
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 16.0% (1000: 16.4%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 17.3% (1000: 15.3%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 18.7% (1000: 17.3%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 17.0% (1000: 16.2%) |
-| 5 | *Old Friend* (`end_friend`) | answered, clear air | 15.3% (1000: 18.7%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 15.7% (1000: 16.1%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 14.7% (1000: 16.0%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 17.3% (1000: 17.8%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 17.0% (1000: 17.2%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 16.3% (1000: 14.9%) |
+| 5 | *Old Friend* (`end_friend`) | answered, clear air | 16.7% (1000: 16.3%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 18.0% (1000: 17.8%) |
 
 ## Epilogue
 
@@ -410,11 +414,11 @@ can list the flight days they fired on, with no explanation.
 ## Characters
 
 All seven are competent, kind, and tired in different ways. Each astronaut
-belongs to a home ship; a ship may briefly hold 0 or 2 during a transfer window
+belongs to a home ship; a ship may briefly hold 0 or 2 during a crossing window
 (every fifth day from day 7) or an unscheduled rescue window. No crossing
 out after day 32; from day 37 every visitor goes home, and nobody crosses on
 days 40–42 (engine `TRANSFER_LAST_OUT`, `TRANSFER_HOME`; tested). Cards that
-mention the transfer line say "the last/next transfer window". Skill flavor stays
+mention the transfer line say "the last/next crossing window". Skill flavor stays
 subtle, in no more than about 1 card in 6.
 
 ## Cliffhangers
@@ -454,7 +458,8 @@ first batch, Old key, Item located, Wrong book, divert, page two, CODE STALE, Se
 parser guard, blind hellos, first whole frame, Every gap explained, harder to
 wake, manual takeover, engine-out call, corridor correction, Found the eighth,
 All seven, low-gain antenna, logo, bar, chime, eleven, First one out, say hello,
-fault protection, a suit beside it, one Mars day, transponder.
+fault protection, line of sight, one Mars day, transponder, ON HELLO: WAKE ALL,
+The eighth was waiting.
 
 ## Round 8 notes
 
@@ -773,6 +778,86 @@ fault protection, a suit beside it, one Mars day, transponder.
   roof"); `beat_haircut` aims the joke at the clippers; `zip_back` 30–39 and
   `c_dose` 33 thin day 34. Coda lines for the three answered endings, and the
   coda list now checks endings before `a_window_hail`.
+
+## Round 15 notes
+
+- **Casting (all checked by a new test).** Four dead vars freed (`t_signal`,
+  `glints`, `t_dropout`, `t_call`; 30/32 used) instead of an engine change.
+  `dec_arrival`'s wait option records `wait_who`; `end_long_orbit` B is now the
+  one who actually argued to wait (it was right in about one season in five).
+  `dust_worse` no longer hands the ruler to anyone. `p_packer_note` fires only
+  when the stash is still held, to the holder, before `stash_found`; a new
+  `p_packer_note_g` (galley log, no locker) covers the other seasons.
+  `stash_found` records the last pack's hand (`stash_b`) and `a_recall_shared`
+  gives the next pack to someone else. `water_fail` never sends the splinted
+  wrist across. `dust_worse` waits four days after `dec_flash` (the only
+  same-day decision pair; now 0/300). New test
+  `test_ending_and_prop_roles_match_who_did_it_over_300_seasons`: every
+  ending's A is the hello proposer, `end_long_orbit` B the wait voice,
+  `end_through`/`end_lights` B the gust pilot, plus the locker, pack and wrist
+  checks; it fails if `abort_who` is put back on `end_long_orbit`.
+- **Reveal physics.** `m_reveal` is the orbiter's low-sun dawn pass: a long
+  leaning shadow behind the rim, the knock pixel at its foot, the old landing
+  ellipse, then the housekeeping (legs, half-open wing, dish on its stop). The
+  "Ten point nine six" wink is gone. `a_window_quiet`: "two-year-old wait loop"
+  and the ruling AFTER LANDING. LINE OF SIGHT, INSIDE THE TICK (no more "a suit
+  beside it"; `end_through` answers from 200 m). `a_log` labels: HAIL RX ·
+  LATE ×31,000 (Earth, 50–80 ticks behind), HELLO RX · NO CHALLENGE ×220,000,
+  HELLO RX · LATE ×130,000 (seven ticks, then one), HELLO RX · OK. `m_key`:
+  only the relay and the write-offs kept the key. `m_theory`: the spin is the
+  ground's reading of three power-only passes. `r_dark`: the unseen challenge
+  field hung the comms computer, then the backup.
+- **`a_report`** is one board finding plus the patch, now ending ON HELLO: WAKE
+  ALL, with the margin "Pad mode skips lost-link; the wake skips the battery
+  check" and "Earth: fifteen minutes, there and back". `end_close` cites ON
+  HELLO: WAKE ALL and "no battery check", matching the patch.
+- **Light ladder.** `m_alias` nearly two seconds a day (flat residuals kept);
+  `comm_delay` days 19–21; Mars at day 41 is three-quarters lit
+  (`w_mars_disc*`); `storm_dose` days 15–20 (past 50 mSv from day 14).
+  "Transfer window" → "crossing window"/"crossing" in cards, bible and STYLE.
+  `l_transfer` prebreathes before crossing; `l_manifest` "scar on a survey
+  frame".
+- **Page = five days.** `c_hail` gives the span in days ("a hundred and twenty
+  days back"), `a_descent_wait`/`_a` say "by the next log page", `a_log` drops
+  per-page arithmetic. The page header itself is web's call: hand-off below.
+- **Days 37–39.** `m_count` cut; `c2_clock` (day 39, mystery, cast to the flash
+  owner): the cold gap ran forty knocks and the next knock came in weaker, so
+  the beat runs out a few nights after landing. Restated knock totals cut from
+  `c_hail`.
+- **Endings.** *Through the Dust*: strut folded, the ship won't fly home; the
+  one who wanted to answer climbs the rim two sols later and answers inside the
+  tick from 200 m. *Old Friend*: the ground, eight minutes off, signs a waiver
+  for the drive. *Long Orbit*: "Landed. All seven. The eighth was waiting."
+  *Close Enough*: WAKE ALL wording. Winks cut from `m_flash1` (cosmic-ray hit),
+  `c_theory` (now the microsecond timing: early, then late, once a day, the day
+  37 minutes long) and `m_reveal`; `p_packer_note` softened.
+- **Epilogue / system.** dose_ok thanks the ground; dose_swap moves on "a
+  crewmate's better numbers". `dec_open` "Fleet vote, two pages. Both options
+  are cleared; the flight director takes the call." `dil_open` "Private, for
+  whoever looks after {A}:". Thirteen fold lines plural. One dark joke in entry
+  week (`a_last_night`: "On the ground. One way or the other."). `h_flood` days
+  8–27.
+- **Gzip held** at 24,923 B (was 24,933) by trimming filler: `dec_signal`
+  options, `dec_flash`, `dil_gains`, `valve_later`, `beat_window`,
+  `storm_shelter`, `p_movie`, `earth_dot`, `photo_back`, `beat_coffee`,
+  `clock_keep_back`, `sharpie2`, `w_sun_small`, `boiloff`, `dec_water`,
+  `rescue_*`/`water_fail` ("in an unscheduled window"), `res_open`.
+- **Declined.** Engine var-limit change (freed vars instead). Cutting
+  `m_alias`'s flat residuals (other reviewers lean on them). Binding `p_dream`
+  to `m_listen`'s cast. A hard cap on crowded days (max mystery cards on a
+  day stays 3; no blank-day regressions). Any web edit.
+
+### Web hand-off: page header (not built; web owns `web/render.js`)
+
+Every page header reads "FLIGHT DAY NN", but one page is about five days of
+real flight (`l_departure`, STYLE "Time"), so a numerate player reads "a
+hundred and twenty days" on page 39 as a contradiction. Proposal: header
+"LOG PAGE NN · DAYS a–b". Pages 1–6 (Earth orbit and the departure burn) are
+one day each ("DAY 6"); `l_departure` says the five-day cadence starts after
+it, so from page 7: a = 7 + 5·(NN−7), b = a + 4 (page 7 = days 7–11, page 42 =
+days 182–186). Cheaper fallback: "LOG PAGE NN" with no day range. Same change in `sim/render.py` so
+`tests/render_check.mjs` keeps matching. Keep "FLIGHT DAY" in the save/codes
+UI only if it's an internal index.
 
 ## Replay: the mystery spine reads the same every season (note, not built)
 
