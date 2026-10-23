@@ -71,7 +71,7 @@ once
 days 34 35
 roles A
 when is A ow_dose
-text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it." Then, because someone once spent an hour on the numbers: "Thanks for checking."
+text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it." Then, because the flight surgeon once asked: "Thanks for checking."
 do trait A warm 1
 
 # --- Thread: the letter ---------------------------------------------------------
@@ -166,7 +166,7 @@ roles A
 when cond A ok
 lean brave tune wait
 text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance lead who owns that loop is off shift.
-option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning, after a non-conformance report and a long call, and writes it up as a procedure under {A}'s name, with a new rule about doing this alone.
+option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning, after a non-conformance report and a long call, and writes it up as a procedure under {A}'s name, with a second signature line added for next time.
   set gains_tuned
   who gains_who A
   trait A brave 2
@@ -230,7 +230,7 @@ roles A
 when cond A ok
 lean brave go wait
 text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. No one would blame {A} for waiting.
-option go | Close up and go out | The next ship closes up, its astronaut suited at the hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
+option go | Close up and go out | The ground's GO comes up on the next pass. The next ship closes up, its astronaut suited at the hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
   res fuel -1
   trait A brave 3
   morale A 4
@@ -248,7 +248,7 @@ roles A
 when cond A ok
 lean brave override vote
 text The airlock on {A}'s ship won't cycle. One door sensor says "closed". The other says "ajar". The interlock won't move until they agree. The door is obviously closed, and {A} has the override code.
-option override | Use the override | {A} overrides, cycles the lock, and opens a ticket straight away. The sensor was right: a seal had crept a millimetre. {A} reseats it before anyone needs that airlock in a hurry.
+option override | Use the override | {A} overrides and starts the cycle; it stalls at ten kilopascals on a slow leak. The sensor was right: a seal had crept a millimetre. {A} reseats it and opens a ticket before anyone needs that airlock in a hurry.
   trait A brave 2
 option vote | Find a third opinion | {A} pulls the lock's pressure trace as a tiebreaker. The door is sealed, and the "ajar" sensor is lying. {A} swaps it, the interlock is satisfied, and nothing was overridden.
   trait A curious 2

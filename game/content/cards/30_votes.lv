@@ -92,8 +92,8 @@ days 23 34
 roles A
 when flag water_fixed
 when is A water_fix_who
-when since t_water >= 4
-text The water processor on {A}'s ship passes its five hundredth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it again.
+when since t_water >= 9
+text The water processor on {A}'s ship passes its thousandth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it again.
 do morale A 2
 
 # --- Clocks -----------------------------------------------------------------
@@ -143,7 +143,7 @@ duration 2
 roles A B
 lean brave now wait
 text Navigation shows the fleet drifting toward the edge of the arrival corridor. {A} wants a small correction burn now. {B} wants to wait for the scheduled burn, which costs more but leaves time to check the solution three times.
-option now | Burn now | A short, clean burn. {A} watches the residuals come in under a tenth of a meter per second and allows a single fist pump.
+option now | Burn now | A short, clean burn. {A} watches the residuals come in under a millimetre per second and allows a single fist pump.
   set trim_early
   set trim_done
   res fuel -1
@@ -181,7 +181,7 @@ card dust_report
 type event
 cat mission
 days 29 35
-weight 4
+weight 5
 once
 roles A
 when cond A ok

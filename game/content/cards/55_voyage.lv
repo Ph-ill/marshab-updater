@@ -72,7 +72,7 @@ due
 once
 days 5 7
 roles A
-text {A} reads the manifest like a shopping list: water on Cargo 3, the rover on Cargo 4. Then the write-offs: a drill rig left in Earth orbit; a grey relay, "thruster stuck open"; an orbiter; an old science lander, "silent since winter"; Cargo 2, drill spares, "lost on landing"; socks, "reason unknown".
+text {A} reads the manifest like a shopping list: water on Cargo 3, the rover on Cargo 4. Then write-offs: a drill rig left in Earth orbit; a grey relay, "thruster stuck open"; last year's hopper, "tipped over, last heard sol 9"; Cargo 2, drill spares, "lost on landing"; socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -90,9 +90,9 @@ type beat
 cat life
 due
 once
-days 7 7
+days 2 2
 roles A
-text The ships hold formation a few kilometres apart, trimmed with puffs of RCS. One seat a ship, the rest cargo: seven ships, so no one failure takes two people. Once a page they close up: a tethered line between hatches, a morning on oxygen first. {A} rides the line first and calls it "educational".
+text The ships hold formation a few kilometres apart, trimmed with puffs of RCS. One seat a ship, the rest cargo: seven ships, so no one failure takes two people. Every few days they close up: a tethered line between hatches, a morning on oxygen first. {A} rides the line first and calls it "educational".
 do trait A brave 2
 
 card l_handshake
@@ -161,7 +161,7 @@ once
 days 42 42
 roles A
 when is A ow_list
-text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land eight minutes after it's sent. "No pauses this time," {A} says, "no ums, no gaps, no saving the good bit for last," and leaves them out.
+text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land eight minutes after it's sent. {A} sends them without a single pause: no ums, no gaps, no saving the good bit for last.
 do morale A 3
 
 # --- Thread: the song ------------------------------------------------------------
@@ -281,7 +281,7 @@ weight 6
 once
 roles A
 when cond A ok
-text With the cabin lights off, the Sun behind the hull and the shutters open, {A}'s hand throws a faint shadow on the bulkhead. The light source is Venus. {A} makes a shadow rabbit, then a fist, then just an open hand, letting the planet cast it.
+text With the cabin lights off, the Sun behind the hull and the shutters open, {A}'s hand throws a shadow on the bulkhead, so faint {A} has to move the hand to see it. The light source is Venus. {A} makes a rabbit, then a fist, then an open hand, letting the planet cast it.
 do trait A curious 3
 
 card w_phosphene
@@ -292,9 +292,20 @@ days 19 23
 weight 6
 roles A
 when cond A ok
-text {A} closes their eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light; cameras see them too, as single bright pixels. {A} counts them like sheep and loses count somewhere in the twenties.
+text {A} shuts both eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light; cameras see them too, as single bright pixels. {A} counts them like sheep and loses count somewhere in the twenties.
 do trait A curious 2
 do morale A -1
+
+card l_crystals
+type event
+cat grim
+once
+weight 40
+days 20 28
+roles A
+when cond A ok
+text The protein-crystal experiment in {A}'s locker, a university lab's two years of work, cooks overnight when its freezer fan seizes. {A} reads the temperature trace, then calls the lab, who ask for photos anyway. There is no second batch, and no second flight for it.
+do morale A -3
 
 card w_comet
 type event
@@ -329,7 +340,7 @@ weight 7
 once
 roles A B
 when same A B
-text Movie night, with a visitor, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Then {A} puts on something with a sky in it.
+text Movie night with {B}, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Then {A} puts on something with a sky in it.
 do bond A B 4
 
 card p_dream
@@ -347,9 +358,9 @@ do trait A warm 2
 card l_long_table
 type event
 cat life
-days 7 20
-weight 6
+due
 once
+days 7 7
 roles A
 when cond A ok
 text Once a week the fleet eats together on video: seven tablets on seven galley tables, one meal at one time. {A} is in charge of the toast. It's short, it isn't a joke, and it lands.
@@ -412,7 +423,7 @@ once
 roles A
 when fired dil_stash
 when cond A ok
-text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" Beside it, the little ship again, fingers still crossed. "Every day," {A} tells the empty locker.
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list, and under it a key card in a bag, labelled in the same Sharpie hand: "Old manners, for old hardware." Beside it, the little ship again, fingers still crossed.
 do res spares 1
 do morale A 5
 
@@ -449,7 +460,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is holding steady.
+text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -461,7 +472,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is keeping time.
+text On the last page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -592,7 +603,7 @@ roles A
 when flag arrive_hold
 when flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the storm thins to a slope; {A} calls the take-manual before the plume takes the view, and sets down on the flat.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the storm thins to a slope; {A} calls the manual takeover before the plume takes the view.
 do morale A 3
 
 card e_entry_hold_q
@@ -605,7 +616,7 @@ roles A
 when flag arrive_hold
 when !flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres the cameras find a slope under the ship; {A} calls the take-manual before the plume takes the view, and fights it level. It comes down hard, upright.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres the cameras find a slope under the ship; {A} calls the manual takeover before the plume takes the view, and fights it level. It comes down hard, upright.
 do morale A 3
 
 card e_entry_wait
@@ -617,7 +628,7 @@ days 42 42
 roles A
 when flag arrive_wait
 when is A abort_who
-text Aerocapture. Four minutes of plasma blackout high in the air, seven ships silent in turn. Six come out the far side on time. {A}'s comes out eleven seconds late: eleven seconds of nothing on the fleet channel, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
+text Aerocapture. Four minutes of plasma blackout, seven ships silent in turn. Six come out the far side on time. {A}'s comes out eleven seconds late: eleven seconds of nothing on the fleet channel, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
 do morale A 3
 
 card e_entry_clear

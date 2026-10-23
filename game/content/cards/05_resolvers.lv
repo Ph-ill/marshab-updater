@@ -35,7 +35,7 @@ days 8 34
 roles A
 when fired h_flare
 when is A hook_who
-text Seven crews spent the night in their shelters between the water tanks, in a video grid, listening to the dosimeters tick. By morning: a month's dose in six hours. {A} wrote down the peak and slept till noon. The dose model now gives each of them a number for later, in a column headed "lifetime".
+text Seven crews spent the night in their shelters between the water tanks, listening to the dosimeters tick. By morning: a month's dose in six hours. {A} wrote down the peak and slept till noon. The dose model now gives each of them a number for later, in a column headed "lifetime".
 do var storms 1
 do morale A 3
 
@@ -100,7 +100,9 @@ days 5 36
 roles A B
 when fired h_strike
 when is A hook_who
-text {A}'s morning EVA, {B} suited at the next ship's hatch, found a fingernail crater in a heat-shield tile, short of the bondline. The entry team clears it on one condition: {A}'s ship flies entry a few tenths of a degree shallower, easier at peak heat, a longer soak, in every brief from now on.
+when cond B ok
+when !is B eva_who
+text {A}'s morning EVA, {B} suited at the next ship's hatch, found a fingernail crater in a heat-shield tile, short of the bondline. The entry team clears it on one condition: {A}'s ship flies entry a few tenths of a degree steeper, for a sharper peak and a shorter soak.
 do trait A brave 2
 do morale A 3
 
@@ -113,7 +115,7 @@ days 26 34
 roles A
 when fired h_ghost
 when is A hook_who
-text {A} pinned it down by morning: a launch cover plate shed at departure, on almost the fleet's own orbit, gaining a few metres a day, turning end over end. Tonight it passes forty kilometres off the bow, and no one is coming for it.
+text {A} pinned it down by morning: a launch cover plate shed at departure, on almost the fleet's own orbit, turning end over end and gaining a few metres a minute. Tonight it slides past forty kilometres off the bow. {A} writes it up, and Starbase starts counting its cover plates.
 do trait A curious 3
 do morale A -2
 
@@ -135,10 +137,10 @@ type event
 cat grim
 due
 once
-days 27 30
+days 27 32
 roles A
 when fired h_dark
 when is A hook_who
-text {A} was back within the hour. The comms computer had hung on a frame from the old channel, passed along the fleet net from the listening dish; a healthy thread kept the watchdog fed, the hourly check rebooted it, the backup hung on the same frame, and the third boot came up with it quarantined.
+text {A} was back before the third hour was out. A frame from the old channel, relayed from the listening dish, had hung the comms computer; the watchdog rebooted it, the backup hung on the same frame, and the third boot quarantined it. The ground puts the old channel under review and filters it.
 do trait A brave 3
 do morale A -2

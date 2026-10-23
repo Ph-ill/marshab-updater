@@ -11,7 +11,7 @@ cat grim
 hook
 once
 days 30 34
-weight 24
+weight 60
 roles A
 when cond A ok
 when flag flash_seen
@@ -142,8 +142,8 @@ type event
 cat mystery
 hook
 once
-days 26 29
-weight 30
+days 26 31
+weight 90
 roles A
 when cond A ok
 when !is A ow_hail
