@@ -8,6 +8,71 @@ hour for three boards.
 Placeholders are in `<ANGLE BRACKETS>`; fill them in for your own bench. Nothing here
 needs a server: the boards only talk to each other and to a phone or laptop on their hotspot.
 
+## Fast path: one command per board (`tools/bench.py`)
+
+For the game firmware and the 0.1.0-lv-test build, one command per board does sections 9,
+4 and 5's basics and prints a report. On the computer, once: `pip install mpremote`. Then,
+from the repo, with **one** board plugged in:
+
+```sh
+export LV_HOTSPOT_PASSWORD='<HOTSPOT_PASSWORD>'        # optional; keeps it out of the command line
+python3 game/tools/bench.py --ship 1 --launch <LAUNCH_DATE> --led on --led-test --code Phill=<CODE>
+```
+
+It:
+
+1. finds the Pico W on USB (or `--port <PORT>`) and checks it runs the game firmware
+   `lv-core 0.1.0`, core `f1b383588e79`. Stock MicroPython or another core: **FAIL**, naming
+   `lv-core-0.1.0-f1b383588e79-RPI_PICO_W.uf2` to flash first (BOOTSEL, drag it on the
+   `RPI-RP2` drive; or add `--uf2 <PATH>` and it does that);
+2. installs 0.1.0-lv-test (the updater page's files and deletes; files already right are
+   skipped) and checks every file's sha256 on the board;
+3. writes only the settings given into `/data/ship.json` (`--ship`, `--launch` or `--day`,
+   `--led on|off`, `--password`/`LV_HOTSPOT_PASSWORD`; everything else in the file stays) and
+   the crew codes given into `/data/crew.json` (`--code Name=1234`, repeatable, or `--codes`
+   with all 8 in roster order; the others keep theirs);
+4. runs the self-test for 60 s (`--seconds`) with the hotspot, the phone server, the captive
+   DNS and BLE up, and this computer's time given to the board as a phone would;
+5. with `--led-test`, plays 3 slow blinks (1 s on, 1 s off) and asks whether you saw them
+   (section 12 for seeing the LED through the case);
+6. prints the report and saves it with the whole console to `game/build/bench-logs/`
+   (codes and the password are never printed or logged), then resets the board into the game.
+
+```
+REPORT ship 1 (2026-10-23 20:15 CDT)
+firmware/core           PASS  lv-core 0.1.0 core f1b383588e79
+files hash-match        PASS  17 files, sha256 as in 0.1.0-lv-test
+settings saved          PASS  set launch_date, led_notify, ship_id; kept the rest
+crew codes              PASS  written; set for Phill
+selftest ran            PASS  CHECK (see docs/BENCH_TEST.md)
+heap used < 80 KB       PASS  peak … B of 80000
+BLE up                  PASS  advertising and scanning
+Wi-Fi hotspot up        PASS  hotspot LV-1 active True, ip 192.168.4.1
+phone server listening  PASS  phone game listening on port 80
+captive DNS up          PASS  every name -> 192.168.4.1 on port 53
+flight day              PASS  day=9/phone (expected day=9/phone)
+LED path                PASS  notifier ON, waiting …
+LED blink test          PASS  you saw the 3 blinks
+peers                   INFO  none
+OVERALL PASS
+```
+
+`selftest ran … CHECK` with one board is normal (no peer to sync with); `peers` is only a
+check with `--peers`. Exit code 0 = all PASS, 1 = something failed: send the log file.
+
+- **Several boards**: `--ships 1,2,3` (same flags), plugging each in when asked; or one
+  terminal per board with `--port`. For the sync checks (section 5, 2–4) run two boards'
+  self-tests at once with `--peers --seconds 180`.
+- **Rollover in two minutes** (section 11): `--rollover 9` sets a launch date and a
+  `day_start` a minute or two ahead so FD 8 becomes FD 9 during the self-test, checks the
+  STAT lines, and puts your launch date back.
+- **Manual day**: `--day 12` instead of `--launch` (clears the launch date).
+- `--dry-run` shows what it would do; `--no-install`, `--no-selftest`, `--no-reset`,
+  `--quiet`, `--no-clock`. `python3 game/tools/bench.py --help` lists them all.
+
+What it can't see: whether the LED blinked (it asks you), a phone joining the hotspot and
+the captive sheet opening (section 10), range. The manual steps below are unchanged.
+
 ## 0. What you need
 
 - 2 or 3 Raspberry Pi Pico W (or Pico 2 W) boards and USB data cables.
@@ -109,8 +174,8 @@ SELFTEST ble: active True, advert 020106 10ff ffff4c56 01 00 03 …
 SELFTEST log: 1 records, digest <8 hex>, story <16 hex>
 SELFTEST gift out: ship 1 -> ship 2, record <26 hex>
 SELFTEST led: notifier off (led_notify False), time known False, waiting False
-SELFTEST t=10s STAT ship=1 recs=1 digest=… ble=idle peers=2* ok=0 fail=0 sent=0 got=0 new=0 gifts_in=0 led=off heap_used=… heap_free=…
-SELFTEST t=60s STAT ship=1 recs=3 digest=… ble=idle peers=2= 3= ok=2 fail=0 sent=1 got=2 new=2 gifts_in=1 led=off …
+SELFTEST t=10s STAT ship=1 recs=1 digest=… ble=idle peers=2* ok=0 fail=0 sent=0 got=0 new=0 gifts_in=0 led=off/0 heap_used=… heap_free=… day=3/manual
+SELFTEST t=60s STAT ship=1 recs=3 digest=… ble=idle peers=2= 3= ok=2 fail=0 sent=1 got=2 new=2 gifts_in=1 led=off/0 …
 …
 SELFTEST peers seen: ship 2 (same log, 3 records, ok 1, fails 0), ship 3 (same log, 3 records, ok 1, fails 0)
 SELFTEST records: sent 2, received 2, new 2; sessions ok 2, failed 0, retries 0
@@ -142,7 +207,7 @@ Tick each one; the expected output is what a pass looks like.
 | 3 | First sync | 4, A and B | within ~60 s: `ble: synced with ship …`, `ok=1`+, both `digest=` equal, `peers=2=` / `1=` |
 | 4 | Gift path | 4, `gift_to` | the target prints `gift: from ship …`; `gifts in:` lists it |
 | 5 | Bulk transfer | preload A (section 3), run A and B | B reaches 274 records plus the gifts, and A's digest, in under 2 min; `retries` small |
-| 6 | LED path | `selftest.run(120, gift_to=2, led=True, epoch=<UNIX_TIME>)` on A, gift from B | A: `notifier ON`, `waiting True`, LED blinks per the notifier schedule. Without `led=True`: `pin writes 0` and the LED stays dark |
+| 6 | LED path (game firmware) | `selftest.run(120, gift_to=2, led=True, led_test=True, epoch=<UNIX_TIME>, tz=<MINUTES_EAST_OF_UTC>)` on A, gift from B; or `bench.py --led on --led-test` | A: 3 slow blinks first, then `led=gift/…` in STAT and a double blink every ~3 s (outside 22:00–07:00). Without `led=True`: `pin writes 0`, `led=off/0`, dark. Section 12 |
 | 7 | Coexistence with Wi-Fi | `wifi=True` on A; join `LV-1` from a phone, open `http://192.168.4.1/status` and `/api/sync` | hotspot stays up and pages load during and after a sync; the sync still completes. (On the game firmware `/` is the phone game: section 10) |
 | 8 | Relay (3 boards) | keep A and C apart (another room, or C off until A–B synced), then bring C near B only | C gets A's records through B |
 | 9 | Off / out of range | power B off mid-test, back on after a minute | A shows `fail=` going up at most once or twice, then quiet (backoff), and syncs again within ~1 min of B returning; nothing stuck in `ble=connecting`/`sync` |
@@ -193,11 +258,18 @@ reordering, mid-transfer disconnects, power-off, out-of-date and wedged peers; 3
 - **IRQ timing**: the IRQ handler only queues; work happens in `poll()` from the asyncio
   loop. Long blocking work elsewhere would delay acks (the retry timer allows 1.5 s).
 - **Real heap.** The unix-port measurements (32-bit, `.mpy`, the whole season and the
-  story at day 42, a sync running) are in section 8: 78 KB on Variant A, 51 KB on the game
-  firmware, 73–74 KB on the game firmware with two phones playing. The board number is in
+  story at day 42, a sync running) are in section 8: 79 KB on Variant A, 52 KB on the game
+  firmware, 75–77 KB on the game firmware with two phones playing (about 79 KB with the ship
+  light on too). The board number is in
   `SELFTEST heap:`. The Wi-Fi driver's and lwIP's buffers live outside the MicroPython
   heap and aren't in these numbers.
 - **Range** and how often boards actually meet in practice.
+- **The ship light**: that the blinks are visible (section 12) and that the LED writes
+  (commands to the CYW43 chip) don't disturb BLE or the hotspot: compare `ok`/`fail` in
+  the STAT lines with the light on and off.
+- **`tools/bench.py` on a real board**: finding the port, stopping `main.py` to get the
+  REPL, the `--uf2` BOOTSEL copy. Tested only against fake boards; if it misbehaves, the
+  manual steps in this file still work.
 
 ## 8. Variant B: the game firmware (the core frozen in, the rest updatable)
 
@@ -212,8 +284,8 @@ page `www/app.html.gz`, `www/text.json.gz`, `www/engage.json.gz`.
 
 | Heap peak, unix 32-bit (whole season, story at day 42, sync running) | Variant A | Variant B |
 |---|---|---|
-| Sync only (status page) | about 78 KB | about 51 KB |
-| Sync + two phones playing the game | about 114 KB (so: off) | about 73–76 KB (76 with a launch date set) |
+| Sync only (status page) | about 79 KB (ship light: stays dark) | about 52 KB |
+| Sync + two phones playing the game | about 114 KB (so: off) | about 75–77 KB; about 79 KB with the ship light on (section 12) |
 | Code in the heap | about 51 KB | about 23 KB (31 KB with the phone server) |
 
 **Build** (on the computer, from `game/`; the first run downloads MicroPython and the Pico
@@ -391,3 +463,47 @@ time T a few minutes from now (e.g. `21:30`).
 7. Afterwards: remove `day_start` (or set it to `"06:00"`) and set the real launch date.
    Changing the launch date or `day_start` starts the saved clock over (it doesn't carry an
    old day across). Back to the manual bench day: clear Launch date in section 4 and Save.
+
+## 12. The ship light (LED notifier)
+
+The Pico W's onboard LED as a quiet "something is waiting" light (`board/lvled.py`). Game
+firmware only (on stock MicroPython its code would push the heap past the cap, so it stays
+dark there). **Off unless switched on**, three ways: tick "Blink the onboard light…" in
+section 4 of the updater page and Save; the **Ship light** button on your own astronaut's
+page on the phone (CREW → you; kept in `ship.json` too); or `bench.py --led on`.
+
+What it shows (most important first):
+
+| Pattern | Means | Rhythm |
+|---------|-------|--------|
+| 3 slow blinks, once | the bench test (`--led-test`, `selftest.run(..., led_test=True)`) | 1 s on, 1 s off |
+| 3 quick flashes, once | a new flight day's page is ready (06:00) | 70 ms flashes |
+| double blink | a crewmate sent a gift | every ~3 s |
+| one short blink | today's page hasn't been opened here yet | 90 ms every ~4 s |
+
+- **Clears** as soon as a signed-in phone opens the game on this board.
+- **Quiet hours** 22:00–07:00 local time (the phones' clock, so daylight saving follows the
+  phones); the 06:00 flash falls inside them and shows at 07:00 instead. `"led_quiet":
+  "HH:MM-HH:MM"` in `ship.json` changes them, `""` turns them off.
+- **No time, no light**: until a phone has brought the time since boot it stays dark
+  (`"led_unknown_time": true` to blink anyway).
+- **Budget**: at most 240 s lit a day (`"led_budget_s"`), about 3 hours of the slow blink;
+  resets at local midnight.
+- **Radio**: the LED hangs off the CYW43 Wi-Fi/BT chip, so each on/off is a command to it.
+  A pattern is a few writes (the slow blink: 2 every 4 s), never starts during a BLE sync or
+  an HTTP request, and comes from the main loop, not an interrupt.
+- STAT lines show it as `led=<state>/<pin writes>`: `off`, `idle`, `test`, `day`, `gift`,
+  `waiting`, or why it is dark: `quiet`, `no clock`, `budget`.
+
+**Seeing it tonight through the current (opaque) case**: the LED sits on the top of the
+board next to the USB socket. Take the lid off for the test (or look in at the USB opening
+from the side, in a dim room). `--led-test` gives 6 s of slow blinks right after the
+self-test starts; the bench asks "Did you see 3 slow blinks?". The transparent PLA case is
+what it's for later.
+
+Check at the bench: `bench.py --led on --led-test` → `LED path PASS` and `LED blink test
+PASS` (you saw it). To watch the real schedule: leave it on with a launch date, power-cycle,
+open the game on a phone once (the board learns the time), close it: nothing until the next
+gift or 06:00 page; send a gift from another board's phone and the double blink starts
+within a few seconds (outside quiet hours), and stops when you open the game on this board.
+Off again: `bench.py --led off --no-selftest` or the Ship light button.
