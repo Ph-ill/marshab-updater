@@ -38,7 +38,7 @@ do set stash_exposed
 
 card beat_watch
 type beat
-days 1 42
+days 9 42
 weight 10
 cooldown 5
 roles A B

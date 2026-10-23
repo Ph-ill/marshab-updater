@@ -105,6 +105,16 @@ when var storms >= 1
 text {A} and {B} reorganize the storm shelter between the water tanks so the next flare night is less miserable. Two more sleeping spots, one hook for the cards, and a sign that reads "the Sun is not your friend".
 do bond A B 4
 
+card beat_early_watch
+type beat
+days 1 8
+weight 10
+cooldown 3
+roles A B
+when same A B
+text {A} and {B} stand the night watch. Earth still fills most of the window, blue and close. They talk about home as if it were down the road. Each day it's a little less true.
+do bond A B 5
+
 # --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
 card idle_watch
 type beat
