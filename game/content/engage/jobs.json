@@ -11,7 +11,7 @@
     {"id": "tracker_cal", "label": "Calibration", "t": "The star tracker needs a full recalibration: six hours of slews, one star at a time.", "h": [13, 17],
      "out": [
        {"w": 75, "t": "It converges on the third pass. The residuals are small enough to brag about, so {A} does."},
-       {"w": 25, "t": "It converges only after {A} notices the reference star is a variable star. The catalogue gets a quiet correction."}
+       {"w": 25, "t": "It converges only after {A} finds the backup unit running last year's star catalogue and reloads it."}
      ]},
     {"id": "boiloff", "label": "Tank survey", "t": "{A} runs the weekly boil-off survey on the header tanks.", "h": [10, 16],
      "out": [
@@ -22,7 +22,7 @@
      "out": [
        {"w": 72, "t": "Two hours and one spare O-ring later, the water tastes of nothing at all, which is the goal."},
        {"w": 22, "t": "The old filter is clogged with something fibrous. {A} bags a sample for the ground and starts a list of suspects."},
-       {"w": 6, "art": "quarter", "t": "Taped inside the old filter housing: a 1969 quarter and a note. 'For luck. R.' Nobody on the manifest starts with R."}
+       {"w": 6, "art": "quarter", "t": "Reaching for a spare O-ring, {A} finds the 1969 quarter they packed for luck and lost track of, wedged in the bottom of the tool pouch."}
      ]},
     {"id": "antenna", "label": "Antenna check", "t": "A pointing check on the high-gain antenna, timed for the next Earth pass.", "h": [14, 19],
      "out": [

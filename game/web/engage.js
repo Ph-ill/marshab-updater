@@ -149,7 +149,7 @@ function fileScreen(){
   const E=S.eng,pct=storyPct(),got=found(),Y=S.you;
   let o=`<div class=kick><div class=lab>Crew file · ${h(ship(Y))}</div><div class=pct>${pct}%</div><p class=dim style="margin-top:0">of this voyage's story discovered</p><div class=gauge style="padding-top:0">${meter(pct)}</div></div>`;
   const P=EG.patches.map((p)=>[p,patchGot(p)]);
-  o+=`<section><div class=lab><span>Mission patches</span><span>${P.filter((x)=>x[1]).length}/${P.length}</span></div><div class=patches>${P.map(([p,on])=>`<div class="patch ${on?"":"no"}">${patchArt(p,on)}<div><b>${h(p.n)}</b><small>${on?h(p.t):"Not yet"}</small></div></div>`).join("")}</div></section>`;
+  o+=`<section><div class=lab><span>Mission patches</span><span>${P.filter((x)=>x[1]).length}/${P.length}</span></div><div class=patches>${P.map(([p,on])=>`<div class="patch ${on?"":"no"}">${patchArt(p,on)}<div><b>${h(p.n)}</b><small>${h(on?p.t:p.l||"Not yet")}</small></div></div>`).join("")}</div></section>`;
   o+=`<section><div class=lab><span>Artifacts</span><span>${got.size}/${EG.arts.length}</span></div>${EG.arts.map((a)=>`<div class=row><span class=t>${got.has(a.id)?h(a.n):"<span class=dim>Unknown item</span>"}<small>${got.has(a.id)?h(a.t):"Turns up in a drop or on a job."}</small></span></div>`).join("")}</section>`;
   const met=new Set(),shared=new Set(),traded=new Set();
   for(const e of entries(()=>true)){
