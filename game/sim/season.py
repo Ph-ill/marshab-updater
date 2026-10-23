@@ -255,17 +255,29 @@ def stats_for(pack, st, text):
     }
 
 
+def fair_play(st, text):
+    """Core clue cards (lvc `clue core`) that had not fired before the first reveal
+    card (lvc `reveal`). Empty means the season played fair."""
+    rv = [st.fired[i] for i in text.get("reveal", []) if st.fired[i]]
+    if not rv:
+        return ["(no reveal)"] if text.get("reveal") else []
+    day = min(rv)
+    return [text["cards"][i]["id"] for i in text.get("core", []) if not (0 < st.fired[i] < day)]
+
+
 def main(argv):
     pack_path = os.path.join(ROOT, "build", "pack.bin")
     text = json.load(open(os.path.join(ROOT, "build", "text.json"), encoding="utf-8"))
     outdir = os.path.join(HERE, "out")
     os.makedirs(outdir, exist_ok=True)
     seasons = int(argv[argv.index("--seasons") + 1]) if "--seasons" in argv else 0
+    spoilers = "--spoilers" in argv  # otherwise summaries never print ending or card ids
 
     if seasons:
         endings, fired_any, t0 = {}, {}, time.time()
         dil = {"owner": 0, "astronaut": 0}
         dec = {"closed": 0, "no_ballots": 0}
+        unfair = []
         for i in range(seasons):
             pack = load_pack(pack_path)
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"
@@ -278,13 +290,29 @@ def main(argv):
                 dil[k] += s["dilemmas"][k]
             dec["closed"] += s["decisions"]["closed"]
             dec["no_ballots"] += s["decisions"]["no_ballots"]
+            missing = fair_play(st, text)
+            if missing:
+                unfair.append({"season": i, "missing": missing})
         dt = time.time() - t0
         never = [c["id"] for c in text["cards"] if c["id"] not in fired_any]
         report = {"seasons": seasons, "seconds": round(dt, 2), "endings": endings,
+                  "core_clues_before_reveal": seasons - len(unfair), "unfair_seasons": unfair,
                   "seasons_where_card_fired": dict(sorted(fired_any.items())),
                   "cards_never_fired": never, "dilemmas": dil, "decisions": dec}
-        print(json.dumps(report, indent=1))
         json.dump(report, open(os.path.join(outdir, "multi_season.json"), "w"), indent=1)
+        if spoilers:
+            print(json.dumps(report, indent=1))
+        else:
+            # Spoiler-free: endings by deck position, no card ids (use --spoilers).
+            ends = [c["id"] for c in text["cards"] if c["id"] in endings or c["id"].startswith("end_")]
+            print("seasons: %d in %.1f s" % (seasons, dt))
+            print("core clues before the reveal: %d/%d seasons" % (seasons - len(unfair), seasons))
+            print("endings: " + ", ".join("ending %d %.1f%%" % (k + 1, 100.0 * endings.get(e, 0) / seasons)
+                                        for k, e in enumerate(ends)))
+            print("cards never fired: %d" % len(never))
+        if unfair:
+            print("FAIR PLAY FAILED in %d season(s): see sim/out/multi_season.json" % len(unfair))
+            return 1
         return 0
 
     pack = load_pack(pack_path)
@@ -303,6 +331,9 @@ def main(argv):
             lastday = day
         lines.append("  " + s)
     open(os.path.join(outdir, "narrative.txt"), "w", encoding="utf-8").write("\n".join(lines).strip() + "\n")
+    epi = rd.epilogue(st.story)
+    open(os.path.join(outdir, "epilogue.txt"), "w", encoding="utf-8").write(
+        "".join("%s: %s\n" % (text["crew"][c], epi[c]) for c in sorted(epi)))
 
     # The raw story bytes, so tests/render_check.mjs can prove web/render.js says the same.
     with open(os.path.join(ROOT, "build", "season_story.bin"), "wb") as f:
@@ -345,7 +376,11 @@ def main(argv):
         "pack_bytes": pack.size,
     })
     json.dump(stats, open(os.path.join(outdir, "stats.json"), "w"), indent=1)
-    print(json.dumps(stats, indent=1))
+    if spoilers:
+        print(json.dumps(stats, indent=1))
+    else:
+        print("reference season: digest %s, %d entries, %d records; details in sim/out/stats.json"
+              % (stats["reference_digest"], stats["entries"], stats["records"]))
     bad = [k for k, v in det.items() if not v["all_7_match"]]
     if bad:
         print("DETERMINISM FAILED:", bad)

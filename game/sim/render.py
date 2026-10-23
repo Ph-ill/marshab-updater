@@ -85,3 +85,19 @@ class Renderer:
             s = self.entry(e)
             if s:
                 yield e[0], s.strip()
+
+    def epilogue(self, out):
+        # One story line per astronaut for the end screen: text.json epi.story is a
+        # priority list of [card index, line]; an astronaut gets the first line whose
+        # card they were cast in as role A. Pure function of the story log.
+        first = {}
+        for i in range(0, len(out), 8):
+            code, card, a = out[i + 1], out[i + 2], out[i + 3]
+            if code in (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN) and a != NONE:
+                first.setdefault((card, a), True)
+        lines = {}
+        for card, line in self.t.get("epi", {}).get("story", []):
+            for c in range(len(self.t["crew"])):
+                if c not in lines and (card, c) in first:
+                    lines[c] = line
+        return lines
