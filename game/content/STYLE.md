@@ -19,8 +19,15 @@ players).
 
 ## Setting: grounded near future
 
-- Real SpaceX Starships flying to Mars. Seven ships, one crew member per ship as
-  far as the story is concerned.
+- Real SpaceX Starships flying to Mars. Seven ships, **one astronaut per ship**.
+  Nobody shares a cabin, a shelter or a galley with a crewmate: two-person
+  scenes happen over the fleet link, video, or an EVA between ships. Check every
+  `{A}`/`{B}` card for "next to", "hands {B}", "across the table" and the like.
+- **Days 1–5 are in Earth orbit** (fuelling, tanker dockings, checkouts). Earth
+  is huge in the window and calls are live. The departure burn is day 6; any
+  card about Earth shrinking, the delay growing, or "since leaving" needs
+  `days` starting at 6 or later, and any card about Earth filling the window
+  must end by day 5 (low orbit) or day 10 (receding).
 - Use real, **public** hazards and hardware: header tanks, methane and LOX
   boil-off, propellant margins, correction burns, the arrival corridor, CO₂
   scrubbers, water recovery, dosimeters, the storm shelter between the water
@@ -159,6 +166,30 @@ after its `type` line:
 - `clue` marks a fair-play clue (STORY_BIBLE.md has the list). text.json
   collects them in `"reread"`; the end screen lists their flight days with no
   explanation. A clue card must read as ordinary on first pass.
+
+## Repetition caps and the climax
+
+- A beat that would read as a tic if it came back: `once`. Recurring scenes
+  (shelter nights, galley, gym, letters, idle watches): `cooldown 18` or more.
+- No stock gestures: nobody "reads it twice", "goes to make coffee" or "doesn't
+  say anything for a while" more than once in the whole deck. Grep before you
+  commit.
+- Days 40–42 are quiet: only arrival cards, `reveal` cards and endings. Hooks
+  end by day 36, their resolvers by day 37, everything else by day 39.
+  `test_climax_is_clear` enforces it.
+- Endings are checked in deck order on day 42. Combine every big choice into
+  the endings rather than letting an earlier ending hide a later vote.
+
+## Clue keywords
+
+- `clue`: a fair-play clue; listed in text.json `reread`.
+- `clue core`: a clue every season must deliver before the reveal. Make it a
+  `due` card with a tight window; if it needs a decision, open the decision from
+  a due event with `do open <card>`. `sim/season.py --seasons 300` exits 1 if a
+  season misses one.
+- `reveal`: the payoff card(s); the fair-play check runs up to the first one.
+- Simulator output is spoiler-free by default (no ending ids, no card text);
+  pass `--spoilers` to see them.
 
 ## Card types and what they're for
 

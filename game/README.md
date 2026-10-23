@@ -28,9 +28,14 @@ bench/coex-test/  Wi-Fi + BLE coexistence bench firmware (as published in 0.0.1-
 sh game/tests/run.sh                                  # everything below, in order
 python3 game/tools/lvc.py                             # compile + validate the pack
 python3 game/sim/season.py                            # 42-day season, narrative, stats, determinism
-python3 game/sim/season.py --seasons 300              # balance stats over many voyage keys
+python3 game/sim/season.py --seasons 300              # balance + fair-play check (exits 1 if a season misses a core clue)
+python3 game/sim/season.py --spoilers                 # also print ending ids (output is spoiler-free by default)
 MICROPYTHON=/path/to/micropython game/tests/run.sh    # also replays the season under MicroPython
 ```
+
+`season.py` also writes `sim/out/epilogue.txt`: one closing line per crew member,
+from `epi.story` in system.json (lvc turns card ids into indices). The web end
+screen should mirror `Renderer.epilogue` in sim/render.py.
 
 ## Phone UI prototype
 
