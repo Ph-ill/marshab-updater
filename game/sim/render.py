@@ -150,18 +150,50 @@ class Renderer:
                 return cd["name"], line
         return None
 
-    def epilogue(self, out):
+    def epilogue(self, out, st=None):
         # One story line per astronaut for the end screen: text.json epi.story is a
         # priority list of [card index, line]; an astronaut gets the first line whose
-        # card they were cast in as role A. Pure function of the story log.
+        # card they were cast in as role A. Pure function of the story log; pass the
+        # final state as st to fill gaps from traits and bonds (always 7 lines).
         first = {}
         for i in range(0, len(out), 8):
             code, card, a = out[i + 1], out[i + 2], out[i + 3]
             if code in (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN) and a != NONE:
                 first.setdefault((card, a), True)
         lines = {}
-        for card, line in self.t.get("epi", {}).get("story", []):
+        epi = self.t.get("epi", {})
+        for card, line in epi.get("story", []):
             for c in range(len(self.t["crew"])):
                 if c not in lines and (card, c) in first:
                     lines[c] = line
+        if st is not None:
+            self._epilogue_fallback(lines, epi, st)
         return lines
+
+    def _epilogue_fallback(self, lines, epi, st, cut=20):
+        # Anyone with no story line gets one from the end-of-season state, so the end
+        # screen always has a line per astronaut: their strongest trait (epi.axis, a
+        # [positive, negative] pair per axis) if it is past `cut`, else their closest
+        # bond (epi.bond) if past `cut`, else epi.plain. A line already shown is
+        # skipped. The phone needs the same rule; see STYLE.md "Epilogue".
+        n = len(self.t["crew"])
+        used = set(lines.values())
+        for c in range(n):
+            if c in lines:
+                continue
+            picks = []
+            ax = epi.get("axis", [])
+            for a in sorted(range(len(ax)), key=lambda a: -abs(st.trait(c, a))):
+                v = st.trait(c, a)
+                if abs(v) >= cut:
+                    picks.append(ax[a][0 if v >= 0 else 1])
+            if epi.get("bond"):
+                for j in sorted((j for j in range(n) if j != c), key=lambda j: -st.bond(c, j)):
+                    if st.bond(c, j) >= cut:
+                        picks.append(self.fill(epi["bond"], T=self.name(j)))
+                    break
+            picks.append(epi.get("plain", ""))
+            line = next((p for p in picks if p and p not in used), picks[-1])
+            if line:
+                lines[c] = line
+                used.add(line)

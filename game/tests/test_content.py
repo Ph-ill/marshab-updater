@@ -376,6 +376,7 @@ class TestFairCasting(unittest.TestCase):
         window = {ids.index("a_window_hail"), ids.index("a_window_quiet")}
         opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
         thread_beats = {ids.index(x) for x in ("c_letter", "c_dose", "c_list", "c_song", "c_theory", "c_hail")}
+        entry = {ids.index(x) for x in ("e_entry_hold", "e_entry_wait", "e_entry_clear")}
         ends = {}
         for i in range(300):
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"
@@ -398,6 +399,7 @@ class TestFairCasting(unittest.TestCase):
             self.assertTrue(any(out[k + 1] == O.O_EVENT and out[k + 2] in window and out[k] == 41
                                 for k in range(0, len(out), 8)), "season %d" % i)
             self.assertEqual(len(Renderer(text).epilogue(out)), 7, "season %d" % i)
+            self.assertEqual(len(fired & entry), 1, "entry scene, season %d" % i)
             self.assertIsNotNone(Renderer(text).coda(out), "season %d" % i)
         n_end = sum(1 for c in text["cards"] if c["id"].startswith("end_"))
         self.assertEqual(len(ends), n_end)
@@ -499,6 +501,22 @@ class TestCli(unittest.TestCase):
             self.assertNotIn("warning:", r.stdout + r.stderr)
             self.assertEqual(r.stderr, "")
         self.assertEqual(os.listdir(out), [])
+
+    def test_epilogue_fallback_fills_every_astronaut(self):
+        # With the final state, the epilogue gives all seven a line even in seasons
+        # whose story log leaves someone out (other seeds, no voyage key).
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        from render import Renderer
+        p, text, _ = lvc.build(CONTENT)
+        for i in range(60):
+            st = reference_season(Pack(p), seed=7 + 13 * i)[0]
+            lines = Renderer(text).epilogue(st.story, st)
+            self.assertEqual(sorted(lines), list(range(7)), "seed %d" % (7 + 13 * i))
+            self.assertTrue(all(lines.values()))
+        # Even a log with no story lines at all yields seven.
+        lines = Renderer(text).epilogue(b"", st)
+        self.assertEqual(sorted(lines), list(range(7)))
 
     def test_flag_names_only_with_verbose(self):
         out = tempfile.mkdtemp(prefix="lvc-out-")
