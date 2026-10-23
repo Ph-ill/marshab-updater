@@ -17,6 +17,9 @@ Card format (one card per `card` line, indentation only matters for option effec
   weight 10                       # relative chance among eligible cards (default 10)
   once                            # fire at most once per season
   due                             # fire whenever eligible (callbacks), no dice roll
+  clue [core]                     # second-read clue (text.json "reread"); core clues
+                                  #   must fire before the reveal in every season
+  reveal                          # the payoff card(s) (text.json "reveal")
   hook                            # cliffhanger event: last line of its day; needs a
                                   #   `due` resolver with `when fired <this card>`
   cooldown 6                      # days before it can fire again (repeatable cards)
@@ -233,7 +236,8 @@ def parse_cards(path, ctx):
                     card = {"id": rest, "where": where, "type": None, "days": (1, SEASON_DAYS),
                             "weight": 10, "flags": 0, "cooldown": 0, "duration": 0, "nroles": 0,
                             "lean": None, "default": None, "conds": [], "effects": [],
-                            "options": [], "text": "", "cat": None, "skill": False, "clue": False}
+                            "options": [], "text": "", "cat": None, "skill": False, "clue": False,
+                            "core": False, "reveal": False}
                     cards.append(card)
                     opt = None
                     continue
@@ -262,6 +266,10 @@ def parse_cards(path, ctx):
                     card["skill"] = "skill" in t[1:]
                 elif word == "clue":
                     card["clue"] = True  # listed in text.json "reread" for the end screen
+                    if rest.split()[:1] == ["core"]:
+                        card["core"] = True  # must fire before the reveal in every season
+                elif word == "reveal":
+                    card["reveal"] = True  # text.json "reveal"; the sim checks core clues precede it
                 elif word == "hook":
                     card["flags"] |= O.F_HOOK
                 elif word == "cooldown":
@@ -664,18 +672,32 @@ def build(content_dir):
     payload = bytes(body) + bytes(offsets) + b"".join(encoded)
     pack_id = hashlib.sha256(payload).digest()[:4]
     pack = b"LVP1" + pack_id + payload
+    # Epilogue story lines: [card id, line] in system.json become [card index, line].
+    # For each astronaut the phone shows the first line whose card that astronaut
+    # was cast in as role A (sim/render.py Renderer.epilogue).
+    epi = dict(system.get("epi", {}))
+    if "story" in epi:
+        idx = {c["id"]: i for i, c in enumerate(cards)}
+        bad = [cid for cid, _ in epi["story"] if cid not in idx]
+        if bad and len(bad) < len(epi["story"]):  # a cut-down test deck may have none
+            ctx.warnings.append("epi.story: unknown card(s) %s" % ", ".join(bad))
+        epi["story"] = [[idx[cid], line] for cid, line in epi["story"] if cid in idx]
     text = {
         "pack": pack_id.hex(),
         "crew": [cr["name"] for cr in fleet["crew"]],
         "ships": [cr["ship"] for cr in fleet["crew"]],
         "flagship": next((i for i, cr in enumerate(fleet["crew"]) if cr["flagship"]), 0),
-        "epi": system.get("epi", {}),
+        "epi": epi,
         "cards": [dict({"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]},
                        **({"h": 1} if c["flags"] & O.F_HOOK else {}))
                   for c in cards],
         # Second read: card indices worth revisiting after the ending. The UI may list
         # the flight days these fired (from the story log) without explaining them.
         "reread": [i for i, c in enumerate(cards) if c["clue"]],
+        # Fair play: these clue cards fire before any "reveal" card in every season
+        # (sim/season.py --seasons asserts it).
+        "core": [i for i, c in enumerate(cards) if c["core"]],
+        "reveal": [i for i, c in enumerate(cards) if c["reveal"]],
         "actions": system["actions"],
         "notes": system["notes"],
         "axis_words": system.get("axis_words", []),
