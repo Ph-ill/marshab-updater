@@ -1,0 +1,101 @@
+# Crew and relationship beats, trait reactions, and inactive-friendly events.
+
+# Private dilemma that surfaces later.
+card dil_stash
+type dilemma
+days 3 30
+weight 8
+duration 3
+roles A
+when cond A ok
+lean warm share keep
+text {A} finds three unlogged ration packs taped behind a panel. Nobody else knows.
+option keep | Keep them quiet | {A} moves them to a locker. For emergencies. Probably.
+  set stash_kept
+  mark t_stash
+  who stash_who A
+  morale A 6
+option share | Hand them in | {A} hands them to the galley. Dinner is briefly excellent.
+  set stash_shared
+  res food 3
+  morale A 2
+
+card stash_found
+type beat
+due
+once
+days 12 41
+roles A B
+when flag stash_kept
+when since t_stash >= 10
+when is A stash_who
+when same A B
+text {B} finds the wrappers in {A}'s locker. The galley goes very quiet.
+do bond A B -12
+do morale A -4
+do set stash_exposed
+
+card beat_watch
+type beat
+days 1 42
+weight 10
+cooldown 5
+roles A B
+when same A B
+when bond A B >= -20
+text {A} and {B} share the night watch. Mostly they talk about home.
+do bond A B 6
+
+card beat_argue
+type beat
+days 2 42
+weight 8
+cooldown 6
+roles A B
+when trait A warm <= -10
+when same A B
+text {A} and {B} argue about the thermostat for most of a shift. Both are wrong.
+do bond A B -8
+do morale B -3
+
+# Trait-driven reaction: what happens depends on how brave A is.
+card glint
+type event
+days 4 38
+weight 8
+cooldown 9
+roles A
+when trait A curious >= 15
+when cond A ok
+lean brave closer window
+text {A} spots a glint off the starboard quarter.
+option closer | Go and look | {A} suits up without asking anyone and comes back with a bolt from a much older ship.
+  var glints 1
+  trait A brave 3
+option window | Watch from the window | {A} logs it and watches from the window until it's gone.
+  trait A curious 2
+
+# Inactive-friendly: only fires for astronauts whose owner hasn't been in for a while,
+# and makes them look good.
+card quiet_fixer
+type beat
+days 3 42
+weight 12
+cooldown 4
+roles A
+when idle A >= 3
+when cond A ok
+text {A} quietly fixes the galley pump again. Nobody asked; nobody needed to.
+do res spares 1
+do morale A 3
+
+card galley_pump
+type event
+days 1 42
+weight 6
+cooldown 8
+roles A
+when res spares >= 1
+text The galley pump fails again. {A} fixes it and complains the entire time.
+do res spares -1
+do morale A -2
