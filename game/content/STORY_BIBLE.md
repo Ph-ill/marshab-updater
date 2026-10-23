@@ -324,10 +324,10 @@ Endings cite the votes. The packer's loss is on the page (`g_packer`).
 Checked in deck order on day 42; first match wins. Titles come from `title`
 (text.json `ti`). Every ending closes on the first message off the surface,
 to a loading bay at Starbase, and on the loading bay's reply, different in
-each ending since round 17 ("Told them it sulks." stays with *Lights On*, which
-echoes `p_packer_note`; the others: "Tell it the bay says hello.", "Thank it for
-the drill bit.", "Knew it'd keep.", "Told you it was slow.", "Told them. Thank
-it for us."). The first crate ("You'll
+each ending since round 17 (round 20 set: "It never could stand being
+ignored." for *Lights On*; the others: "Tell it the bay says hello.", "Thank it
+for the drill bit.", "Knew it'd keep.", "Slow, not stingy.", "Told them. Thank
+it for us."; each lands on Cargo 2's character, never a pun). The first crate ("You'll
 thank me.") stays in `end_lights`; the Sharpie hand also returns on day 38
 (`a_recall_shared`). The renderer prefixes every ending with `sys.end`, now
 "From the log:" (was "Arrival day.", which clashed with endings set sols later).
@@ -353,7 +353,7 @@ warm." / "All eight. Found the ninth. In time for the bit." Since round 18 every
 ending is a present-tense scene under "From the log:" (backstory only in the
 past). Endings may run to 640 characters (lint MAX_ENDING).
 
-**Geometry:** day 41 is about four days before atmospheric entry (at an arrival v∞ of about 4.2 km/s that is about 1.45 million km, 4.8 s one-way, 9.7 s round trip, inside the 10.96 s tick; five days would be about 12 s and miss it). Hold the plan
+**Geometry:** day 41 is about five days before atmospheric entry (round 20 engineer: at an arrival v∞ of 3.45 km/s a 10 s round trip is 1.5 million km, 5.0 days out, just inside the 10.96 s tick; the old "four days" gave about 8 s). Hold the plan
 = retarget to the backup site, about three kilometres from Cargo 2, with radar
 for height, the last orbiter fix for place and Cargo 2's radio as a cross-check (round 16). The backup site is no
 clearer than the prime zone, but it is flat, surveyed, and has a landmark that
@@ -384,12 +384,14 @@ ending, and any role test on the fallback.
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 22.0% (1000: 22.7%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 20.7% (1000: 20.8%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 22.7% (1000: 22.7%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 20.3% (1000: 18.9%) |
-| 5 | *Sit With It* (`end_friend`) | answered, clear air | 5.7% (1000: 5.9%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 8.7% (1000: 9.0%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 23.3% (1000: 25.7%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 20.3% (1000: 17.4%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 21.3% (1000: 23.6%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 16.0% (1000: 15.5%) |
+| 5 | *Sit With It* (`end_friend`) | answered, clear air | 10.3% (1000: 10.5%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 8.7% (1000: 7.3%) |
+
+Measured in round 20 (eight ships, 206 cards).
 
 Round 19: the clear-air pair needs a season with no dust report, so
 `dust_report` is weight 1. They are the rarer endings by design now (each
@@ -1158,6 +1160,61 @@ for ship 8 too).
   long orbit 53, patience 49, friend 33, close 29; crowding 112/300; blank
   story days at most 4/300 (day 11); Marco's quirk lines fire in 196, 261 and
   210 seasons; peak heap 77.5 KB (64-bit), 51.2 KB (32-bit).
+
+## Round 20 notes
+
+Blind round 20 (hunter, editor, engineer). Aim: every ending great for every
+reader, the loose threads closed, more character and grimdark, the engineer's
+E1-E10, and no announcing.
+
+- **Engineer (E1-E10).** `r_flare` counts eight crews; dose is "past a hundred
+  millisieverts" (model 72-101 mSv, MSL/RAD 120-140); day 41 is "five days
+  out" (`a_descent_clear`, STYLE); day 34 Mars one-way about 40 s, day 19
+  Earth round trip about 3 minutes; `m_carrier` folds at "a shade under 10.96
+  seconds" (the Doppler-compressed period); `end_lights` runs the floodlights
+  on "the charge five days of HOLD let it bank".
+- **Loose threads.** The hopper's "beacon still coming and going" was Cargo
+  2's knock all along, booked to the hopper (`a_report`: "the knocks its
+  dishes caught were booked to the hopper's beacon"); the relay's 10.96 s
+  "spin" in its last week was Cargo 2 on its way in (`m_reveal`), and the
+  orbit test is explicit (`m_alias`: "No two-hour orbit in the residuals.");
+  the lamp flashes with each knock (`a_patch`: "a lamp for eyes, a knock for
+  radios."); Earth never got an answer because every hail arrived minutes
+  after an eleven-second tick, and nothing in Mars orbit speaks the old
+  channel (`a_report`, `r_dark`: "The old channel drops to receive only.");
+  `p_dream`'s "rain, car roof" comes back in `m_listen` ("as a log margin said
+  weeks back"), whoever wrote it.
+- **Endings.** All six at most 640 characters, one cost each, and a sign-off on
+  Cargo 2's character. `end_lights` opens on the storm's one pre-dawn command
+  slot; `end_through` flies height off radar and bearing off the knock on two
+  antennas; `end_long_orbit` makes lamp-or-trays a fleet choice that {B} logs;
+  `end_friend` turns the battery rule on the forklift photo ("The ninth shared
+  its night."); `end_close` puts the spare drill bit in Cargo 2's hold and a
+  glove on its hull.
+- **Grimdark, middle.** New `g_margin` (days 18-26): the flight surgeon's sheet
+  grows a "days alone" column; {A}'s number is the shortest and goes behind the
+  spare socks. A form, never a speech (STYLE "Round 20 rules").
+- **Quirks.** Roster habits rewritten so no two share an opener or a costume;
+  "Every data drop", "Last mail/video before entry" and "no strays" retired and
+  linted. Michelle's kittens stay at home (mail subject line, lint roller);
+  Diego stays cats and design work only.
+- **Tie wording.** `sys.dec_tie` is a pool of four; both renderers step through
+  it with one counter per pass over the story (2/300 seasons repeat a wording,
+  only those with more than four ties). `res_close` is "The fleet's answer:".
+- **Fold pool.** `fold_pool` is 13 lines (fuses, cabin air, re-torque, comms
+  self-test and rattles retired; bedtime stories and post-dated letters added).
+- **Epilogue.** New story lines for `l_long_table`, `storm_shelter2` and
+  `p_movie`, so every one of eight crew gets a line in 300/300 seasons.
+- **Budget.** `photo_back` and `water_fail3` retired (the `photo_taken` flag is
+  now unused); trims across `m_dropout`, `g_count`, `l_departure`, `dil_eva_cam`,
+  `glint` and `dil_gains`. `beat_zipties` is `due` on day 11 (no blank day 11).
+- **Measured** (300 seasons): fair play 300/300; every card fires; endings
+  lights 70, through 61, long orbit 64, patience 48, friend 31, close 26;
+  crowding 117/300; blank story days 0; gzip 24,927 B; peak heap 77.1 KB
+  (64-bit), 51.0 KB (32-bit).
+- **Declined.** A dedicated carrier-check middle card (budget); Jai keeps two
+  F1-coded habits (one of his two listed interests); a cryptic payoff for
+  `dec_clock`.
 
 ## Replay: the mystery spine reads the same every season (note, not built)
 
