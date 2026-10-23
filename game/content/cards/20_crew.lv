@@ -30,7 +30,6 @@ option keep | Keep them quiet | {A} thanks the Sharpie silently. The packs go in
   who stash_who A
   morale A 6
 option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch, and the bag goes up on the galley wall.
-  set stash_shared
   who stash_who A
   res food 3
   morale A 2
@@ -84,10 +83,10 @@ when trait A curious >= -5
 when cond A ok
 lean brave closer window
 text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
-option closer | Get a closer look | {A} talks Mission Control into a camera slew and a long exposure. It's a chunk of ice shed from the fleet's own tanks, turning slowly and going to Mars with everyone else.
+option closer | Get a closer look | {A} talks Mission Control into a camera slew: a chunk of ice shed from the fleet's own tanks, turning slowly, going to Mars with everyone else.
   var glints 1
   trait A brave 3
-option window | Track it from the window | {A} logs its bearing every hour. By the fourth hour it's plainly turning end over end, each flash a flat face of ice from the fleet's own tanks catching the sun. The log is neat enough to frame.
+option window | Track it from the window | {A} logs its bearing hourly. By the fourth hour it's plainly tumbling, each flash a face of ice from the fleet's own tanks. The log is neat enough to frame.
   trait A curious 2
 
 card galley_pump
