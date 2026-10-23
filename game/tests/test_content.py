@@ -213,6 +213,30 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
         for h in hooks:
             self.assertIn("r_" + h[2:], ids)
 
+    def test_content_mix(self):
+        # STYLE.md "Content mix": repairs <= 25%, skill flavor <= ~1 in 6, all tagged.
+        mix, n = self.ctx.mix, len(self.text["cards"])
+        self.assertEqual(sum(v for k, v in mix.items() if k != "skill"), n)
+        self.assertLessEqual(mix["repair"], lvc.MAX_REPAIR * n)
+        self.assertLessEqual(mix["skill"], lvc.MAX_SKILL * n)
+        for cat in ("wonder", "mystery", "human", "life", "mission", "arrival", "grim"):
+            self.assertGreater(mix[cat], 0, cat)
+        print("\n" + lvc.mix_line(self.ctx), file=sys.stderr)
+
+    def test_mix_lint_fails_a_repair_heavy_deck(self):
+        src = "".join("card fix%d\ntype beat\ncat repair%s\nroles A\ntext {A} fixes thing %d.\n\n"
+                      % (i, " skill" if i < 2 else "", i) for i in range(3))
+        src += "card ok1\ntype beat\ncat life\nroles A\ntext {A} sleeps.\n\ncard un\ntype beat\nroles A\ntext {A} waits.\n"
+        _, _, ctx = lvc.build(mini_content(src))
+        msg = " ".join(ctx.warnings)
+        self.assertIn("repair/fault", msg)
+        self.assertIn("skill flavor", msg)
+        self.assertIn("no `cat` line", msg)
+
+    def test_bad_category_is_an_error(self):
+        _, _, ctx = lvc.build(mini_content("card x\ntype beat\ncat plumbing\nroles A\ntext {A}.\n"))
+        self.assertTrue(any("cat is" in e for e in ctx.errors))
+
     def test_mech_twin_is_not_exclusive(self):
         # The tagged twin must have an untagged sibling so anyone can draw the card.
         ids = [c["id"] for c in self.text["cards"]]
