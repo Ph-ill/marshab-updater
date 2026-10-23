@@ -1,0 +1,111 @@
+# Fleet choices about the mission itself, and the approach mystery thread.
+# Arc and plants: content/STORY_BIBLE.md (spoilers). Voice: content/STYLE.md.
+
+card dec_halfway
+type decision
+cat mission
+days 19 23
+weight 14
+once
+duration 1
+roles A B
+lean warm feast quiet
+text Halfway. Earth and Mars are the same distance behind and ahead, give or take a rounding error. {A} wants to break out the good rations and mark it properly. {B} would rather nobody counted out loud yet.
+option feast | Mark it | The fleet eats the good rations on seven screens at once. {A} gives a toast about the halfway mark, and it turns into a toast about the people who packed the food.
+  res food -2
+  morale A 4
+  morale B 2
+option quiet | Let it pass | Halfway passes without a word on the fleet channel. On every ship, at the same minute, someone looks at the clock anyway.
+  bond A B 3
+
+card dec_name
+type decision
+cat mission
+days 26 34
+weight 10
+once
+duration 2
+roles A B
+lean curious after home
+text The imaging pass has turned up an unnamed crater near the landing zone, small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants to name it after somewhere at home.
+option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
+  trait A curious 2
+option home | Name it for home | The crater gets the name of a small town on Earth that nobody outside it has heard of. Within a day, the town's newspaper has a front page about it.
+  trait B warm 3
+  morale B 4
+
+card dec_science
+type decision
+cat mission
+days 14 30
+weight 8
+once
+duration 2
+roles A B
+lean curious record save
+text A gamma-ray burst lights up the sky somewhere past the galaxy, and the fleet is the farthest instrument humanity has. Holding attitude for the measurement costs propellant. {A} wants the data. {B} wants the propellant.
+option record | Hold for the data | Seven ships hold still for twenty minutes, and a burst that left its source before Earth had oceans is triangulated from a baseline nobody has had before. {A} reads the confirmation twice.
+  res fuel -2
+  trait A curious 3
+  morale A 3
+option save | Keep the propellant | The fleet passes. Ground telescopes get the burst anyway, from one angle. {B} logs the propellant saved, and doesn't pretend it was an easy trade.
+  trait B brave 2
+
+# --- Night-side flashes (part 1-4) -------------------------------------------------
+card m_flash1
+type event
+cat mystery
+days 27 33
+weight 14
+once
+roles A
+when cond A ok
+text On the dark limb of Mars, through the window scope, {A} sees a pinprick of light. Gone. Then again. {A} times it without meaning to, and the number makes the hair on their arms stand up.
+do set flash_seen
+do mark t_flash
+do trait A curious 2
+
+card m_flash2
+type event
+cat mystery
+days 30 37
+weight 30
+once
+roles A
+when flag flash_seen
+when since t_flash >= 2
+when cond A ok
+text {A} points the scope at the same patch of night, at the same hour. The flash is there, same rhythm, a little brighter. {A} wakes the rest of the ship. Nobody whispers, but everyone talks a little more quietly.
+do set flash_twice
+
+card dec_flash
+type decision
+cat mystery
+days 31 39
+weight 40
+once
+duration 1
+roles A B
+when flag flash_twice
+lean curious look leave
+text The flashes on the dark side are still there. {A} wants to slew the fleet's best camera onto them before capture, at a cost in propellant. {B} wants to leave them for the people who'll be down there with time to look.
+option look | Look closer | The camera swings. {A} sets up a long exposure and doesn't look away from the screen until it finishes.
+  set flash_looked
+  res fuel -1
+option leave | Leave it for the ground | The camera stays where it is. The flashes go into the anomaly log, under a heading {B} writes and then underlines.
+  set flash_left
+  morale A -2
+
+card flash_answer
+type event
+cat mystery
+due
+once
+days 32 41
+roles A
+when flag flash_looked
+when since t_flash >= 4
+when cond A ok
+text The exposure comes back. It's not on the ground. It's above it: a flat, bright edge turning end over end, catching the sun on every turn. {A} looks at the timestamp column for a long time before saying anything.
+do trait A curious 4
+do morale A 2
