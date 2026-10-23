@@ -77,7 +77,7 @@ when flag water_rationed
 when is A water_who
 when apart B A
 when cond B ok
-text The degraded water processor on {A}'s ship quits at 04:00. {A} has the rebuild plan clipped inside the panel door, already written. {B} rides the transfer line over in an unscheduled window with the spare valve, and the two of them have water flowing by breakfast.
+text The degraded water processor on {A}'s ship quits at 04:00. {B} rides the transfer line over in an unscheduled window with the spare valve, and the two of them have water flowing by breakfast. It tops out at ninety-five percent, for good now.
 do move B A
 do bond A B 8
 do res spares -1

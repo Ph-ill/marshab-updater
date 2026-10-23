@@ -15,7 +15,7 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
-text {A}'s arrival-test dish, the big one, trained on Mars, still scans the old common channel, which nothing on Earth listens to. It logs a carrier too faint to lock. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
+text {A}'s arrival-test dish, trained on Mars, scans the old common channel, which nothing on Earth has heard since the relay died. It logs a carrier too faint to lock. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
 do who ow_hail A
 do mark t_carrier
 
@@ -44,12 +44,12 @@ lean curious open log
 when fired m_alias
 when is A ow_hail
 text If the carrier is something of ours, it will know a standard hello. {A} wants to answer every burst with one, signed with the old program key the fleet still carries, blind until someone can read what it sends. {B} points out that every reply ties up the comms computer, and the letters wait.
-option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, standard hello, until someone says stop. The first goes out at 14:02, and {A} logs every answer to the millisecond.
+option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, standard hello, until someone says stop. The first goes out at 14:02, and {A} logs every answer to the millisecond. {B} logs one line of dissent, signed, and leaves it there.
   set signal_answered
   mark t_signal
   morale B -3
   trait A curious 5
-option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} clips the folded trace inside the logbook, just in case, and the comms computer stays on the letters.
+option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} clips the folded trace inside the logbook, just in case, and the comms computer stays on the letters. {A} asks for a dissent in the log, signed; {B} writes it in.
   set signal_ignored
   mark t_signal
   morale A -5
@@ -59,10 +59,11 @@ type event
 cat mystery
 due
 once
-days 28 29
+days 25 26
 roles A
 when flag signal_answered
 when is A ow_hail
+do mark t_frame
 text At 03:12 the receiver catches half a frame of housekeeping on the old channel, in a format no one flies now, cut off a byte before the field that says who sent it. The fleet's answers go out on schedule, every one. Mission Control replies eight minutes later: "say again."
 do trait A curious 4
 
@@ -71,10 +72,11 @@ type event
 cat mystery
 due
 once
-days 28 31
+days 25 27
 roles A
 when flag signal_ignored
 when is A ow_hail
+do mark t_frame
 text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, in a format no one flies now, cut off a byte before the field that says who sent it. Averaged over a day, its period hasn't moved by a millisecond. The anomaly report calls it "persistent".
 do morale A -3
 
