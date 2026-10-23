@@ -176,3 +176,17 @@ when idle A >= 4
 when cond A ok
 text {A} inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in Sharpie. {A} logs it, with a thank-you in the margin.
 do res spares 1
+
+# --- Habits: one clone per astronaut, text from roster.lv `habit` ---------------
+card habit_beat
+type beat
+cat life
+each crew
+once
+days 12 36
+weight 2
+roles A
+when cond A ok
+when !flag habit_told
+text On the long shifts, {habit} The other six ships have stopped asking about it, and would notice if it went.
+do set habit_told
