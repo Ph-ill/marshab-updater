@@ -59,14 +59,14 @@
     "note": "{A} passes {T} a note: “{line}”",
     "dec_open": "Fleet decision open for two flight days.",
     "dec_close": "Decision closed: {opt}. Votes cast: {n}.",
-    "dec_lean": "Nobody voted, so the crew decided: {opt}.",
+    "dec_lean": "No votes came in, so the crew decided: {opt}.",
     "dec_tie": "A tie, {n} votes in all. The crew broke it themselves: {opt}.",
     "dil_open": "For whoever at home looks after {A}, and nobody else:",
     "dil_you": "{A} went with your call: {opt}.",
-    "dil_self": "Nobody at home weighed in, so {A} chose: {opt}.",
+    "dil_self": "No word from home in time, so {A} chose: {opt}.",
     "res_open": "Anyone can answer this one. One tap is enough.",
     "res_close": "Help is on the way: {opt}.",
-    "res_default": "Nobody answered in time, so it fell to the crew: {opt}.",
+    "res_default": "No answer in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
     "end": "Arrival day.",
     "fold": "Around the fleet, {who} kept the small things running.",
@@ -82,7 +82,7 @@
     "axis": [
       [
         "Volunteered first, every time.",
-        "Checked every seal twice. Nobody minded."
+        "Checked every seal twice, and was thanked for it."
       ],
       [
         "Has a notebook full of things worth a second look.",
@@ -96,7 +96,7 @@
     "bond": "Closest to {T} by the end.",
     "plain": "Kept the ship running, quietly and well. The logs say so, in small handwriting.",
     "head": [
-      "Seven ships made orbit. Nobody was left behind.",
+      "Seven ships, seven crews, every one accounted for.",
       "Seven ships, one planet, and every seal held."
     ],
     "story": [
