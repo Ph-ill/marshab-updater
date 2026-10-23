@@ -1,14 +1,16 @@
 #!/bin/sh
 # Build the Long Voyage game firmware: MicroPython v1.29.0 for the Pico W with the game
-# frozen in (tools/fw/manifest.py). Frozen code and data run from flash, so the heap
-# keeps the ~50 KB the .mpy copy (tools/board_build.sh) spends on code.
+# core lv/ frozen in (tools/fw/manifest.py). Frozen code runs from flash, so the heap
+# doesn't pay for it. Content and the board glue stay files the web updater installs
+# (tools/board_build.sh makes both file sets).
 #
 #   sh tools/build_firmware.sh                    RPI_PICO_W .uf2
 #   BOARD=RPI_PICO2_W sh tools/build_firmware.sh  Pico 2 W (untested on hardware)
 #   sh tools/build_firmware.sh unix32             a 32-bit unix MicroPython with the same
 #                                                 frozen set (heap measurements, tests)
 #
-# Output: $OUT (default build/firmware/) gets lv-<version>-<BOARD>.uf2 and a .sha256.
+# Output: $OUT (default build/firmware/) gets lv-core-<version>-<core>-<BOARD>.uf2 and a
+# .sha256; <core> is the hash partial releases are checked against (build/fw/lvfrozen.py).
 # Needs: git, make, cmake, python3, gcc-arm-none-eabi + libnewlib-arm-none-eabi (Debian/
 # Ubuntu package names); gcc-multilib for unix32. Sources are cloned once into $FW_WORK
 # (default ~/.cache/lv-firmware) at the pinned commits below and reused.
@@ -33,12 +35,9 @@ fi
 have=$(git -C "$MP" rev-parse HEAD)
 [ "$have" = "$MP_COMMIT" ] || { echo "$MP is at $have, expected $MP_COMMIT ($MP_TAG)"; exit 1; }
 
-# The game's build products the frozen data comes from.
-python3 tools/lvc.py > /dev/null
-python3 tools/lve.py > /dev/null
-python3 web/build.py > /dev/null
-python3 tools/fw/gen_lvdata.py
-VERSION=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' board/lvship.py)
+python3 tools/fw/gen_lvfrozen.py
+VERSION=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' lv/__init__.py)
+CORE=$(python3 tools/fw/gen_lvfrozen.py --print-core)
 MANIFEST="$GAME/tools/fw/manifest.py"
 
 [ -x "$MP/mpy-cross/build/mpy-cross" ] || make -s -C "$MP/mpy-cross" -j"$JOBS"
@@ -48,14 +47,14 @@ if [ "$1" = unix32 ]; then
   # The unix variant's manifest stands in for the board's (it has asyncio).
   UM="$FW_WORK/unix32-manifest.py"
   sed "s|\$(BOARD_DIR)/manifest.py|$MP/ports/unix/variants/standard/manifest.py|; s|base_path=\"\.\./\.\.|base_path=\"$GAME|; s|base_path=\"\.\"|base_path=\"$GAME/tools/fw\"|" \
-    "$MANIFEST" | grep -v '"boot.py"' > "$UM"
+    "$MANIFEST" > "$UM"
   make -s -C "$MP/ports/unix" submodules > /dev/null
   make -s -C "$MP/ports/unix" -j"$JOBS" BUILD=build-lv32 PROG=micropython-lv32 \
     CFLAGS_EXTRA=-m32 LDFLAGS_EXTRA=-m32 MICROPY_PY_FFI=0 MICROPY_PY_BTREE=0 MICROPY_SSL_AXTLS=0 MICROPY_PY_SSL=0 \
     FROZEN_MANIFEST="$UM"
   mkdir -p "$OUT"
   cp "$MP/ports/unix/build-lv32/micropython-lv32" "$OUT/micropython-lv32"
-  echo "built $OUT/micropython-lv32 (unix, 32-bit, game frozen, lvship $VERSION)"
+  echo "built $OUT/micropython-lv32 (unix, 32-bit, lv-core $VERSION core $CORE frozen)"
   exit 0
 fi
 
@@ -67,11 +66,16 @@ B="build-lv-$BOARD"
 make -s -C "$MP/ports/rp2" BOARD="$BOARD" BUILD="$B" FROZEN_MANIFEST="$MANIFEST" -j"$JOBS" > "$FW_WORK/$B.log" 2>&1 || {
   tail -30 "$FW_WORK/$B.log"; exit 1; }
 mkdir -p "$OUT"
-UF2="$OUT/lv-$VERSION-$BOARD.uf2"
+UF2="$OUT/lv-core-$VERSION-$CORE-$BOARD.uf2"
 cp "$MP/ports/rp2/$B/firmware.uf2" "$UF2"
 (cd "$OUT" && sha256sum "$(basename "$UF2")" > "$(basename "$UF2").sha256")
+# What this core is, module by module: partial updater releases are built against it
+# (tools/board_build.sh FROZEN_CORE=..., tools/build_release.py --frozen ...).
+cp build/fw/lvfrozen.json "$OUT/lv-core-$VERSION-$CORE.json"
+mkdir -p tools/fw/cores
+cp build/fw/lvfrozen.json "tools/fw/cores/lv-core-$VERSION-$CORE.json"
 echo "built $UF2: $(wc -c < "$UF2") bytes, sha256 $(cut -d' ' -f1 "$UF2.sha256")"
-echo "MicroPython $MP_TAG ($MP_COMMIT), pico-sdk $PICO_SDK_COMMIT, lvship $VERSION"
+echo "MicroPython $MP_TAG ($MP_COMMIT), pico-sdk $PICO_SDK_COMMIT, lv-core $VERSION core $CORE"
 arm-none-eabi-nm "$MP/ports/rp2/$B/firmware.elf" | python3 -c "
 import sys
 a = {l.split()[2]: int(l.split()[0], 16) for l in sys.stdin if len(l.split()) == 3}

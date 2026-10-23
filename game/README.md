@@ -140,9 +140,12 @@ server, no pairing. `lv/sync.py` is the protocol and knows nothing about radios;
 * **Radio time:** 3 s scans every 12 s at a 30 ms window per 300 ms (about 2.5 % of air
   time), advertising every second, to leave the shared radio to the Wi-Fi hotspot. All
   overridable from `/data/ship.json` (`"ble": {...}`). The IRQ handler only queues.
-* **Heap:** 76 KB peak for a board (32-bit, `.mpy`) holding the whole 274-record season,
-  replaying the story, serving the status page and in the middle of a sync, under the
-  80 KB cap (`tests/mp_sync_heap.py`; the 64-bit port measures 110 KB). Precompile with
+* **Heap:** 78 KB peak for a stock-MicroPython board (32-bit, `.mpy`) holding the whole
+  274-record season, replaying the story, serving the status page (`board/lvstat.py`) and
+  in the middle of a sync, under the 80 KB cap (`tests/mp_sync_heap.py`; the 64-bit port
+  measures 118 KB). On the game firmware (core frozen into the `.uf2`,
+  `tools/build_firmware.sh`) the same is 51 KB, and 73–74 KB with two phones playing the
+  game over the hotspot (`tests/phone_heap.py`); the phone game only runs there. Precompile with
   `tools/board_build.sh`: compiling engine.py on the board would need more than the cap.
 * **Tests:** `tests/test_sync.py` (protocol: faults, cuts, hash collisions, newer-schema
   records, 8 ships meeting in random orders then replaying the reference season, inactive

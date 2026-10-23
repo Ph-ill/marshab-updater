@@ -15,6 +15,19 @@ import lvship
 from lv import sync as S
 
 
+def _exists(f):
+    try:
+        os.stat(f)
+        return True
+    except OSError:
+        return False
+
+
+def _where(mod):
+    f = getattr(mod, "__file__", "")
+    return ("file " + f) if f and _exists(f) else "frozen"
+
+
 def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None):
     """Serial self-test. Prints BLE state, peers, records exchanged, free heap, the gift
     path and the LED path, then a SELFTEST summary. See docs/BENCH_TEST.md."""
@@ -28,16 +41,28 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None):
     if wifi and cfg["hotspot"]:
         import lvwifi
         lvwifi.hotspot(cfg)
-    ship = lvship.Ship(cfg)
-    # Variant A (.mpy copy): code and pack from files. Variant B (game firmware): both frozen;
-    # a frozen module's __file__ names no file on the filesystem.
+    game = wifi and cfg["hotspot"] and lvship.phone_game(cfg)
+    days = None
+    if game:
+        import lvdays
+        days = lvdays.Days("/data/days.bin")
+    ship = lvship.Ship(cfg, days=days)
+    # Game firmware: the core lv/ is frozen (lvfrozen.py says which), the glue and content
+    # are files; /lvx/ can override frozen modules. Stock MicroPython: everything is files.
+    import lv
+    print("SELFTEST firmware: " + lv.describe())
     src = getattr(lvship, "__file__", "?")
     try:
         os.stat(src)
         where = "filesystem"
     except OSError:
         where = "frozen"
-    print("SELFTEST code: %s (%s), pack: %s" % (src, where, ship.pack_src))
+    print("SELFTEST code: %s (%s), engine %s, pack: %s" % (src, where, _where(lv.engine), ship.pack_src))
+    missing = [f for f in ("www/app.html.gz", "www/text.json.gz", "www/engage.json.gz", "engage.bin")
+               if not _exists(f)]
+    print("SELFTEST phone game: %s, files %s" % (
+        "on" if lvship.phone_game(cfg) else "off (needs the game firmware, or phone_game in ship.json)",
+        "all there" if not missing else "MISSING " + ", ".join(missing)))
     if epoch:
         ship.clock.learn(epoch, tz)
     b = ship.ble
@@ -52,8 +77,13 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None):
     low = [lvship.free()]
 
     async def run():
-        if wifi and cfg["hotspot"]:
-            await asyncio.start_server(ship.http, "0.0.0.0", cfg["http_port"])
+        if game:
+            import lvweb
+            web = lvweb.Server(ship)
+            await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
+        elif wifi and cfg["hotspot"]:
+            import lvstat
+            await asyncio.start_server(lvstat.server(ship), "0.0.0.0", cfg["http_port"])
         t = 0
         while t < seconds:
             await ship.loop(stop_after_ms=10000, stat_every_ms=10 ** 9)
