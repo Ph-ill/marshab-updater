@@ -1,0 +1,206 @@
+# The Long Voyage: game core
+
+This is the hardware-independent core of the game that runs on the eight Pico W Starships.
+The same Python runs on CPython 3 (PC simulator and tests) and on MicroPython 1.29 (the boards).
+It uses integer maths only, fixed-size bytearrays, and has no dependency on Wi-Fi or BLE
+(the radio lives in lv/ble.py and board/, which the core never imports).
+The design Page is the spec; this folder is the first build of it.
+
+```
+lv/          the core (this is what goes on the Pico)
+  prng.py      xorshift32 + per-day seed from the voyage key
+  record.py    13-byte signed choice record
+  chlog.py     choice log: set-union merge, effective-day index, ballots
+  ops.py       opcodes shared by the compiler, engine and renderers
+  pack.py      loads build/pack.bin (logic only, no text)
+  state.py     ship state + canonical dump/digest (snapshots)
+  engine.py    the daily tick
+  sync.py      ship-to-ship sync protocol (transport-free: adverts, bucket diff, sessions)
+  ble.py       the BLE transport for sync.py (MicroPython `bluetooth`)
+board/       Pico W firmware: main.py, lvship.py (the ship), lvwifi.py (hotspot), lvled.py (ship light), selftest.py
+docs/BENCH_TEST.md  flashing and testing 2-3 boards (fast path: tools/bench.py)
+tools/board_build.sh  precompile (.mpy) + copy to a board in one command
+tools/bench.py  bench one board over USB: firmware check, install, settings, self-test, report
+content/     story source: fleet.lv, system.json, cards/*.lv
+tools/lvc.py compiler + validator (CPython only) -> build/pack.bin, text.json(.gz), text.dev.json
+sim/         PC season simulator, Python renderer, sample output in sim/out/
+web/render.js  phone-side renderer (the Pico never builds sentences)
+tests/       unit tests, MicroPython replay check, JS-vs-Python renderer check,
+             BLE sync on a fake radio (tests/fakeble/bluetooth.py)
+bench/coex-test/  Wi-Fi + BLE coexistence bench firmware (as published in 0.0.2-coex)
+```
+
+## Run it
+
+```bash
+sh game/tests/run.sh                                  # everything below, in order
+python3 game/tools/lvc.py                             # compile + validate the pack
+python3 game/sim/season.py                            # 42-day season, narrative, stats, determinism
+python3 game/sim/season.py --seasons 300              # balance + fair-play check (exits 1 if a season misses a core clue)
+python3 game/sim/season.py --spoilers                 # also print ending ids (output is spoiler-free by default)
+MICROPYTHON=/path/to/micropython game/tests/run.sh    # also replays the season under MicroPython
+```
+
+`season.py` also writes `sim/out/epilogue.txt`: one closing line per crew member,
+from `epi.story` in system.json (lvc turns card ids into indices), then the coda
+line. The phone's epilogue screen uses `Renderer.epilogue`/`coda` in web/render.js,
+the same rules as sim/render.py; `tests/render_check.mjs` compares the two on the
+reference season and on three end states that exercise the fallback
+(`build/season_end.json`).
+
+## Phone UI prototype
+
+```bash
+python3 game/tools/lvc.py && python3 game/web/build.py   # build/app.html.gz: the one page the Pico serves
+python3 game/sim/mockserver.py --day 8                   # mock Pico on http://localhost:8042/
+```
+
+Open it at phone width (360-430 px). Add `?day=N` to jump to another flight day (mock only). The mock runs the real engine on the simulated season. The page sees only what this ship has heard by gossip, and your taps become signed records that take effect the next day. `web/shots.sh OUTDIR` builds the page, starts the mocks and takes chrome-less screenshots of every screen at 390x844 and 360x800. `SIZES=cna web/shots.sh OUTDIR` uses the captive-sheet sizes below instead and writes `OUTDIR/cna-WxH/NAME.png`. Both need `PW` (a playwright-core directory) and `CHROME`.
+
+* **One file.** `web/app.html` holds the CSS, the JS and the SVG. `web/build.py` inlines `web/render.js`, strips comments and gzips the result. It comes to about 26.9 KB gzipped (budget 128 KB) with the engagement screens, the crew briefing and the portraits, plus `text.json` (about 24.8 KB gzipped, fetched separately so a new story pack doesn't need a page rebuild).
+* **Log pages.** The log heads each page `LOG PAGE NN · DAYS a–b` (render.js `pageHeading`, the sim's `page_heading`): pages 1–6 are one day each, then five days a page. Today's and yesterday's pages carry a "may still change" line under the heading. The FD counter in the top bar and the instruction screens is the page number.
+* **Arrival and epilogue.** On day 42 home becomes the mission report (ending, voyage numbers, a manifest of who landed); its button opens the epilogue: one line per astronaut, the coda, then the "Read again" pages. The fallback lines need each astronaut's closest crewmate and that bond, which `/api/state` sends as `best` and `bestb`.
+* **Almost nothing is stored on the phone.** No cookies, and the session token lives in page memory; the captive sheet would wipe anything else anyway. You tap your name and enter your 4-digit crew code. The one exception is a `lv-briefed` flag in localStorage once the crew briefing has been read; if the browser forgets it, nothing breaks, because the briefing only opens by itself on a first sign-in (the ship's `first`).
+* **Crew briefing.** Four to six short cards (fewer without engagement) on the mechanics only: flight days, what needs you, fleet votes, drops and cargo, watch duty, the log and days off. It follows the meet screen on a first sign-in, can be skipped, and is filed under FILE (or your own crew page without engagement) as "How to play". Arrow keys move between cards, Escape skips, and each card's heading takes focus.
+* **One flight day per real day.** With a launch date in the ship settings (`launch_date`, set on the updater page), flight day 1 starts at 06:00 local that day and a new day starts every morning at 06:00 (`day_start`) up to day 42, six weeks (`board/lvcal.py`). The board takes the time from the phones' `X-Phone-Time` / `X-Phone-TZ` headers (`lv/clock.py`), saves it to `/data/clock.json` at most hourly to spare the flash, and never moves the day back. With no clock at all it accepts a peer's advertised day only if the peer is in our fleet and exactly one day ahead. Before launch the page shows a countdown (FD 00). With no launch date the board stays on the manual bench `day`. The day only decides how many days are played; the story itself is as deterministic as before.
+* **Ship light.** An optional LED notifier on the Pico W's onboard LED (`board/lvled.py`, game firmware only, off by default): a slow short blink while today's page waits, a double blink for a gift, three quick flashes when a new flight day is ready, all clearing once a phone opens the game on that board. Dark 22:00-07:00 local (the 06:00 flash waits until 07:00), dark while the board doesn't know the time, and at most 240 s lit a day. On/off from the updater's ship settings or the phone's own crew page (Ship light). The LED is driven through the CYW43 radio chip, so patterns are a few on/off writes from the main loop, never during a BLE sync or an HTTP request. `docs/BENCH_TEST.md` section 12.
+* **One-command bench.** `python3 game/tools/bench.py --ship N --launch YYYY-MM-DD --led on --led-test` checks the board runs the game firmware (naming the .uf2 if not), installs 0.1.0-lv-test over USB with sha256 checks, writes only the given settings and crew codes, runs the self-test with Wi-Fi, DNS, the phone server and BLE, and prints a PASS/FAIL report with a log file. Tested against fake boards on the unix ports (`tests/test_bench.py`).
+* **Crew portraits.** One suit and collar for everyone, then each astronaut's own helmet shell (`HEL`, so the silhouette alone says who it is), visor and helmet detail (`CREW`, by roster order), a plain chest ring (rust for the flagship), then the trait and condition marks. Suits and helmets only.
+* **Crew codes are set by Phill, up front.** The updater's ship setup writes `data/crew.json` (a fleet salt and a salted sha256 per person, the same on all eight ships), so nobody can claim a name by tapping it first. Five wrong codes for a name lock that name for 5 minutes, timed by the board, not the phone. A name with no code shows "Not set up" and can't be picked. See `lv/codes.py`.
+* **The ship remembers your phone for the day.** After a good code, the ship keeps (phone IP + User-Agent, crew, flight day). Reopening the captive sheet the same flight day goes straight to your ship (`GET /api/me`). The next day, or after "Sign out" on your astronaut's page, it asks again. The first sign-in since the board started shows the "Welcome aboard" astronaut card; after that you go straight home.
+* **Live updates.** The page opens a WebSocket at `/ws` that announces a new version. If it can't connect, the page polls `/api/v` every 15 s and says so in a one-line banner.
+* **Privacy.** A private dilemma's text is shown only to the person who looks after that astronaut. Everyone else's log just says a private message arrived.
+* **Dark mode is automatic.** `prefers-color-scheme: dark` swaps the paper and ink colours. There's no switch on the page; it follows the phone. `shots.mjs` renders `13-home-dark` and `14-log-dark` at every size.
+* **Late signals.** Nearly every day is re-run once, the next day, as yesterday's taps arrive. The page treats that as normal ("Today · may still change", "Yesterday · may still change"). It only adds a one-line "Log updated FD xx · a late signal re-ran this day" note when a day changed two or more days later.
+
+### Captive sheet sizes
+
+On an iPhone, the page opens in the captive network assistant (the "Log in" sheet that pops up when you join the hotspot), not in Safari. It's smaller than a Safari page. It's a sheet with its own Cancel/Done bar and no Safari toolbars, has no persistent cookies, and gives `alert()`/`confirm()` no reliable dialog. Apple doesn't publish the sheet's size, so the layout is checked at these estimated CSS viewports (`SIZES=cna`):
+
+| Size | Stands in for |
+|---|---|
+| 320x480 | iPhone SE with Display Zoom: the worst case |
+| 375x580 | iPhone SE 2nd/3rd gen |
+| 375x700 | iPhone 12/13 mini |
+| 390x730 | iPhone 12-16 |
+| 360x600 | Android, captive portal login under its 56 dp header |
+
+Each is the screen, less the status bar, the gap above the sheet and a ~56 px Cancel/Done bar. These are estimates, not measurements. To measure a real phone, open the sheet with `?probe` on the URL. A strip shows `innerWidth x innerHeight`, the visual viewport, the safe-area insets, the device pixel ratio, and whether the page thinks it's in the iOS sheet (a User-Agent without `Safari/`), Safari or an Android WebView.
+
+Below 640 px of height the page uses a tighter layout: 52 px keys and buttons (above Apple's 44 pt minimum), a 44 px top bar, and a slimmer dock. Below 520 px it also drops the sign-in help line. The keypad is on the page, so the iOS keyboard never opens and never covers anything. Send errors appear as a strip in the dock, not an `alert()`.
+
+The `game/` folder is not part of the updater image. The Dockerfile copies only the web app and `firmware/`.
+
+## How the pieces fit
+
+The story is a pure function: **story = f(pack, voyage key, choice log)**.
+
+* **Choice log.** Every player choice becomes a 13-byte record:
+  `kind<<4|schema, ship<<4|delay, seq u16 LE, authored day, a, b, c, d, HMAC-SHA256 tag[:4]`.
+  * Records merge as a set union keyed by `(day, ship, kind, sub)`. `sub` is the card for votes and dilemmas, so one ship can answer two open items on the same day.
+  * When two records share a key, the higher seq wins; on equal seq, the larger bytes win. Order and duplicates therefore never matter.
+  * Records with an unknown (newer) schema are kept and relayed, but never interpreted.
+* **Effective day.** A record takes effect on `authored day + delay`. The delay is 1 normally, or 3 if the author was out of range on both that day and the day before. Late records are normal: a ship that hears one for a day it has already simulated reloads its last weekly snapshot (about 320 B) and replays forward.
+* **Votes and dilemmas.** These close at a fixed day and resolve with whoever voted. Nothing waits for anyone:
+  * No ballots: the crew's lean decides (the fleet's summed trait on the card's axis).
+  * Ties: the lean breaks the tie.
+  * Private dilemmas: if the owner didn't answer, the astronaut picks in character.
+  * Rescues: one tap from anyone is enough, otherwise a default applies.
+* **Inactive astronauts act on their own.** Each astronaut does what its player instructed today (gift / advice / task / rest). If there was no instruction, it picks something from its traits. A player who never opens the page still gets a crew member with a story.
+* **Daily tick order.** Each day runs these steps in order:
+  1. Records in effect today.
+  2. Close the decisions that are due.
+  3. Each astronaut acts.
+  4. Wandering between ships.
+  5. Consumption.
+  6. Due callbacks.
+  7. One event (55%).
+  8. A fleet decision (50%, if none is open).
+  9. A private dilemma (35%; max 2 per player per season, each card once per player).
+  10. Two beats (60% each).
+  11. On day 42, the first ending whose conditions pass.
+* **Story output.** The output is 8-byte entries `[day, code, card, a, b, c, d, e]`. The phone renders them with `text.json`. Each day's entries are folded into an 8-byte hash chain in the state, so snapshots don't grow over the season.
+
+## Ship-to-ship sync (BLE)
+
+Ships swap choice records directly over Bluetooth LE whenever two are in range; no
+server, no pairing. `lv/sync.py` is the protocol and knows nothing about radios;
+`lv/ble.py` carries it over MicroPython's `bluetooth`; the simulator's delivery model
+(sim/season.py) and `sim/link.py` (an in-memory link with faults) stand in for it in tests.
+
+* **Advert** (15 B of manufacturer data, company id 0xFFFF): `'LV'`, protocol, ship +
+  busy flag, day, a 2-byte fleet id (hash of the fleet key), record count and the log's
+  4-byte digest. A ship that hears the same digest does nothing; a different digest means
+  something to swap. Other fleets and other protocol versions are ignored (and counted).
+* **Session** (one GATT characteristic, write + notify, at a fixed handle so there's no
+  service discovery): HELLO carries 55 two-byte bucket hashes (9 authors x 6 eight-day
+  blocks + newer-schema records), so each side sends only the buckets that differ
+  (everything if the hashes agree but the digests don't). RECS messages carry 9 records,
+  chunked to the MTU; stop-and-wait with acks, a resend every 1.5 s, 6 s of silence
+  or 30 s in total ends it. Chunks may arrive in any order or twice. Records merge as each
+  message completes, so a cut link keeps what got through and the next meeting carries on.
+* **Who connects:** the lower ship id; the higher waits 45 s first, so two ships don't
+  dial each other. Failures back off (20 s doubling to 10 min, staggered by ship), so a
+  ship that is off, out of range, on old firmware or wedged costs a few connection
+  attempts and never blocks anyone. Peers unheard for 10 min are forgotten.
+* **Radio time:** 3 s scans every 12 s at a 30 ms window per 300 ms (about 2.5 % of air
+  time), advertising every second, to leave the shared radio to the Wi-Fi hotspot. All
+  overridable from `/data/ship.json` (`"ble": {...}`). The IRQ handler only queues.
+* **Heap:** 78 KB peak for a stock-MicroPython board (32-bit, `.mpy`) holding the whole
+  274-record season, replaying the story, serving the status page (`board/lvstat.py`) and
+  in the middle of a sync, under the 80 KB cap (`tests/mp_sync_heap.py`; the 64-bit port
+  measures 118 KB). On the game firmware (core frozen into the `.uf2`,
+  `tools/build_firmware.sh`) the same is 51 KB, and 73–74 KB with two phones playing the
+  game over the hotspot (`tests/phone_heap.py`); the phone game only runs there. Precompile with
+  `tools/board_build.sh`: compiling engine.py on the board would need more than the cap.
+* **Tests:** `tests/test_sync.py` (protocol: faults, cuts, hash collisions, newer-schema
+  records, 8 ships meeting in random orders then replaying the reference season, inactive
+  ships), `tests/mp_sync.py` (lv/ble.py on a fake `bluetooth`, CPython and MicroPython
+  32/64-bit: loss, duplicates, reordering, MTU 23, mid-transfer disconnects, a relay
+  through a third ship, a ship powered off, an out-of-date and a wedged ship; then the
+  story from what arrived over the air matches the reference). What needs real boards is
+  in `docs/BENCH_TEST.md`.
+
+## Results (build 0.1.0, 15 sample cards)
+
+*Current content pack (217 cards):* pack.bin 6,752 B, text.json 24,777 B gzipped (card ids are left out of the shipped file; `build/text.dev.json` keeps them for sim/ and the tests), peak MicroPython heap 71,104 B on the 64-bit unix port (51,984 B on a 32-bit build, like the Pico's), snapshot 743 B, final reference digest `651a9ce252fb4b8d` (authored and reversed merge order). The reference season authors 274 records from 8 simulated players (2 never play), 60 of them crewmate gifts; without the gift records the digest is `24751f12277fc052`, the content-voice figure, so gifts are the only difference. The choice log packs its records (one bytearray per 8-day shard, lv/chlog.py), which is what keeps the extra records under the 80 KB line. On a 32-bit build the whole check runs in a 92 KB heap from .py (80 KB from .mpy: compiling engine.py is the peak); the 64-bit port needs 136 KB from .py, 96 KB from .mpy. The deepest replay in the four delivery scenarios rewrites 12 days, and a ship cut off for a long stretch can need up to about 30. `python3 -m unittest discover -s tests` runs 177 tests (103 content, 23 core, 38 engagement, 13 sync). The figures below are the original 15-card measurements.
+
+**Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 8 independent ships in 4 ways:
+* instant;
+* gossip (0-2 days of lag);
+* reverse-order with 20% duplicates;
+* bursty, with one ship's links down every 5 days.
+
+Every ship ends on the same reference digest in every scenario (`8782c95070c3682d` for the 15-card pack; the current pack's digest is above). The deepest replay rewrote 11 days.
+
+**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest matches (`8782c95070c3682d` then; see above for the current pack).
+
+**Size and RAM** (32-bit MicroPython, `gc.mem_alloc`):
+
+| | 15 cards (measured) | ~110 cards |
+|---|---|---|
+| pack.bin | 575 B (≈33 B/card) | ≈3.7 KB |
+| pack in RAM | 2.4 KB | 13.8 KB (measured on a 110-card synthetic pack) |
+| text.json / .gz (phone) | 4.2 KB / 2.0 KB | ≈20 KB / ≈9-10 KB (estimate, real prose) |
+| core code in RAM | 19 KB as .mpy, 20.6 KB from .py | same; ≈0 if frozen into the firmware |
+| choice log | 3.9-4.9 KB for 169 records (≈23-29 B/record) | ≈10 KB for 8 active players; ≈25 KB worst case |
+| state + engine | ≈1.1 KB, snapshot about 320 B (737 B with the current pack) | same |
+| whole check, peak | runs in a 56 KB heap (.mpy); 68 KB with the current pack | ≈50-60 KB of the 157-168 KB free with coex running |
+
+**Tick time** (x86 unix port, 32-bit): the 15-card pack averages 0.16 ms/tick (worst 0.28 ms); the 110-card pack averages 1.3 ms (worst 2.9 ms). A record merge with its HMAC check takes about 15 µs.
+
+*Pico estimate* (×30-60 for a 133 MHz M0+, not yet measured on a board):
+* About 40-80 ms per tick (worst about 0.1-0.2 s) with 110 cards.
+* A 12-day late-record replay takes about 0.5-1 s. That is fine as a background job between radio windows.
+* A record merge takes about 0.5-1 ms.
+
+## Design questions raised by the build
+
+1. **Out-of-range votes can miss the close.** A ballot counts if it was authored while the vote was open and takes effect by close. A voter on delay 3 who votes on the last day misses it. Options: accept it, or count a ballot by authored day and let a late close re-resolve the vote by replay. Replay already makes the second option possible.
+2. **The merge key includes `sub`.** The Page says `(ship, day, kind)`. With two decisions open, a ship needs two VOTE records on one day, so the key is `(day, ship, kind, sub)`.
+3. **The "a late signal changed this" marker is ship-local.** A replay can rewrite up to about 12 days of a story the phone has already shown. The core is deterministic, but the page needs a policy: show a "the log was updated" note, or only show days older than N as final.
+4. **32-bit PRNG on the RP2040.** xorshift32 values exceed MicroPython's 31-bit small ints, so some steps allocate bigints. This works and matches on the 32-bit build. If tick time on the board is tight, split the state into two 16-bit halves.
+5. **The crew roster is real and lives in `content/roster.lv`.** Phill (ship 1, flagship), Jacques, Kim, Jai, Michelle, Diego, Dorian, Marco (ship 8). No quirks were given, so each astronaut's starting traits are seeded from the voyage key and their name; add `quirk <name>` to a line to set one. Each line also carries up to four `habit "..."` entries (the player's own light quirks); `each habit N` cards clone once per crewmate who has an Nth habit, so a quirk line only ever renders for its owner (see `content/STYLE.md`, "The habit slot"). The compiler rejects gendered pronouns in any card or template text, and story beats are kept good-natured (injuries come from the environment, never from someone's mistake).
+6. **Content: the first voice batch is in (91 cards).** See `content/STYLE.md` for the house style. Card language additions: `hook` (a cliffhanger that is the last line of its day, at most one every 4 days, resolved the next day by a `due` card with `when fired <hook>`; text.json marks hooks with `"h":1` so the phone can show them as "Last night...") and `when tag A <word>` (roster tags, compiled to a crew bitmask). `lvc` also prints `style:` warnings: hard-coded names, name-checked jobs, demeaning words, cheap resolutions, calendar pins, over-long text. `tests/test_content.py` keeps the real pack at zero style warnings.
+7. **Content batch 2 (113 cards).** Every card carries `cat <category> [skill]`; `lvc` prints the mix and fails the build if repairs exceed 25% or skill flavor 18% (`check_mix`). `check_ramp` enforces the slow burn (no uncanny vocabulary before day 11, uncanny hooks only from day 25; see STYLE.md). `clue` marks a card for the second read: text.json gains `"reread": [card indices]`, and the end screen (web, not yet built) should list those cards' flight days under the ending without explanation. The story design is in `content/STORY_BIBLE.md` (spoilers; players should not read it). Engine: role casting prefers the least-featured crew (`State.spot`, part of the snapshot), keeping story appearances within about 2% of the mean over 100 seasons. Every ending lands in 8.7-25.7% of 300 seasons (26 to 77 of 300 each).
+8. **The weekly snapshot cadence is a guess.** Snapshots take about 737 B each with the current pack, so daily snapshots on flash would make replays almost free.

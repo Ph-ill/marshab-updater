@@ -118,6 +118,10 @@ input::placeholder{ color:var(--muted); }
 .check{ display:flex; gap:8px; align-items:flex-start; margin:10px 0; font-size:14px; cursor:pointer; }
 .check input{ accent-color:var(--rust); margin-top:3px; }
 
+.sub{ margin:22px 0 0; padding-top:12px; border-top:1px solid var(--ink); font:700 12px/1.4 var(--mono); letter-spacing:.14em; text-transform:uppercase; }
+.hint.first{ margin-top:6px; }
+.codes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(9.5em, 1fr)); gap:0 14px; margin-top:6px; }
+.codes input{ font-family:var(--mono); letter-spacing:.3em; width:8ch; }
 .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 button,.uf2 a{
   font:600 12px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase;

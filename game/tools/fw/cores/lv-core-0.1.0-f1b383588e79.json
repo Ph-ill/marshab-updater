@@ -1,0 +1,38 @@
+{
+ "core": "f1b383588e79",
+ "id": "lv-core",
+ "micropython": "v1.29.0",
+ "modules": [
+  "lv",
+  "lv.ble",
+  "lv.chlog",
+  "lv.clock",
+  "lv.codes",
+  "lv.engage",
+  "lv.engine",
+  "lv.led",
+  "lv.ops",
+  "lv.pack",
+  "lv.prng",
+  "lv.record",
+  "lv.state",
+  "lv.sync"
+ ],
+ "sha256": {
+  "lv": "8ba6783507f1ad2f698170f4cd80939ee5121109e754f79f5c77416ebeca129c",
+  "lv.ble": "fc24e976f2f013604bdb506e52d9103b121efd2c77bcecfac8d30b451b24d369",
+  "lv.chlog": "b12d352a7550e3fb03f16adb3146af486defe76b531534fc22fc88b4ecdfbb7d",
+  "lv.clock": "60c6dfdc2caf59a6c278b11a19a57317cb1b5d883a67d6ee9a62b0ca722b5fb6",
+  "lv.codes": "0e7ff152df570297154bfb91bc1324d634ff27dc370378d1709d5dc128a930f5",
+  "lv.engage": "2c5fa5babad35662de31c076d5a60b8afd5ae306b311faea3846e1ee2d6493c0",
+  "lv.engine": "20f760f4584bef6ab4abd2ef9fd0b12d97988ca6385a6f0e6e68825adaddaefa",
+  "lv.led": "3563f64049c101d80c289c858c706159990e2265408cb0d1b0fbdf8a386037c7",
+  "lv.ops": "ca3f06a41c37b53e07803ad58af8e30b275f87e01e3d4a0c11c1ae73dce43e40",
+  "lv.pack": "8c14d3e4f472b7b2b18728ffa25569879c24358e1a8888d5245d36a381f1f00a",
+  "lv.prng": "f381c4c52c56241aadbac2ce60b2004ca43d3d79e49c7b77b5f374372a13c6d5",
+  "lv.record": "15b0029a96ac4c87ad30e5ff5a655a2793c2f0d3315b5ae67ea94953f2d077d6",
+  "lv.state": "45fedaed85f13dfd691bcd0d12b98b1bc529666277a9b717b6dc2771296c7a37",
+  "lv.sync": "c21b3cecea43330c4d61b7e2bdbc0f8c2f5f89c2794ef68aa05c8d12bab87244"
+ },
+ "version": "0.1.0"
+}

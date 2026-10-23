@@ -1,4 +1,5 @@
 import { fetchJson } from './releases.js';
+import { runtimeSnippet } from './device-info.js';
 import { removePaths, snapshotProtectedData, verifyProtectedData, wipeExcept, writeManifestFile } from './file-transfer.js';
 
 export async function fetchBytes(url){
@@ -57,9 +58,35 @@ export async function prepareFiles(releaseManifest){
   return out;
 }
 
+// A partial release (release.frozen) carries only what changed on top of one exact frozen game
+// core: it is refused on stock MicroPython or another core, before anything is written.
+export function frozenMismatch(releaseManifest, runtime){
+  const need = releaseManifest?.frozen;
+  if(!need) return null;
+  const want = `${need.id} ${need.version} (core ${need.requires})`;
+  const uf2 = `lv-core-${need.version}-${need.requires}-<board>.uf2`;
+  const have = runtime?.frozen;
+  if(!runtime) return `${releaseManifest.version} needs the game firmware ${want}, and this board's firmware could not be read`;
+  if(!have) return `${releaseManifest.version} needs the game firmware ${want}; this board runs stock MicroPython. Flash ${uf2} first (BOOTSEL, see game/docs/BENCH_TEST.md)`;
+  if(have.id !== need.id || have.core !== need.requires) return `${releaseManifest.version} needs the game firmware ${want}; this board has ${have.id} ${have.version} (core ${have.core}). Flash ${uf2} first`;
+  return null;
+}
+
+export async function readRuntime(device){
+  const { stdout } = await device.exec(runtimeSnippet(), { timeoutMs: 8000 });
+  return JSON.parse(stdout.trim());
+}
+
 export async function installRelease(device, releaseManifest, { clean = false, onLog = () => {}, onProgress = () => {}, onBeforeReset = () => {} } = {}){
   const preserve = [...new Set([...(releaseManifest.preserve || []), 'data/'])];
   onLog(`installing ${releaseManifest.project || 'firmware'} ${releaseManifest.version}`);
+  if(releaseManifest.frozen){
+    let runtime = null;
+    try{ runtime = await readRuntime(device); }catch(_err){ runtime = null; }
+    const why = frozenMismatch(releaseManifest, runtime);
+    if(why) throw new Error(why);
+    onLog(`game firmware ${releaseManifest.frozen.id} core ${releaseManifest.frozen.requires} matches; overrides: [${(releaseManifest.overrides || []).join(', ')}]`);
+  }
   onLog('checking release files');
   const prepared = await prepareFiles(releaseManifest);
   onLog('snapshotting protected device data');
