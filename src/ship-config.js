@@ -33,6 +33,12 @@ export function hotspotForRole(role, roles = ['A', 'B']){
   return `${HOTSPOT_PREFIX}${i < 0 ? 0 : i}`;
 }
 
+// Bench convention: role A is ship 1, role B is ship 2 (null for no role or an unknown one).
+export function shipNumberForRole(role, roles = ['A', 'B']){
+  const i = roles.indexOf(String(role || '').toUpperCase());
+  return i < 0 ? null : i + 1;
+}
+
 export function hotspotSummary(cfg){
   if(!cfg) return 'firmware default (WPA2)';
   if(cfg.hotspot_open) return 'open network';

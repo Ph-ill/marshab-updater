@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { compareVersions } from '../src/releases.js';
-import { validateShipConfig, defaultShipName, hotspotSummary, hotspotForRole } from '../src/ship-config.js';
+import { validateShipConfig, defaultShipName, hotspotSummary, hotspotForRole, shipNumberForRole } from '../src/ship-config.js';
 import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
 import { boardFromRuntime, firmwareKind, summarizeDeviceInfo } from '../src/device-info.js';
@@ -75,6 +75,9 @@ t('hotspot name follows the role like the firmware (A -> COEX-0, B -> COEX-1, no
   assert.equal(hotspotForRole('b'), 'COEX-1');
   assert.equal(hotspotForRole(''), 'COEX-0');
   assert.equal(hotspotForRole(null, ['A', 'B']), 'COEX-0');
+  assert.equal(shipNumberForRole('A'), 1);
+  assert.equal(shipNumberForRole('b'), 2);
+  assert.equal(shipNumberForRole(''), null);
 });
 t('role memory: suggest the other role, warn on a repeat, tell boards apart by unique id', () => {
   const mem = new Map(); const storage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)) };
