@@ -1,0 +1,16 @@
+# Endings: checked in this order on arrival day; the last one has no conditions.
+
+card end_contact
+type ending
+when flag signal_contact
+when res food >= 1
+text First Contact, Sort Of. The fleet arrives with a recording nobody can explain and a crew that won't stop talking about it.
+
+card end_followed
+type ending
+when flag echo_heard
+text Company. Seven ships land; the asteroid parks itself in a high orbit and stays there.
+
+card end_long_way
+type ending
+text The Long Way Round. Seven ships, one planet, and a log full of small kindnesses.
