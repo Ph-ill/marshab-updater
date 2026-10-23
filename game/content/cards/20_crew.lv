@@ -98,6 +98,6 @@ weight 6
 once
 roles A
 when res spares >= 1
-text The galley pump fails for the third time this voyage. {A} lays the parts out on a towel in order, rebuilds it, and the washer that was missing at the factory turns up in the old housing.
+text The galley pump fails mid-breakfast. {A} lays the parts out on a towel in order, rebuilds it, and the washer that was missing at the factory turns up in the old housing.
 do res spares -1
 do morale A -2

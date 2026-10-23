@@ -115,7 +115,7 @@ once
 days 18 19
 roles A
 when is A ow_list
-text The delay has turned calls into letters. {A} records one for home and talks straight through the gaps, then deletes it and does it again with pauses, which is worse, and then a third time at speed, list and all, which is the one that goes. The list from the first call is still in the pocket.
+text The delay has turned calls into letters. {A} records one for home, talking straight through the gaps, deletes it, tries again with pauses, which is worse, then goes at speed: "Hi, it's me, ship's fine, I'm fine, the bread's improving, here's the list," and that one goes.
 do morale A 2
 do trait A warm 2
 
@@ -152,7 +152,7 @@ once
 days 27 28
 roles A
 when is A ow_list
-text A message from home for {A}: a retirement party, already over, for the neighbour who always brought the folding chairs, a name from the first call's list. By the time it arrived, everyone in the photos had gone home and changed. {A} watches the recording to the end and asks for the next watch.
+text A message from home for {A}: a retirement party, already over, for the neighbour who always brought the folding chairs, a name from the first call's list. The house is sold; they're moving to the sea. Someone saved {A} a chair. {A} watches the recording to the end and asks for the next watch.
 do morale A -8
 do trait A warm 3
 
@@ -175,7 +175,7 @@ once
 days 42 42
 roles A
 when is A ow_list
-text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land eight minutes after it's sent. {A} sends them without a single pause: no ums, no gaps, no saving the good bit for last.
+text {A} writes to every name on the list from the first call, one to the folding chairs at a new address by the sea, and a last one to a loading bay at Starbase. Each will land eight minutes after it's sent. {A} sends them without a single pause: no ums, no gaps, no saving the good bit for last.
 do morale A 3
 
 # --- Thread: the song ------------------------------------------------------------
@@ -210,7 +210,7 @@ once
 days 42 42
 roles A
 when is A ow_song
-text On the last morning before the air, with a planet under the fleet again, {A} plays past the four bars, all the way through, and this time on the channel. Six ships hear the fifth bar at last: it falls where they all had it rising, and lands on the last note of the galley chime. "That's the one," {A} says.
+text On the last morning before the air, with a planet under the fleet again, {A} plays past the four bars, all the way through, and this time on the channel. Six ships hear the fifth bar at last: it falls where they all had it rising, and lands on the beat the old channel keeps. "That's the one," {A} says.
 do morale A 5
 
 # --- Thread: the garden ------------------------------------------------------------
@@ -290,7 +290,7 @@ do trait A warm 2
 card w_venus_shadow
 type event
 cat wonder
-days 7 18
+days 7 10
 weight 6
 once
 roles A
@@ -430,7 +430,7 @@ due
 once
 days 28 28
 roles A
-text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis, a named forklift charging off a cargo ship's landing leg. The one with the Sharpie signs off: "Seven of you this time. Write when you land." {A} clips the forklift inside the logbook.
+text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis, a named forklift charging off a cargo ship's landing leg. The one with the Sharpie signs off: "Seven of you. Write when you land, every one." {A} clips the forklift inside the logbook.
 do morale A 2
 
 card sharpie2
@@ -481,7 +481,7 @@ when flag c2_answered
 when !is A ow_hail
 when !is A ow_dose
 when !is A ow_theory
-text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: three parts rust, one part dark, the dawn line curved along one edge. Just past that line, too small to see, a light is holding steady.
+text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line ruled almost straight down the middle. Just past that line, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -495,7 +495,7 @@ when !flag c2_answered
 when !is A ow_hail
 when !is A ow_dose
 when !is A ow_theory
-text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: three parts rust, one part dark, the dawn line curved along one edge. Just past that line, too small to see, a light is keeping time.
+text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line ruled almost straight down the middle. Just past that line, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -612,7 +612,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key re-loaded and checked by the ground, a procedure card, HELLO then HOLD, with two signatures clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for line of sight, says yes.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, the old program key re-loaded and checked by the ground, a procedure card, HELLO then HOLD, with two signatures clipped to the back. "First one out goes to say hello," {A} tells the ground. The ground says yes, if a spare battery rides along.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
@@ -626,7 +626,7 @@ roles A
 when flag arrive_hold
 when flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the brown thins and a slope comes up under the ship; {A} calls the manual takeover before the plume takes the view.
+text Entry interface. Three minutes of plasma blackout, seven ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres; Cargo 2's ping holds the bearing. At three hundred metres the brown thins and a slope comes up under the ship; {A} calls the manual takeover before the plume takes the view.
 do morale A 3
 
 card e_entry_hold_q
@@ -639,7 +639,7 @@ roles A
 when flag arrive_hold
 when !flag c2_answered
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres the cameras find a slope under the ship; {A} calls the manual takeover before the plume takes the view, and fights it level. It comes down hard, upright.
+text Entry interface. Three minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres the cameras find a slope under the ship; {A} calls the manual takeover before the plume takes the view, and fights it level. It comes down hard, upright.
 do morale A 3
 
 card e_entry_wait
@@ -651,7 +651,7 @@ days 42 42
 roles A
 when flag arrive_wait
 when is A abort_who
-text Aerocapture. Four minutes of plasma blackout, seven ships silent in turn. Six come out the far side on time. {A}'s comes out nine seconds late: nine seconds of nothing on the fleet channel, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
+text Aerocapture. Three minutes of plasma blackout, seven ships silent in turn. Six come out the far side on time. {A}'s comes out nine seconds late: nine seconds of nothing on the net, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
 do morale A 3
 
 card e_entry_clear
@@ -664,7 +664,7 @@ roles A
 when !flag arrive_hold
 when !flag arrive_wait
 when is A abort_who
-text Entry interface in clear air. Four minutes of plasma blackout, seven ships silent in turn. At the landing burn one of {A}'s engines lights late, a long half second, and the engine-out call is half out of {A}'s mouth when it catches. The ground comes up exactly where the maps said.
+text Entry interface in clear air. Three minutes of plasma blackout, seven ships silent in turn. At the landing burn one of {A}'s engines lights late, a long half second, and the engine-out call is half out of {A}'s mouth when it catches. The ground comes up exactly where the maps said.
 do morale A 3
 
 card w_zodiac
@@ -692,7 +692,7 @@ do morale A 2
 card w_milky
 type event
 cat wonder
-days 20 20
+days 23 23
 due
 once
 roles A
@@ -708,5 +708,5 @@ due
 once
 roles A
 when cond A ok
-text Through the long lens Earth and the Moon fit in one frame now, a blue dot and a grey one, close as two buttons on a coat. {A} shoots the pair once a shift for a week and sends the frames home as a flipbook, captioned "You are here. Both of you."
+text Through the long lens Earth and the Moon share one frame now, close as two buttons on a coat. {A} sends a week of them home as a flipbook: "You are here. Both of you."
 do morale A 3

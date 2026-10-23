@@ -6,11 +6,11 @@ type event
 cat grim
 due
 once
-days 31 35
+days 34 36
 roles A
 when fired h_band
 when is A hook_who
-text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It runs past entry week, to a week or two after landing.
+text {A} counted to sixty-six before it came back, six knocks late and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It runs past entry week, to a week or two after landing.
 do morale A -2
 
 card r_pressure
@@ -49,7 +49,7 @@ roles A
 when fired h_thruster
 when is A hook_who
 lean brave manual watch
-text The ship was steady again within a quarter of an hour.
+text Fourteen minutes of the control loop fighting a roll nothing had commanded, pulse after pulse on one axis.
 option manual | Hand control | {A} took attitude into manual and held it while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and that axis flies one thruster short for the rest of the voyage.
   trait A brave 2
   morale A 4
@@ -87,7 +87,7 @@ days 11 36
 roles A
 when fired h_silence
 when is A hook_who
-text The reply arrived before breakfast. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. For eight hours the fleet was on its own, and the checklist for that is one page long. The message ends: "All good here. How are you?" {A} starts with the weather.
+text Eight hours of nothing, the one-page checklist open on every console. Before breakfast the reply arrives: a ground station went down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} starts with the weather.
 do morale A 6
 do trait A warm 2
 
@@ -117,7 +117,7 @@ days 26 34
 roles A
 when fired h_ghost
 when is A hook_who
-text {A} pinned it down by morning: a launch cover plate shed at departure, on almost the fleet's own orbit, turning end over end and gaining about fifteen metres an hour. Tonight it slides past forty kilometres off the bow. {A} writes it up, and Starbase starts counting its cover plates.
+text Six hours on the backup tracker, {A} checking stars by hand. By morning the extra one has a name: a launch cover plate shed at departure, on nearly the fleet's orbit, gaining fifteen metres an hour. Tonight it slides past forty kilometres off the bow, and Starbase starts counting its cover plates.
 do trait A curious 3
 do morale A -2
 
@@ -130,7 +130,7 @@ days 26 34
 roles A
 when fired h_voice
 when is A hook_who
-text {A} traced it the next morning: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. {A} listens with the volume very low.
+text {A} sat up till dawn with the intercom logs: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. {A} listens with the volume low.
 do morale A 6
 do trait A warm 3
 
@@ -144,7 +144,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when !flag signal_answered
-text {A} was back inside three hours. An old-channel frame, a link request with a field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground takes the old channel off the fleet net. The listening dish keeps recording.
+text For three hours six ships called an empty slot; through the next ship's lens the windows stayed lit. Then {A}, hoarse: an old-channel frame with a field the new stack had never seen had hung the comms computer, then the backup; the third boot quarantined it. The old channel comes off the fleet net.
 do trait A brave 3
 do morale A -2
 
@@ -158,7 +158,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when flag signal_answered
-text {A} was back inside three hours. An old-channel frame, a link request with a field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground moves the channel to a sandbox; the hellos go on from a box that can't hang a radio.
+text For three hours six ships called an empty slot; through the next ship's lens the windows stayed lit. Then {A}, hoarse: an old-channel frame with a field the new stack had never seen had hung the comms computer, then the backup; the third boot quarantined it. The hellos move to a sandbox.
 do trait A brave 3
 do morale A -2
 

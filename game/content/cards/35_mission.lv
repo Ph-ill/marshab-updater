@@ -4,7 +4,7 @@
 card dec_halfway
 type decision
 cat mission
-days 24 25
+days 23 24
 weight 40
 once
 duration 1
@@ -27,7 +27,7 @@ once
 duration 2
 roles A B
 lean curious after home
-text The backup-site maps, stitched from imagery older than the cargo landings (the only sharp camera at Mars rode on the grey relay), show an unnamed crater small enough for the fleet to name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants somewhere at home.
+text The backup-site maps, stitched from imagery older than the cargo landings (the sharpest camera at Mars rode on the grey relay), show an unnamed crater small enough for the fleet to name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants somewhere at home.
 option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
   set name_plan
   trait A curious 2
@@ -64,7 +64,7 @@ due
 once
 roles A
 when cond A ok
-text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A control loop hunting somewhere, most likely the coolant pump's: it's on the same bus. {A} notes it in the margin and moves on to the propellant tables.
+text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A control loop hunting somewhere, most likely the coolant pump's: it's on the same bus. "Pump's hunting again," {A} tells the ground, and books it a service slot.
 
 card m_dropout
 type event
@@ -75,7 +75,7 @@ once
 days 24 27
 roles A
 when since t_theory >= 2
-text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there for part of each day, gone for the rest, and back a little later each morning than the last. {A} files the plot with the others and moves on to the dust forecast.
+text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there for part of each day, gone for the rest, and back a little later each morning than the last. It goes in the anomaly file, behind the dust forecast that's due first.
 
 card m_theory
 type event
@@ -117,7 +117,7 @@ once
 days 38 38
 roles A
 when is A ow_theory
-text {A} looks at the lighthouse again. Timed to the microsecond, every knock runs a hundredth of a second early, then late, once a day, and the day is thirty-seven minutes too long. {A} writes the numbers under the drawing and leaves it standing.
+text {A} looks at the lighthouse again. Timed to the microsecond, every knock runs a hundredth of a second early, then late, once a day, and the day is thirty-seven minutes too long. "Who keeps a lighthouse on Mars time?" {A} asks the drawing.
 do trait A curious 2
 
 card m_flash1
@@ -130,7 +130,7 @@ days 30 31
 roles A
 when !is A ow_theory
 when !is A ow_hail
-text {A} pulls an old survey orbiter's low-light night frames of the landing region. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor. {A} logs it with the other sensor hits.
+text {A} pulls an old survey orbiter's low-light night frames of the landing region. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor. Probably.
 do set flash_seen
 do mark t_flash
 do who flash_who A
@@ -281,7 +281,7 @@ days 38 38
 roles A
 when fired m_overlay
 when is A ow_song
-text The old-channel carrier now stands out in a narrow filter. {A} turns each burst into a click on the cabin speaker: a click, a hiss, a long pause, a click, like rain starting on a car roof. The four bars fit between them. {A} plays them on the galley keyboard, stopping where the fifth should be.
+text The old-channel carrier stands out in a narrow filter. {A} turns each burst into a click on the cabin speaker: a click, a hiss, a pause, a click, like rain starting on a car roof. The four bars fit between them. {A} plays them on the galley keyboard, stopping where the fifth should be. "Nearly."
 do morale A -1
 
 card a_drill_plan
@@ -305,7 +305,7 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text At the fleet's request the orbiter team flies its dawn pass over the backup site, sun low. Behind a crater rim lies a long shadow, leaning, too straight for rock, and at its foot the pixel that lights on the knock. The ground lays the old landing ellipse over it: Cargo 2. Its housekeeping, whole at last: legs down, one solar wing half open, dish jammed against its stop. {A} counts the dark: nine, ten, eleven, flare.
+text At the fleet's request an orbiter flies an early pass over the backup site, sun low. Behind a crater rim lies a long shadow, too straight for rock, the knock's pixel at its foot. Starbase sends the landing ellipse from Cargo 2's last patch, never put in the write-off file: Cargo 2. Its housekeeping, whole at last: legs down, one wing half open, dish jammed on its stop. {A} counts the dark: nine, ten, eleven, flare.
 do trait A curious 3
 
 card a_report
@@ -317,7 +317,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text The board's finding: Cargo 2 came down standing on the surveyed backup site; the "impact scar" on the old frame is its aft skirt, shed uprange. The lander search was three passes, which read its knock as the relay's spin. Its last patch, from Starbase: SURVEYED SITE = PAD. KNOCK, LISTEN 1 TICK, KNOCK. TIMEOUT: NONE. ON HELLO: WAKE ALL, NO BATTERY CHECK. {A} reads LISTEN 1 TICK, works out where Earth is, and stops.
+text {A} asks Starbase for the rest of that patch; the pad crew had kept a copy, and no one had asked. SURVEYED SITE = PAD. KNOCK, LISTEN 1 TICK, KNOCK. TIMEOUT: NONE. ON HELLO: WAKE ALL, NO BATTERY CHECK: for a crewed pad with a charger. {A} reads LISTEN 1 TICK, works out where Earth is, and stops. "Every hail it got came after it stopped listening." By evening the board agrees. The "impact scar" was its aft skirt.
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -329,7 +329,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. {A}'s receiver hears it five seconds later and answers at once, signed. Entry week is frozen; since the board's finding the clearance is two lines: the hello, and a HOLD on the next tick. The hello lands a breath before the tick. Cargo 2 wakes everything, as its patch says, for one tick; the HOLD puts it back to sleep. By the next night pass the strobe is off; one status lamp burns steady.
+text 04:10:07: Cargo 2 knocks. {A}'s receiver hears it five seconds later and answers at once, signed. Entry week is frozen; the board had cleared two lines: the hello, and a HOLD on the next tick. The hello lands a breath before the tick. Cargo 2 wakes everything, as its patch says, for one tick; the HOLD puts it back to sleep. By the next night pass the strobe is off; one status lamp burns steady.
 do set c2_answered
 do morale A 8
 
@@ -357,7 +357,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, and nothing on the schedule answers it. The ground's reply sits drafted and signed, but the board won't wake a two-year-old wait loop in entry week. The ruling is one line on {A}'s screen: AFTER LANDING. LINE OF SIGHT, INSIDE THE TICK. {A} acknowledges, and adds one line the form doesn't ask for: UNDERSTOOD. COUNTING.
+text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, and nothing on the schedule answers it. The ground's reply sits drafted and signed, but the board has read WAKE ALL, NO BATTERY CHECK, and won't do that to a cold battery from a distance. The ruling is one line on {A}'s screen: AFTER LANDING. SPARE POWER IN HAND, INSIDE THE TICK. {A} acknowledges, and adds a line the form doesn't ask for: UNDERSTOOD. COUNTING.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------
@@ -397,7 +397,7 @@ when flag arrive_wait
 when !is A ow_hail
 when !flag c2_answered
 when !is A ow_dose
-text By the next log page the fleet dips into the upper atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, still keeping time, and sits down with the ration tables. The entry team clears every heat-shield tile again, this time for two trips through the air.
+text Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, still keeping time, and sits down with the ration tables. The entry team clears every heat-shield tile again, this time for two trips through the air.
 do morale A -2
 
 card a_descent_wait_a
@@ -411,7 +411,7 @@ when flag arrive_wait
 when flag c2_answered
 when !is A ow_hail
 when !is A ow_dose
-text By the next log page the fleet dips into the upper atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, steady now, and sits down with the ration tables. The entry team clears every heat-shield tile again, this time for two trips through the air.
+text Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, steady now, and sits down with the ration tables. The entry team clears every heat-shield tile again, this time for two trips through the air.
 do morale A -1
 
 card a_descent_clear

@@ -363,6 +363,55 @@ class TestThreadConsistency(unittest.TestCase):
                     bad.append((i, d, ids[card]))
         self.assertEqual(bad, [])
 
+    def _events(self, out, ids):
+        return [(out[k], ids[out[k + 2]], out[k + 3]) for k in range(0, len(out), 8)
+                if out[k + 1] == O.O_EVENT]
+
+    def test_band_hook_waits_for_the_second_flash(self):
+        # The night-gap hook must not name or lean on the lit pixel, and may only fire
+        # once the pixel is established as a fixed ground spot (after m_flash2).
+        self.assertNotIn("pixel", self.t["h_band"])
+        ids = [c["id"] for c in self.text["cards"]]
+        bad, fired = [], 0
+        for i, out in self._seasons():
+            ev = self._events(out, ids)
+            hb = [d for d, c, _ in ev if c == "h_band"]
+            if not hb:
+                continue
+            fired += 1
+            f2 = [d for d, c, _ in ev if c == "m_flash2"]
+            f1 = [d for d, c, _ in ev if c == "m_flash1"]
+            if not f2 or hb[0] < f2[0] or (f1 and hb[0] == f1[0]):
+                bad.append(i)
+        self.assertEqual(bad, [])
+        self.assertGreater(fired, 30)
+
+    def test_knock_hook_stays_with_the_carrier_finder(self):
+        # Whoever found the old-channel carrier owns the knock: h_band and its resolver
+        # r_band go to the same astronaut as m_carrier.
+        ids = [c["id"] for c in self.text["cards"]]
+        bad = []
+        for i, out in self._seasons():
+            ev = self._events(out, ids)
+            car = [a for _, c, a in ev if c == "m_carrier"]
+            for _, c, a in ev:
+                if c in ("h_band", "r_band") and (not car or a != car[0]):
+                    bad.append((i, c))
+        self.assertEqual(bad, [])
+
+    def test_aerocapture_is_narrated_once(self):
+        # e_entry_wait (day 42) narrates the aerocapture; no day-41 card may narrate it too
+        # (looking ahead to it, "before aerocapture", is fine).
+        ids = [c["id"] for c in self.text["cards"]]
+        pat = re.compile(r"upper atmosphere|(?<!before )aerocaptur|into the long orbit", re.I)
+        bad = []
+        for i, out in self._seasons():
+            ev = self._events(out, ids)
+            if not any(c == "e_entry_wait" for _, c, _ in ev):
+                continue
+            bad += [(i, c) for d, c, _ in ev if d == 41 and pat.search(self.t[c])]
+        self.assertEqual(bad, [])
+
 
 class TestCompactPack(unittest.TestCase):
     """Cards are indices into Pack.data; the decoded Card view and the engine's

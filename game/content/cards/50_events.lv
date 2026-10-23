@@ -31,7 +31,7 @@ do var storms 1
 card storm_dose
 type event
 cat grim
-days 17 21
+days 20 21
 weight 16
 once
 roles A
@@ -47,7 +47,7 @@ weight 16
 once
 roles A
 when cond A ok
-text The signal delay to Earth is closing on two minutes each way. {A} sends a joke to the ground team and waits the best part of four minutes to find out whether it landed. It did, on a slight delay, like everything now.
+text The signal delay to Earth is closing on two minutes each way. {A} sends a joke to the ground team and waits well over three minutes to find out whether it landed. It did, on a slight delay, like everything now.
 do morale A 4
 
 card comm_delay2

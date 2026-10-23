@@ -10,14 +10,15 @@ type event
 cat grim
 hook
 once
-days 30 34
+days 33 35
 weight 60
 roles A
 when cond A ok
-when flag flash_seen
 when home A
+when fired m_flash2
+when is A ow_hail
 do who hook_who A
-text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty. The orbiter's pass over that patch comes down an hour later: the lit pixel is dark in that frame too. It could be cloud.
+text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty, out loud now, to an empty cabin, and the next knock doesn't come.
 
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure

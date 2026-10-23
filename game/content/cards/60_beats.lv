@@ -23,7 +23,7 @@ once
 roles A B
 when same A B
 when !fired beat_coffee
-text {A} teaches {B} a card game from home across a real galley table, not a screen. By the end of the shift {B} is winning, and the rules have been amended three times.
+text {A} teaches {B} a card game from home across a real galley table, not a screen. By the end of the shift {B} is winning, and the rules have been amended three times, by agreement.
 do bond A B 5
 
 card beat_window
@@ -33,7 +33,7 @@ days 6 10
 weight 12
 once
 roles A B
-text {A} and {B} keep a channel open as Earth and the Moon slide into the same frame, each at their own window. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: the Moon, half lit, over a sliver of Earth.
+text {A} and {B} keep a channel open as the Moon slides out from behind Earth, each at their own window. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: two crescents, one blue, one grey.
 do bond A B 6
 
 card beat_gym

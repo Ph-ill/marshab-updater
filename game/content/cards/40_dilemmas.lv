@@ -153,7 +153,7 @@ once
 days 39 39
 roles A
 when is A ow_letter
-text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, to an empty cabin, then folds it into the left chest pocket, seals the flap, and ticks the box in ink.
+text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, then folds it into the left chest pocket, seals the flap, and ticks the box in ink.
 do morale A 3
 
 # --- Others ---------------------------------------------------------------------
