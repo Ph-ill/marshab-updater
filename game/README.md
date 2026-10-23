@@ -1,0 +1,106 @@
+# The Long Voyage: game core
+
+This is the hardware-independent core of the game that runs on the seven Pico W Starships.
+The same Python runs on CPython 3 (PC simulator and tests) and on MicroPython 1.29 (the boards).
+It uses integer maths only, fixed-size bytearrays, and has no dependency on Wi-Fi or BLE.
+The design Page is the spec; this folder is the first build of it.
+
+```
+lv/          the core (this is what goes on the Pico)
+  prng.py      xorshift32 + per-day seed from the voyage key
+  record.py    13-byte signed choice record
+  chlog.py     choice log: set-union merge, effective-day index, ballots
+  ops.py       opcodes shared by the compiler, engine and renderers
+  pack.py      loads build/pack.bin (logic only, no text)
+  state.py     ship state + canonical dump/digest (snapshots)
+  engine.py    the daily tick
+content/     story source: fleet.lv, system.json, cards/*.lv
+tools/lvc.py compiler + validator (CPython only) -> build/pack.bin, text.json(.gz)
+sim/         PC season simulator, Python renderer, sample output in sim/out/
+web/render.js  phone-side renderer (the Pico never builds sentences)
+tests/       unit tests, MicroPython replay check, JS-vs-Python renderer check
+bench/coex-test/  Wi-Fi + BLE coexistence bench firmware (as published in 0.0.1-coex)
+```
+
+## Run it
+
+```bash
+sh game/tests/run.sh                                  # everything below, in order
+python3 game/tools/lvc.py                             # compile + validate the pack
+python3 game/sim/season.py                            # 42-day season, narrative, stats, determinism
+python3 game/sim/season.py --seasons 300              # balance stats over many voyage keys
+MICROPYTHON=/path/to/micropython game/tests/run.sh    # also replays the season under MicroPython
+```
+
+The `game/` folder is not part of the updater image. The Dockerfile copies only the web app and `firmware/`.
+
+## How the pieces fit
+
+The story is a pure function: **story = f(pack, voyage key, choice log)**.
+
+* **Choice log.** Every player choice becomes a 13-byte record:
+  `kind<<4|schema, ship<<4|delay, seq u16 LE, authored day, a, b, c, d, HMAC-SHA256 tag[:4]`.
+  * Records merge as a set union keyed by `(day, ship, kind, sub)`. `sub` is the card for votes and dilemmas, so one ship can answer two open items on the same day.
+  * When two records share a key, the higher seq wins; on equal seq, the larger bytes win. Order and duplicates therefore never matter.
+  * Records with an unknown (newer) schema are kept and relayed, but never interpreted.
+* **Effective day.** A record takes effect on `authored day + delay`. The delay is 1 normally, or 3 if the author was out of range on both that day and the day before. Late records are normal: a ship that hears one for a day it has already simulated reloads its last weekly snapshot (299 B) and replays forward.
+* **Votes and dilemmas.** These close at a fixed day and resolve with whoever voted. Nothing waits for anyone:
+  * No ballots: the crew's lean decides (the fleet's summed trait on the card's axis).
+  * Ties: the lean breaks the tie.
+  * Private dilemmas: if the owner didn't answer, the astronaut picks in character.
+  * Rescues: one tap from anyone is enough, otherwise a default applies.
+* **Inactive astronauts act on their own.** Each astronaut does what its player instructed today (gift / advice / task / rest). If there was no instruction, it picks something from its traits. A player who never opens the page still gets a crew member with a story.
+* **Daily tick order.** Each day runs these steps in order:
+  1. Records in effect today.
+  2. Close the decisions that are due.
+  3. Each astronaut acts.
+  4. Wandering between ships.
+  5. Consumption.
+  6. Due callbacks.
+  7. One event (55%).
+  8. A fleet decision (50%, if none is open).
+  9. A private dilemma (35%; max 2 per player per season, each card once per player).
+  10. Two beats (60% each).
+  11. On day 42, the first ending whose conditions pass.
+* **Story output.** The output is 8-byte entries `[day, code, card, a, b, c, d, e]`. The phone renders them with `text.json`. Each day's entries are folded into an 8-byte hash chain in the state, so snapshots don't grow over the season.
+
+## Results (build 0.1.0, 15 sample cards)
+
+**Determinism.** The reference season authors 169 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 7 independent ships in 4 ways:
+* instant;
+* gossip (0-2 days of lag);
+* reverse-order with 20% duplicates;
+* bursty, with one ship's links down every 5 days.
+
+Every ship ends on the reference digest `5cca1692bc128b4c` in every scenario. The deepest replay rewrote 12 days.
+
+**MicroPython.** `tests/mp_check.py` runs under a v1.29.0 unix-port build (both 64-bit and 32-bit `-m32`, the same word size as the RP2040). It replays the log merged in authored and reversed order. All 42 per-day digests match CPython, and the final digest is `5cca1692bc128b4c`.
+
+**Size and RAM** (32-bit MicroPython, `gc.mem_alloc`):
+
+| | 15 cards (measured) | ~110 cards |
+|---|---|---|
+| pack.bin | 575 B (≈33 B/card) | ≈3.7 KB |
+| pack in RAM | 2.4 KB | 13.8 KB (measured on a 110-card synthetic pack) |
+| text.json / .gz (phone) | 4.2 KB / 2.0 KB | ≈20 KB / ≈9-10 KB (estimate, real prose) |
+| core code in RAM | 19 KB as .mpy, 20.6 KB from .py | same; ≈0 if frozen into the firmware |
+| choice log | 3.9-4.9 KB for 169 records (≈23-29 B/record) | ≈10 KB for 7 active players; ≈25 KB worst case |
+| state + engine | ≈1.1 KB, snapshot 299 B | same |
+| whole check, peak | runs in a 56 KB heap (.mpy) | ≈50-60 KB of the 157-168 KB free with coex running |
+
+**Tick time** (x86 unix port, 32-bit): the 15-card pack averages 0.16 ms/tick (worst 0.28 ms); the 110-card pack averages 1.3 ms (worst 2.9 ms). A record merge with its HMAC check takes about 15 µs.
+
+*Pico estimate* (×30-60 for a 133 MHz M0+, not yet measured on a board):
+* About 40-80 ms per tick (worst about 0.1-0.2 s) with 110 cards.
+* A 12-day late-record replay takes about 0.5-1 s. That is fine as a background job between radio windows.
+* A record merge takes about 0.5-1 ms.
+
+## Design questions raised by the build
+
+1. **Out-of-range votes can miss the close.** A ballot counts if it was authored while the vote was open and takes effect by close. A voter on delay 3 who votes on the last day misses it. Options: accept it, or count a ballot by authored day and let a late close re-resolve the vote by replay. Replay already makes the second option possible.
+2. **The merge key includes `sub`.** The Page says `(ship, day, kind)`. With two decisions open, a ship needs two VOTE records on one day, so the key is `(day, ship, kind, sub)`.
+3. **The "a late signal changed this" marker is ship-local.** A replay can rewrite up to about 12 days of a story the phone has already shown. The core is deterministic, but the page needs a policy: show a "the log was updated" note, or only show days older than N as final.
+4. **32-bit PRNG on the RP2040.** xorshift32 values exceed MicroPython's 31-bit small ints, so some steps allocate bigints. This works and matches on the 32-bit build. If tick time on the board is tight, split the state into two 16-bit halves.
+5. **The crew roster in `content/fleet.lv` is a placeholder.** It needs real names, ships and quirks (one per teammate).
+6. **The sample content is thin on purpose.** The validator warns that `stash_shared` and `stash_exposed` are set but never read; they are hooks for later cards. With one decision card, every season gets the same vote.
+7. **The weekly snapshot cadence is a guess.** Snapshots take 299 B each, so daily snapshots on flash would make replays almost free.
