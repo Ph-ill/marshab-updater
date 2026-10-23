@@ -384,12 +384,16 @@ ending, and any role test on the fallback.
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 18.7% (1000: 18.2%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 20.3% (1000: 17.1%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 14.0% (1000: 15.5%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 14.7% (1000: 17.6%) |
-| 5 | *Sit With It* (`end_friend`) | answered, clear air | 16.3% (1000: 16.8%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 16.0% (1000: 14.8%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 22.0% (1000: 22.7%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 20.7% (1000: 20.8%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 22.7% (1000: 22.7%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 20.3% (1000: 18.9%) |
+| 5 | *Sit With It* (`end_friend`) | answered, clear air | 5.7% (1000: 5.9%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 8.7% (1000: 9.0%) |
+
+Round 19: the clear-air pair needs a season with no dust report, so
+`dust_report` is weight 1. They are the rarer endings by design now (each
+still at least 5%, the test floor is 15/300).
 
 ## Epilogue
 
@@ -879,6 +883,10 @@ days 182–186). Cheaper fallback: "LOG PAGE NN" with no day range. Same change 
 `tests/render_check.mjs` keeps matching. Keep "FLIGHT DAY" in the save/codes
 UI only if it's an internal index.
 
+*Round 19:* built in `sim/render.py` (`page_heading`) and mirrored in
+`tests/render_check.mjs`; the sim reader and narrative now print it. The
+`web/app.html` "Flight day" / FD labels are still the web owner's.
+
 ## Round 16 notes
 
 - **Concealment.** `m_checked`/`_g` drop the scar: "nothing on file near that
@@ -1074,6 +1082,49 @@ staging.
   seed 166 days 5 and 21). Fix in both `sim/render.py` and `web/render.js`
   together (render_check compares them): rotate by the count of folds printed so
   far instead of the day. A `dec_close_1` singular line is no longer needed.
+
+## Round 19 notes
+
+Blind round 19 (hunter, editor, engineer). Aim: a readable twist on days
+40–41, WHO held to day 38, endings 6/3/5/2, continuity and page density,
+engineering wording, page headings, character and grimdark, quirks.
+
+- **Days 40–41.** New `a_patch` (day 40) carries the patch facts in prose
+  first and one short caps line ("ON HELLO, WAKE ALL"); `a_report` follows it
+  and ends on a plain sentence with no caps run (tested: order, no caps run,
+  "ANSWER INSIDE ONE TICK", "sent it up twice", "neither upload was ever
+  acknowledged", "all late" in `a_log`). Day 41 is a safety page only.
+- **WHO.** The hopper is ruled out on day 37, not earlier; the theory cards no
+  longer say "Mars time" or "strobe"; the source is fair from the plants but
+  not named before day 38 (tested).
+- **Endings.** Slots 6, 3, 5 and 2 rewritten as scenes with one cost each, the
+  backup site named consistently; `l_manifest`, `e_entry_hold`, `a_descent_hold`
+  and `a_recall_*` agree with them. Clear-air weights: see the endings table.
+- **Continuity.** No garden line during rationing; the tanker campaign, the
+  birthday, the halfway page (`dec_halfway` day 24 only), `l_reboot` by day 5,
+  doses in millisieverts, `l_transfer` and `l_departure` state the page cadence
+  ("one page for every five days"). All tested in `TestRound19`.
+- **Crowding.** Seasons with a page of 8+ entries: 172/300 (round 18) to
+  122/300 after decision windows moved (`dec_trim` 15–23, `dec_water` 14–21,
+  `dec_science` 18–23, `l_stash`/`dil_stash` day 10, `valve_later` 26–33) and
+  low-value filler retired: `photo_stamp`, `idle_watch2`, `hb_watch`, `hb_card`,
+  `hb_leaf`, `beat_gym`, `beat_cards`, `w_comet`, `w_sun_small`, `galley_pump`,
+  `earth_dot`, `hatch_sun`. Test cap: under 135/300.
+- **Engineering.** FDIR, watchdog and entry-attitude wording per the engineer
+  (thrusters, not wheels; the watchdog resets, it doesn't decide).
+- **Grimdark.** `g_count` (the medical kit's "contingency, crew, 1") and
+  `storm_shelter2` (next-of-kin forms re-signed "for currency" while the cards
+  are dealt). Costs land on objects and forms (STYLE "Tone").
+- **Quirks.** `habit_beat` is replaced by `quirk_1`..`quirk_3` (`each habit N`,
+  days 2–6, 23–29, 35–39). Each roster line holds three habits from the
+  player's own notes; about 2.4 touches per crewmate per season (tested 2–4),
+  and each line renders only for its owner (tested). Diego's lines are his
+  cats and design work only.
+- **Headings.** `LOG PAGE NN · DAY n` (pages 1–6), `· DAYS a–b` after.
+- **Declined.** Editor's light-time rewrite (the user keeps "five
+  light-minutes"); the optional galley-chime echo and the day-39 hook move.
+- **Hand-offs.** Fold-line repeats (`pool[day % 16]`, render side) and the web
+  page header / FD labels, as before.
 
 ## Replay: the mystery spine reads the same every season (note, not built)
 

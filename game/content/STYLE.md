@@ -74,6 +74,11 @@ players).
   hundred and twenty days back") so a numerate reader doesn't divide by
   pages. Until the web header shows the page convention (see the bible's web
   hand-off note), avoid "in N days" that lands inside one page.
+- **Page headings (round 19).** The log prints each page as `LOG PAGE NN · DAY n`
+  for pages 1–6 (one day each, Earth orbit) and `LOG PAGE NN · DAYS a–b` from
+  page 7, where a = 7 + 5·(NN − 7) and b = a + 4 (`sim/render.py`
+  `page_heading`, mirrored in `tests/render_check.mjs`). Write so a scene sits
+  inside its page's span; "by the next page" means about five days.
 
 ## Tone: thrilling first, deadpan second
 
@@ -86,6 +91,11 @@ players).
   is indifferent, the cost is real, and the paperwork goes on regardless. "The
   post-flight report runs 4,000 words on propellant margins and doesn't say
   what the trip cost."
+- Grim, round 19: let the cost land on an object, a form or a number, never on
+  a crewmate's body for a laugh. The shelter deals cards while next-of-kin
+  forms come up for re-signing; the medical kit has a line item called
+  "contingency, crew, 1". State it once, flatly, and move on: no adjectives,
+  no dwelling, and nothing uncanny before day 11.
 - Humor is dry and deadpan, like engineers talking: understatement, procedure,
   permanent marker, "concur".
 
@@ -225,7 +235,8 @@ after its `type` line:
   (`e_entry_*`), cast to whoever was drilled on taking the landing by hand (manual takeover, engine-out call, corridor correction; never "manual abort"), and each
   ending is a landing scene, not a summary. Every branch shows the event
   recorder (`a_log` when answered; the unanswered endings otherwise).
-- Voices belong to arcs, not people (casting is random). See STORY_BIBLE.md
+- Voices belong to arcs, not people (casting is random). The one exception is
+  the per-person quirk lines (see "The habit slot"). See STORY_BIBLE.md
   "Voices". Keep the register different per arc:
   - list: a talker; run-on sentences, lists inside lines ("Hi, it's me, ship's fine, I'm fine, the bread's improving, here's the list");
   - song: taciturn and musical; two-word lines, never explains;
@@ -233,7 +244,7 @@ after its `type` line:
   - letter: formal and procedural ("Item located."), except about the letter;
   - dose: blunt; argues with numbers, thanks grudgingly ("Fair.");
   - hail: timestamps and radio-terse ("No misses. Patient. Out.", "Booked again. Out.", "Counter noted. Out.");
-  - theory: visual; asks questions and draws them ("Who keeps a lighthouse on Mars time?" to the drawing);
+  - theory: visual; asks questions and draws them, without naming the source or its clock before day 38 (round 19: no "Mars time" or "strobe" in the theory cards);
   - every arc speaks at least once in its own register; never name the skill behind a line, and never make the line about a crewmate's competence (round 17).
   - roles outside the arcs keep a habit too (round 18): the pixel finder (`flash_who`) plots things and puts the pen down; the gust pilot (`abort_who`) flies it once in the sim first; the one who argued to wait (`wait_who`) logs it. Habits, never name-checks.
 - Humor lands on the situation, the object or the procedure, never on the
@@ -301,15 +312,32 @@ competence, kindness, the extra watch nobody asked for.
 - Button labels: 2 to 5 words.
 - Outcomes: 1 to 3 sentences. End on the image or the joke, not on a moral.
 
-## The habit slot
+## The habit slot (per-person quirks)
 
-`content/roster.lv` gives each astronaut a `habit "..."` line: one harmless,
-real quirk the player has sent in, written with `{A}` and no other slots. A card
-marked `each crew` is cloned once per astronaut (`id_1`..`id_7`, each bound to
-that astronaut only) with `{habit}` filled in. Never invent a habit for a real
-person: until one is supplied, the roster carries the neutral default ("keeps
-one small thing from home within reach of the console"). Keep `each crew` cards
-rare (the habit beat uses a shared flag so exactly one clone fires per voyage).
+`content/roster.lv` is the quirk table: each astronaut's line carries up to
+four `habit "..."` entries (escape inner quotes as `\"`), written with `{A}`
+and no other slots. Two card forms use them:
+
+- `each crew` clones a card once per astronaut (`id_1`..`id_N`, each bound to
+  that astronaut with a crew mask) and fills `{habit}` with the first habit.
+- `each habit N` (round 19) clones only for astronauts who have a real Nth
+  habit; the neutral placeholder or a missing entry makes no clone. The
+  quirk beats `quirk_1`..`quirk_3` (days 2–6, 23–29, 35–39, `once`, weight 14)
+  use this, so each crewmate gets about two to three quirk touches a season and
+  each line can only ever render for its owner (tested).
+
+Rules for quirk lines:
+
+- Only facts the player sent in. Never invent a hobby, a family member or a
+  view for a real person, and never touch politics, religion or anything a
+  crewmate didn't offer.
+- Affectionate, light, occasional and subtle: the quirk shows in what the
+  person does ("times the coffee to the galley playlist"), not a name-check of
+  the hobby, and the joke is never on them.
+- No pets, children or partners aboard: the people at home stay at home
+  (photos, mail, a drawing on the console).
+- Adding a crewmate means adding one roster line with three habits; the clones,
+  masks and tests follow automatically.
 
 ## Examples
 
