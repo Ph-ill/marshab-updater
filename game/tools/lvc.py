@@ -65,6 +65,7 @@ class Ctx:
         self.errors = []
         self.warnings = []
         self.crew = []       # roster lines, for `when tag`
+        self.mix = {}        # category -> card count (see check_mix)
 
     def flag(self, name, where, setting):
         if not ID_RE.match(name):
@@ -232,7 +233,7 @@ def parse_cards(path, ctx):
                     card = {"id": rest, "where": where, "type": None, "days": (1, SEASON_DAYS),
                             "weight": 10, "flags": 0, "cooldown": 0, "duration": 0, "nroles": 0,
                             "lean": None, "default": None, "conds": [], "effects": [],
-                            "options": [], "text": ""}
+                            "options": [], "text": "", "cat": None, "skill": False}
                     cards.append(card)
                     opt = None
                     continue
@@ -253,6 +254,12 @@ def parse_cards(path, ctx):
                     card["flags"] |= O.F_ONCE
                 elif word == "due":
                     card["flags"] |= O.F_DUE
+                elif word == "cat":
+                    t = rest.split()
+                    if not t or t[0] not in CATS or any(x != "skill" for x in t[1:]):
+                        raise PackError("cat is `cat <%s> [skill]`" % "|".join(CATS))
+                    card["cat"] = t[0]
+                    card["skill"] = "skill" in t[1:]
                 elif word == "hook":
                     card["flags"] |= O.F_HOOK
                 elif word == "cooldown":
@@ -395,6 +402,43 @@ CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re
 MAX_TEXT, MAX_LABEL = 300, 28
 
 
+# Content mix (STYLE.md, "Content mix"). Every card carries `cat <category>`; add
+# `skill` when the text leans on controls/mechanical flavor. Compile-time only: the
+# category never reaches the pack or text.json.
+CATS = ("repair", "wonder", "mystery", "human", "life", "mission", "arrival", "grim", "ending")
+MAX_REPAIR = 0.25   # hardware faults and fixes
+MAX_SKILL = 0.18    # roughly 1 card in 6 or fewer
+
+
+def check_mix(cards, ctx):
+    if not any(c["cat"] for c in cards):
+        return  # an uncategorized deck (e.g. a test fixture) is not judged
+    mix = dict((k, 0) for k in CATS)
+    mix["skill"] = 0
+    for c in cards:
+        if not c["cat"]:
+            ctx.warnings.append("style: %s %s has no `cat` line" % (c["where"], c["id"]))
+            continue
+        mix[c["cat"]] += 1
+        mix["skill"] += c["skill"]
+    n = len(cards)
+    ctx.mix = mix
+    if mix["repair"] > MAX_REPAIR * n:
+        ctx.warnings.append("style: mix: %d of %d cards are repair/fault (max %d%%)"
+                            % (mix["repair"], n, int(MAX_REPAIR * 100)))
+    if mix["skill"] > MAX_SKILL * n:
+        ctx.warnings.append("style: mix: %d of %d cards carry skill flavor (max %d%%)"
+                            % (mix["skill"], n, int(MAX_SKILL * 100)))
+
+
+def mix_line(ctx):
+    n = sum(v for k, v in ctx.mix.items() if k != "skill")
+    if not n:
+        return ""
+    return "mix: " + ", ".join("%s %d (%d%%)" % (k, v, round(100.0 * v / n))
+                               for k, v in ctx.mix.items() if v)
+
+
 def check_style(cards, fleet, ctx):
     names = [cr["name"] for cr in fleet["crew"]]
     for c in cards:
@@ -421,6 +465,7 @@ def check_style(cards, fleet, ctx):
 def validate(cards, ctx, fleet, system):
     check_pronouns(cards, system, ctx)
     check_style(cards, fleet, ctx)
+    check_mix(cards, ctx)
     ids = [c["id"] for c in cards]
     for c in cards:
         w = c["where"]
@@ -627,6 +672,8 @@ def main(argv):
     n = len(text["cards"])
     print("ok: %d cards, %d flags, %d vars; pack.bin %d B, text.json %d B, gzip %d B; pack id %s"
           % (n, len(ctx.flags), len(ctx.vars), len(pack), len(tj), len(tgz), text["pack"]))
+    if ctx.mix:
+        print(mix_line(ctx))
     if not check:
         os.makedirs(out, exist_ok=True)
         for name, data in (("pack.bin", pack), ("text.json", tj), ("text.json.gz", tgz)):
