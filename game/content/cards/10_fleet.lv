@@ -3,13 +3,14 @@
 card dec_signal
 type decision
 cat mystery
+clue
 days 11 18
 weight 10
 once
 duration 2
 roles A B
 lean curious open log
-text The high-gain antenna logs a weak carrier on an old deep-space frequency, coming and going every 11 seconds: some retired probe's beacon, probably. {A} wants to turn a dish and answer it. {B} points out that turning the dish costs propellant the fleet hasn't got to spare.
+text The high-gain antenna logs a weak carrier on a frequency the fleet stopped using years ago, coming and going every 11 seconds: some retired probe's beacon, probably. {A} wants to turn a dish and answer it. {B} points out that turning the dish costs propellant the fleet hasn't got to spare.
 option open | Answer it | {A} spends the propellant, and the whole fleet listens to static for an hour. Then the carrier changes pitch.
   set signal_answered
   mark t_signal
@@ -30,7 +31,7 @@ days 25 41
 roles A
 when flag signal_answered
 when since t_signal >= 14
-text At 03:12 the dish locks onto a reply: housekeeping telemetry from a Mars orbiter that went silent years ago, answering a hail nobody had sent it in a decade. {A} is the first one awake. Mission Control's reply comes 40 minutes later, in full: "say again??"
+text At 03:12 the dish locks onto a reply: a burst of housekeeping telemetry in a format nobody has used in years, answering a hail it shouldn't have been able to hear. {A} is the first one awake. Mission Control's reply comes 40 minutes later, in full: "say again??"
 do set signal_contact
 do trait A curious 4
 

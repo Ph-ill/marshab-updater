@@ -233,7 +233,7 @@ def parse_cards(path, ctx):
                     card = {"id": rest, "where": where, "type": None, "days": (1, SEASON_DAYS),
                             "weight": 10, "flags": 0, "cooldown": 0, "duration": 0, "nroles": 0,
                             "lean": None, "default": None, "conds": [], "effects": [],
-                            "options": [], "text": "", "cat": None, "skill": False}
+                            "options": [], "text": "", "cat": None, "skill": False, "clue": False}
                     cards.append(card)
                     opt = None
                     continue
@@ -260,6 +260,8 @@ def parse_cards(path, ctx):
                         raise PackError("cat is `cat <%s> [skill]`" % "|".join(CATS))
                     card["cat"] = t[0]
                     card["skill"] = "skill" in t[1:]
+                elif word == "clue":
+                    card["clue"] = True  # listed in text.json "reread" for the end screen
                 elif word == "hook":
                     card["flags"] |= O.F_HOOK
                 elif word == "cooldown":
@@ -671,6 +673,9 @@ def build(content_dir):
         "cards": [dict({"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]},
                        **({"h": 1} if c["flags"] & O.F_HOOK else {}))
                   for c in cards],
+        # Second read: card indices worth revisiting after the ending. The UI may list
+        # the flight days these fired (from the story log) without explaining them.
+        "reread": [i for i, c in enumerate(cards) if c["clue"]],
         "actions": system["actions"],
         "notes": system["notes"],
         "axis_words": system.get("axis_words", []),

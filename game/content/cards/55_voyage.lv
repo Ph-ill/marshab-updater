@@ -2,6 +2,30 @@
 # Arc, motifs and plants: content/STORY_BIBLE.md (spoilers). Voice: content/STYLE.md.
 
 # --- Leaving -------------------------------------------------------------------
+card l_reboot
+type beat
+cat life
+clue
+days 1 9
+weight 12
+once
+roles A B
+when same A B
+text The galley screen on {A}'s ship installs an update overnight and restarts at breakfast: the cabin lights blink once for the self-test, then the logo, then the chime. Eleven seconds. {B} times it twice to be sure. Within a week the whole ship hums the chime.
+do bond A B 3
+
+card l_manifest
+type beat
+cat life
+clue
+days 2 8
+weight 12
+once
+roles A B
+when same A B
+text {A} reads the arrival manifest aloud over breakfast, the way some people read horoscopes: habitat frames on Cargo 1, water on Cargo 3. Cargo 2 gets one line: "lost on landing, written off". {B} asks what was on it. Spares, mostly. And water.
+do trait A curious 1
+
 card p_live_call
 type beat
 cat human
@@ -215,7 +239,7 @@ once
 roles A
 when fired dil_stash
 when cond A ok
-text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" {A} is, out loud, to an empty locker.
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list. Around it, in the same Sharpie hand: "Still thanking me?" Beside it, the little ship again, with its 2. {A} is, out loud, to an empty locker.
 do res spares 1
 do morale A 5
 

@@ -5,13 +5,14 @@
 card dil_stash
 type dilemma
 cat human
+clue
 days 3 30
 weight 8
 duration 3
 roles A
 when cond A ok
 lean warm share keep
-text Behind a stowage panel, {A} finds three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie.
+text Behind a stowage panel, {A} finds three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a ship with a 2 on its side.
 option keep | Keep them quiet | {A} thanks them silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash

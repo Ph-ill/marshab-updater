@@ -20,13 +20,14 @@ text At 23:40 the dish on {A}'s ship logs a burst on the emergency band. The bea
 card r_band
 type event
 cat mystery
+clue
 due
 once
 days 26 42
 roles A
 when fired h_band
 when is A hook_who
-text {A} decodes it by breakfast. It's the safe-mode beacon of a Mars lander that went quiet years ago, still asking for instructions nobody sent. {A} logs its position and its last words for whoever lands next.
+text {A} decodes it by breakfast: a lander's safe-mode beacon, asking for instructions nobody sent. The header format is old. {A} matches it to a science lander that went quiet years ago, logs it, and is almost sure.
 do trait A curious 3
 do morale A 4
 
@@ -260,12 +261,13 @@ text 23:58. {A}'s ship drops off the fleet net in the middle of a sentence. No b
 card r_dark
 type event
 cat mystery
+clue
 due
 once
 days 28 42
 roles A
 when fired h_dark
 when is A hook_who
-text {A}'s voice came back at 05:40, steady. The main antenna had slewed away from Earth on a command from a file with a valid signature that nobody remembers uploading. Mission Control says it is looking into it. It has said that before.
+text {A}'s voice came back at 05:40, steady. The main antenna had slewed toward Mars on a command with a valid fleet signature, sent from no ship in the fleet. Mission Control says it is looking into it. It has said that before.
 do trait A brave 3
 do morale A -2
