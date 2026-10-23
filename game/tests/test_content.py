@@ -376,7 +376,9 @@ class TestFairCasting(unittest.TestCase):
         window = {ids.index("a_window_hail"), ids.index("a_window_quiet")}
         opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
         thread_beats = {ids.index(x) for x in ("c_letter", "c_dose", "c_list", "c_song", "c_theory", "c_hail")}
-        entry = {ids.index(x) for x in ("e_entry_hold", "e_entry_wait", "e_entry_clear")}
+        entry = {ids.index(x) for x in ("e_entry_hold", "e_entry_hold_q", "e_entry_wait", "e_entry_clear")}
+        half = {ids.index(x) for x in ("signal_reply", "signal_echo")}
+        whole = {ids.index(x) for x in ("m_key", "r_dark")}
         ends = {}
         for i in range(300):
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"
@@ -400,6 +402,11 @@ class TestFairCasting(unittest.TestCase):
                                 for k in range(0, len(out), 8)), "season %d" % i)
             self.assertEqual(len(Renderer(text).epilogue(out)), 7, "season %d" % i)
             self.assertEqual(len(fired & entry), 1, "entry scene, season %d" % i)
+            # The signal arrives in order: half a frame first, then the whole frame.
+            hd = [out[k] for k in range(0, len(out), 8) if out[k + 1] == O.O_EVENT and out[k + 2] in half]
+            wd = [out[k] for k in range(0, len(out), 8) if out[k + 1] == O.O_EVENT and out[k + 2] in whole]
+            self.assertEqual((len(hd), len(wd)), (1, 1), "frames, season %d" % i)
+            self.assertLess(hd[0], wd[0], "half frame before whole frame, season %d" % i)
             self.assertIsNotNone(Renderer(text).coda(out), "season %d" % i)
             # Entry prep: no window crossings out after day 32 (a late rescue can still
             # carry someone across until 38), nobody crosses at all on
