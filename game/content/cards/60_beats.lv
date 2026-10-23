@@ -15,7 +15,7 @@ card beat_cards
 type beat
 days 2 42
 weight 8
-cooldown 8
+cooldown 12
 roles A B
 when same A B
 text {A} teaches {B} a card game from home. By the end of the shift {B} is winning, and the rules have been amended twice.
@@ -120,7 +120,7 @@ card idle_watch
 type beat
 days 4 42
 weight 10
-cooldown 6
+cooldown 10
 roles A
 when idle A >= 3
 when cond A ok
@@ -144,7 +144,7 @@ card idle_mentor
 type beat
 days 6 42
 weight 8
-cooldown 8
+cooldown 12
 roles A B
 when idle A >= 3
 when same A B

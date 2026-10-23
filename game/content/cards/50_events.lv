@@ -49,7 +49,7 @@ card scrubber_fault
 type event
 days 2 40
 weight 8
-cooldown 7
+cooldown 10
 roles A
 when res spares >= 1
 text The CO₂ scrubber on {A}'s ship throws its fourth fault this week. {A} fixes it, then labels it "temperamental" in permanent marker so the next shift knows.

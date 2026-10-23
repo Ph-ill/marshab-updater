@@ -40,7 +40,7 @@ card beat_watch
 type beat
 days 9 42
 weight 10
-cooldown 5
+cooldown 8
 roles A B
 when same A B
 when bond A B >= -20
@@ -50,8 +50,8 @@ do bond A B 6
 card beat_argue
 type beat
 days 2 42
-weight 8
-cooldown 6
+weight 5
+cooldown 16
 roles A B
 when trait A warm <= -10
 when same A B
@@ -81,7 +81,7 @@ card quiet_fixer
 type beat
 days 3 42
 weight 12
-cooldown 4
+cooldown 8
 roles A
 when idle A >= 3
 when cond A ok
@@ -93,9 +93,9 @@ card galley_pump
 type event
 days 1 42
 weight 6
-cooldown 8
+cooldown 11
 roles A
 when res spares >= 1
-text The galley pump fails for the third time this flight. {A} rebuilds it on the galley table and narrates the whole job like a nature documentary.
+text The galley pump fails again. It has a personality now, and not a good one. {A} rebuilds it on the galley table and narrates the whole job like a nature documentary.
 do res spares -1
 do morale A -2
