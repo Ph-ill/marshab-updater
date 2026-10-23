@@ -2,7 +2,8 @@
 
 This is the hardware-independent core of the game that runs on the eight Pico W Starships.
 The same Python runs on CPython 3 (PC simulator and tests) and on MicroPython 1.29 (the boards).
-It uses integer maths only, fixed-size bytearrays, and has no dependency on Wi-Fi or BLE.
+It uses integer maths only, fixed-size bytearrays, and has no dependency on Wi-Fi or BLE
+(the radio lives in lv/ble.py and board/, which the core never imports).
 The design Page is the spec; this folder is the first build of it.
 
 ```
@@ -14,11 +15,17 @@ lv/          the core (this is what goes on the Pico)
   pack.py      loads build/pack.bin (logic only, no text)
   state.py     ship state + canonical dump/digest (snapshots)
   engine.py    the daily tick
+  sync.py      ship-to-ship sync protocol (transport-free: adverts, bucket diff, sessions)
+  ble.py       the BLE transport for sync.py (MicroPython `bluetooth`)
+board/       Pico W firmware: main.py, lvship.py (the ship), lvwifi.py (hotspot), selftest.py
+docs/BENCH_TEST.md  flashing and testing 2-3 boards
+tools/board_build.sh  precompile (.mpy) + copy to a board in one command
 content/     story source: fleet.lv, system.json, cards/*.lv
 tools/lvc.py compiler + validator (CPython only) -> build/pack.bin, text.json(.gz), text.dev.json
 sim/         PC season simulator, Python renderer, sample output in sim/out/
 web/render.js  phone-side renderer (the Pico never builds sentences)
-tests/       unit tests, MicroPython replay check, JS-vs-Python renderer check
+tests/       unit tests, MicroPython replay check, JS-vs-Python renderer check,
+             BLE sync on a fake radio (tests/fakeble/bluetooth.py)
 bench/coex-test/  Wi-Fi + BLE coexistence bench firmware (as published in 0.0.2-coex)
 ```
 
@@ -108,9 +115,46 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
   11. On day 42, the first ending whose conditions pass.
 * **Story output.** The output is 8-byte entries `[day, code, card, a, b, c, d, e]`. The phone renders them with `text.json`. Each day's entries are folded into an 8-byte hash chain in the state, so snapshots don't grow over the season.
 
+## Ship-to-ship sync (BLE)
+
+Ships swap choice records directly over Bluetooth LE whenever two are in range; no
+server, no pairing. `lv/sync.py` is the protocol and knows nothing about radios;
+`lv/ble.py` carries it over MicroPython's `bluetooth`; the simulator's delivery model
+(sim/season.py) and `sim/link.py` (an in-memory link with faults) stand in for it in tests.
+
+* **Advert** (15 B of manufacturer data, company id 0xFFFF): `'LV'`, protocol, ship +
+  busy flag, day, a 2-byte fleet id (hash of the fleet key), record count and the log's
+  4-byte digest. A ship that hears the same digest does nothing; a different digest means
+  something to swap. Other fleets and other protocol versions are ignored (and counted).
+* **Session** (one GATT characteristic, write + notify, at a fixed handle so there's no
+  service discovery): HELLO carries 55 two-byte bucket hashes (9 authors x 6 eight-day
+  blocks + newer-schema records), so each side sends only the buckets that differ
+  (everything if the hashes agree but the digests don't). RECS messages carry 9 records,
+  chunked to the MTU; stop-and-wait with acks, a resend every 1.5 s, 6 s of silence
+  or 30 s in total ends it. Chunks may arrive in any order or twice. Records merge as each
+  message completes, so a cut link keeps what got through and the next meeting carries on.
+* **Who connects:** the lower ship id; the higher waits 45 s first, so two ships don't
+  dial each other. Failures back off (20 s doubling to 10 min, staggered by ship), so a
+  ship that is off, out of range, on old firmware or wedged costs a few connection
+  attempts and never blocks anyone. Peers unheard for 10 min are forgotten.
+* **Radio time:** 3 s scans every 12 s at a 30 ms window per 300 ms (about 2.5 % of air
+  time), advertising every second, to leave the shared radio to the Wi-Fi hotspot. All
+  overridable from `/data/ship.json` (`"ble": {...}`). The IRQ handler only queues.
+* **Heap:** 76 KB peak for a board (32-bit, `.mpy`) holding the whole 274-record season,
+  replaying the story, serving the status page and in the middle of a sync, under the
+  80 KB cap (`tests/mp_sync_heap.py`; the 64-bit port measures 110 KB). Precompile with
+  `tools/board_build.sh`: compiling engine.py on the board would need more than the cap.
+* **Tests:** `tests/test_sync.py` (protocol: faults, cuts, hash collisions, newer-schema
+  records, 8 ships meeting in random orders then replaying the reference season, inactive
+  ships), `tests/mp_sync.py` (lv/ble.py on a fake `bluetooth`, CPython and MicroPython
+  32/64-bit: loss, duplicates, reordering, MTU 23, mid-transfer disconnects, a relay
+  through a third ship, a ship powered off, an out-of-date and a wedged ship; then the
+  story from what arrived over the air matches the reference). What needs real boards is
+  in `docs/BENCH_TEST.md`.
+
 ## Results (build 0.1.0, 15 sample cards)
 
-*Current content pack (217 cards):* pack.bin 6,752 B, text.json 24,777 B gzipped (card ids are left out of the shipped file; `build/text.dev.json` keeps them for sim/ and the tests), peak MicroPython heap 71,104 B on the 64-bit unix port (51,984 B on a 32-bit build, like the Pico's), snapshot 743 B, final reference digest `651a9ce252fb4b8d` (authored and reversed merge order). The reference season authors 274 records from 8 simulated players (2 never play), 60 of them crewmate gifts; without the gift records the digest is `24751f12277fc052`, the content-voice figure, so gifts are the only difference. The choice log packs its records (one bytearray per 8-day shard, lv/chlog.py), which is what keeps the extra records under the 80 KB line. On a 32-bit build the whole check runs in a 92 KB heap from .py (80 KB from .mpy: compiling engine.py is the peak); the 64-bit port needs 136 KB from .py, 96 KB from .mpy. The deepest replay in the four delivery scenarios rewrites 12 days, and a ship cut off for a long stretch can need up to about 30. `python3 -m unittest discover -s tests` runs 164 tests (103 content, 23 core, 38 engagement). The figures below are the original 15-card measurements.
+*Current content pack (217 cards):* pack.bin 6,752 B, text.json 24,777 B gzipped (card ids are left out of the shipped file; `build/text.dev.json` keeps them for sim/ and the tests), peak MicroPython heap 71,104 B on the 64-bit unix port (51,984 B on a 32-bit build, like the Pico's), snapshot 743 B, final reference digest `651a9ce252fb4b8d` (authored and reversed merge order). The reference season authors 274 records from 8 simulated players (2 never play), 60 of them crewmate gifts; without the gift records the digest is `24751f12277fc052`, the content-voice figure, so gifts are the only difference. The choice log packs its records (one bytearray per 8-day shard, lv/chlog.py), which is what keeps the extra records under the 80 KB line. On a 32-bit build the whole check runs in a 92 KB heap from .py (80 KB from .mpy: compiling engine.py is the peak); the 64-bit port needs 136 KB from .py, 96 KB from .mpy. The deepest replay in the four delivery scenarios rewrites 12 days, and a ship cut off for a long stretch can need up to about 30. `python3 -m unittest discover -s tests` runs 177 tests (103 content, 23 core, 38 engagement, 13 sync). The figures below are the original 15-card measurements.
 
 **Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 8 independent ships in 4 ways:
 * instant;
