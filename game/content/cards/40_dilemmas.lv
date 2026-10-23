@@ -63,6 +63,17 @@ when is A ow_dose
 text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." {A} pins it beside the bunk, between the water tanks.
 do morale A 4
 
+card c_dose
+type beat
+cat human
+due
+once
+days 34 35
+roles A
+when is A ow_dose
+text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it, and runs the dose numbers to prove the point. This close to Mars the numbers prove the opposite: the tank buys almost nothing now. "Fine," {A} tells the ground. "Pump it."
+do trait A warm 1
+
 # --- Thread: the letter ---------------------------------------------------------
 card l_letter
 type event
@@ -121,6 +132,17 @@ when is A ow_letter
 text {A} has read the letter so often that the fold has worn through. {A} mends it along the crease and keeps it in the flight-suit pocket over the heart, which the checklist calls the "left chest pocket".
 do morale A 4
 
+card c_letter
+type beat
+cat human
+due
+once
+days 34 35
+roles A
+when is A ow_letter
+text In the restow for entry the letter isn't in the left chest pocket. {A} empties the locker, the sleeping bag, the bin of wipes, and goes very still. It's in the checklist binder, marking the page for entry, where {A} put it last week. "There you are," {A} says.
+do morale A 2
+
 card a_letter
 type beat
 cat arrival
@@ -129,7 +151,7 @@ once
 days 40 40
 roles A
 when is A ow_letter
-text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, so it has been heard in the right voice this close to Mars, then stows it and ticks the box.
+text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, then stows it and ticks the box. Somewhere below, something has been holding a message unread for two years.
 do morale A 3
 
 # --- Others ---------------------------------------------------------------------

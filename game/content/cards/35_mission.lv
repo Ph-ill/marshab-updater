@@ -110,6 +110,17 @@ when is A ow_theory
 text Mission Control runs the grey relay's last orbit forward for {A}: it comes round thirty-seven minutes later each morning and hides behind Mars for a few hours at a time. The ground team sends a drawing of a lighthouse. {A} tapes it beside the blue marker and sleeps through the night.
 do morale A 2
 
+card c_theory
+type beat
+cat human
+due
+once
+days 38 38
+roles A
+when is A ow_theory
+text {A} takes the lighthouse drawing down to make room for the entry checklist and stops with it half off the wall. A relay in orbit would pull the beat back and forth a little every orbit. This beat hasn't moved a millisecond in weeks. {A} writes in the corner, small: "Wrong lighthouse. Same keeper?"
+do trait A curious 2
+
 card m_flash1
 type event
 cat mystery
@@ -257,6 +268,7 @@ once
 days 39 39
 roles A
 when !is A ow_theory
+when !is A ow_hail
 text {A} times the old-channel carrier on the galley clock, the way you count between lightning and thunder. Everything about the fleet's distance from Mars has changed since the first night. The gap hasn't. {A} stops counting before the number means anything.
 
 # --- The payoff: fires on day 40 in every season ------------------------------------

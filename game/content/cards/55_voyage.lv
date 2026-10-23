@@ -107,6 +107,17 @@ text The delay has turned calls into letters. {A} records one for home and stops
 do morale A 2
 do trait A warm 2
 
+card p_packer_note
+type beat
+cat human
+due
+once
+days 16 17
+roles A
+when !is A ow_list
+text A voice note from the Starbase loading crew turns up in {A}'s data drop, forty seconds long, recorded on a forklift by the sound of it. The one with the Sharpie: "Eat the good rations first. The bad ones keep." {A} checks the locker. It's true.
+do morale A 2
+
 card g_news
 type event
 cat grim
@@ -119,6 +130,17 @@ text A message from home for {A}: a funeral, already over. One of the names on t
 do morale A -8
 do trait A warm 3
 
+card c_list
+type beat
+cat human
+due
+once
+days 35 36
+roles A
+when is A ow_list
+text {A} copies the list from the first call into the entry log, name by name, and reaches the end feeling it's short. It is: the person who held the phone up that night never made it onto the list, because they were holding the phone. {A} adds them at the top.
+do morale A 3
+
 card a_list
 type beat
 cat arrival
@@ -127,7 +149,7 @@ once
 days 42 42
 roles A
 when is A ow_list
-text {A} starts a message to every name on the list from the first call, and one more to the name that isn't there any more. It will land a few minutes after it's sent. {A} leaves the pauses out.
+text {A} writes to every name on the list from the first call, one more to the name that isn't there any more, and a last one to a loading bay at Starbase. Each will land ten minutes after it's sent. "No pauses this time," {A} says, and leaves them out.
 do morale A 3
 
 # --- Thread: the song ------------------------------------------------------------
@@ -139,9 +161,20 @@ once
 days 21 22
 roles A B
 when is A ow_song
-text On the night {B} finally asks about the four bars, {A} says the rest of the song belongs to someone at home and gets played when there's ground under it. {B} says that's a deal, and starts humming a made-up fifth bar on purpose.
+text On the night {B} finally asks about the four bars, {A} says the rest of the song belongs to someone at home and gets played when there's a planet under it again. {B} says that's a deal, and starts humming a made-up fifth bar on purpose.
 do bond A B 5
 do bond B A 3
+
+card c_song
+type beat
+cat human
+due
+once
+days 36 37
+roles A
+when is A ow_song
+text Alone, with the channel off, {A} plays past the four bars for the first time since Starbase and gets the fifth one wrong. Then wrong again, differently. {A} puts the guitar back in its bag. "Not yet," {A} tells the empty cabin. "Entry morning."
+do trait A warm 1
 
 card a_song
 type beat
@@ -151,7 +184,7 @@ once
 days 42 42
 roles A
 when is A ow_song
-text On the morning of entry {A} plays the song all the way through on the fleet channel, past the four bars, for the first time since Starbase. Six ships hear the fifth bar at last. It isn't what any of them guessed.
+text On the morning of entry, with a planet under the fleet again, {A} plays the song all the way through on the fleet channel, past the four bars, for the first time since Starbase. Six ships hear the fifth bar at last. It isn't what any of them guessed. "That's the one," {A} says.
 do morale A 5
 
 # --- Thread: the garden ------------------------------------------------------------
@@ -174,7 +207,7 @@ once
 days 18 19
 roles A
 when is A ow_garden
-text Four of the six pods in the garden tray have gone soft and grey. {A} lifts them out with tweezers and is quiet for a while. Then {A} refills the syringe for the other two.
+text Four of the six pods have gone soft and grey: drowned. The schedule came from a book written for windowsills, where water drains away. Up here it just sits. {A} lifts them out with tweezers. "My fault," {A} tells the tray. "Let's go again." Half a dose, now, for the other two.
 do morale A -3
 do trait A warm 2
 
@@ -203,16 +236,28 @@ when var garden >= 3
 text {A} opens the fleet channel and turns the camera on the tray. In the last pod, a pale hook of a shoot has split the seed coat and turned, against no gravity at all, toward the lamp. Six ships go quiet to look.
 do morale A 6
 
+card c_garden
+type beat
+cat human
+due
+once
+days 37 38
+roles A
+when is A ow_garden
+when fired p_garden_sprout
+text The entry checklist says loose items go in the locker. {A} reads it, puts the seedling's tray in the locker, and takes it straight back out. Two loops of tape later it is strapped beside the seat. "It rides with me," {A} tells the flight surgeon, who has stopped arguing.
+do morale A 3
+
 card p_garden_none
 type beat
 cat grim
 due
 once
-days 38 38
+days 37 37
 roles A
 when is A ow_garden
 when !fired p_garden_sprout
-text Rationed water was one squeeze too many: the last pod never came up. {A} keeps watering the tray, two millilitres, on schedule, and on the last night before entry packs the dry seed in a coat pocket. Seeds are patient. So, it turns out, is {A}.
+text Rationed water was one squeeze too many: the last pod never came up. {A} keeps watering the tray, two millilitres, on schedule, and packs the dry seed in a coat pocket for the ground. Seeds are patient. So, it turns out, is {A}.
 do trait A warm 2
 
 # --- The middle dark ------------------------------------------------------------
@@ -282,7 +327,7 @@ days 10 39
 weight 5
 roles A
 when cond A ok
-text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone, and {A} keeps it to themself.
+text {A} wakes from a dream of rain on a car roof and lies still, trying to keep the sound. The fans hum. The ship ticks as it turns into the sun. By breakfast the rain has gone, and {A} doesn't mention it to anyone.
 do morale A -2
 do trait A warm 2
 
@@ -423,7 +468,7 @@ once
 days 41 41
 roles A B
 when is A ow_dose
-text The last night before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. Neither of them sleeps much. Both pretend to, so the other one will.
+text The last night before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. Neither of them sleeps much.
 do bond A B 6
 
 # --- Arrival day: what the fleet chose, and what it cost ------------------------------

@@ -22,7 +22,6 @@ do mark t_carrier
 card m_alias
 type event
 cat mystery
-clue
 due
 once
 days 18 19
@@ -79,6 +78,17 @@ text {A} pulls the old-channel carrier out of the receiver logs again, unasked. 
 do morale A -3
 
 # Injury and rescue: needs supplies from another ship.
+card c_hail
+type beat
+cat human
+due
+once
+days 39 39
+roles A
+when is A ow_hail
+text {A} works out how many times the old-channel carrier has knocked since the fleet first heard it: about a hundred and fifty thousand, and never once late. "Somebody is very patient," {A} tells the fleet channel. Nobody laughs, quite.
+do trait A curious 1
+
 card crisis_eva
 type event
 cat grim
