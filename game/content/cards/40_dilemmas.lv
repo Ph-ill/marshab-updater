@@ -194,8 +194,9 @@ duration 3
 roles A
 when cond A ok
 lean brave go wait
-text An external camera on {A}'s ship has iced over, and its lens heater can't shift it. Clearing it means an unscheduled EVA, alone. Nobody would blame {A} for waiting for the planned one.
-option go | Go out now | {A} clears the lens in twenty minutes with the ground watching on a delay and, before coming in, takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
+text An external camera on {A}'s ship has iced over, and its lens heater can't shift it. Clearing it now means asking the next ship to close up for an unscheduled window, so someone is suited on the other end of the line. Nobody would blame {A} for waiting for the planned EVA.
+option go | Close up and go out | The next ship closes up, its astronaut suited at the hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
+  res fuel -1
   trait A brave 3
   morale A 4
 option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which is exactly what the risk assessment called acceptable. {A} has read the risk assessment, all of it, including the appendix.

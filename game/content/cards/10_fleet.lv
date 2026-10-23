@@ -88,7 +88,7 @@ weight 6
 roles A
 when cond A ok
 when kit_elsewhere A
-text A micrometeoroid hits the hull during {A}'s EVA, a solo one with the ground watching on a delay, close enough to feel through the boots. {A} secures every tool, works back along the tether hand over hand, and comes inside with a wrist that won't bend.
+text A micrometeoroid hits the hull during {A}'s scheduled EVA, close enough to feel through the boots, with a suited crewmate watching from the next ship's hatch. {A} secures every tool, works back along the tether hand over hand, and comes inside with a wrist that won't bend.
 do cond A injured
 do who eva_who A
 do morale A -10

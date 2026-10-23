@@ -30,7 +30,7 @@ do var storms 1
 card storm_dose
 type event
 cat grim
-days 12 39
+days 9 14
 weight 6
 once
 roles A
@@ -93,7 +93,7 @@ weight 6
 once
 roles A
 when cond A ok
-text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} rolls the ship a few degrees to put the tanks in the ship's own shadow, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
+text Methane boil-off on {A}'s ship runs higher than predicted through a long sunward stretch. {A} pitches the nose a few degrees toward the Sun so the tanks sit end-on, and boil-off drops by a third. Mission Control asks how. {A} sends a sketch.
 do res fuel 2
 do morale A 2
 

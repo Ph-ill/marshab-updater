@@ -11,8 +11,8 @@ once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. That means closing to portrait distance, tens of metres apart, and propellant to get there and back. The request uses the word "iconic" four times.
-option fly | Fly the formation | Seven ships close to tens of metres for twelve minutes. {A} takes the shot from a camera on {A}'s ship. Nobody breathes until the ships are apart again.
+text Public affairs wants a fleet portrait: seven ships in one frame, with Earth behind them. That means closing to a careful hundred metres apart, and propellant to get there and back. The request uses the word "iconic" four times.
+option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes the shot from their own hull camera. Nobody breathes until the ships are apart again.
   set photo_taken
   res fuel -2
   morale A 4

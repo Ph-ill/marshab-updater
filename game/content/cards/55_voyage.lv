@@ -247,7 +247,7 @@ weight 6
 once
 roles A
 when cond A ok
-text The magnetometer on {A}'s ship twitches for six hours: the fleet is crossing the ion tail of a comet that rounded the Sun before anyone aboard was born. There's nothing to see. {A} sits by the window regardless, with the trace scrolling on a tablet.
+text The magnetometer on {A}'s ship twitches for six hours: the fleet is crossing the ion tail of a comet that last came this way before anyone aboard was born. There's nothing to see. {A} sits by the window anyway, with the trace scrolling on a tablet.
 do trait A curious 3
 do morale A 2
 

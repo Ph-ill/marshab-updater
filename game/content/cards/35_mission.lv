@@ -45,13 +45,13 @@ once
 duration 2
 roles A B
 lean curious record save
-text A gamma-ray burst goes off somewhere past the galaxy. Timed against the detectors near Earth, the fleet's sighting could pin the source better than ever before, but only if the ships hold attitude through the next window, and that costs propellant. {A} wants the data. {B} wants the propellant.
-option record | Hold for the data | Seven ships hold still for twenty minutes. Timed against Earth's detectors, a minute or two of light away, the burst's source shrinks from a smear of sky to a point. {A} reads the confirmation and lets out a breath nobody else hears.
-  res fuel -2
+text A gamma-ray burst goes off somewhere past the galaxy, and the fleet's dose monitors catch it. Timed against detectors near Earth, the full-rate data could pin the source, but sending it home costs a day of the dish, and every letter waits. {A} wants the data sent. {B} wants the letters.
+option record | Send the data | The fleet sends it. Timed against Earth's detectors, a minute or two of light away, the burst's source shrinks from a smear of sky to a point. {A} reads the confirmation and lets out a breath nobody else hears.
+  morale B -2
   trait A curious 3
   morale A 3
-option save | Keep the propellant | The fleet passes. Ground telescopes get the burst anyway, less sharply. {B} logs the propellant saved, and doesn't pretend it was an easy trade.
-  trait B brave 2
+option save | Letters first | The letters go first. Ground telescopes get the burst anyway, less sharply. {B} reads every one of them, and doesn't pretend it was an easy trade.
+  trait B warm 2
 
 # --- The mystery chain (fixed days; one beat a day from 35 to 41) ------------------
 card m_ripple
@@ -63,7 +63,7 @@ weight 14
 once
 roles A
 when cond A ok
-text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A ground loop from the coolant pump, most likely: it's on the same bus. {A} notes it in the margin and moves on to the propellant tables.
+text {A} cleans up the receiver's noise floor for the weekly report and finds a faint ripple in it, at about nine hundredths of a hertz. A control loop hunting somewhere, most likely the coolant pump's: it's on the same bus. {A} notes it in the margin and moves on to the propellant tables.
 do trait A curious 1
 
 card m_dropout
@@ -196,7 +196,7 @@ roles A
 when flag flash_left
 when since t_flash >= 5
 when is A flash_who
-text An email reaches {A} from someone on the orbiter team who tasked the fast sequence on a lunch break: forty frames of dark ground, the pixel lighting, going out, lighting again, never moving against the rocks. Whatever it is, it isn't in orbit. The email ends: "You didn't hear this from me."
+text An email reaches {A} from someone on the orbiter team who slipped the fast sequence into a gap in the plan: forty frames of dark ground, the pixel lighting, going out, lighting again, never moving against the rocks. Whatever it is, it isn't in orbit. The email ends: "You didn't hear this from me."
 do set flash_ground
 do trait A curious 3
 
