@@ -110,9 +110,30 @@ text By 02:30 the ship was steady again.
 option manual | Hand control | {A} took attitude into manual, just for a minute, and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
   trait A brave 2
   morale A 4
+  set valve_out
+  who valve_who A
+  mark t_valve
+  res fuel -1
 option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night is taped up with the leak circled in red.
   trait A curious 2
   morale A 4
+  set valve_out
+  who valve_who A
+  mark t_valve
+  res fuel -1
+
+card valve_later
+type event
+cat repair
+due
+once
+days 24 33
+roles A
+when flag valve_out
+when is A valve_who
+when since t_valve >= 6
+text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The flight software has a new line in it with {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
+do morale A -1
 
 # --- 5. Alarm flood -----------------------------------------------------------
 card h_flood

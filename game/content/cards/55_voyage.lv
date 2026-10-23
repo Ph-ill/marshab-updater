@@ -500,7 +500,6 @@ once
 days 42 42
 roles A
 when flag photo_taken
-when !fired dec_name
 text {A} stows the tablet with the fleet portrait on it: seven ships, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have today. Worth it, {A} decides, and means it.
 
 card a_recall_wrist
@@ -514,6 +513,17 @@ when fired crisis_eva
 when is A eva_who
 text {A} straps in for entry with the wrist that wouldn't bend, mostly bending now, and doesn't mention the "mostly" to the flight surgeon.
 
+card a_recall_valve
+type event
+cat arrival
+due
+once
+days 42 42
+roles A
+when flag valve_out
+when is A valve_who
+text Entry on {A}'s ship runs one thruster short. The valve isolated that night has stayed shut ever since, and the entry sequence was rewritten around it weeks ago. {A} reads the workaround once more and initials it.
+
 card a_recall_stash
 type event
 cat arrival
@@ -525,6 +535,19 @@ when flag stash_shared
 when !fired a_recall_wrist
 when is A stash_who
 text On the morning of entry {A} unpins the empty ration bag from the galley wall and folds it into a pocket, Sharpie side out.
+
+card a_recall_shared
+type event
+cat arrival
+due
+once
+days 42 42
+roles A B
+when flag stash_exposed
+when is A stash_who
+when !fired a_recall_wrist
+text Before strapping in, {A} sends {B} the last pack from the locker on the morning transfer, with a note on the bag in borrowed handwriting: "You'll thank me."
+do bond B A 3
 
 card a_recall_hail
 type event

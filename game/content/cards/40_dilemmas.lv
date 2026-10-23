@@ -203,8 +203,20 @@ option ticket | Open a ticket | Earth wants photos, measurements, and a part num
   morale A -1
 option zip | Zip-tie it | {A} lashes the rack in a pattern no design review would pass, and it takes every load the ship can throw at it. The anomaly report calls it "interim". It is not interim.
   set zip_fix
+  who zip_who A
   res spares -1
   morale A 3
+
+card zip_back
+type beat
+cat repair
+due
+once
+days 34 39
+roles A
+when flag zip_fix
+when is A zip_who
+text The stowage rack on {A}'s ship has carried its zip ties through every burn since. Before entry {A} checks them all, adds one more for luck, and updates the anomaly report: "still interim".
 
 card dil_eva_cam
 type dilemma

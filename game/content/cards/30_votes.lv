@@ -31,6 +31,18 @@ when cond A ok
 text The fleet portrait is on the front page of every news site on Earth, which from out here means a few minutes ago. {A} zooms in and finds their own ship: a small bright dot, third from the left.
 do morale A 5
 
+card photo_stamp
+type beat
+cat human
+due
+once
+days 33 36
+roles A
+when flag photo_declined
+when cond A ok
+text Public affairs, still a little sore about the portrait, asks for a sketch for a landing stamp instead. {A} draws one ship and a great deal of dark. It is approved in an afternoon, and {A} gets a sheet of them by email.
+do morale A 3
+
 # --- Water recovery -------------------------------------------------------
 card dec_water
 type decision
@@ -45,6 +57,7 @@ when cond A ok
 text Water recovery on {A}'s ship is down to 93 percent from 98. {A} wants to strip the processor now. {B} wants to run it degraded and fix it when things are calmer.
 option strip | Strip it now | The processor spends nine hours in pieces on the deck. {A} finds a clogged filter and a check valve installed backwards at the factory. Recovery is back to 98 percent by dinner.
   set water_fixed
+  who water_fix_who A
   res spares -1
   trait A curious 3
 option degrade | Run it degraded | The fleet goes on water rationing. Nobody complains out loud. {A} logs the recovery rate every hour, which is its own kind of complaint.
@@ -69,6 +82,18 @@ do bond A B 8
 do res spares -1
 do clr water_rationed
 
+card water_good
+type beat
+cat repair
+due
+once
+days 23 30
+roles A
+when flag water_fixed
+when is A water_fix_who
+text The water processor on {A}'s ship passes its thousandth hour since the strip-down, still at 98 percent. {A} opens the panel just to look at the check valve, facing the right way now, and closes it again.
+do morale A 2
+
 # --- Clocks -----------------------------------------------------------------
 card dec_clock
 type decision
@@ -84,6 +109,26 @@ option shift | Change the clocks | The fleet shifts its clocks. Everyone is tire
   set clock_shifted
 option keep | Keep fleet time | The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza as evidence.
   set clock_kept
+
+card clock_shift_back
+type beat
+cat life
+due
+once
+days 31 34
+roles A
+when flag clock_shifted
+text Since the clock change, the ground's morning is the fleet's morning. {A} asks a question at nine and has the answer by lunch, from someone who has also just had coffee. It still feels like cheating.
+
+card clock_keep_back
+type beat
+cat life
+due
+once
+days 31 34
+roles A
+when flag clock_kept
+text Since the fleet kept its own clock, the ground's night shift has become the fleet's day shift. {A} knows them all by name now, and they know {A}'s coffee order, which is no use to anyone across this much space.
 
 # --- Course correction -------------------------------------------------------
 card dec_trim
@@ -108,13 +153,24 @@ type event
 cat mission
 due
 once
-days 29 39
+days 29 33
 roles A
-when fired dec_trim
+when flag trim_early
 when cond A ok
-when trait A curious >= -10
-text The latest navigation fix comes in: the fleet sits within a few kilometres of the centre of the arrival corridor. {A} reads the number twice, then pins it up beside Earth's last decent photo.
+text The latest navigation fix comes in: the fleet sits within a few kilometres of the centre of the arrival corridor, still riding that small early burn. {A} tapes the number up beside Earth's last decent photo.
 do morale A 3
+
+card trim_callback_late
+type event
+cat mission
+due
+once
+days 29 33
+roles A
+when flag trim_late
+when cond A ok
+text The latest navigation fix comes in: dead centre of the arrival corridor. The checked burn cost more than the quick one would have, and {A} runs the propellant table again for the margin. It still says yes. {A} stops running it.
+do morale A 2
 
 # --- Arrival: dust storm over the landing region -------------------------------
 card dust_report
