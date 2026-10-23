@@ -4,7 +4,9 @@ services:
     container_name: marshab-updater
     restart: unless-stopped
     ports:
-      # loopback only: the public site reaches the container over Shared (NPM -> marshab-updater:80)
+      # loopback only: the public site reaches the container over Shared (proxy -> marshab-updater:80).
+      # The host port comes from MARSHAB_HOST_PORT in an untracked .env (see .env.example) or the
+      # stack environment; 8080 is only a fallback: set it to the port your deployment uses.
       - "127.0.0.1:${MARSHAB_HOST_PORT:-8080}:80"
     networks:
       - Shared
