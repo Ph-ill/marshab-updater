@@ -24,18 +24,19 @@ type event
 cat mystery
 due
 once
-days 18 19
+days 19 20
 roles A B
 when is A ow_hail
-when since t_carrier >= 3
-text {A} asks {B} to point a second dish at it. Anything aboard would alias differently on each ship. The bursts land on both in the same millisecond, and drift against fleet time, a few microseconds a day. "Not us," {A} tells the fleet. "Ignore my last."
+when since t_carrier >= 4
+when fired m_theory
+text {A} asks {B} to point a second dish at the carrier. Anything aboard would alias differently per ship. The bursts land on both in the same millisecond and slide against fleet time by about two seconds a day: the fleet's closing rate on Mars. "Not aboard," {A} says. "Out there. Probably dead."
 do bond A B 3
 do open dec_signal
 
 card dec_signal
 type decision
 cat mystery
-days 18 19
+days 19 20
 weight 1
 once
 duration 2
@@ -43,13 +44,13 @@ roles A B
 lean curious open log
 when fired m_alias
 when is A ow_hail
-text If it's anything we ever flew, it will know a standard hello. {A} wants to answer every burst with one, signed with the old program key the fleet still carries, blind until someone can read what it sends. {B} points out that every reply ties up the comms computer, and the letters wait.
-option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, standard hello, until someone says stop. The first goes out at 14:02, and {A} logs every answer to the millisecond. {B} logs one line of dissent, signed, and leaves it there.
+text If it's the grey relay, it may still know a standard hello. {A} wants the ground's clearance to answer every burst with one, signed with the old program key the fleet still carries: a courtesy to a dead lighthouse, and a test. {B} points out that every reply ties up the comms computer.
+option open | Answer every burst | The ground clears it inside a day: hello only, nothing that commands. {A} adds one line to the comms schedule, and the first hello goes out at 14:02, timed to the millisecond. {B} files one line of dissent, signed, and leaves it there.
   set signal_answered
   mark t_signal
   morale B -3
   trait A curious 5
-option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} clips the folded trace inside the logbook, just in case, and the comms computer stays on the letters. {A} asks for a dissent in the log, signed; {B} writes it in.
+option log | File it, keep going | The carrier goes into the anomaly file under "later". {A} clips the folded trace inside the binder, just in case, and the comms computer stays on the letters. {A} writes a dissent, signed; {B} countersigns it.
   set signal_ignored
   mark t_signal
   morale A -5
@@ -64,7 +65,7 @@ roles A
 when flag signal_answered
 when is A ow_hail
 do mark t_frame
-text At 03:12 the receiver catches half a frame of housekeeping on the old channel, in a format no one flies now, cut off a byte before the field that says who sent it. The fleet's answers go out on schedule, every one. Mission Control replies eight minutes later: "say again."
+text At 03:12 the receiver catches half a frame of housekeeping on the old channel, in a format no one flies now, cut off partway. The fleet's answers go out on schedule, every one. {A} forwards the scrap home, and Mission Control replies six minutes later: "say again."
 do trait A curious 4
 
 card signal_echo
@@ -77,7 +78,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 do mark t_frame
-text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, in a format no one flies now, cut off a byte before the field that says who sent it. Averaged over a day, its period hasn't moved by a millisecond. The anomaly report calls it "persistent".
+text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, in a format no one flies now, cut off partway. Averaged over a day, its period hasn't moved by a millisecond. The anomaly report calls it "persistent".
 do morale A -3
 
 # Injury and rescue: needs supplies from another ship.
@@ -120,7 +121,7 @@ option send | Send the kit | The fleet holds formation tight for an unscheduled 
   kit A
   res fuel -1
   morale A 6
-option volunteer | {B} brings it over | {B} rides the line across with the kit in an unscheduled window and splints the wrist personally. The mission log calls it "nominal". Six ships read the log, and every one of them knows better.
+option volunteer | {B} brings it over | {B} rides the line across with the kit in an unscheduled window and splints the wrist personally. The report calls it "nominal". Six ships read it, and every one of them knows better.
   kitfrom B A
   move B A
   res fuel -1

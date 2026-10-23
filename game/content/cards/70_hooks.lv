@@ -143,9 +143,10 @@ cat mystery
 hook
 once
 days 26 29
-weight 14
+weight 30
 roles A
 when cond A ok
+when !is A ow_hail
 when since t_frame >= 1
 do who hook_who A
 text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on six displays. Through the next ship's long lens, its cabin windows are lit as usual.

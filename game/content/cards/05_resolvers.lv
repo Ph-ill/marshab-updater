@@ -10,7 +10,7 @@ days 31 35
 roles A
 when fired h_band
 when is A hook_who
-text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the coldest hour of the night side's coldest night. If the source has a battery heater, it skips knocks rather than wake short of power. Each cold night the gap is a knock or two longer.
+text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the coldest hour of the night side's coldest night. Each cold night the gap is a knock or two longer.
 do morale A -2
 
 card r_pressure
@@ -35,7 +35,7 @@ days 8 34
 roles A
 when fired h_flare
 when is A hook_who
-text Every crew spent the night in their storm shelter between the water tanks, seven faces in a video grid, listening to the dosimeters tick. By morning the fleet had taken a month's dose in six hours. {A} logged the peak and slept until noon.
+text Seven crews spent the night in their shelters between the water tanks, in a video grid, listening to the dosimeters tick. By morning: a month's dose in six hours. {A} wrote down the peak and slept till noon. The dose model now gives each of them a number for later, in a column headed "lifetime".
 do var storms 1
 do morale A 3
 
@@ -74,7 +74,7 @@ days 5 36
 roles A
 when fired h_flood
 when is A hook_who
-text The log for that night: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was down from 214 to a page. The backup is the only pump now.
+text The night's record: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was down from 214 to a page. The backup is the only pump now.
 do morale A 5
 do res spares -1
 
@@ -113,7 +113,7 @@ days 26 34
 roles A
 when fired h_ghost
 when is A hook_who
-text {A} pinned it down by morning: a launch cover plate shed by one of the fleet's own ships at departure, turning end over end, drifting slowly through the formation all voyage. Tonight it passes forty kilometres off the bow, and no one is coming for it.
+text {A} pinned it down by morning: a launch cover plate shed at departure, on almost the fleet's own orbit, gaining a few metres a day, turning end over end. Tonight it passes forty kilometres off the bow, and no one is coming for it.
 do trait A curious 3
 do morale A -2
 
@@ -139,6 +139,6 @@ days 27 30
 roles A
 when fired h_dark
 when is A hook_who
-text {A} was back within the hour. The comms computer had hung on a frame from Mars, the first whole one; a healthy thread kept the watchdog fed, the hourly health check rebooted it, and the backup, fed the same frame, hung too. That night six ships take turns on the fleet net, one sentence each.
+text {A} was back within the hour. The comms computer had hung on a frame from the old channel, passed along the fleet net from the listening dish; a healthy thread kept the watchdog fed, the hourly check rebooted it, the backup hung on the same frame, and the third boot came up with it quarantined.
 do trait A brave 3
 do morale A -2
