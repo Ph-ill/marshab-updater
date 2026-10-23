@@ -1,0 +1,490 @@
+#!/usr/bin/env python3
+"""lvc: compile and validate The Long Voyage story pack.
+
+Reads content/fleet.lv, content/system.json and content/cards/*.lv. Writes:
+  build/pack.bin       binary logic table the Pico runs (no text at all)
+  build/text.json      card text and templates the phone renders (minified)
+  build/text.json.gz   what the Pico actually serves to phones
+
+Usage: python3 tools/lvc.py [--content DIR] [--out DIR] [--check]
+--check validates only and writes nothing. Exit code 1 on any error.
+
+Card format (one card per `card` line, indentation only matters for option effects):
+
+  card dec_signal                 # id: lowercase letters, digits, _
+  type decision                   # event | beat | decision | dilemma | rescue | ending
+  days 5 14                       # first and last flight day it can fire
+  weight 10                       # relative chance among eligible cards (default 10)
+  once                            # fire at most once per season
+  due                             # fire whenever eligible (callbacks), no dice roll
+  cooldown 6                      # days before it can fire again (repeatable cards)
+  duration 2                      # days a decision/dilemma/rescue stays open
+  roles A B                       # crew roles to bind (A first)
+  lean curious open log           # tie-break/default: axis, option if >= 0, option if < 0
+  default send                    # rescue: option used when nobody answers
+  when trait A curious >= 10      # condition (see COND_SYNTAX below)
+  text {A} wants to answer it.    # phone template; {A} {B} are crew names
+  do set seen_rock                # effect when the card fires (see EFFECT_SYNTAX)
+  option open | Open the channel | {A} keys the transmitter.
+    set signal_answered           # option effects, indented
+"""
+import gzip
+import hashlib
+import json
+import os
+import re
+import struct
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(HERE))
+from lv import ops as O  # noqa: E402
+
+TYPES = {"event": O.EVENT, "beat": O.BEAT, "decision": O.DECISION,
+         "dilemma": O.DILEMMA, "rescue": O.RESCUE, "ending": O.ENDING}
+CMP = {">=": "GE", "<=": "LE"}
+ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+SEASON_DAYS = 42
+
+
+class PackError(Exception):
+    pass
+
+
+class Ctx:
+    def __init__(self):
+        self.flags = []
+        self.vars = []
+        self.flag_set = {}   # name -> where set
+        self.flag_read = {}
+        self.var_set = {}
+        self.var_read = {}
+        self.errors = []
+        self.warnings = []
+
+    def flag(self, name, where, setting):
+        if not ID_RE.match(name):
+            raise PackError("bad flag name %r" % name)
+        if name not in self.flags:
+            self.flags.append(name)
+        (self.flag_set if setting else self.flag_read).setdefault(name, where)
+        return self.flags.index(name)
+
+    def var(self, name, where, setting):
+        if not ID_RE.match(name):
+            raise PackError("bad var name %r" % name)
+        if name not in self.vars:
+            self.vars.append(name)
+        (self.var_set if setting else self.var_read).setdefault(name, where)
+        return self.vars.index(name)
+
+
+def sbyte(v):
+    v = int(v)
+    if v < -128 or v > 127:
+        raise PackError("value %d out of range -128..127" % v)
+    return v & 255
+
+
+def ubyte(v):
+    v = int(v)
+    if v < 0 or v > 255:
+        raise PackError("value %d out of range 0..255" % v)
+    return v
+
+
+def role(tok, card):
+    if tok not in O.ROLES[: card["nroles"]]:
+        raise PackError("role %s not declared (roles %s)" % (tok, O.ROLES[: card["nroles"]]))
+    return O.ROLES.index(tok)
+
+
+def axis(tok):
+    if tok not in O.AXES:
+        raise PackError("unknown trait %r (use %s)" % (tok, ", ".join(O.AXES)))
+    return O.AXES.index(tok)
+
+
+def res(tok):
+    if tok not in O.RESOURCES:
+        raise PackError("unknown resource %r" % tok)
+    return O.RESOURCES.index(tok)
+
+
+def condition(tokens, card, ctx, where):
+    t = tokens
+    neg = t[0].startswith("!")
+    w = t[0].lstrip("!")
+    if w == "flag":
+        return (O.C_NOFLAG if neg else O.C_FLAG, ctx.flag(t[1], where, False), 0, 0)
+    if neg and w == "fired":
+        return (O.C_NOTFIRED, ("card", t[1]), 0, 0)
+    if neg:
+        raise PackError("only flag and fired can be negated")
+    if w == "fired":
+        return (O.C_FIRED, ("card", t[1]), 0, 0)
+    if w == "var":
+        return (getattr(O, "C_VAR_" + CMP[t[2]]), ctx.var(t[1], where, False), 0, sbyte(t[3]))
+    if w == "since":
+        if t[2] != ">=":
+            raise PackError("since only supports >=")
+        return (O.C_SINCE_GE, ctx.var(t[1], where, False), ubyte(t[3]), 0)
+    if w == "res":
+        return (getattr(O, "C_RES_" + CMP[t[2]]), res(t[1]), 0, sbyte(t[3]))
+    if w == "trait":
+        return (getattr(O, "C_TRAIT_" + CMP[t[3]]), role(t[1], card), axis(t[2]), sbyte(t[4]))
+    if w == "bond":
+        return (getattr(O, "C_BOND_" + CMP[t[3]]), role(t[1], card), role(t[2], card), sbyte(t[4]))
+    if w == "morale":
+        return (getattr(O, "C_MORALE_" + CMP[t[2]]), role(t[1], card), 0, sbyte(t[3]))
+    if w == "same":
+        return (O.C_SAME, role(t[1], card), role(t[2], card), 0)
+    if w == "apart":
+        return (O.C_APART, role(t[1], card), role(t[2], card), 0)
+    if w == "cond":
+        return (O.C_COND, role(t[1], card), O.CONDITIONS.index(t[2]), 0)
+    if w == "idle":
+        if t[2] != ">=":
+            raise PackError("idle only supports >=")
+        return (O.C_IDLE_GE, role(t[1], card), ubyte(t[3]), 0)
+    if w == "kit_elsewhere":
+        return (O.C_KIT_ELSE, role(t[1], card), 0, 0)
+    if w == "bestbond":
+        return (O.C_BESTBOND, role(t[1], card), role(t[2], card), 0)
+    if w == "is":
+        return (O.C_IS, role(t[1], card), ctx.var(t[2], where, False), 0)
+    if w == "day":
+        return (O.C_DAY_GE, 0, ubyte(t[2]), 0)
+    if w == "home":
+        return (O.C_HOME, role(t[1], card), 0, 0)
+    if w == "away":
+        return (O.C_AWAY, role(t[1], card), 0, 0)
+    raise PackError("unknown condition %r" % " ".join(t))
+
+
+def effect(tokens, card, ctx, where):
+    t = tokens
+    w = t[0]
+    if w == "set":
+        return (O.E_SET, ctx.flag(t[1], where, True), 0, 0)
+    if w == "clr":
+        return (O.E_CLR, ctx.flag(t[1], where, True), 0, 0)
+    if w == "var":
+        return (O.E_VADD, ctx.var(t[1], where, True), 0, sbyte(t[2]))
+    if w == "mark":
+        return (O.E_MARK, ctx.var(t[1], where, True), 0, 0)
+    if w == "who":
+        return (O.E_WHO, ctx.var(t[1], where, True), role(t[2], card), 0)
+    if w == "res":
+        return (O.E_RADD, res(t[1]), 0, sbyte(t[2]))
+    if w == "trait":
+        return (O.E_TRAIT, role(t[1], card), axis(t[2]), sbyte(t[3]))
+    if w == "bond":
+        return (O.E_BOND, role(t[1], card), role(t[2], card), sbyte(t[3]))
+    if w == "morale":
+        return (O.E_MORALE, role(t[1], card), 0, sbyte(t[2]))
+    if w == "cond":
+        return (O.E_COND, role(t[1], card), O.CONDITIONS.index(t[2]), 0)
+    if w == "move":
+        return (O.E_MOVE, role(t[1], card), role(t[2], card), 0)
+    if w == "kit":
+        return (O.E_KIT, role(t[1], card), 0, 0)
+    if w == "kitfrom":
+        return (O.E_KITFROM, role(t[1], card), role(t[2], card), 0)
+    if w == "open":
+        return (O.E_OPEN, ("card", t[1]), 0, 0)
+    if w == "gohome":
+        return (O.E_GOHOME, role(t[1], card), 0, 0)
+    raise PackError("unknown effect %r" % " ".join(t))
+
+
+def parse_cards(path, ctx):
+    cards = []
+    card = None
+    opt = None
+    with open(path, encoding="utf-8") as f:
+        for n, raw in enumerate(f, 1):
+            line = raw.split(" #")[0].rstrip() if not raw.lstrip().startswith("text") else raw.rstrip()
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            where = "%s:%d" % (os.path.basename(path), n)
+            indented = line[0] in " \t"
+            body = line.strip()
+            word, _, rest = body.partition(" ")
+            try:
+                if word == "card":
+                    if not ID_RE.match(rest):
+                        raise PackError("bad card id %r" % rest)
+                    card = {"id": rest, "where": where, "type": None, "days": (1, SEASON_DAYS),
+                            "weight": 10, "flags": 0, "cooldown": 0, "duration": 0, "nroles": 0,
+                            "lean": None, "default": None, "conds": [], "effects": [],
+                            "options": [], "text": ""}
+                    cards.append(card)
+                    opt = None
+                    continue
+                if card is None:
+                    raise PackError("line before the first card")
+                if indented and opt is not None and word not in ("option",):
+                    opt["effects"].append((effect(body.split(), card, ctx, where), where))
+                    continue
+                opt = None if word != "option" else opt
+                if word == "type":
+                    card["type"] = TYPES[rest]
+                elif word == "days":
+                    a, b = rest.split()
+                    card["days"] = (int(a), int(b))
+                elif word == "weight":
+                    card["weight"] = ubyte(rest)
+                elif word == "once":
+                    card["flags"] |= O.F_ONCE
+                elif word == "due":
+                    card["flags"] |= O.F_DUE
+                elif word == "cooldown":
+                    card["cooldown"] = ubyte(rest)
+                elif word == "duration":
+                    card["duration"] = ubyte(rest)
+                elif word == "roles":
+                    rs = rest.split()
+                    if rs != list(O.ROLES[: len(rs)]):
+                        raise PackError("roles must be A, A B, A B C...")
+                    card["nroles"] = len(rs)
+                elif word == "lean":
+                    card["lean"] = rest.split()
+                elif word == "default":
+                    card["default"] = rest.strip()
+                elif word == "when":
+                    card["conds"].append((condition(rest.split(), card, ctx, where), where))
+                elif word == "do":
+                    card["effects"].append((effect(rest.split(), card, ctx, where), where))
+                elif word == "text":
+                    card["text"] = rest.strip()
+                elif word == "option":
+                    parts = [p.strip() for p in rest.split("|")]
+                    if len(parts) != 3:
+                        raise PackError("option needs: name | button label | outcome text")
+                    opt = {"name": parts[0], "label": parts[1], "text": parts[2], "effects": []}
+                    card["options"].append(opt)
+                else:
+                    raise PackError("unknown keyword %r" % word)
+            except (PackError, KeyError, ValueError, IndexError) as e:
+                ctx.errors.append("%s: %s" % (where, e))
+    return cards
+
+
+def parse_fleet(path):
+    fleet = {"crew": [], "ships": [], "quirks": {}, "res": [0, 0, 0], "medkits": 1, "key": None,
+             "season": SEASON_DAYS}
+    with open(path, encoding="utf-8") as f:
+        for raw in f:
+            line = raw.split("#")[0].strip()
+            if not line:
+                continue
+            t = line.split()
+            if t[0] == "voyage_key":
+                fleet["key"] = bytes.fromhex(t[1])
+            elif t[0] == "quirk":
+                vals = dict(zip(t[2::2], t[3::2]))
+                fleet["quirks"][t[1]] = [int(vals.get(a, 0)) for a in O.AXES]
+            elif t[0] == "crew":
+                fleet["crew"].append({"name": t[1], "quirk": t[3], "ship": " ".join(t[5:])})
+            elif t[0] == "resources":
+                vals = dict(zip(t[1::2], t[2::2]))
+                fleet["res"] = [int(vals[r]) for r in O.RESOURCES]
+            elif t[0] == "medkits":
+                fleet["medkits"] = int(t[1])
+            elif t[0] == "season":
+                fleet["season"] = int(t[1])
+    return fleet
+
+
+def validate(cards, ctx, fleet, system):
+    ids = [c["id"] for c in cards]
+    for c in cards:
+        w = c["where"]
+        if ids.count(c["id"]) > 1:
+            ctx.errors.append("%s: duplicate card id %s" % (w, c["id"]))
+        if c["type"] is None:
+            ctx.errors.append("%s: %s has no type" % (w, c["id"]))
+            continue
+        d0, d1 = c["days"]
+        if not (1 <= d0 <= d1 <= fleet["season"]):
+            ctx.errors.append("%s: days %d..%d outside 1..%d" % (w, d0, d1, fleet["season"]))
+        if not c["text"]:
+            ctx.errors.append("%s: %s has no text" % (w, c["id"]))
+        for m in re.findall(r"\{(\w+)\}", c["text"] + "".join(o["text"] for o in c["options"])):
+            if m in O.ROLES and O.ROLES.index(m) >= c["nroles"]:
+                ctx.errors.append("%s: text uses {%s} but the card binds %d role(s)" % (w, m, c["nroles"]))
+            elif m not in O.ROLES and m not in ("n",):
+                ctx.errors.append("%s: unknown template slot {%s}" % (w, m))
+        names = [o["name"] for o in c["options"]]
+        voted = c["type"] in (O.DECISION, O.DILEMMA, O.RESCUE)
+        if voted and len(names) < 2:
+            ctx.errors.append("%s: %s needs at least 2 options" % (w, c["id"]))
+        if voted and not c["duration"]:
+            ctx.errors.append("%s: %s needs a duration" % (w, c["id"]))
+        if c["type"] == O.DILEMMA and c["nroles"] < 1:
+            ctx.errors.append("%s: a dilemma needs role A (whose owner decides)" % w)
+        if c["type"] == O.RESCUE and c["default"] not in names:
+            ctx.errors.append("%s: rescue %s needs `default <option>`" % (w, c["id"]))
+        if c["type"] in (O.DECISION, O.DILEMMA) and not c["lean"]:
+            ctx.errors.append("%s: %s needs a lean so nobody has to vote" % (w, c["id"]))
+        if c["options"] and c["type"] in (O.EVENT, O.BEAT) and not c["lean"]:
+            ctx.errors.append("%s: an event with options needs a lean to pick one" % w)
+        if c["lean"]:
+            if len(c["lean"]) != 3 or c["lean"][0] not in O.AXES:
+                ctx.errors.append("%s: lean is `<axis> <option if >= 0> <option if < 0>`" % w)
+            else:
+                for o in c["lean"][1:]:
+                    if o not in names:
+                        ctx.errors.append("%s: lean names unknown option %s" % (w, o))
+        if c["type"] == O.ENDING and (c["options"] or c["effects"]):
+            ctx.errors.append("%s: endings have no options or effects" % w)
+        if c["flags"] & O.F_DUE and not (c["flags"] & O.F_ONCE) and not c["cooldown"]:
+            ctx.errors.append("%s: a due card needs once or a cooldown or it fires every day" % w)
+        for (op, a, b, cc), where in c["conds"] + c["effects"] + [e for o in c["options"] for e in o["effects"]]:
+            if isinstance(a, tuple):
+                if a[1] not in ids:
+                    ctx.errors.append("%s: unknown card %s" % (where, a[1]))
+                elif op == O.E_OPEN:
+                    tgt = cards[ids.index(a[1])]
+                    if tgt["type"] not in (O.RESCUE, O.DECISION, O.DILEMMA):
+                        ctx.errors.append("%s: open needs a rescue, decision or dilemma" % where)
+    endings = [c for c in cards if c["type"] == O.ENDING]
+    if not endings:
+        ctx.errors.append("no ending cards")
+    elif endings[-1]["conds"]:
+        ctx.errors.append("%s: the last ending must have no conditions (the fallback)" % endings[-1]["where"])
+    for f in ctx.flags:
+        if f not in ctx.flag_set:
+            ctx.errors.append("%s: flag %s is checked but never set" % (ctx.flag_read[f], f))
+        elif f not in ctx.flag_read:
+            ctx.warnings.append("%s: flag %s is set but never checked" % (ctx.flag_set[f], f))
+    for v in ctx.vars:
+        if v not in ctx.var_set:
+            ctx.errors.append("%s: var %s is checked but never set" % (ctx.var_read[v], v))
+    if fleet["key"] is None or len(fleet["key"]) != 8:
+        ctx.errors.append("fleet.lv: voyage_key must be 8 bytes of hex")
+    if len(fleet["crew"]) != 7:
+        ctx.errors.append("fleet.lv: need exactly 7 crew lines")
+    for cr in fleet["crew"]:
+        if cr["quirk"] not in fleet["quirks"]:
+            ctx.errors.append("fleet.lv: crew %s has unknown quirk %s" % (cr["name"], cr["quirk"]))
+    if len(ctx.flags) > 128 or len(ctx.vars) > 32:
+        ctx.errors.append("too many flags (max 128) or vars (max 32)")
+    for k in ("actions", "notes", "sys"):
+        if k not in system:
+            ctx.errors.append("system.json: missing %s" % k)
+
+
+def ops_bytes(lst, ids):
+    out = bytearray([len(lst)])
+    for (op, a, b, c), _ in lst:
+        if isinstance(a, tuple):
+            a = ids.index(a[1])
+        out += bytes((op, a, b, c))
+    return bytes(out)
+
+
+def encode_card(c, ids):
+    names = [o["name"] for o in c["options"]]
+    if c["lean"]:
+        la, lp, ln = O.AXES.index(c["lean"][0]), names.index(c["lean"][1]), names.index(c["lean"][2])
+    elif c["default"]:
+        la, lp, ln = O.NONE, names.index(c["default"]), names.index(c["default"])
+    else:
+        la = lp = ln = O.NONE
+    b = bytearray((c["type"], c["weight"], c["days"][0], c["days"][1], c["flags"], c["cooldown"],
+                   c["duration"], c["nroles"], la, lp, ln))
+    b += ops_bytes(c["conds"], ids)
+    b += ops_bytes(c["effects"], ids)
+    b.append(len(c["options"]))
+    for o in c["options"]:
+        b += ops_bytes(o["effects"], ids)
+    return bytes(b)
+
+
+def build(content_dir):
+    ctx = Ctx()
+    fleet = parse_fleet(os.path.join(content_dir, "fleet.lv"))
+    with open(os.path.join(content_dir, "system.json"), encoding="utf-8") as f:
+        system = json.load(f)
+    cards = []
+    cdir = os.path.join(content_dir, "cards")
+    for name in sorted(os.listdir(cdir)):
+        if name.endswith(".lv"):
+            cards += parse_cards(os.path.join(cdir, name), ctx)
+    # Endings must stay in priority order at the end; everything else keeps file order.
+    cards = [c for c in cards if c["type"] != O.ENDING] + [c for c in cards if c["type"] == O.ENDING]
+    if len(cards) > 250:
+        ctx.errors.append("too many cards (max 250)")
+    validate(cards, ctx, fleet, system)
+    if ctx.errors:
+        return None, None, ctx
+    ids = [c["id"] for c in cards]
+    quirk_names = sorted(fleet["quirks"])
+    body = bytearray()
+    body += bytes((len(cards), len(ctx.flags), len(ctx.vars), 7, fleet["season"]))
+    body += fleet["key"]
+    body += bytes([ubyte(v) for v in fleet["res"]]) + bytes((fleet["medkits"],))
+    body.append(len(quirk_names))
+    for q in quirk_names:
+        body += bytes([sbyte(v) for v in fleet["quirks"][q]])
+    body += bytes([quirk_names.index(cr["quirk"]) for cr in fleet["crew"]])
+    encoded = [encode_card(c, ids) for c in cards]
+    table_start = 4 + 4 + len(body) + 2 * len(cards)
+    off = table_start
+    offsets = bytearray()
+    for e in encoded:
+        offsets += struct.pack("<H", off)
+        off += len(e)
+    payload = bytes(body) + bytes(offsets) + b"".join(encoded)
+    pack_id = hashlib.sha256(payload).digest()[:4]
+    pack = b"LVP1" + pack_id + payload
+    text = {
+        "pack": pack_id.hex(),
+        "crew": [cr["name"] for cr in fleet["crew"]],
+        "ships": [cr["ship"] for cr in fleet["crew"]],
+        "cards": [{"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]}
+                  for c in cards],
+        "actions": system["actions"],
+        "notes": system["notes"],
+        "axis_words": system.get("axis_words", []),
+        "res_words": system.get("res_words", []),
+        "sys": system["sys"],
+        "axes": list(O.AXES),
+        "res": list(O.RESOURCES),
+    }
+    return pack, text, ctx
+
+
+def main(argv):
+    content = os.path.join(os.path.dirname(HERE), "content")
+    out = os.path.join(os.path.dirname(HERE), "build")
+    check = "--check" in argv
+    if "--content" in argv:
+        content = argv[argv.index("--content") + 1]
+    if "--out" in argv:
+        out = argv[argv.index("--out") + 1]
+    pack, text, ctx = build(content)
+    for w in ctx.warnings:
+        print("warning:", w)
+    for e in ctx.errors:
+        print("error:", e)
+    if ctx.errors:
+        print("%d error(s); nothing written" % len(ctx.errors))
+        return 1
+    tj = json.dumps(text, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    tgz = gzip.compress(tj, 9, mtime=0)
+    n = len(text["cards"])
+    print("ok: %d cards, %d flags, %d vars; pack.bin %d B, text.json %d B, gzip %d B; pack id %s"
+          % (n, len(ctx.flags), len(ctx.vars), len(pack), len(tj), len(tgz), text["pack"]))
+    if not check:
+        os.makedirs(out, exist_ok=True)
+        for name, data in (("pack.bin", pack), ("text.json", tj), ("text.json.gz", tgz)):
+            with open(os.path.join(out, name), "wb") as f:
+                f.write(data)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
