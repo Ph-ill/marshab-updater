@@ -93,6 +93,25 @@ saying so**.
 - Keep it rare: roughly 1 card in 6 to 8. Mark those cards `cat <category> skill`.
   The lint fails above 18%.
 
+## The slow burn
+
+The uncanny ramps up over the voyage. Prefer understatement to announcement:
+let the reader notice, and never tell them a thing is mysterious.
+
+| Days | What's allowed |
+|---|---|
+| 1–10 | Nearly nothing odd. This stretch is wonder, people and ship life. Any oddity is tiny, deniable and easy to miss. No spooky framing at all: no "eerie", "impossible", "strange", "wrong", "chill", "nobody says why". |
+| 11–24 | A few small details a careful reader could connect. Each one has an ordinary explanation on the page. Most of what happens is still real-world drama. |
+| 25–36 | The crew can't deny the pattern any more. Tension and dread rise, and the cliffhangers lean on it. |
+| 37–42 | The payoff. |
+
+- Early cliffhangers are grounded: mission stakes and human stakes. An uncanny
+  hook (`cat mystery`) starts on day 25 or later.
+- The lint (`check_ramp` in lvc) warns if:
+  - a card that can fire before day 11 uses spooky vocabulary;
+  - a card that can fire before day 11 is `cat mystery`;
+  - a mystery cliffhanger can fire before day 25.
+
 ## Content mix
 
 This is a voyage, not a maintenance log. Every card carries `cat <category>`

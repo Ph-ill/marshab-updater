@@ -36,6 +36,15 @@ motifs, what gets planted and where it pays off.
 4. **Arrival (days 39–42).** Everything planted pays off, and one of the
    endings closes the log.
 
+## The ramp (slow burn)
+
+| Phase | Mystery content |
+|---|---|
+| 1 (days 1–10) | None. Only plants that read as ordinary life: the thumb, the Sharpie, the garden, the live call. |
+| 2 (days 11–24) | The carrier vote, which reads as a retired probe's beacon. The noise-floor ripple, which reads as a wheel harmonic. Eleven sparks behind closed eyes (filed as `grim`, not mystery). Each detail has an ordinary explanation. |
+| 3 (days 25–36) | The carrier comes back. The uncanny hooks open up (band, ghost, voice, dark). The flashes, first and second sighting, and the vote on them. The crew stops being able to call it chance. |
+| 4 (days 37–42) | The overlay (carrier and flash in the same frame). The flash answer, if they looked. The endings. |
+
 ## Motifs
 
 | Motif | Planted | Turns | Pays off |
