@@ -11,7 +11,7 @@ once
 roles A
 when cond A ok
 when !fired h_flare
-text A flare has gone off on the Sun, and its protons will reach the fleet in about forty minutes. {A} packs into the storm shelter between the water tanks with a sleeping bag and a deck of cards, and every crew in the fleet does the same, cards over video, until the dosimeter settles.
+text A flare has gone off on the Sun, and its protons will reach the fleet in about forty minutes. {A} packs into the storm shelter between the water tanks with a deck of cards, and every crew in the fleet does the same, cards over video, until the dosimeter settles.
 do morale A 3
 do var storms 1
 
@@ -36,13 +36,13 @@ weight 16
 once
 roles A
 when cond A ok
-text {A} runs the dosimeter check. Every crew member is now past a hundred millisieverts, and the line is still climbing at the same slope. {A} writes it down and underlines it, and leaves the underline to say the rest.
+text {A} runs the dosimeter check. Every crew member is now past fifty millisieverts, and the line is still climbing at the same slope. {A} writes it down and underlines it, and leaves the underline to say the rest.
 do trait A curious 1
 
 card comm_delay
 type event
 cat human
-days 15 16
+days 16 17
 weight 16
 once
 roles A
@@ -96,7 +96,7 @@ once
 roles A
 when cond A ok
 when home A
-text Methane boil-off on {A}'s ship runs high while it flies broadside to feed the solar wings. {A} proposes nose-to-Sun, wings canted, so the ship's own shadow falls down the tanks. The ground runs the power numbers and agrees; boil-off drops by a third, and the attitude goes into everyone's plan.
+text Methane boil-off on {A}'s ship runs high while it flies broadside to feed the solar wings. {A} proposes nose-to-Sun, wings canted, so the ship's own shadow falls down the tanks. The ground runs the power numbers and agrees; boil-off drops by a third, and everyone's plan changes.
 do res fuel 2
 do morale A 2
 

@@ -69,7 +69,7 @@ when !fired p_birthday
 when bond A B >= 0
 when away A
 when home B
-text {A}, visiting since the last transfer window, cuts {B}'s hair with the vacuum clippers. The result is recorded as "within tolerance". {B} agrees and tips in coffee.
+text {A}, visiting since the last transfer window, cuts {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} pays in coffee.
 do bond A B 5
 
 card beat_home_msg
@@ -232,6 +232,6 @@ weight 1
 roles A
 when cond A ok
 when is A ow_letter
-text A dried leaf in a sleeve rides in {A}'s sleeve pocket, picked up on the walk to the pad. Every few days {A} checks it and reports to the net: "Still green on one side." The ground files it as a status.
+text A dried leaf in a plastic sleeve rides in {A}'s chest pocket, picked up on the walk to the pad. Every few days {A} checks it and reports to the net: "Still green on one side." The ground files it as a status.
 do morale A 1
 

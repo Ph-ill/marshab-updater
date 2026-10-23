@@ -10,7 +10,7 @@ days 31 35
 roles A
 when fired h_band
 when is A hook_who
-text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward to entry week and doesn't like where it lands.
+text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It reaches entry week.
 do morale A -2
 
 card r_pressure
@@ -102,6 +102,8 @@ when fired h_strike
 when is A hook_who
 when cond B ok
 when !is B eva_who
+when home A
+when !is A eva_who
 text {A}'s morning EVA, {B} suited at the next ship's hatch, found a fingernail crater in a heat-shield tile, short of the bondline. The entry team clears it on one condition: {A}'s ship flies entry a few tenths of a degree steeper, for a sharper peak and a shorter soak.
 do trait A brave 2
 do morale A 3

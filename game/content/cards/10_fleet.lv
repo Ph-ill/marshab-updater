@@ -29,7 +29,7 @@ roles A B
 when is A ow_hail
 when since t_carrier >= 4
 when fired m_theory
-text {A} asks {B} to point a second dish at the carrier. Anything aboard would alias differently per ship. The bursts land on both in the same millisecond and slide against fleet time by about two seconds a day: the fleet's closing rate on Mars. "Not aboard, then," {A} says, and books the dish again.
+text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against fleet time by about a second and a half a day, the fleet's closing rate on Mars. Hour to hour, the residuals are flat. {A} books the dish again.
 do bond A B 3
 do open dec_signal
 
@@ -102,7 +102,7 @@ weight 6
 roles A
 when cond A ok
 when kit_elsewhere A
-text During {A}'s scheduled EVA a tether snags on a bracket and wrenches {A}'s arm, with the next ship closed up and a suited crewmate clipped in at its hatch. {A} frees it, secures every tool, works back along the line hand over hand, and comes inside with a wrist that won't bend.
+text During {A}'s scheduled EVA a tether snags on a bracket and wrenches {A}'s arm, with the next ship closed up and a suited crewmate clipped in at its hatch. {A} frees it, works back along the line hand over hand, and comes inside with a wrist that won't bend.
 do cond A injured
 do who eva_who A
 do morale A -10

@@ -195,6 +195,29 @@ class TestHouseStyle(unittest.TestCase):
     def test_no_style_warnings(self):
         self.assertEqual([w for w in self.ctx.warnings if w.startswith("style:")], [])
 
+    def test_retired_tics_stay_retired(self):
+        # STYLE.md rounds 4-8 retired these; they kept creeping back, so they are
+        # linted here over every card, option and system string.
+        tics = [r"\bnobody\b", r"\breads? it twice\b", r"\btap(e|es|ed|ing)\b[^.]*\b(above|to the|wall)",
+                r"\bpin(s|ned)\b[^.]*\b(above|up\b|wall)", r"\bpinned up\b", r"galley wall",
+                r"\b(go|goes|went|gone|going) quiet\b", r"since Starbase", r"\bslowly\b",
+                r"doesn't mention", r"\bNeither of them\b", r"\bby itself\b", r"it has moved",
+                r"\bsleeve\b[^.]*\bsleeve\b"]
+        strs = []
+
+        def walk(x, where):
+            if isinstance(x, str):
+                strs.append((where, x))
+            elif isinstance(x, dict):
+                for k, v in x.items():
+                    walk(v, where + "." + str(k))
+            elif isinstance(x, list):
+                for i, v in enumerate(x):
+                    walk(v, "%s[%d]" % (where, i))
+        walk(self.text, "text")
+        hits = [(w, t) for t in tics for w, s in strs if re.search(t, s, re.I)]
+        self.assertEqual(hits, [])
+
     def test_lint_catches_the_bad_examples(self):
         bad = """
 card bad
@@ -363,13 +386,11 @@ class TestFairCasting(unittest.TestCase):
         # "{A}'s ship" in an opening line means A is at home; "{A}, visiting" or "{A} is
         # still aboard" means A is away, on B's ship; a rescue option where "{B} brings
         # it over" or "{B} rides the line" means B was on another ship when it opened.
-        # r_strike is exempt: it is about the ship's own entry profile, a day after the
-        # hook, and A may have crossed in between.
         sys.path.insert(0, os.path.join(ROOT, "sim"))
         from season import reference_season
         _, text, _ = lvc.build(CONTENT)
         cards = text["cards"]
-        exempt = {"r_strike"}
+        exempt = set()
         opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
         checks, bad = 0, []
         for i in range(300):
@@ -404,6 +425,45 @@ class TestFairCasting(unittest.TestCase):
                             bad.append((i, d, cards[card]["id"], "B already aboard"))
         self.assertGreater(checks, 5000)
         self.assertEqual(bad, [], "%d of %d presence checks failed" % (len(bad), checks))
+
+    def test_tile_and_eva_casting_over_300_seasons(self):
+        # Round 14 regressions. A line about the struck heat-shield tile must name the
+        # astronaut whose tile r_strike found, and an ending (which can't bind that
+        # person) must not mention the tile at all. Nobody whose wrist crisis_eva
+        # injured is sent outside afterwards (dil_eva_cam, r_strike).
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        _, text, _ = lvc.build(CONTENT)
+        cards = text["cards"]
+        ids = [c["id"] for c in cards]
+        for c in cards:
+            if c["id"].startswith("end_"):
+                self.assertNotRegex(c["t"], r"(?i)\b(tile|hinge)", c["id"])
+        opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
+        bad, tiles, evas = [], 0, 0
+        for i in range(300):
+            key = bytes([(i >> 8) & 255, i & 255]) + b"season"
+            out = reference_season(Pack(self.p.data), seed=1000 + i, voyage_key=key)[0].story
+            tile_who = hurt = None
+            for k in range(0, len(out), 8):
+                d, code, card, a, b = out[k:k + 5]
+                if code not in opens:
+                    continue
+                cid, t = ids[card], cards[card]["t"]
+                if cid == "crisis_eva":
+                    hurt = a
+                if cid in ("dil_eva_cam", "r_strike"):
+                    evas += 1
+                    if a == hurt:
+                        bad.append((i, d, cid, "injured astronaut outside"))
+                if cid == "r_strike":
+                    tile_who = a
+                elif re.search(r"(?i)\b(the|a|one|its) ([\w-]+ )?tile\b", t):
+                    tiles += 1
+                    if tile_who is None or tile_who not in (a, b):
+                        bad.append((i, d, cid, "tile line names the wrong astronaut"))
+        self.assertGreater(evas, 50)
+        self.assertEqual(bad, [])
 
     def test_fair_play_and_endings_over_300_seasons(self):
         # Every season must deliver the core clue set before the reveal, and every

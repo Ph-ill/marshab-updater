@@ -45,7 +45,7 @@ roles A B
 when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
-text It's been a long week. {A} opens the locker without a word, tags one pack for {B} for the next transfer window, and eats the other on video with {B}, reading the Sharpie on the bag aloud like the back of a cereal box.
+text It's been a long week. {A} opens the locker before breakfast, tags one pack for {B} for the next transfer window, and eats the other on video with {B}, reading the Sharpie on the bag aloud like the back of a cereal box.
 do bond A B 6
 do morale A 3
 do set stash_exposed
@@ -58,7 +58,7 @@ days 8 11
 weight 10
 roles A B
 when bond A B >= -20
-text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a small bright disc now, less than half the width of the Moon from home, easy to cover with a thumbnail. They each make a coffee at the same minute, as if that counted as sharing one.
+text {A} and {B} stand the night watch together over the fleet link, each in a dark cabin. Earth is a small bright disc now, less than half the width of the Moon from home. They each make a coffee at the same minute, as if that counted as sharing one.
 do bond A B 6
 
 card beat_argue

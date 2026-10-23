@@ -112,7 +112,7 @@ lean curious shift keep
 text Mission Control proposes moving the fleet's clocks two hours forward, to line up with the ground team's shifts. {A} is for it. {B} has seen this study before.
 option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, as the study predicted. {B}'s sleep data, the cleanest set, is the one the ground asks to keep.
   set clock_shifted
-option keep | Keep fleet time | The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza as evidence.
+option keep | Keep fleet time | The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza.
   set clock_kept
 
 card clock_shift_back
@@ -216,10 +216,10 @@ duration 2
 roles A B
 when flag dust_seen
 lean warm wait hold
-text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit and wait it out, at a real cost in food.
-option hold | Hold the plan | The arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
+text The dust storm over the landing zone is still growing, and the flight director wants the crew's recommendation. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit and wait it out, at a real cost in food.
+option hold | Hold the plan | The flight director takes it: the arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
   set arrive_hold
-option wait | Long orbit, wait | The fleet commits to aerocapture and the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
+option wait | Long orbit, wait | The flight director takes it: aerocapture and the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
   set arrive_wait
   res fuel -4
 

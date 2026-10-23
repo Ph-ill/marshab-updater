@@ -15,8 +15,9 @@ weight 60
 roles A
 when cond A ok
 when flag flash_seen
+when home A
 do who hook_who A
-text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty. On the night frame from an hour ago, the lit pixel is dark too.
+text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty. The orbiter's pass over that patch comes down an hour later: in its frame, the lit pixel is dark too.
 
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure
@@ -84,6 +85,7 @@ days 4 27
 weight 10
 roles A
 when cond A ok
+when home A
 do who hook_who A
 text Just before midnight, 214 alarms hit {A}'s console at once. One of them is real.
 
@@ -111,6 +113,7 @@ weight 9
 roles A
 when cond A ok
 when home A
+when !is A eva_who
 do who hook_who A
 text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} doesn't trust green.
 
@@ -139,7 +142,7 @@ roles A
 when cond A ok
 when home A
 do who hook_who A
-text 02:40. The intercom on {A}'s ship opens and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. Nothing in the comms log says a call came in.
+text 02:40. The intercom on {A}'s ship opens and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. The intercom's clock reads tomorrow.
 
 # --- 10. A ship drops off the net -------------------------------------------------
 card h_dark

@@ -107,7 +107,7 @@ days 25 27
 roles A
 when since t_theory >= 3
 when is A ow_theory
-text The ground can't run the grey relay forward: its orbit data is two years stale. "Check the dish schedule at your end," the ground says. {A} tapes the lighthouse sketch above the console.
+text The ground can't run the grey relay forward: its orbit data is two years stale. "Check the dish schedule at your end," the ground says. {A} slides the lighthouse sketch into the flight-plan binder.
 do morale A 2
 
 card c_theory
@@ -118,7 +118,7 @@ once
 days 38 38
 roles A
 when is A ow_theory
-text {A} looks at the lighthouse again. A relay would swing the knocks early and late every couple of hours. These swing by a hundredth of a second once a day, and the day is thirty-seven minutes too long. Under the lighthouse, in blue, {A} draws a question mark.
+text {A} looks at the lighthouse again. Every knock since the first, timed to the microsecond: they drift once a day, by a hundredth of a second, and the day is thirty-seven minutes too long. Under the lighthouse, in blue, {A} draws a question mark.
 do trait A curious 2
 
 card m_flash1
@@ -147,7 +147,7 @@ roles A
 when flag flash_seen
 when since t_flash >= 2
 when is A flash_who
-text {A} goes through every night frame of that patch this month. Every pass, on different rows of the sensor, the lit pixel lands on the same spot of ground. {A} sends the list round, asking to be told it's wrong. The ground's first guess: the hopper, tipped on its pad, beacon still coming and going.
+text {A} goes through every night frame of that patch this month. Every pass, on different rows of the sensor, the lit pixel lands on the same spot of ground. {A} sends the list round. The ground's first guess: the hopper, tipped on its pad, beacon still coming and going.
 do set flash_twice
 do open dec_flash
 
@@ -235,7 +235,7 @@ when flag flash_ground
 when !is A ow_hail
 when !is A flash_who
 when !is A ow_theory
-text {A} borrows the old-channel receiver record, slides it back by the one-way light time from Mars, about fifteen seconds, and lays it over the forty frames. The carrier peaks on the exact frame the pixel lights. Every time. {A} puts both traces on the galley screen, side by side.
+text {A} borrows the old-channel receiver record, slides it back by the one-way light time from Mars, just under half a minute, and lays it over the forty frames. The carrier peaks on the exact frame the pixel lights. Every time. {A} puts both traces on the galley screen, side by side.
 do trait A curious 3
 
 card m_checked
@@ -271,7 +271,7 @@ days 38 38
 roles A
 when fired m_overlay
 when is A ow_song
-text With Mars a few pages out, the old-channel carrier stands out in a narrow filter, unfolded. {A} turns each burst into a click on the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between them. {A} plays them on the galley keyboard, stopping where the fifth should be.
+text The old-channel carrier now stands out in a narrow filter. {A} turns each burst into a click on the cabin speaker: a click, a hiss, a long pause, a click, like rain starting on a car roof. The four bars fit between them. {A} plays them on the galley keyboard, stopping where the fifth should be.
 do morale A -1
 
 card a_drill_plan
@@ -294,7 +294,7 @@ days 39 39
 roles A
 when !is A ow_theory
 when !is A ow_hail
-text {A} times the old-channel carrier on the galley clock, like lightning to thunder. Ten, eleven, knock. The fleet's round trip to the planet is twenty-odd seconds now, and shrinking. {A} writes both on the whiteboard, one above the other.
+text {A} times the old-channel carrier on the galley clock, like lightning to thunder. Ten, eleven, knock. The fleet's round trip to the planet is thirty-odd seconds now, and shrinking. {A} writes both on the whiteboard, one above the other.
 
 # --- The payoff: fires on day 40 in every season ------------------------------------
 card m_reveal
@@ -306,7 +306,7 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text The fleet's long lenses make the first sharp pass over the backup site in two years: behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, dish jammed against its stop, talking on its low-gain antenna: Cargo 2. With each knock its pad strobe flares, the pad crew's sign it's awake, then goes dark while it listens. {A} counts the dark: nine, ten, eleven, flare.
+text The fleet's long lenses make the first sharp pass over the backup site in two years: behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, dish jammed against its stop, talking on its low-gain antenna: Cargo 2. With each knock its pad strobe flares, then goes dark while it listens. {A} counts the dark: nine, ten, eleven, flare. Ten point nine six: the lighthouse's number.
 do trait A curious 3
 
 card a_report
@@ -318,7 +318,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text {A} reads out the board's finding. Boulders on the site: Cargo 2 hovered, diverted behind the rim and set down whole. Its last patch, tested only at Starbase, files any touchdown on a surveyed site as a pad, and the backup site was surveyed. On a pad it obeys the pad crew, not the ground: knock, listen one tick for a signed hello, knock again. Earth's answer takes sixteen minutes. The tick is eleven seconds.
+text The board's finding reaches {A} as Cargo 2's own patch note, signed off at Starbase: SURVEYED SITE = PAD. ON PAD: OBEY PAD CREW. KNOCK, LISTEN 1 TICK, KNOCK. TIMEOUT: NONE. The board's margin: boulders, a divert behind the rim, down whole; written off before the re-key; no orbiter but the dead relay ever had its channel. Earth, fifteen minutes. The tick, eleven seconds.
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -343,7 +343,7 @@ days 41 41
 roles A
 when fired a_window_hail
 when !is A ow_hail
-text Then Cargo 2 sends its event-recorder summary down the old channel. HAIL RX · WRONG CHALLENGE ×31,000: five weeks of Earth's hails. HELLO RX · LATE · DISCARD ×41,000: the fleet's, about twenty ticks late at first, one at the last. At the bottom, one new line: HELLO RX · OK. {A} reads it twice and files it.
+text Then Cargo 2 sends its event-recorder summary down the old channel. KEY UPDATE: NONE RECEIVED. HAIL RX · WRONG CHALLENGE ×31,000: five weeks of Earth's hails. HELLO RX · LATE · DISCARD ×350,000: the fleet's, eighteen ticks late at first, one at the last. At the bottom, one new line: HELLO RX · OK. {A} copies it into the logbook in capitals.
 do morale A 2
 
 card a_window_quiet
@@ -355,7 +355,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, inside the tick, and nothing on the schedule answers it. The ground drafted a reply the day the key decoded; it reached the board a day into entry week, and the board won't wake a ship that has rebooted itself for two years while seven others steer by it, or circle over it. Until every ship is down: a suit beside it, or nothing.
+text 04:10:07: Cargo 2 knocks. Ten seconds there and back now, inside the tick, and nothing on the schedule answers it. The ground's reply sits drafted and signed, but the board won't wake a two-year reboot loop in entry week with seven ships about to rely on it. The ruling is one line on {A}'s screen: AFTER LANDING. FROM A SUIT BESIDE IT.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------
