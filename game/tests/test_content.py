@@ -1052,7 +1052,9 @@ class TestRound19(unittest.TestCase):
     def test_hopper_stays_alive_on_day_37(self):
         for cid in ("m_checked", "m_checked_g"):
             self.assertIn("Nearest is the hopper", self.t[cid], cid)
-            self.assertIn("Cargo 2's landing ellipse is closer", self.t[cid], cid)
+            # Round 25: no neon dismissal of Cargo 2; l_manifest keeps the fair "scar" line.
+            self.assertIn("crater rims and old landing ellipses", self.t[cid], cid)
+            self.assertNotIn("Cargo 2", self.t[cid], cid)
 
     def test_who_plant_and_silent_lighthouse_beat(self):
         self.assertIn("the next frame brings a new one", self.t["m_key"])
@@ -1066,7 +1068,7 @@ class TestRound19(unittest.TestCase):
         lines = [l for _, l in self.text["epi"]["story"]]
         self.assertEqual([l for l in lines if re.search(r"aloud,? at Mars", l)], [])
         self.assertIn("Every few weeks", self.t["l_transfer"])
-        self.assertIn("a visit bends the rule", self.t["l_transfer"])
+        self.assertIn("A visit bends the rule", self.t["l_transfer"])
         self.assertIn("the last tanker quietly put back", self.t["a_recall_photo"])
         self.assertNotIn("{B}'s birthday", self.t["p_birthday"])
         self.assertEqual(tuple(self.cards["dec_halfway"]["days"]), (24, 24))
@@ -1243,7 +1245,7 @@ class TestRound20(unittest.TestCase):
         self.assertIn("half a minute a question", self.o["dil_dose"][0])
         self.assertIn("five days out", self.t["a_descent_clear"])
         self.assertIn("a shade under 10.96 seconds", self.t["m_carrier"])
-        self.assertIn("No two-hour orbit", self.t["m_alias"])
+        self.assertIn("A two-hour orbit would show; a week of residuals is too sparse", self.t["m_alias"])
         self.assertIn("past a hundred millisieverts", self.t["storm_dose"])
         self.assertIn("five days of HOLD", self.t["end_lights"])
         # Dry seed survives freezing; wet-packed germination trays do not.
@@ -1373,7 +1375,7 @@ class TestRound21(unittest.TestCase):
         self.assertIn("{B} calls the roll, ship by ship", self.t["end_long_orbit"])
         self.assertIn("enough to get there, not back", self.t["end_friend"])
         self.assertIn("behind a door on ship power", self.t["end_close"])
-        self.assertIn("the folded ship's battery", self.t["end_through"])
+        self.assertIn("the folded ship's last battery", self.t["end_through"])
         self.assertIn("panels, a mast, a winch", self.t["end_through"])
         blob = json.dumps(self.text)
         for gone in ("clearing its throat", "Slow, not stingy", "In time for the bit", "Then {A}, hoarse"):
@@ -1434,7 +1436,7 @@ class TestRound22(unittest.TestCase):
     def test_final_ending_wording(self):
         self.assertIn("every floodlight burning the charge", self.t["end_lights"])
         self.assertIn("By morning the trays are frozen", self.t["end_long_orbit"])
-        self.assertIn("rover's spare packs", self.t["end_close"])
+        self.assertIn("rover's spare battery went to heaters", self.t["end_close"])
 
 
 class TestRound24(unittest.TestCase):
@@ -1500,7 +1502,7 @@ class TestRound24(unittest.TestCase):
     def test_endings_round_24(self):
         self.assertIn("Thirty-three: a click", self.t["end_patience"])
         self.assertIn("NO GO", self.t["end_through"])
-        self.assertIn("{B} votes last", self.t["end_long_orbit"])
+        self.assertIn("{B} makes it eight", self.t["end_long_orbit"])
 
     def test_fold_lines_never_repeat_in_a_season(self):
         from sim.render import Renderer
@@ -1511,6 +1513,73 @@ class TestRound24(unittest.TestCase):
         for out in TestRound19.runs()[:60]:
             c = collections.Counter(p for _, s in Renderer(self.text).reader(out) for p in pool if s.endswith(p))
             self.assertTrue(all(n == 1 for n in c.values()), c)
+
+
+class TestRound25(unittest.TestCase):
+    """Pass 2: voice cap, quirk facts as moments, fairer suspects, galley screen."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.text, cls.pack = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] + " " + " ".join(o[1] for o in c.get("o", [])) for c in cls.text["cards"]}
+
+    def test_voice_prints_on_at_most_two_cards_a_season(self):
+        from sim.render import Renderer, VOICE_CARDS
+        self.assertEqual(VOICE_CARDS, 2)
+        if not hasattr(TestRound19, "pack"):
+            TestRound19.setUpClass()
+        crew, voices = self.text["crew"], self.text["voice"]
+        self.assertEqual(voices[crew.index("Marco")], "Capacity: one.")
+        for out in TestRound19.runs()[:100]:
+            r = Renderer(self.text)
+            list(r.reader(out))
+            for c in r.vcards.values():
+                self.assertLessEqual(len(c), 2)
+        jac = voices[crew.index("Jacques")]
+        for out in TestRound19.runs()[:100]:
+            n = sum(s.count(jac) for _, s in Renderer(self.text).reader(out))
+            self.assertLessEqual(n, 2)
+
+    def test_no_hard_coded_sign_off(self):
+        for cid in ("m_alias", "signal_reply", "c_hail"):
+            self.assertIn("{Av}", self.t[cid], cid)
+            self.assertNotIn("Out.", self.t[cid], cid)
+
+    def test_requested_quirk_facts_stay(self):
+        with open(os.path.join(CONTENT, "roster.lv"), encoding="utf-8") as f:
+            roster = {l.split()[1]: l for l in f if l.startswith("crew ")}
+        for name, words in {"Michelle": ("Disney", "Tesla"), "Jai": ("JetBlue", "wedding"),
+                            "Marco": ("Elgin", "BMW", "Mexico")}.items():
+            for w in words:
+                self.assertIn(w, roster[name], (name, w))
+        self.assertNotIn("Copy. Done. Next.", roster["Jacques"].split("habit", 1)[1])
+
+    def test_suspects_stay_open(self):
+        for cid in ("m_checked", "m_checked_g"):
+            self.assertNotIn("scar in a photo", self.t[cid])
+        self.assertIn("scar in a low-res pass", self.t["l_manifest"])
+        self.assertIn("{A} circles it", self.t["m_hopper"])
+        self.assertNotIn("pen down", self.t["m_hopper"])
+        self.assertIn("Tolerance has a column for crew", self.t["g_ledger"])
+        self.assertIn("a relay, a hopper, Cargo 2", self.t["g_ledger"])
+        self.assertIn("flare forecast", self.t["m_dropout"])
+
+    def test_galley_screen_closes_in_unanswered_endings(self):
+        self.assertIn("pure coincidence", self.t["a_window_hail"])
+        for cid in ("end_through", "end_patience"):
+            self.assertIn("pure coincidence, a galley screen", self.t[cid], cid)
+        self.assertIn("galley screen blinks ONLINE, then OFFLINE", self.t["end_close"])
+
+    def test_through_the_dust_is_consistent(self):
+        self.assertNotIn("upright", self.t["e_entry_hold_q"])
+        self.assertIn("the brown closes over the window", self.t["e_entry_hold_q"])
+        self.assertNotIn("Radar", self.t["end_through"])
+        epi = " ".join(l for _, l in self.text["epi"]["story"])
+        self.assertNotIn("upright", epi)
+        self.assertNotIn("blamed a pump", epi)
+        self.assertIn("the next crew's germination trays", self.t["end_long_orbit"])
+        self.assertIn("Week three, storm spent", self.t["end_patience"])
+        self.assertIn("They drive home cold", self.t["end_close"])
 
 
 if __name__ == "__main__":
