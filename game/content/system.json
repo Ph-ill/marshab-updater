@@ -236,12 +236,8 @@
       "name": "Cargo 2",
       "lines": [
         [
-          "a_window_hail",
-          "Wrote when it landed. Kept writing. Was answered in time."
-        ],
-        [
           "end_lights",
-          "Wrote when it landed. Kept writing."
+          "Wrote when it landed. Kept writing. Spent its lights bringing seven down."
         ],
         [
           "end_through",
@@ -249,7 +245,7 @@
         ],
         [
           "end_long_orbit",
-          "Wrote when it landed. Kept writing."
+          "Wrote when it landed. Kept writing. Kept a lamp lit for three weeks of passes."
         ],
         [
           "end_patience",
@@ -257,11 +253,15 @@
         ],
         [
           "end_friend",
-          "Wrote when it landed. Kept writing."
+          "Wrote when it landed. Kept writing. Had a charge waiting for the truck."
         ],
         [
           "end_close",
           "Wrote when it landed. Kept writing. Heard back once, and it was enough."
+        ],
+        [
+          "a_window_hail",
+          "Wrote when it landed. Kept writing. Was answered in time."
         ]
       ]
     }
