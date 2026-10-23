@@ -1,0 +1,166 @@
+# Private dilemmas: only the owner of {A} sees the choice; the astronaut decides in
+# character if nobody answers. Both options are decent; the cost is the point.
+# House style: content/STYLE.md.
+
+card dil_dose
+type dilemma
+days 6 30
+weight 8
+duration 3
+roles A
+when cond A ok
+lean warm report keep
+text {A}'s dosimeter reads higher than anyone else's, probably because the bunk sits close to the hull. Moving it means telling the flight surgeon, who will want a meeting.
+option report | Tell the surgeon | The meeting has a 40-minute round trip on every question. {A}'s bunk moves two meters closer to the water tanks, and the reading drops by a third.
+  morale A -2
+  trait A warm 2
+option keep | Keep it quiet | {A} logs it privately and moves the sleeping bag to the other wall. It isn't nothing. It isn't a meeting either.
+  set dose_hidden
+  who dose_who A
+
+card dose_swap
+type beat
+due
+once
+days 14 40
+roles A B
+when flag dose_hidden
+when is A dose_who
+when same A B
+when cond B ok
+text {B} reads the dosimeter logs the way other people read the news, and notices {A}'s numbers. Without a word, {B} swaps bunks with {A} that night. By morning the readings are even.
+do bond A B 10
+do bond B A 6
+
+card dil_gains
+type dilemma
+days 5 32
+weight 9
+duration 3
+roles A
+when cond A ok
+lean brave tune wait
+text The attitude control on {A}'s ship has a slow wobble, and {A} seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs ground sign-off, and the ground is 20 minutes away and asleep.
+option tune | Adjust it now | {A} makes the change, watches the wobble die away over six cycles, and writes it down before anyone can ask. The ground signs off in the morning with a single word: "Nice."
+  set gains_tuned
+  who gains_who A
+  trait A brave 2
+option wait | Wait for sign-off | {A} files the request and lives with the wobble overnight. The ground approves the exact change {A} proposed, word for word, 14 hours later.
+  trait A brave -2
+  morale A 2
+
+card gains_payoff
+type event
+due
+once
+days 18 40
+roles A
+when flag gains_tuned
+when is A gains_who
+when cond A ok
+text On the big correction burn, the attitude trace from {A}'s ship is a flat line. Every other ship shows the same slow wobble {A} found. By the next burn, {A}'s numbers are running on all seven.
+do morale A 5
+do res fuel 1
+
+card dil_manual
+type dilemma
+days 3 34
+weight 8
+duration 3
+roles A
+when cond A ok
+lean curious manual auto
+text The cabin humidity control on {A}'s ship is hunting, swinging wet and then dry every few minutes. {A} could put it in manual and hold it by hand, just for a minute. Everyone knows how "just for a minute" goes.
+option manual | Take it in manual | Just for a minute turns into most of a shift. {A} holds humidity within a percent by hand and finds the cause: a sensor sitting in the steam from the galley kettle. The sensor moves, and the control goes back to auto.
+  trait A curious 3
+  morale A -1
+option auto | Leave it in auto | {A} leaves the controller alone and logs every swing. The pattern lines up with the galley schedule. The kettle moves, the controller settles, and it never knows how close it came.
+  morale A 2
+
+card dil_bracket
+type dilemma
+days 8 36
+weight 8
+duration 3
+roles A
+when cond A ok
+lean brave zip ticket
+text {A} finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
+option ticket | Open a ticket | Earth wants photos, measurements, and a part number nobody can find. {A} supplies all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
+  morale A -1
+option zip | Zip-tie it | {A} redesigns the mount on the spot with zip ties and spite. It is ugly, and it will outlast the ship.
+  set zip_fix
+  res spares -1
+  morale A 3
+
+card dil_letter
+type dilemma
+days 10 38
+weight 7
+duration 3
+roles A
+when cond A ok
+lean warm now save
+text A data packet from home arrives for {A}, flagged personal. Reading it now means reading it on a cramped ship with no privacy. Saving it means carrying it unread until a quiet moment that may never come.
+option now | Read it now | {A} reads it in the airlock, the only place aboard with a door. {A} comes out ten minutes later, doesn't say what it said, and makes everyone coffee.
+  morale A 6
+option save | Save it | {A} saves it for a bad day. Every mission has one, and now {A} has something set aside for it.
+  set letter_saved
+  who letter_who A
+
+card letter_open
+type beat
+due
+once
+days 20 41
+roles A
+when flag letter_saved
+when is A letter_who
+when morale A <= 52
+text It's a bad day, the kind {A} saved the letter for. {A} reads it in the airlock and then goes back to work. Whatever it said, it was enough.
+do morale A 12
+
+card dil_eva_cam
+type dilemma
+days 7 33
+weight 7
+duration 3
+roles A
+when cond A ok
+lean brave go wait
+text An external camera on {A}'s ship has frosted over. Clearing it means an unscheduled EVA. Nobody would blame {A} for waiting for the planned one.
+option go | Go out now | {A} clears the lens in twenty minutes and, before coming in, takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
+  trait A brave 3
+  morale A 4
+option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which is exactly what the risk assessment called acceptable. {A} has read the risk assessment twice.
+  trait A brave -2
+
+card dil_credit
+type dilemma
+days 9 36
+weight 6
+duration 3
+roles A
+when cond A ok
+lean warm let correct
+text Mission Control credits the fix for last week's scrubber fault to the wrong ship. {A} did the work. Correcting the record means a formal message, a 40-minute round trip, and a form.
+option correct | Correct the record | {A} sends the form. Mission Control replies with a correction and an apology, both on the same form.
+  morale A 2
+option let | Let it go | {A} lets it go. The other ship's crew find out anyway and send the good coffee across on the next transfer.
+  morale A 4
+  trait A warm 2
+
+card dil_interlock
+type dilemma
+days 4 36
+weight 8
+duration 3
+roles A
+when cond A ok
+lean brave override vote
+text The airlock on {A}'s ship won't cycle. One door sensor says "closed". The other says "ajar". The door is obviously closed, and {A} has the override code.
+option override | Use the override | {A} overrides, cycles the lock, and opens a ticket straight away. The sensor was right: a seal had crept a millimeter. {A} reseats it before anyone needs that airlock in a hurry.
+  trait A brave 2
+option vote | Find a third opinion | {A} pulls the lock's pressure trace as a tiebreaker. The door is sealed, and the "ajar" sensor is lying. {A} swaps it, the interlock is satisfied, and nobody overrode anything.
+  trait A curious 2
+  res spares -1
