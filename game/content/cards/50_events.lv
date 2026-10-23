@@ -36,7 +36,7 @@ weight 16
 once
 roles A
 when cond A ok
-text {A} runs the dosimeter check. Every crew member is now past a hundred millisieverts, and the line is still climbing at the same slope. {A} writes it down and underlines it, and leaves the underline to say the rest.
+text {A} runs the dosimeter check. Every crew member is now past a hundred millisieverts, and the line is still climbing at the same slope. {A} writes it down and underlines it.
 do trait A curious 1
 
 card comm_delay

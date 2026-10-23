@@ -105,7 +105,7 @@ text The airlock is the one place aboard with no camera feed to the ground, so r
 option now | Read it now | {A} reads it in the airlock and comes out ten minutes later without saying what it said. That evening {A} calls the other ships one by one, about nothing in particular.
   set letter_read
   morale A 6
-option save | Save it | {A} saves it for a bad day. Every mission has one, and now {A} has something set aside for it.
+option save | Save it | {A} saves it for a bad day. Every mission has one.
   set letter_saved
   mark t_letter
 
@@ -206,7 +206,7 @@ lean brave zip ticket
 text {A} finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
 option ticket | Open a ticket | Earth wants photos, measurements, and a part number that isn't on any drawing. {A} sends all three. The approved repair arrives days later and is, in every way that matters, a zip tie.
   morale A -1
-option zip | Zip-tie it | {A} lashes the rack in a pattern no design review would pass, and it takes every load the ship can throw at it. The anomaly report calls it "interim". It is not interim.
+option zip | Zip-tie it | {A} lashes the rack in a pattern no review would pass. The anomaly report calls it "interim". It is not.
   set zip_fix
   who zip_who A
   res spares -1
@@ -242,7 +242,7 @@ option go | Close up and go out | With the next ship closed up and a suit at its
   res fuel -1
   trait A brave 3
   morale A 4
-option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which the risk assessment calls acceptable. {A} has read all of it, appendix included.
+option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which the risk assessment calls acceptable.
   trait A brave -2
 
 card dil_interlock

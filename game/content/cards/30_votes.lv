@@ -11,8 +11,8 @@ once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: eight ships in one frame, with Earth filling the sky behind them. That means eight ships a hundred metres apart, and the propellant to get there. The request says "iconic" four times.
-option fly | Fly the formation | Eight ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: seven ships, Earth, and the edge of {A}'s own hull. {A} breathes again when they part.
+text Public affairs wants a fleet portrait: eight ships in one frame, with Earth filling the sky behind them. That means eight ships a hundred metres apart, and the propellant to get there.
+option fly | Fly the formation | Eight ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: seven ships, Earth, and the edge of {A}'s own hull.
   set photo_taken
   res fuel -2
   morale A 4

@@ -15,7 +15,7 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
-text {A}'s arrival-test dish scans the old common channel toward Mars, where the ground now checks only for the hopper's beacon. A week of integration shows a faint carrier. Folded at a shade under 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias, probably," {A} says.
+text {A}'s arrival-test dish scans the old common channel toward Mars, where the ground now checks only for the hopper's beacon. A week of integration shows a faint carrier: folded at a shade under 10.96 seconds, it stands up like a fence post. "An alias, probably," {A} says.
 do who ow_hail A
 do mark t_carrier
 
@@ -29,7 +29,7 @@ roles A B
 when is A ow_hail
 when since t_carrier >= 4
 when fired m_theory
-text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against a fixed 10.96-second clock by over a second and a half a day, the fleet's closing rate on Mars. No two-hour orbit in the residuals. "Booked again. Out," {A} logs.
+text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against a fixed 10.96-second clock by over a second and a half a day this week, the fleet's closing rate on Mars. No two-hour orbit in the residuals. "Booked again. Out," {A} logs.
 do bond A B 3
 do open dec_signal
 
@@ -120,7 +120,7 @@ option send | Send the kit | The kit rides the line across alone. {A}'s wrist is
   kit A
   res fuel -1
   morale A 6
-option volunteer | {B} brings it over | {B} rides the line across with the kit and splints the wrist personally. The report calls it "nominal". Seven ships read it, and every one of them knows better.
+option volunteer | {B} brings it over | {B} rides the line across with the kit and splints the wrist personally. The report calls it "nominal". Seven ships read it and know better.
   kitfrom B A
   move B A
   res fuel -1

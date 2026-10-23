@@ -144,7 +144,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when !flag signal_answered
-text Three hours of an empty slot on the net; the next ship's lens showed lit windows. Then {A}, hoarse. An old-channel frame asked for a key update the new stack had never heard of; main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The old channel drops to receive only.
+text Three hours of an empty slot; the next ship's lens showed lights on. Then {A}, from the avionics bay: an old-channel frame had asked for a key update the new stack never knew. Main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The old channel drops to receive only.
 do trait A brave 3
 do morale A -2
 
@@ -158,7 +158,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when flag signal_answered
-text Three hours of an empty slot on the net; the next ship's lens showed lit windows. Then {A}, hoarse. An old-channel frame asked for a key update the new stack had never heard of; main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The hellos move to a sandbox.
+text Three hours of an empty slot; the next ship's lens showed lights on. Then {A}, from the avionics bay: an old-channel frame had asked for a key update the new stack never knew. Main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The hellos move to a sandbox.
 do trait A brave 3
 do morale A -2
 

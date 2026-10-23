@@ -74,9 +74,9 @@
     "res_default": "No answer in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
     "end": "From the log:",
-    "fold": "On the other ships, {who} ran the water rounds and checked the recovery rate.",
+    "fold": "{who} ran the water rounds. The reclaimer printed its blessing: RECLAIMED. DRINK SPARINGLY.",
     "fold_pool": [
-      "On the other ships, {who} ran the water rounds and checked the recovery rate.",
+      "{who} ran the water rounds. The reclaimer printed its blessing: RECLAIMED. DRINK SPARINGLY.",
       "{who} swapped scrubber cartridges two days early, because the trend lines said so.",
       "{who} answered mail from home: weather, a dog, a fence that needs mending.",
       "{who} reran pump checks that came back two tenths off, then on.",
@@ -87,7 +87,7 @@
       "{who} wiped down windows and watched Mars not move.",
       "{who} wrote letters home and dated them for after landing.",
       "{who} slept nine hours on the flight surgeon's orders.",
-      "{who} walked hulls with the camera and found them whole.",
+      "{who} panned the hull cameras seam by seam and found every seam whole.",
       "{who} stripped and re-taped frayed cable runs."
     ]
   },
@@ -195,7 +195,7 @@
       ],
       [
         "dose_swap",
-        "Moved the bunk to the water wall on a crewmate's newer calibration, and slept."
+        "Moved the bunk beside the water on a friend's better numbers, and slept."
       ],
       [
         "dose_ok",
@@ -211,11 +211,11 @@
       ],
       [
         "m_flash1",
-        "Kept both timestamps. Still has them."
+        "Counted the frames between flashes, and got eleven seconds every time."
       ],
       [
         "m_overlay",
-        "Put two traces side by side. Didn't look away."
+        "Laid the pixel over the carrier, and was first to say it out loud."
       ],
       [
         "sharpie2",
@@ -223,7 +223,7 @@
       ],
       [
         "l_stash",
-        "Found the first of the notes."
+        "Found the packer's first note, behind a stowage panel, and kept the bag."
       ],
       [
         "m_ripple",
@@ -274,8 +274,12 @@
         "Saw the wobble first."
       ],
       [
+        "l_manifest",
+        "Read the manifest like a shopping list, and asked after the socks."
+      ],
+      [
         "l_long_table",
-        "Gave the first toast. It was short, and it landed."
+        "Gave the first toast: eleven words, left to stand."
       ],
       [
         "storm_shelter2",

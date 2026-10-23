@@ -101,7 +101,7 @@ due
 once
 days 13 20
 roles A
-when !is A ow_list
+when is A abort_who
 when home A
 text The galley screen on {A}'s ship has started to sulk: after every restart it sits on its logo longer than it used to, then boots with a sad cloud icon and the word OFFLINE. {A} files a ticket titled "manners".
 do morale A 1
@@ -129,7 +129,7 @@ roles A
 when flag stash_kept
 when is A stash_who
 when !flag stash_exposed
-text A voice note from the Starbase loading crew reaches {A}, a forklift beeping behind it. The one with the Sharpie: "Eat the good rations first. The bad ones keep. And say hello to the hardware for us. It sulks if no one does." {A} checks the locker. True.
+text A voice note from the Starbase loading crew reaches {A}, a forklift beeping. The one who packed the bags: "Eat the good rations first. The bad ones keep. And say hello to the hardware for us. It sulks if no one does." {A} checks the locker. True.
 do morale A 2
 
 card p_packer_note_g
@@ -141,7 +141,7 @@ days 16 17
 roles A
 when !is A ow_list
 when !flag stash_kept
-text A voice note from the Starbase loading crew reaches {A}, a forklift beeping behind it. The one with the Sharpie: "Eat the good rations first. The bad ones keep. And say hello to the hardware for us. It sulks if no one does." {A} checks the galley log: the good rations went first, fleet-wide. True.
+text A voice note from the Starbase loading crew reaches {A}, a forklift beeping. The one who packed the bags: "Eat the good rations first. The bad ones keep. And say hello to the hardware for us. It sulks if no one does." {A} checks the galley log: the good rations went first, fleet-wide. True.
 do morale A 2
 
 card g_news
@@ -345,7 +345,7 @@ weight 7
 once
 roles A B
 when same A B
-text Movie night with {B}, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun. {A} pauses it, and they listen until it stops. Then {A} puts on something with a sky in it.
+text Movie night with {B} over the link, a tablet on each ceiling, synced on a countdown: {A} picked a film set on a submarine. Halfway through, {A}'s hull ticks as the ship turns out of the sun. {A} pauses both screens, and they listen until it stops. Then {A} puts on something with a sky in it.
 do bond A B 4
 
 card p_dream
@@ -368,7 +368,7 @@ once
 days 7 7
 roles A
 when cond A ok
-text Once a week the fleet eats together on video: eight tablets on eight galley tables, one meal at one time. {A} has the toast. It's short, it isn't a joke, and it lands.
+text Once a week the fleet eats together on video: eight tablets on eight galley tables, one meal at one time. {A} has the toast. It is eleven words long, and the table lets it stand.
 do morale A 3
 
 card l_long_table2
@@ -381,7 +381,7 @@ roles A B
 when cond A ok
 when is A ow_list
 when cond B ok
-text Long table night. {B} has the toast and gives it to the empty second chair at each of the eight tables. It lands on every screen at once, the one conversation out here with no delay. {A} laughs on the beat, and it counts double.
+text Long table night. {B} has the toast and gives it to the empty second chair at each of the eight tables. It lands on every screen at once, the one conversation out here with no delay. {A} laughs on the beat.
 do morale A 3
 
 card g_third_quarter
@@ -427,7 +427,7 @@ due
 once
 days 28 28
 roles A
-text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, a forklift with a name, on charge at the service port at the foot of a cargo ship's leg. The one with the Sharpie signs off: "Eight of you. Write when you land, every one." {A} clips the forklift inside the logbook.
+text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, a forklift with a name, on charge at the service port at the foot of a cargo ship's leg. The same handwriting signs off: "Eight of you. Write when you land, every one." {A} clips the forklift inside the logbook.
 do morale A 2
 
 card sharpie2
@@ -439,7 +439,7 @@ once
 roles A
 when fired dil_stash
 when cond A ok
-text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list, and under it a laminated card in a bag: an old handshake procedure, headed in the same Sharpie hand: "Old manners, for old hardware." Beside it, the little ship again, fingers crossed.
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list, and under it a laminated card in a bag: an old handshake procedure, headed in the same Sharpie hand: "Old manners, for old hardware." Down the margin, half under the tape: "...INSIDE ONE TICK."
 do res spares 1
 do morale A 5
 
@@ -574,7 +574,7 @@ once
 days 41 41
 roles A
 when is A ow_theory
-text {A} uncaps the blue marker one last time and adds a second lighthouse to the drawing: small, standing on the ground, and beside it a figure holding a Sharpie. Then {A} folds it into a chest pocket with the marker.
+text {A} uncaps the blue marker one last time and adds a second lighthouse to the drawing: small, standing on the ground, and beside it a figure holding a marker. Then {A} folds it into a chest pocket with the marker.
 do morale A 2
 
 card a_suit_plan
@@ -626,7 +626,7 @@ days 42 42
 roles A
 when flag arrive_wait
 when is A abort_who
-text Aerocapture. Three minutes of plasma blackout, eight ships silent in turn. Seven come out the far side on time. {A}'s comes out nine seconds late: nine seconds of nothing on the net, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers as if nothing happened.
+text Aerocapture. Three minutes of plasma blackout, eight ships silent in turn. Seven come out the far side on time. {A}'s comes out nine seconds late: nine seconds of nothing on the net, the call for a manual corridor correction ready on {A}'s tongue. Then {A}'s voice, reading out the orbit numbers, flat and in order.
 do morale A 3
 
 card e_entry_clear

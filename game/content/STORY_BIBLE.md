@@ -1233,3 +1233,48 @@ a rerun. Options, cheapest first:
    cost: new plants, new reveal, new endings, a fresh blind review.
 Recommendation: (1) for season 2, keyed so a returning player never gets the
 same phrasing twice in a row; leave (3) for a sequel.
+
+## Round 21 notes
+
+Blind round 21 (hunter, editor; no engineer). Aim: continuity, occupancy and
+ending must-fixes; fair play; the editor's line fixes; quirk and voice texture.
+
+- **One galley-screen owner.** `l_handshake` is cast from `abort_who` (set only
+  by `l_reboot`), so the crewmate whose galley screen sulked is the one who says
+  hello. `a_window_hail` pays it off: "a sulking galley screen boots to ONLINE".
+- **Light time.** `m_alias` (p20) states the slide "this week" and names it the
+  fleet's closing rate on Mars; `m_overlay` (p36) says "thirty seconds now, a
+  second less each day" (DE440s: 33.1-29.4 s); p41 stays at 5-9 s. The numbers were
+  already consistent; the wording now says what each measures.
+- **Occupancy.** The fold line no longer puts one name on several ships ("ran the
+  water rounds. The reclaimer printed its blessing: RECLAIMED. DRINK SPARINGLY.");
+  "walked hulls" is now "panned the hull cameras". `p_movie` and `beat_coffee`
+  happen over the link. "Eight hands" is gone.
+- **Calendar.** Days 182-186 are declined as a fix: no card says 180; the pitch's
+  180 days run from the departure burn (real day 6) to entry (real day 186). See
+  STYLE.
+- **Endings.** `end_long_orbit` is a remote inventory read up the old channel,
+  "all eight chose the lamp", sign-off "The ninth kept the porch light on.";
+  `end_friend` states the battery maths (52%, arrive on four, none to come back)
+  and the stakes (eleven days of water, the spare bit in Cargo 2's hold);
+  sign-off "Always slow. Never mean."; `end_close` gives the reason Cargo 2
+  must wake (a hold door that opens on ship power), "The ninth paid for the
+  drill."; `end_through` uses "the folded ship's battery" and Cargo 2's hold gives
+  panels, a mast, a winch; `end_patience` loses the throat-clearing cliché.
+- **Fair play.** `m_checked`/`m_checked_g` (p37) add "Cargo 2's landing ellipse is
+  closer, but Cargo 2 is a scar in a photo": the ground waves it away. WHO's
+  confidence point is unchanged. `sharpie2` plants "...INSIDE ONE TICK." The crater
+  payoff (`a_recall_plan`/`a_recall_home`) moved to day 41 to thin p40. The
+  hopper's fate is one line in `a_report` ("dead since the week it tipped").
+- **Editor lines.** Stock tails cut (toast, zip ties, lighthouse, rescue,
+  letters, flash, dosimeter, entry wait); "hoarse" replaced in `r_dark`/`r_dark_a`;
+  the four flagged epilogue lines rewritten; `l_manifest` gained an epilogue line
+  (coverage 300/300). Sharpie is now in four cards (`l_stash`, `sharpie2`,
+  `a_patch`, `end_lights`). Three hooks lose their bare timestamp opener.
+- **Quirks and voice.** Marco: Saturday-night galley "club" and the pump's bass
+  line. Diego: cat-proofing replaced with a latch-and-washer fix, so his only cat
+  line is the cat-sitter mail; Michelle keeps the kitten lines. Jacques answers
+  "Copy. Done. Next."; Jai calls the hatch drill "Two, clear. Three, clear. Seal."
+- **Budget.** gzip 24,920 (cap 24,933), paid for by trimming tails in
+  `dil_bracket`, `dil_eva_cam`, `dec_photo`, `dec_name`, `dil_letter`, `m_carrier`.
+

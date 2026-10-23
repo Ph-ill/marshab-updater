@@ -45,7 +45,8 @@ players).
   day 33, about 7.5 at day 40 (452.7 s; round trip "a quarter of an hour", round 18
   engineer), 8 at arrival (day 42); the round trip on sol 2 is 16.7 minutes, so a
   surface waiver takes longer than that ("eighteen minutes"). Mars one-way: ~100 s at day 22 (round trip 18 ticks), about 40 s at
-  day 34 (39-42 s, round 20 engineer), just under half a minute at day 36, 15 s at day 39, 10 s round trip
+  day 34 (39-42 s, round 20 engineer), about thirty seconds at day 36 and a second less each day (33.1-29.4 s over
+  log day 36, DE440s; `m_overlay` says "thirty seconds now, a second less each day"), 15 s at day 39, 10 s round trip
   at day 41 (5 s one-way). The carrier slides against fleet time by about 1.65
   seconds a day around day 20, easing to about one second a day from day 28 to
   41 (DE440s, round 18 engineer). The tick is 10.96 s; in prose say "about eleven
@@ -391,3 +392,9 @@ Bad, and why:
 2. `python3 sim/season.py` and read `sim/out/narrative.txt` with real names in
    it. Ask, for every line: would this person be glad to read it?
 3. `sh tests/run.sh`: all 8 ships must produce identical digests.
+- Calendar (round 21): log day d >= 7 covers real days 7+5(d-7) to +4, so day 42
+  is real days 182-186. Entry is real day 186, 180 days after the departure burn
+  on real day 6; "a 180-day voyage" in the pitch counts from the burn. Light-time
+  numbers say what they measure: `m_alias` gives the slide this week (about 1.7 s
+  a day at day 20; it shrinks as the fleet closes), `m_overlay` the one-way light
+  time from Mars.

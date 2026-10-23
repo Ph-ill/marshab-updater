@@ -28,7 +28,7 @@ duration 2
 roles A B
 lean curious after home
 text The backup-site maps, stitched from imagery older than the cargo landings (the sharpest camera at Mars rode on the grey relay), show an unnamed crater small enough for the fleet to name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants somewhere at home.
-option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
+option after | Honor the planners | The name goes in the request. A committee will argue about it for years. {A} calls that part of the honor.
   set name_plan
   trait A curious 2
 option home | Name it for home | The crater gets the name of a small town on Earth that most of Earth has never heard of. The town's paper runs it on the front page.
@@ -50,7 +50,7 @@ option record | Send the data | The burst's source shrinks from a smear of sky t
   morale B -2
   trait A curious 3
   morale A 3
-option save | Letters first | Ground telescopes get it anyway, less sharply. {B} reads every letter, and doesn't pretend it was an easy trade.
+option save | Letters first | Ground telescopes get it anyway, less sharply. {B} reads every letter twice.
   trait B warm 2
 
 # --- The mystery chain (fixed days; one beat a day from 35 to 41) ------------------
@@ -117,7 +117,7 @@ once
 days 38 38
 roles A
 when is A ow_theory
-text {A} looks at the lighthouse again. Timed to the microsecond, every knock runs a hundredth of a second early, then late, once a day, and the day is thirty-seven minutes too long. {A} writes "24 h 37 m" under the lighthouse and says nothing at all.
+text {A} looks at the lighthouse again. Timed to the microsecond, every knock runs a hundredth of a second early, then late, once a day, and the day is thirty-seven minutes too long. {A} writes "24 h 37 m" under the lighthouse, and then, smaller: "a Mars day".
 do trait A curious 2
 
 card m_flash1
@@ -161,7 +161,7 @@ roles A B
 when flag flash_twice
 lean curious look leave
 text {A} wants to ask the ground to task an orbiter for a fast sequence over the lit pixel, at the cost of the fleet's next deep-space pass: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
-option look | Ask for the sequence | The request goes up. {A} writes the apology to seven inboxes personally, and means each one.
+option look | Ask for the sequence | The request goes up. {A} writes the apology to seven inboxes personally.
   set flash_looked
   morale A -2
   morale B -2
@@ -234,7 +234,7 @@ when flag flash_ground
 when !is A ow_hail
 when !is A flash_who
 when !is A ow_theory
-text {A} borrows the old-channel receiver record, slides it back by the one-way light time from Mars, just under half a minute, and lays it over the forty frames. The carrier peaks on the exact frame the pixel lights. Every time. {A} puts both traces on the galley screen, side by side.
+text {A} borrows the old-channel receiver record, slides it back by the one-way light time from Mars, thirty seconds now, a second less each day, and lays it over the forty frames. The carrier peaks on the exact frame the pixel lights. Every time. {A} puts both traces on the galley screen, side by side.
 do trait A curious 3
 
 card m_checked
@@ -246,7 +246,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_looked
-text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is still the hopper, if it bounced when it tipped; its last fix is two years old and good to ninety kilometres. Two weeks of hails on the old key, unanswered. On the list it goes.
+text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is the hopper, if it bounced when it tipped. Cargo 2's landing ellipse is closer, but Cargo 2 is a scar in a photo. Two weeks of hails on the old key, unanswered. On the list it goes.
 do morale A 1
 
 card m_checked_g
@@ -258,7 +258,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_left
-text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is still the hopper, if it bounced when it tipped; its last fix is two years old and good to ninety kilometres. Two weeks of hails on the old key, unanswered. "Surveying it."
+text The ground answers the overlay: nothing on file near that pixel should have power. Nearest is the hopper, if it bounced when it tipped. Cargo 2's landing ellipse is closer, but Cargo 2 is a scar in a photo. Two weeks of hails on the old key, unanswered. "Surveying it."
 do morale A 1
 
 card m_listen
@@ -302,7 +302,7 @@ type event
 cat arrival
 due
 once
-days 40 40
+days 41 41
 roles A
 when fired m_reveal
 when flag name_plan
@@ -313,7 +313,7 @@ type event
 cat arrival
 due
 once
-days 40 40
+days 41 41
 roles A
 when fired m_reveal
 when flag name_home
@@ -340,7 +340,7 @@ roles A
 when fired m_reveal
 when is A flash_who
 when fired a_patch
-text {A} lays one tick against the light time. The tick is eleven seconds; Earth has never been closer than minutes. Earth's hails went out blind, a sweep for the relay; the knocks its dishes caught were booked to the hopper's beacon. Nothing in Mars orbit speaks the old channel. {A} puts the pen down. "It heard every hail. Every one arrived after it had stopped waiting."
+text {A} lays one tick against the light time. The tick is eleven seconds; Earth has never been closer than minutes. Earth's hails went out blind, a sweep for the relay; the knocks its dishes caught were booked to the hopper's beacon, dead since the week it tipped. Nothing in Mars orbit speaks the old channel. {A} puts the pen down. "It heard every hail. Every one arrived after it had stopped waiting."
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -352,7 +352,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks; {A}'s receiver hears it five seconds later. Weeks of the fleet's late hellos ran that path without waking it, so the flight director cleared two lines off the laminated card: the hello, and a HOLD on the very next tick. One tick awake is all a cold battery can spare. {A} sends both, signed. The hello lands inside the tick, barely. By the next pass one lamp burns steady.
+text 04:10:07: Cargo 2 knocks; {A}'s receiver hears it five seconds later. Weeks of late hellos ran that path without waking it, so the flight director cleared two lines off the laminated card: the hello, and a HOLD on the next tick. One tick awake is all a cold battery can spare. {A} sends both. The hello lands inside the tick, barely. By the next pass one lamp burns steady, and a sulking galley screen boots to ONLINE.
 do set c2_answered
 do morale A 8
 

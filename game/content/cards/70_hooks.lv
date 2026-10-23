@@ -32,7 +32,7 @@ roles A
 when cond A ok
 when home A
 do who hook_who A
-text 01:50. The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is awake to see it first, a minute before the fleet's night watch.
+text The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is awake at 01:50 to see it first, a minute before the fleet's night watch.
 
 # --- 3. Solar flare ----------------------------------------------------------
 card h_flare
@@ -46,7 +46,7 @@ roles A
 when cond A ok
 when !fired storm_shelter
 do who hook_who A
-text 23:52. The X-ray monitor jumps, and the ground's space weather alert lands minutes later: a major flare. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
+text The X-ray monitor jumps at 23:52, and the ground's space weather alert lands minutes later: a major flare. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
 
 # --- 4. Uncommanded thruster --------------------------------------------------
 card h_thruster
@@ -129,7 +129,7 @@ weight 14
 roles A
 when cond A ok
 do who hook_who A
-text 02:10. {A}'s star tracker drops out of lock: one star too many in the field, and the next frame doesn't agree with the first. Attitude hands over to the backup tracker, which has never been asked to fly alone.
+text {A}'s star tracker drops out of lock in the small hours: one star too many in the field, and the next frame doesn't agree with the first. Attitude hands over to the backup tracker, which has never been asked to fly alone.
 
 # --- 9. A voice on the loop ----------------------------------------------------------
 card h_voice

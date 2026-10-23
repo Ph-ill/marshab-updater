@@ -25,7 +25,7 @@ roles A
 when !fired dil_stash
 lean warm share keep
 text The three packs from behind the panel are the good rations, the ones the galley ran out of first. They aren't on any inventory.
-option keep | Keep them quiet | {A} thanks the Sharpie silently. The packs go into a personal locker, for the bad week every mission eventually has.
+option keep | Keep them quiet | {A} thanks the packer silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash
   who stash_who A
@@ -45,7 +45,7 @@ roles A B
 when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
-text {A} opens the locker before breakfast, tags one pack for {B} for the next crossing window, and eats another on video with {B}, reading the Sharpie on the bag aloud like the back of a cereal box.
+text {A} opens the locker before breakfast, tags one pack for {B} for the next crossing window, and eats another on video with {B}, reading the bag aloud like the back of a cereal box.
 do bond A B 6
 do morale A 3
 do set stash_exposed
