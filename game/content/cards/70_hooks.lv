@@ -26,7 +26,7 @@ days 31 35
 roles A
 when fired h_band
 when is A hook_who
-text It came back at 23:41:09, on the beat. {A} lays the gap against the night-side temperature map: the coldest night of the winter in the landing region. If something there has a battery heater, it is taking longer each time to bring a radio up. It is still on time. It is getting slower to wake.
+text It came back at 23:41:09, six knocks late and still on the beat. {A} lays the gap on the temperature maps: the coldest hour of the night side's coldest night. If the source has a battery heater, it skips knocks rather than wake short of power. It is getting harder to wake.
 do morale A -2
 
 # --- 2. Cabin pressure -------------------------------------------------------
@@ -40,7 +40,7 @@ weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 01:50. The cabin pressure on {A}'s ship has started to fall. Slowly. {A} is the only one awake.
+text 01:50. The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is the only one awake.
 
 card r_pressure
 type event
@@ -182,7 +182,7 @@ days 11 36
 roles A
 when fired h_silence
 when is A hook_who
-text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} reads it twice before answering.
+text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} starts the answer with the weather.
 do morale A 6
 do trait A warm 2
 
@@ -205,10 +205,10 @@ cat grim
 due
 once
 days 5 36
-roles A
+roles A B
 when fired h_strike
 when is A hook_who
-text The morning EVA found a crater the size of a fingernail in a heat-shield tile, short of the bondline. The entry team runs it against the margins and clears it. {A} photographed it next to a ruler, and the anomaly report finally has a good picture.
+text {A}'s morning EVA, {B} suited at the hatch, found a crater the size of a fingernail in a heat-shield tile, short of the bondline. The entry team runs it against the margins and clears it. {A} shot it next to a ruler, and the anomaly report finally has a good picture.
 do trait A brave 2
 do morale A 3
 
@@ -223,7 +223,7 @@ weight 8
 roles A
 when cond A ok
 do who hook_who A
-text {A}'s star tracker flags a catalog mismatch: one star too many in the field. On the next frame, it has moved.
+text 02:10. {A}'s star tracker drops out of lock: one star too many in the field, and the next frame doesn't agree with the first. Attitude hands over to the backup tracker, which has never been asked to fly alone.
 
 card r_ghost
 type event
@@ -250,7 +250,7 @@ weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 02:40. The intercom on {A}'s ship opens by itself and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. {A} is the only one aboard.
+text 02:40. The intercom on {A}'s ship opens and plays four seconds of a kitchen somewhere: a kettle, a radio, someone laughing. Nothing in the comms log says a call came in.
 
 card r_voice
 type event
@@ -261,7 +261,7 @@ days 26 34
 roles A
 when fired h_voice
 when is A hook_who
-text {A} traced it by dawn: a message from home, recorded the night before launch and set to play on this flight day, then mangled by the galley-screen update. The rest of it plays at breakfast, kettle and all. {A} listens with the volume very low.
+text {A} traced it by dawn: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired at 02:40 and cut out when the buffer ran dry. The rest plays at breakfast,. {A} listens with the volume very low.
 do morale A 6
 do trait A warm 3
 
@@ -288,6 +288,6 @@ days 26 34
 roles A
 when fired h_dark
 when is A hook_who
-text {A} was back by 00:41: the comms computer had hung on a link request from Mars, signed with an old program key, and both strings came up from cold. Sequence number 1, as if the sender were new; the challenge, new too. The ground: "Old key, no ID. Nothing we still fly." A filter goes up that night.
+text {A} was back by 00:41: the comms computer had hung on the first whole frame from Mars to decode, a link request signed with an old program key. Sequence number 1, as if just switched on; the challenge, new. The ground: "Old key, no ID. Nothing we still fly." A parser guard goes up that night.
 do trait A brave 3
 do morale A -2
