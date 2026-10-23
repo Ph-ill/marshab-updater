@@ -60,30 +60,32 @@
     "dec_open": "Fleet vote:",
     "dec_close": "With the ballots in, the fleet's advice: {opt}.",
     "dec_lean": "No votes came in, so the flight director went with the crew's lean: {opt}.",
-    "dec_tie": "Split down the middle, {n} votes. The flight director takes the crew's lean: {opt}.",
+    "dec_tie": [
+      "{n} ballots, split evenly; the flight director breaks the tie on the crew's lean: {opt}.",
+      "A dead heat at {n} ballots, so the crew's lean decides it: {opt}.",
+      "Even split across {n} ballots. The tie goes to the crew's lean: {opt}.",
+      "The {n} ballots cancel out, so the crew's lean carries it: {opt}."
+    ],
     "dil_open": "Private, for whoever looks after {A}:",
     "dil_you": "{A} went with your call: {opt}.",
     "dil_self": "No word from home in time, so {A} chose: {opt}.",
     "res_open": "Anyone can answer; one tap is enough.",
-    "res_close": "Help is on the way: {opt}.",
+    "res_close": "The fleet's answer: {opt}.",
     "res_default": "No answer in time, so it fell to the crew: {opt}.",
     "short": "Food stores are running low.",
     "end": "From the log:",
     "fold": "On the other ships, {who} ran the water rounds and checked the recovery rate.",
     "fold_pool": [
       "On the other ships, {who} ran the water rounds and checked the recovery rate.",
-      "{who} chased rattles behind panels and found pens.",
       "{who} swapped scrubber cartridges two days early, because the trend lines said so.",
       "{who} answered mail from home: weather, a dog, a fence that needs mending.",
       "{who} reran pump checks that came back two tenths off, then on.",
       "{who} cleaned galley filters and found a missing spoon.",
-      "{who} counted spare fuses twice and got the same numbers both times.",
       "{who} recalibrated cabin sensors reading half a degree warm.",
       "{who} swept cabins with leak detectors and found nothing, which is the point.",
-      "{who} re-torqued hatch hinges to spec and wrote down the numbers.",
-      "{who} logged cabin air and found it dull, which is good.",
+      "{who} recorded bedtime stories for home, with the delay built into the pauses.",
       "{who} wiped down windows and watched Mars not move.",
-      "{who} ran comms self-tests and filed clean sheets.",
+      "{who} wrote letters home and dated them for after landing.",
       "{who} slept nine hours on the flight surgeon's orders.",
       "{who} walked hulls with the camera and found them whole.",
       "{who} stripped and re-taped frayed cable runs."
@@ -270,6 +272,18 @@
       [
         "dil_gains",
         "Saw the wobble first."
+      ],
+      [
+        "l_long_table",
+        "Gave the first toast. It was short, and it landed."
+      ],
+      [
+        "storm_shelter2",
+        "Re-signed the forms between hands, and dealt."
+      ],
+      [
+        "p_movie",
+        "Never picked a submarine film again."
       ]
     ],
     "coda": {

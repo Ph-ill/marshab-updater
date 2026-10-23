@@ -23,6 +23,7 @@ class Renderer:
     def __init__(self, text):
         self.t = text
         self.roles = {}  # card -> (A, B) from the entry that opened it
+        self.ties = 0    # tie closes seen so far: steps through sys.dec_tie
 
     def name(self, c):
         return self.t["crew"][c] if c != NONE and c < len(self.t["crew"]) else "someone"
@@ -62,7 +63,13 @@ class Renderer:
             elif c == 1:
                 lead = self.fill(sy["dec_lean"], opt=opt)
             elif c == 2:
-                lead = self.fill(sy["dec_tie"], opt=opt, n=b)
+                # dec_tie may be a list: each tie close in the log takes the next
+                # wording, so a season's ties never repeat (render.js does the same).
+                tie = sy["dec_tie"]
+                if isinstance(tie, list):
+                    tie = tie[self.ties % len(tie)]
+                    self.ties += 1
+                lead = self.fill(tie, opt=opt, n=b)
             else:
                 lead = self.fill(sy["dec_close"], opt=opt, n=b)
             return lead + " " + self.fill(cd["o"][a][1], A, B)
@@ -90,6 +97,7 @@ class Renderer:
     def lines(self, out, routine=False):
         # Yields (day, text). routine=False hides self-chosen chores, which the phone
         # folds into a one-line "the rest of the crew kept the ship running".
+        self.ties = 0
         for i in range(0, len(out), 8):
             e = out[i:i + 8]
             if not routine and e[1] == O.O_ACT and e[6] == 1 and e[4] != 0:
@@ -136,6 +144,7 @@ class Renderer:
             for s in lines:
                 yield day, s
 
+        self.ties = 0
         day, lines, folded, seen, hook_at = None, [], [], set(), None
         for i in range(0, len(out), 8):
             e = out[i:i + 8]

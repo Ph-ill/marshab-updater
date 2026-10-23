@@ -15,6 +15,7 @@ export class Renderer {
   constructor(text) {
     this.t = text;
     this.roles = new Map(); // card -> [A, B] from the entry that opened it
+    this.ties = 0; // tie closes seen so far: steps through sys.dec_tie
   }
 
   name(c) {
@@ -56,7 +57,12 @@ export class Renderer {
         let lead;
         if (code === O.RES_CLOSE) lead = this.fill(sy[c ? "res_default" : "res_close"], NONE, NONE, { opt });
         else if (c === 1) lead = this.fill(sy.dec_lean, NONE, NONE, { opt });
-        else if (c === 2) lead = this.fill(sy.dec_tie, NONE, NONE, { opt, n: b });
+        else if (c === 2) {
+          // dec_tie may be a list: each tie close in the log takes the next wording,
+          // so a season's ties never repeat (render.py does the same).
+          const tie = Array.isArray(sy.dec_tie) ? sy.dec_tie[this.ties++ % sy.dec_tie.length] : sy.dec_tie;
+          lead = this.fill(tie, NONE, NONE, { opt, n: b });
+        }
         else lead = this.fill(sy.dec_close, NONE, NONE, { opt, n: b });
         return lead + " " + this.fill(cd.o[a][1], A, B);
       }
@@ -88,6 +94,7 @@ export class Renderer {
   // themselves (the page folds them into one "kept the ship running" line).
   lines(out, routine = false) {
     const res = [];
+    this.ties = 0;
     for (let i = 0; i + 8 <= out.length; i += 8) {
       const e = Array.from(out.slice(i, i + 8));
       if (!routine && e[1] === O.ACT && e[6] === 1 && e[4] !== 0) continue;
