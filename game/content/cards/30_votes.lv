@@ -117,16 +117,28 @@ text The final navigation fix comes in: the fleet sits within a few kilometers o
 do morale A 3
 
 # --- Arrival: dust storm over the landing region -------------------------------
+card dust_report
+type event
+cat arrival
+days 29 36
+weight 22
+once
+roles A
+when cond A ok
+text {A} pulls the morning weather from the Mars orbiters: a regional dust storm, building over the landing zone. On the map it's a brown thumbprint. {A} measures it against the zone with a ruler, and then measures it again.
+do set dust_seen
+
 card dec_arrival
 type decision
 cat arrival
-days 33 39
-weight 30
+days 33 38
+weight 10
 once
 duration 2
 roles A B
+when flag dust_seen
 lean brave hold wait
-text Orbiters at Mars report a regional dust storm building over the landing zone. {A} wants to hold the arrival plan and trust the margins. {B} wants to burn for a longer capture orbit and wait it out, at a real cost in propellant.
+text The dust storm over the landing zone is still growing. {A} wants to hold the arrival plan and trust the margins. {B} wants to burn for a longer capture orbit and wait it out, at a real cost in propellant.
 option hold | Hold the plan | The arrival plan stands. {A} runs the entry numbers for the worst-case dust load and posts them where everyone can see.
   set arrive_hold
 option wait | Long orbit, wait | The fleet commits to the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.

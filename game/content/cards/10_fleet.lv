@@ -4,8 +4,8 @@ card dec_signal
 type decision
 cat mystery
 clue
-days 11 18
-weight 10
+days 12 17
+weight 5
 once
 duration 2
 roles A B
