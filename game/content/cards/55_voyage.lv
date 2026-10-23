@@ -435,7 +435,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text On the last night before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since Starbase everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is holding steady.
+text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since Starbase everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -447,7 +447,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text On the last night before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since Starbase everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is keeping time.
+text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since Starbase everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -458,7 +458,7 @@ once
 days 41 41
 roles A B
 when is A ow_dose
-text The last night before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. Neither of them sleeps much.
+text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. Neither of them sleeps much.
 do bond A B 6
 
 # --- Arrival day: what the fleet chose, and what it cost ------------------------------

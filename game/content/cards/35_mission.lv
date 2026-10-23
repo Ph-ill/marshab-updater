@@ -328,7 +328,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07, fleet time: Cargo 2 knocks. All night the round trip has been shrinking toward the edge of its window. {A}'s receiver hears the knock 5.4 seconds later and answers on its own, signed, the way it has since the vote. The answer lands 10.94 seconds after the knock, twenty milliseconds inside its window. {A} says "Hi," out loud, ten seconds early. The light stops blinking.
+text 04:10:07, fleet time: Cargo 2 knocks. All night the round trip has been shrinking toward the edge of its window. {A}'s receiver hears the knock 5.4 seconds later and answers on its own, signed, the way it has since the vote. The answer lands 10.94 seconds after the knock, on the beat, in real time, twenty milliseconds inside its window. {A} says "Hi," out loud, ten seconds early. The light stops blinking.
 do set c2_answered
 do morale A 8
 
@@ -341,7 +341,7 @@ days 41 41
 roles A
 when fired a_window_hail
 when !is A ow_hail
-text Then Cargo 2 sends its event recorder down the old channel, two years of it. From the first weeks after landing, every hello Earth sent, logged the same way: HELLO RX · REPLAY · DISCARD. Then most of a million from the fleet since the vote, every one late. At the bottom, one new line: HELLO RX · OK. {A} reads it out to the fleet, slowly.
+text Then Cargo 2 sends its event recorder down the old channel, two years of it. From the first weeks after landing, every hello Earth sent up the normal uplink, logged the same way: HELLO RX · REPLAY · DISCARD. Then most of a million from the fleet since the vote, every one late. At the bottom, one new line: HELLO RX · OK. {A} reads it out to the fleet, slowly.
 do morale A 2
 
 card a_window_quiet
