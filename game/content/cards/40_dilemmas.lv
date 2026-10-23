@@ -71,7 +71,7 @@ once
 days 34 35
 roles A
 when is A ow_dose
-text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it, and runs the dose numbers to prove the point. This close to Mars the numbers prove the opposite: the tank buys almost nothing now. "Fine," {A} tells the ground. "Pump it."
+text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it, and runs the dose numbers to prove the point. With this little cruise left they prove the opposite. "Fine," {A} tells the ground. "Pump it." Then, because someone once asked twice: "Thanks for checking."
 do trait A warm 1
 
 # --- Thread: the letter ---------------------------------------------------------
@@ -117,7 +117,7 @@ roles A
 when flag letter_saved
 when is A ow_letter
 when since t_letter >= 18
-text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock, slowly, and comes out with the last line by heart. Whatever it said, it was enough.
+text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock, slowly, and comes out with the last line by heart. {A} logs the airlock cycle and nothing else.
 do morale A 12
 
 card letter_worn
@@ -151,7 +151,7 @@ once
 days 40 40
 roles A
 when is A ow_letter
-text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, then stows it and ticks the box. Somewhere below, something has been holding a message unread for two years.
+text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, then stows it and ticks the box. Somewhere below, something has been writing home for two years and filing every answer as late.
 do morale A 3
 
 # --- Others ---------------------------------------------------------------------
@@ -165,7 +165,7 @@ duration 3
 roles A
 when cond A ok
 lean brave tune wait
-text The attitude control on {A}'s ship has a slow wobble, and {A} seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs ground sign-off, and the ground is asleep.
+text The attitude control on {A}'s ship has a slow wobble, and {A} seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs sign-off from the guidance team, and the guidance team is off shift until morning.
 option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", and one attachment: the procedure for next time.
   set gains_tuned
   who gains_who A
