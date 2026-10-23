@@ -66,7 +66,8 @@ nav button+button{border-left:1px solid var(--rule)}
 .log li.fold{color:var(--ink2);font-size:16px}
 .day{padding-top:24px;scroll-margin-top:calc(56px + var(--st))}
 .day>.lab{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:8px;color:var(--ink)}
-.day>.lab span{white-space:nowrap}.day>.lab .dim{margin-left:auto}
+.day>.lab span{white-space:nowrap}.day>.lab .dim{margin-left:auto;font-weight:400}
+.chg{font:13px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0 0 4px}
 .upd{border-left:2px solid var(--rust);padding:0 0 0 8px;margin:4px 0 8px;font-size:14px;line-height:20px;color:var(--ink2)}
 .upd b{color:var(--rust-t);font-weight:600}
 .gauge{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:0 8px;padding:8px 0}
@@ -124,9 +125,24 @@ nav button+button{border-left:1px solid var(--rule)}
 .grid2 .opt{margin:0;min-height:56px}
 .grid2 .opt .t{padding:8px 12px;display:flex;align-items:center}
 .grid2 .opt .k{width:44px;font-size:16px}
-.epi{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--rule)}
+.epi{display:grid;grid-template-columns:56px 1fr;gap:0 16px;padding:16px 0;border-bottom:1px solid var(--rule)}
 .epi:last-child{border-bottom:0}
-.epi p{margin:4px 0 0;font-size:16px;line-height:22px}
+.epi .pt{width:56px;height:56px}
+.epi h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;font:600 17px/24px var(--sans)}
+.epi h3 small{font:13px/24px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.epi h3 .r{margin-left:auto;color:var(--rust-t)}
+.epi p{margin:4px 0 0;font-size:16px;line-height:23px}
+.epi.coda{border-top:1px dashed var(--graph);border-bottom:0;margin-top:-1px}
+.epi.coda .pt{border:1px dashed var(--ink2)}
+.man{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule);margin-top:8px}
+.man div{padding:8px 4px;text-align:center;font:13px/16px var(--mono);border-bottom:1px solid var(--rule);min-width:0}
+.man div:not(:nth-child(4n)){border-right:1px solid var(--rule)}
+.man div:nth-last-child(-n+4){border-bottom:0}
+.man .pt{width:48px;height:48px;margin:0 auto 6px}
+.man b{display:block;font:600 14px/20px var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.man span{color:var(--ink2);letter-spacing:.06em}
+.man .x span{color:var(--rust-t)}
+.man .y b{color:var(--rust-t)}
 .tbl{display:grid;grid-template-columns:1fr auto;border-top:1px solid var(--ink);margin-top:8px}
 .tbl div{padding:8px 0;border-bottom:1px solid var(--rule);font-size:16px}
 .tbl div:nth-child(even){font:600 16px var(--mono);text-align:right}
@@ -320,7 +336,7 @@ function home(){
   if(since.length){
     o+=`<section><div class=lab><span>Since your last visit</span><span>FD ${pad(since[0])}–${pad(since[since.length-1])}</span></div><ul class=log>`;
     for(const d of since.slice().reverse())o+=dayList(d,2);
-    o+=`</ul>${rw.length?`<p class=upd style="margin-top:12px"><b>Log updated</b> · late signals re-ran ${rw.length===1?"FD "+pad(rw[0]):rw.length+" days"}</p>`:""}<button class="btn sec" style="margin-top:16px" data-go="log"><span>Full log</span><i>${S.day} days</i></button></section>`;
+    o+=`</ul>${rw.length?`<p class=upd style="margin-top:12px"><b>Log updated</b> · late signals re-ran ${rw.length===1?"FD "+pad(rw[0]):rw.length+" days"}</p>`:""}<button class="btn sec" style="margin-top:16px" data-go="log"><span>Full log</span><i>${S.day} pages</i></button></section>`;
   }
   o+=`<section><div class=lab><span>Fleet stores</span><span>shared</span></div><div class=stores>${T.res.map((r,i)=>`<div><span class=lab>${r}</span><b>${S.res[i]}</b></div>`).join("")}</div></section>`;
   $("v").innerHTML=o;
@@ -347,17 +363,19 @@ function crew(c){
 }
 function log(at){
   shipTop();
-  let o=`<div class=kick><div class=lab>Voyage log · ${h(ship(S.you))}</div><h2>${S.day} days, newest first</h2></div>`;
+  let o=`<div class=kick><div class=lab>Voyage log · ${h(ship(S.you))}</div><h2>${S.day} ${S.day===1?"page":"pages"}, newest first</h2></div>`;
   for(let d=S.day;d>=1;d--){
     const a=rewritten(d);
-    o+=`<div class=day id="d${d}"><div class=lab><span>Flight day ${pad(d)}</span>${d>=S.day-1?`<span class=dim>${d===S.day?"Today":"Yesterday"} · may still change</span>`:""}</div>`;
-    if(a)o+=`<p class=upd><b>Log updated</b> FD ${pad(a)} · a late signal re-ran this day</p>`;
+    o+=`<div class=day id="d${d}"><div class=lab>${pageHead(d)}</div>${d>=S.day-1?`<p class=chg>${d===S.day?"Today":"Yesterday"} · may still change</p>`:""}`;
+    if(a)o+=`<p class=upd><b>Log updated</b> FD ${pad(a)} · a late signal re-ran this page</p>`;
     o+=`<ul class=log>${dayList(d)}</ul></div>`;
   }
   $("v").innerHTML=o;
   dock("","log");
   if(at&&$("d"+at))$("d"+at).scrollIntoView();
 }
+// render.js pageHeading "LOG PAGE 12 · DAYS 32–36", split across the rule: page left, days right.
+function pageHead(d){const [p,r]=pageHeading(d).split(" · ");return `<span>${p}</span><span class=dim>${r}</span>`}
 function item(card){
   const o=S.open.find((x)=>x.card===card);
   if(!o)return go("home");
@@ -404,27 +422,43 @@ function actSheet(){
   if(ok)$("v").insertAdjacentHTML("beforeend",`<p class=note><b style="color:var(--ink)">${h(actLabel(d.a,d.p,d.t))}.</b> ${h(A)} does it on FD ${pad(S.day+1)}.</p>`);
   dock(`<button class="btn pri" data-send="act"${ok?"":" disabled"}><span>Log instruction</span><i>${ok?"FD "+pad(S.day+1):"choose"}</i></button>`,"");
 }
+function storyBytes(){return Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0))}
 function ending(){
   bar("ARRIVAL",`FD ${S.season}/${S.season}`);
-  const c=T.cards[S.ending],E=T.epi||{};
+  const c=T.cards[S.ending];
   let dec=0,res=0,notes=0,acts=0,ea=NONE,eb=NONE;
-  const b=Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0));
+  const b=storyBytes();
   for(let i=0;i<b.length;i+=8){const k=b[i+1];dec+=k===O.DEC_CLOSE;res+=k===O.RES_CLOSE;notes+=k===O.NOTE;acts+=k===O.ACT&&b[i+6]===0;if(k===O.END){ea=b[i+3];eb=b[i+4]}}
   const rw=Object.keys(S.updated).filter((d)=>rewritten(+d)).length;
   const ct=R.fill(c.t,ea,eb),ttl=first(ct),rest=ct.slice(ttl.length).trim();
   let o=`<div class=kick><div class=lab>Mission report · ${h(ship(S.you))}</div><h1>${h(ttl.replace(/\.$/,""))}</h1><p class=lead>${h(rest)}</p></div>`;
   o+=`<section><div class=lab><span>The voyage</span><span>${S.season} days</span></div><div class=tbl><div>Fleet votes settled</div><div>${dec}</div><div>Calls for help answered</div><div>${res}</div><div>Instructions followed</div><div>${acts}</div><div>Notes passed</div><div>${notes}</div><div>Days re-run by late signals</div><div>${rw}</div></div></section>`;
   const lost=S.cond.filter((x)=>x===2).length;
-  o+=`<section><div class=lab><span>The crew</span><span>${N-lost} of ${N} landed</span></div><p class=dim style="margin:0 0 8px">${h((E.head||["",""])[lost?1:0])}</p>`;
-  o+=[...Array(N).keys()].map((k)=>{
-    const t=S.traits[k];let a=0;for(let i=1;i<3;i++)if(Math.abs(t[i])>Math.abs(t[a]))a=i;
-    const l1=Math.abs(t[a])<20?E.plain:E.axis[a][t[a]>0?0:1];
-    const l2=R.fill(E.bond||"",NONE,NONE,{T:nm(S.best[k])});
-    return `<div class=epi><span class=pt style="width:56px;height:56px">${portrait(k)}</span><div><b>${h(nm(k))}</b> <span class="m dim" style="font-size:14px">${h(ship(k))}</span><p>${h(l1)} ${h(l2)}</p></div></div>`;
-  }).join("")+`</section>`;
-  o+=reread();
+  o+=`<section><div class=lab><span>Manifest</span><span>${N-lost} of ${N} landed</span></div><div class=man>${[...Array(N).keys()].map((k)=>`<div class="${S.cond[k]===2?"x":""}${k===S.you?" y":""}"><span class=pt>${portrait(k)}</span><b>${h(nm(k))}</b><span>${S.cond[k]===2?"HOME":"LANDED"}</span></div>`).join("")}</div></section>`;
   $("v").innerHTML=o;
-  dock(`<button class="btn sec" data-go="log"><span>Read the whole log</span><i>${S.season} days</i></button>`,"home");
+  dock(`<button class="btn pri" data-go="epilogue"><span>Epilogue</span><i>${N} crew</i></button>`,"home");
+}
+// The last screen: one line per astronaut (render.js epilogue, story lines first, the
+// final state filling any gap), the coda for the one who isn't crew, then the reread days.
+function epilogue(){
+  if(S.ending===NONE)return home();
+  bar("EPILOGUE",`FD ${S.season}/${S.season}`);
+  const b=storyBytes(),E=T.epi||{},lost=S.cond.filter((x)=>x===2).length;
+  // The ship sends each astronaut's closest crewmate and that bond (best/bestb); that is
+  // all the fallback reads. Older ships send only your own bonds.
+  const st={trait:(c,a)=>S.traits[c][a],bond:(c,j)=>S.bestb?(j===S.best[c]?S.bestb[c]:-999):c===S.you?S.bonds[j]:-999};
+  const L=R.epilogue(b,st),cd=R.coda(b);
+  let o=`<div class=kick><div class=lab>Epilogue · ${h(ship(S.you))}</div><h1>Afterwards</h1>${E.head?`<p class=dim>${h(E.head[lost?1:0])}</p>`:""}</div>`;
+  o+=`<section><div class=lab><span>The crew</span><span>${N-lost} of ${N} landed</span></div>`;
+  o+=[...Array(N).keys()].map((k)=>`<div class=epi><span class=pt>${portrait(k)}</span><div><h3>${h(nm(k))}<small>${pad(k+1)}</small>${S.cond[k]===2?"<small class=r>Sent home</small>":k===S.you?"<small class=r>Yours</small>":""}</h3><p>${h(L[k]||"")}</p></div></div>`).join("");
+  if(cd)o+=`<div class="epi coda"><span class=pt>${beacon()}</span><div><h3>${h(cd[0])}</h3><p>${h(cd[1])}</p></div></div>`;
+  o+=`</section>`+reread();
+  $("v").innerHTML=o;
+  dock(`<button class="btn sec" data-go="log"><span>Read the log</span><i>${S.season} pages</i></button>`,"home");
+}
+// Not crew, so no portrait: a beacon mark in the same line weights.
+function beacon(){
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="4" fill="var(--rust)"/><path d="M22 22A14 14 0 0 0 22 42M42 22A14 14 0 0 1 42 42M15 15A24 24 0 0 0 15 49M49 15A24 24 0 0 1 49 49" stroke="var(--ink)" stroke-width="1.5" fill="none"/></svg>`;
 }
 
 // After the ending: the flight days worth a second look (text.json "reread", cards marked
@@ -435,7 +469,7 @@ function reread(){
   for(let i=0;i+8<=b.length;i+=8)if([O.EVENT,O.DEC_OPEN,O.DIL_OPEN,O.RES_OPEN].includes(b[i+1])&&want.has(b[i+2]))days.add(b[i]);
   if(!days.size)return"";
   const ds=[...days].sort((x,y)=>x-y);
-  return `<section><div class=lab><span>Read again</span><span>${ds.length} ${ds.length===1?"day":"days"}</span></div>${ds.map((d)=>`<button class=row data-go="log/${d}"><span class=t>Flight day ${pad(d)}</span><span class="m dim">→</span></button>`).join("")}</section>`;
+  return `<section><div class=lab><span>Read again</span><span>${ds.length} ${ds.length===1?"day":"days"}</span></div>${ds.map((d)=>{const [x,y]=pageDays(d);return `<button class=row data-go="log/${d}"><span class=t>Log page ${pad(d)}<small>${x===y?"Day "+x:`Days ${x}–${y}`}</small></span><span class="m dim">→</span></button>`}).join("")}</section>`;
 }
 
 // ---- first run ------------------------------------------------------------------------
@@ -484,6 +518,7 @@ function view(){
     if(a==="act")return actSheet();
     if(EG&&S.eng&&ENG[a])return ENG[a](b);
     if(a==="end")return S.ending!==NONE?ending():home();
+    if(a==="epilogue")return epilogue();
     return home();
   }finally{if(net==="poll"&&tok)$("v").insertAdjacentHTML("afterbegin","<div class=off>Live link down · checking every 15 s</div>")}
 }

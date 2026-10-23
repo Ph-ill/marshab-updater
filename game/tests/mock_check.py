@@ -48,7 +48,10 @@ check(call("/api/login?day=8", {"crew": 3, "pin": "1234"})[0] == 409, "no code s
 check(call("/api/login?day=8", {"crew": 0, "pin": "12x4"})[0] == 400, "non-digits -> 400")
 s, j = call("/api/login?day=8", {"crew": 7, "pin": "3333"}, ua="phone-m")
 check(s == 200 and j["crew"] == 7, "Marco (crew 7, ship 8) signs in")
-check(call("/api/state?day=8", tok=j["token"])[0] == 200, "Marco's token works")
+s, st = call("/api/state?day=8", tok=j["token"])
+check(s == 200, "Marco's token works")
+check(len(st["best"]) == len(st["bestb"]) == 8 and all(b != c for c, b in enumerate(st["best"])),
+      "state has each astronaut's closest crewmate and that bond (epilogue fallback)")
 check(call("/api/login?day=8", {"crew": 8, "pin": "1234"})[0] == 400, "crew 8 doesn't exist -> 400")
 
 s, j = call("/api/login?day=8", {"crew": 0, "pin": "1234"})
