@@ -4,15 +4,15 @@
 # Private dilemma that surfaces later.
 card dil_stash
 type dilemma
+once
 cat human
-clue
 days 3 30
 weight 8
 duration 3
 roles A
 when cond A ok
 lean warm share keep
-text Behind a stowage panel, {A} finds three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a ship with a 2 on its side.
+text Behind a stowage panel, {A} finds three ration packs that never made the manifest. Someone at Starbase wrote "you'll thank me" on the bag in Sharpie, next to a little drawing of a Starship with its fingers crossed.
 option keep | Keep them quiet | {A} thanks them silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash
@@ -28,7 +28,7 @@ type beat
 cat human
 due
 once
-days 12 41
+days 12 39
 roles A B
 when flag stash_kept
 when since t_stash >= 10
@@ -42,9 +42,9 @@ do set stash_exposed
 card beat_watch
 type beat
 cat life
-days 9 42
+days 9 30
 weight 10
-cooldown 8
+cooldown 16
 roles A B
 when same A B
 when bond A B >= -20
@@ -54,7 +54,7 @@ do bond A B 6
 card beat_argue
 type beat
 cat life
-days 2 42
+days 2 39
 weight 5
 cooldown 16
 roles A B
@@ -67,9 +67,9 @@ do bond A B -4
 card glint
 type event
 cat wonder
-days 6 38
+days 11 30
 weight 8
-cooldown 9
+once
 roles A
 when trait A curious >= -5
 when cond A ok
@@ -78,17 +78,18 @@ text {A} spots a glint keeping pace off the starboard side, catching the sun eve
 option closer | Get a closer look | {A} talks Mission Control into a camera slew and a long exposure. It's a chunk of ice shed from the fleet's own tanks, tumbling slowly and going to Mars with everyone else.
   var glints 1
   trait A brave 3
-option window | Track it from the window | {A} logs its bearing every hour until it's gone. The log is neat enough to frame.
+option window | Track it from the window | {A} logs its bearing every hour. By the fourth hour it's plainly tumbling, each flash a flat face of ice from the fleet's own tanks turning into the sun. The log is neat enough to frame.
   trait A curious 2
 
 card galley_pump
 type event
 cat repair
-days 1 42
+days 8 39
 weight 6
-cooldown 11
+cooldown 20
 roles A
 when res spares >= 1
-text The galley pump fails again. It has a personality now, and not a good one. {A} rebuilds it on the galley table and narrates the whole job like a nature documentary.
+text The galley pump fails for the third time since Starbase. {A} lays the parts out on a towel in order, rebuilds it, and ends up with one washer it never needed.
 do res spares -1
 do morale A -2
+

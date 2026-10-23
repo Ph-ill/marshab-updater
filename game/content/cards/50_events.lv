@@ -5,31 +5,31 @@
 card storm_shelter
 type event
 cat grim
-days 5 40
+days 5 39
 weight 7
-cooldown 14
+cooldown 18
 roles A
 when cond A ok
-text A solar flare is 40 minutes out. Every crew packs into the storm shelter between the water tanks. It's cramped and loud, and {A} has brought cards.
+text A solar flare is 40 minutes out. {A} packs into the storm shelter between the water tanks with a sleeping bag and a deck of cards, and plays the other six ships over video until the dosimeter settles.
 do morale A 3
 do var storms 1
 
 card storm_dose
 type event
 cat grim
-days 6 41
+days 6 39
 weight 6
-cooldown 10
+cooldown 18
 roles A
 when var storms >= 1
 when cond A ok
-text {A} runs the dosimeter check. The fleet has taken the radiation of a few dozen chest X-rays so far. {A} writes it down, underlines it, and goes to make coffee.
+text {A} runs the dosimeter check. The fleet has taken the radiation of a few dozen chest X-rays so far. {A} writes it down, underlines it, and leaves the underline to say the rest.
 do trait A curious 1
 
 card comm_delay
 type event
 cat human
-days 18 40
+days 18 39
 weight 6
 once
 roles A
@@ -45,16 +45,16 @@ weight 5
 once
 roles A
 when cond A ok
-text {A} goes to the window to find Earth and has to look for a while. It's a bright dot now, no brighter than the stars around it. {A} stays until the shift change.
+text {A} goes to the window to find Earth and has to look for a while. It's a point now, bluish, still one of the brightest things in the sky, and no longer anywhere you could point to a house. {A} stays until the shift change.
 do trait A warm 3
 
 # --- Hardware (controls flavor, never named) ----------------------------------
 card scrubber_fault
 type event
 cat repair
-days 2 40
+days 2 39
 weight 8
-cooldown 10
+cooldown 18
 roles A
 when res spares >= 1
 text The CO₂ scrubber on {A}'s ship throws its fourth fault this week. {A} fixes it, then labels it "temperamental" in permanent marker so the next shift knows.

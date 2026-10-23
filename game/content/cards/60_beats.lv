@@ -4,7 +4,7 @@
 card beat_coffee
 type beat
 cat life
-days 3 42
+days 3 39
 weight 8
 once
 roles A B
@@ -15,9 +15,9 @@ do bond A B 5
 card beat_cards
 type beat
 cat life
-days 2 42
+days 2 39
 weight 8
-cooldown 12
+cooldown 18
 roles A B
 when same A B
 text {A} teaches {B} a card game from home. By the end of the shift {B} is winning, and the rules have been amended twice.
@@ -26,7 +26,7 @@ do bond A B 5
 card beat_window
 type beat
 cat wonder
-days 1 8
+days 6 10
 weight 12
 once
 roles A B
@@ -37,19 +37,19 @@ do bond A B 6
 card beat_gym
 type beat
 cat life
-days 3 42
+days 3 39
 weight 7
-cooldown 9
+cooldown 20
 roles A B
-when same A B
-text {A} and {B} share the exercise slot, two hours a day so their bones still work at Mars. They keep score. Nobody knows what the score measures.
+when cond B ok
+text {A} and {B} share the exercise slot over video, two hours a day so their bones still work at Mars. Neither will hang up first. The sessions keep getting longer.
 do bond A B 4
 do morale A 2
 
 card beat_zipties
 type beat
 cat life skill
-days 10 42
+days 10 39
 weight 6
 once
 roles A B
@@ -60,7 +60,7 @@ do bond A B 4
 card beat_haircut
 type beat
 cat life
-days 12 42
+days 12 39
 weight 5
 once
 roles A B
@@ -72,9 +72,9 @@ do bond A B 5
 card beat_home_msg
 type beat
 cat human
-days 8 42
+days 8 39
 weight 6
-cooldown 10
+cooldown 18
 roles A
 when cond A ok
 text {A} records a message for a school group back home that's been following the fleet. The kids send back forty questions, mostly about the toilet. {A} answers every one.
@@ -84,9 +84,9 @@ do trait A warm 2
 card beat_shelter_night
 type beat
 cat life
-days 6 42
+days 6 39
 weight 5
-cooldown 12
+cooldown 20
 roles A B
 when same A B
 when var storms >= 1
@@ -96,34 +96,34 @@ do bond A B 4
 card beat_early_watch
 type beat
 cat human
-days 1 8
+days 1 5
 weight 10
 cooldown 3
 roles A B
-when same A B
-text {A} and {B} stand the night watch. Earth still fills most of the window, blue and close. {A} holds up a thumb, and the planet spills out around it on every side. They talk about home as if it were down the road. Each day it's a little less true.
+when cond B ok
+text {A} and {B} share the night watch over the fleet link. From low orbit Earth fills the window, its dark side strung with cities. {A} holds up a thumb, and the planet spills out around it on every side. They talk about home as if it were down the road. For a few more days, it is.
 do bond A B 5
 
 # --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
 card idle_watch
 type beat
 cat life
-days 4 42
+days 4 39
 weight 10
-cooldown 10
+cooldown 20
 roles A
 when idle A >= 3
 when cond A ok
-text {A} takes an extra night watch so everyone else can sleep before the burn. Nobody asked. The log entry is two lines long and perfectly neat.
+text {A} stands the night watch for the whole fleet so the other six can sleep. Nobody asked. The log entry is two lines long and perfectly neat.
 do morale A 2
 do trait A warm 2
 
 card idle_mentor
 type beat
 cat life
-days 6 42
+days 6 39
 weight 8
-cooldown 12
+cooldown 20
 roles A B
 when idle A >= 3
 when same A B
@@ -134,10 +134,10 @@ do trait B brave 2
 
 card idle_spares
 type beat
+once
 cat life
-days 8 42
+days 8 39
 weight 8
-cooldown 9
 roles A
 when idle A >= 4
 when cond A ok

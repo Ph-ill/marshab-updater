@@ -4,6 +4,7 @@
 
 card dil_dose
 type dilemma
+once
 cat grim
 days 6 30
 weight 8
@@ -24,7 +25,7 @@ type beat
 cat human
 due
 once
-days 14 40
+days 14 39
 roles A B
 when flag dose_hidden
 when is A dose_who
@@ -36,6 +37,7 @@ do bond B A 6
 
 card dil_gains
 type dilemma
+once
 cat repair skill
 days 5 32
 weight 9
@@ -57,7 +59,7 @@ type event
 cat repair skill
 due
 once
-days 18 40
+days 18 39
 roles A
 when flag gains_tuned
 when is A gains_who
@@ -68,6 +70,7 @@ do res fuel 1
 
 card dil_bracket
 type dilemma
+once
 cat repair skill
 days 8 36
 weight 8
@@ -78,13 +81,14 @@ lean brave zip ticket
 text {A} finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
 option ticket | Open a ticket | Earth wants photos, measurements, and a part number nobody can find. {A} supplies all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
   morale A -1
-option zip | Zip-tie it | {A} redesigns the mount on the spot with zip ties and spite. It is ugly, and it will outlast the ship.
+option zip | Zip-tie it | {A} lashes the rack in a pattern no design review would pass, and it takes every load the ship can throw at it. The anomaly report calls it "interim". It is not interim.
   set zip_fix
   res spares -1
   morale A 3
 
 card dil_letter
 type dilemma
+once
 cat human
 days 10 38
 weight 7
@@ -93,7 +97,7 @@ roles A
 when cond A ok
 lean warm now save
 text A data packet from home arrives for {A}, flagged personal. Reading it now means reading it on a cramped ship with no privacy. Saving it means carrying it unread until a quiet moment that may never come.
-option now | Read it now | {A} reads it in the airlock, the only place aboard with a door. {A} comes out ten minutes later, doesn't say what it said, and makes everyone coffee.
+option now | Read it now | {A} reads it in the airlock, the only place aboard with a door, and comes out ten minutes later without saying what it said. That evening {A} calls the other ships one by one, about nothing in particular.
   morale A 6
 option save | Save it | {A} saves it for a bad day. Every mission has one, and now {A} has something set aside for it.
   set letter_saved
@@ -105,7 +109,7 @@ type beat
 cat human
 due
 once
-days 20 41
+days 20 39
 roles A
 when flag letter_saved
 when is A letter_who
@@ -115,6 +119,7 @@ do morale A 12
 
 card dil_eva_cam
 type dilemma
+once
 cat repair
 days 7 33
 weight 7
@@ -126,11 +131,12 @@ text An external camera on {A}'s ship has frosted over. Clearing it means an uns
 option go | Go out now | {A} clears the lens in twenty minutes and, before coming in, takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
   trait A brave 3
   morale A 4
-option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which is exactly what the risk assessment called acceptable. {A} has read the risk assessment twice.
+option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which is exactly what the risk assessment called acceptable. {A} has read the risk assessment, all of it, including the appendix.
   trait A brave -2
 
 card dil_interlock
 type dilemma
+once
 cat repair skill
 days 4 36
 weight 8

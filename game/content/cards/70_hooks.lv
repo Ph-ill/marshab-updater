@@ -10,7 +10,7 @@ type event
 cat mystery
 hook
 once
-days 25 38
+days 25 36
 weight 10
 roles A
 when cond A ok
@@ -23,11 +23,11 @@ cat mystery
 clue
 due
 once
-days 26 42
+days 26 37
 roles A
 when fired h_band
 when is A hook_who
-text {A} decodes it by breakfast: a lander's safe-mode beacon, asking for instructions nobody sent. The header format is old. {A} matches it to a science lander that went quiet years ago, logs it, and is almost sure.
+text {A} decodes it by breakfast: a spacecraft's safe-mode beacon, asking for instructions nobody sent. The frame is cut off mid-header, every time. What's left looks old. {A} matches it to a science orbiter that went quiet years ago, and is almost sure.
 do trait A curious 3
 do morale A 4
 
@@ -37,7 +37,7 @@ type event
 cat repair
 hook
 once
-days 4 40
+days 4 36
 weight 10
 roles A
 when cond A ok
@@ -49,11 +49,11 @@ type event
 cat repair
 due
 once
-days 5 42
+days 5 37
 roles A
 when fired h_pressure
 when is A hook_who
-text {A} spent four hours with an ultrasonic leak detector and a roll of tape. The culprit was a cable feedthrough whose seal shrank in the cold of the shaded side. It's resealed, the pressure holds, and the trend line is pinned to the wall like a trophy.
+text {A} spent four hours with an ultrasonic leak detector and a roll of tape. The culprit was a cable feedthrough whose seal shrank in the cold of the shaded side. It's resealed, the pressure holds, and the trend line is taped above the console like a fish someone caught.
 do res spares -1
 do morale A 5
 
@@ -63,23 +63,23 @@ type event
 cat grim
 hook
 once
-days 4 40
+days 4 36
 weight 9
 roles A
 when cond A ok
 do who hook_who A
-text 23:52. The space weather feed flags a major flare on the Sun. Protons will reach the fleet in about forty minutes. {A} starts waking people up.
+text 23:52. The space weather feed flags a major flare on the Sun. Protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
 
 card r_flare
 type event
 cat grim
 due
 once
-days 5 42
+days 5 37
 roles A
 when fired h_flare
 when is A hook_who
-text Every crew spent the night in the storm shelter between the water tanks, shoulder to shoulder, listening to the dosimeters tick. By morning the fleet had taken a month's dose in six hours, and everyone walked out on their own feet. {A} logged the peak and went to make coffee.
+text Every crew spent the night in their storm shelter between the water tanks, seven faces in a video grid, listening to the dosimeters tick. By morning the fleet had taken a month's dose in six hours. {A} logged the peak and slept until noon.
 do var storms 1
 do morale A 3
 
@@ -89,7 +89,7 @@ type event
 cat repair skill
 hook
 once
-days 4 40
+days 4 36
 weight 10
 roles A
 when cond A ok
@@ -101,7 +101,7 @@ type event
 cat repair skill
 due
 once
-days 5 42
+days 5 37
 roles A
 when fired h_thruster
 when is A hook_who
@@ -110,7 +110,7 @@ text By 02:30 the ship was steady again.
 option manual | Hand control | {A} took attitude into manual, just for a minute, and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
   trait A brave 2
   morale A 4
-option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night is pinned up with the leak circled in red.
+option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to a single valve that reported "closed" while it leaked. It's isolated now, and the plot of the night is taped up with the leak circled in red.
   trait A curious 2
   morale A 4
 
@@ -120,7 +120,7 @@ type event
 cat repair skill
 hook
 once
-days 4 40
+days 4 36
 weight 10
 roles A
 when cond A ok
@@ -132,7 +132,7 @@ type event
 cat repair skill
 due
 once
-days 5 42
+days 5 37
 roles A
 when fired h_flood
 when is A hook_who
@@ -146,7 +146,7 @@ type event
 cat grim
 hook
 once
-days 10 40
+days 10 36
 weight 8
 roles A
 when cond A ok
@@ -158,11 +158,11 @@ type event
 cat grim
 due
 once
-days 11 42
+days 11 37
 roles A
 when fired h_silence
 when is A hook_who
-text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup took all night to come up. The message ends: "All good here. How are you?" {A} reads it twice before answering.
+text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup took all night to come up. The message ends: "All good here. How are you?" {A} reads it slowly before answering.
 do morale A 6
 do trait A warm 2
 
@@ -172,7 +172,7 @@ type event
 cat grim
 hook
 once
-days 4 40
+days 4 36
 weight 9
 roles A
 when cond A ok
@@ -184,7 +184,7 @@ type event
 cat grim
 due
 once
-days 5 42
+days 5 37
 roles A
 when fired h_strike
 when is A hook_who
@@ -198,7 +198,7 @@ type event
 cat mystery
 hook
 once
-days 25 38
+days 25 36
 weight 8
 roles A
 when cond A ok
@@ -210,7 +210,7 @@ type event
 cat mystery
 due
 once
-days 26 42
+days 26 37
 roles A
 when fired h_ghost
 when is A hook_who
@@ -230,14 +230,14 @@ weight 10
 roles A
 when cond A ok
 do who hook_who A
-text 02:40. The intercom on {A}'s ship opens by itself. A voice says {A}'s name, once, softly. Everyone else aboard is asleep.
+text 02:40. The intercom on {A}'s ship opens by itself. A voice says {A}'s name, once, softly. There is nobody else aboard.
 
 card r_voice
 type event
 cat human
 due
 once
-days 26 42
+days 26 37
 roles A
 when fired h_voice
 when is A hook_who
@@ -251,7 +251,7 @@ type event
 cat mystery
 hook
 once
-days 27 38
+days 27 36
 weight 8
 roles A
 when cond A ok
@@ -264,10 +264,10 @@ cat mystery
 clue
 due
 once
-days 28 42
+days 28 37
 roles A
 when fired h_dark
 when is A hook_who
-text {A}'s voice came back at 05:40, steady. The main antenna had slewed toward Mars on a command with a valid fleet signature, sent from no ship in the fleet. Mission Control says it is looking into it. It has said that before.
+text {A}'s voice came back at 05:40, steady. The main antenna had slewed toward Mars on a pointing request the software accepted as one of ours. It matches no ship in the fleet. Mission Control calls it a replayed packet from launch week and promises a patch. It has said that before.
 do trait A brave 3
 do morale A -2
