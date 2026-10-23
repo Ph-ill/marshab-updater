@@ -178,7 +178,8 @@ after its `type` line:
   good to find it. An ominous resolution still explains the mystery. What's
   ominous is what it means.
 - Write the hook in the present tense, with a clock time and one concrete
-  detail. Stop at the worst moment. The resolver opens with what happened
+  detail. (The hook has the clock time; its resolver fires five days later and
+  must not give exact clock times for that night.) Stop at the worst moment. The resolver opens with what happened
   overnight.
 - text.json marks hook cards with `"h":1`, so the phone can show the line as
   "Last night...".

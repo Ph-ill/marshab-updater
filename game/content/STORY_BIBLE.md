@@ -92,31 +92,38 @@ Its own replies only ever went out on the old band.
 **The 10.96 s coincidence, resolved:** in the weeks after the landing, Earth's
 big dishes did hear flashes on the old band, every 10.96 s, and attributed them
 to the tumbling relay. That is where the catalogue's "spin" for the relay comes
-from (`m_theory`: "Both numbers were fitted to RF flashes heard after it
-failed"), and why its beam width × spin gives exactly the flash duty cycle:
+from (`m_theory`: "fitted to RF flashes from short ground passes, weeks
+after it failed"), and why its beam width × spin gives exactly the flash duty cycle:
 the catalogue was fitted to Cargo 2's flashes, so it matches by construction.
-`a_report` closes it: "a faint carrier filed as the relay tumbling".
+`a_report` closes it: the dead relay was the only orbiter on that channel.
 Why the crash site was catalogued kilometres off: "the last fix before the
-divert" (planted in `l_manifest`: "divert called, no ack"). Why no other orbiter
+divert" (planted in `l_manifest`: "divert flagged on last tone, no ack", next to
+the drill spares that `end_long_orbit` / `end_close` pay off). Why no other orbiter
 heard it: the relay was the only listener on that band. Why the relay was gone
 at landing: its thruster stuck open a month before, and the landing went ahead
-on the autonomous plan. Why the ground never sent a bypass: reset is the only
-hardware command, and resetting is what it already does every cycle. `c_theory`'s "Same keeper?" is answered by those lines.
+on the autonomous plan. Why it flew with pad-test settings: in cruise Earth talked to it on a session
+set up on the pad; a last patch before landing restored the pad-test fault
+table (the update thread pays off here), so on losing the link it fell back to
+the short pad handshake. Why the ground never sent a bypass: "A reset only
+restarts the loop" (`a_report`). The weather orbiter was written off before
+landing; the night frames come from an old survey orbiter (`m_flash1`), and the
+backup-site maps predate the cargo landings (`dec_name`). `c_theory`'s "Same keeper?" is answered by those lines.
 
 **The window (day 41, fleet time):** Cargo 2 boots on a fixed 10.96 s tick (a
 pad-test value, planted in `l_dock_hello`: "Pad-test default"). Each cycle is
-boot, lamp test, burst with a fresh challenge, then listen until the next tick;
+wake, floodlight flare with the hello, then dark while it listens until the next
+tick (`m_reveal`: "nine, ten, eleven, flare"; `l_handshake`: "twelve now");
 the window is boot to reset, and the challenge and failure counter live in RAM.
 The fleet is about 5.4 light-seconds out: knock at 04:10:07, heard about 5.3 s
 later, answered at once; the answer lands a breath before the next tick, under
 the ground's one condition (the handshake and nothing else). By the next
 orbiter night pass the light has stopped blinking. `HELLO RX · OK`. In the
-log-it branch (`a_window_quiet`): it listens until its next tick, eleven
-seconds; the fleet's answer would take ten and a half; the ground holds anyway
-and wants a suit beside it for the first good handshake.
+log-it branch (`a_window_quiet`): it listens until its next tick; the fleet's
+answer would take about ten seconds; the ground holds (no standing answer, a
+review board that won't sit before landing, and a suit beside it).
 **Blind hellos:** after the vote the fleet sends standard hellos blind; the
-first whole frame decodes later (`m_key`/`r_dark`), and answers are signed from
-then on (`a_log`: "blind until the first frame decoded, signed since").
+first whole frame decodes later (`m_key`/`r_dark`). Every hello is signed with
+the old program key (`dec_signal`, `a_log`: "every one signed, every one late").
 
 **Why nobody caught it (each gap has an in-world reason):**
 
@@ -235,13 +242,15 @@ wrong, the seedling put in the locker then taken back out, the lighthouse
 redrawn. The packer has a setup (`p_packer_note`, day 16–17) before `g_packer`.
 
 **Lasting cost:** the 02:00 thruster hook (`h_thruster` → `r_thruster`) leaves
-the valve isolated: propellant, `valve_later` (24–33), and on day 42
+the valve isolated: propellant, `valve_later` (24–33), and on day 39
 `a_recall_valve`, a last simulator run one thruster short (skipped when the same
 astronaut has the entry scene). Every unanswered ending keeps a cost past landing:
 `end_through` loses a ship (a leg folds on the slope; it will not fly home),
 `end_patience` finds Cargo 2 dead the night before landing (no OK), and
 `end_close` hears one OK before its battery gives out. Their last lines change
-accordingly ("All seven. Found the eighth.").
+accordingly ("All seven. Found the eighth."). A mid-voyage cost that lasts:
+`r_strike` clears the struck ship for entry two degrees shallower, a longer,
+hotter ride, "in every brief from now on".
 
 **The clock (days 30–37):** `h_band` (days 30–34) has the knock miss once, the
 first miss in weeks; `r_band` lays the gap against the night-side temperature
@@ -253,10 +262,12 @@ explained"). Seasons without it get `c2_cold`
 day.
 
 **The climax on the page (day 42):** `idle_mentor` binds `abort_who` (the one
-drilled on taking the landing by hand). `a_descent_hold` (41) opens the formation (two minutes between ships) and has
+drilled on taking the landing by hand). `a_descent_hold` (41, answered) / `a_descent_hold_q` (41, unanswered: "Cargo 2's
+knock for bearing") opens the formation (two minutes between ships) and has
 them fly the take-manual "from memory"; then one entry scene per branch, cast to them,
 printed after the other day-42 beats: `e_entry_hold`
-(blackout, brown cameras, a gust, the take-manual call not made), `e_entry_wait`
+(blackout, brown cameras, a gust, the take-manual called at a hundred metres
+and the ship put down on the flat), `e_entry_wait`
 (aerocapture, eleven seconds late, a manual corridor correction ready),
 `e_entry_clear` (an engine lights a half second late; the engine-out call
 catches). In the log-it branch `a_suit_plan` (42) has the hail owner, who argued
@@ -295,9 +306,9 @@ the prime zone and a rover drive (Cargo 4's rover). Clear air = prime zone,
 Cargo 2 thirty kilometres past it. Unanswered endings answer in person.
 
 Cargo 2 has a job in every ending: floodlights as the place marker (`end_lights`),
-answered from the crater rim by the one who argued to answer, one ship lost (`end_through`), a manifest line read by pass and
+answered from the crater rim by the one who argued to answer, one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame (`end_through`); `end_lights` gets one extra granted command (lights), a manifest line read by pass and
 a spare drill bit (`end_long_orbit`), found dead after the cold, answered by hand
-(`end_patience`; from low orbit the ground's hold and the crater rim keep the fleet quiet), its weather mast cross-checking the wind
+(`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), its weather mast cross-checking the wind
 forecast (`end_friend`), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
 two storm endings open differently; the two orbit endings are scenes (week
 three, week two), not summaries. The recorder paragraph is worded differently
@@ -307,12 +318,12 @@ Each needs ≥ 5% of 300 seasons (tested).
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 20.0% (1000: 19.8%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 25.3% (22.3%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 15.3% (17.8%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 22.0% (18.8%) |
-| 5 | *Old Friend* (`end_friend`) | answered, clear air | 8.7% (11.4%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 8.7% (9.9%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 21.0% (1000: 19.7%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 26.0% (22.5%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 14.7% (18.2%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 22.0% (18.9%) |
+| 5 | *Old Friend* (`end_friend`) | answered, clear air | 8.3% (11.1%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 8.0% (9.6%) |
 
 ## Epilogue
 
@@ -368,7 +379,9 @@ subtle, in no more than about 1 card in 6.
 
 Mystery hooks (ghost, voice, dark) open days 25–33 and resolve by 34. The band
 hook is now a grim clock (days 30–34, resolved 31–35).
-Other hooks open by 35 and resolve by 36. Each resolves in grounded hardware
+Mundane hooks (silence, pressure, flood, strike, thruster) are capped at day 27
+so days 25–33 favour the uncanny ones (ghost and dark weight 14). Resolvers give
+no exact clock times for the hook night. Each resolves in grounded hardware
 with a residue.
 
 ## Reserved words
@@ -380,7 +393,7 @@ the source to sync from. "Cargo 2" stays as the story's name.
 Cargo 2, smudge, streak, shadow (of a ship), fingers crossed, self-test,
 safe mode, safe-mode, pixel, night frame, fast sequence, spin, turns a minute,
 between boots, old channel, retired channel, old common channel, aim for the
-light, eleven / 11 seconds, 10.96, Sharpie, you'll thank me, written off, lost
+light, eleven / 11 seconds, 10.96, twelve now, pad-test, fault table, Sharpie, you'll thank me, written off, lost
 on landing, landing lights, light-seconds, sol, Mars day, thirty-seven minutes,
 37 minutes, interlock, transfer line, crater rim, solar wing, sequence number,
 trusted key, program key, backup site, lighthouse, blue marker, galley chime,
