@@ -1,0 +1,346 @@
+FLIGHT DAY 01
+  Reyes spends the shift on the hydroponics, as you asked.
+  Okafor takes your advice to heart and tries to be warmer.
+  On your word, Lind gives Brooks the last good coffee.
+  Brooks takes your advice to heart and tries to be blunter.
+  Singh hitches a ride over to Ship 05.
+  The galley pump fails again. Tanaka fixes it and complains the entire time.
+  Singh and Brooks share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 02
+  Reyes spends the shift on the hydroponics, as you asked.
+  On your word, Okafor gives Brooks the last good coffee.
+  Brooks saves Singh the last good coffee.
+  Singh hitches a ride over to Ship 06.
+  Singh and Moreau argue about the thermostat for most of a shift. Both are wrong.
+
+FLIGHT DAY 03
+  Okafor passes Singh a note: “Don't do anything brave without me.”
+  Reyes spends the shift on fuel trim, as you asked.
+  Okafor spends the shift on spare parts, as you asked.
+  On your word, Tanaka gives Singh the last good coffee.
+  Tanaka hitches a ride over to Ship 03.
+  Lind quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 04
+  On your word, Okafor gives Brooks the last good coffee.
+  Lind saves Tanaka the last good coffee.
+  On your word, Tanaka gives Okafor the last good coffee.
+  Brooks spends the shift on fuel trim, as you asked.
+
+FLIGHT DAY 05
+  Reyes takes your advice to heart and tries to be blunter.
+  On your word, Okafor gives Brooks the last good coffee.
+  Lind saves Tanaka the last good coffee.
+  Tanaka spends the shift on spare parts, as you asked.
+  On your word, Brooks gives Moreau the last good coffee.
+  Reyes hitches a ride over to Ship 03.
+  Lind hitches a ride over to Ship 02.
+  Tanaka heads back to Ship 04.
+  Lind spots a glint off the starboard quarter. Lind logs it and watches from the window until it's gone.
+
+FLIGHT DAY 06
+  Okafor takes your advice to heart and tries to be more curious.
+  Lind takes your advice to heart and tries to be blunter.
+  Lind heads back to Ship 03.
+  Lind and Reyes share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 07
+  Reyes spends the shift on the hydroponics, as you asked.
+  Okafor spends the shift on spare parts, as you asked.
+  Tanaka spends the shift on fuel trim, as you asked.
+  Fleet decision open for 48 hours. The asteroid off the port bow is repeating a pattern. Lind wants to answer it. Brooks wants to log it and keep going. [Open the channel / Log it, move on]
+  A private message for whoever looks after Lind. Lind finds three unlogged ration packs taped behind a panel. Nobody else knows.
+  Brooks quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 08
+  On your word, Reyes gives Lind the last good coffee.
+  Brooks spends the shift on spare parts, as you asked.
+  Singh and Moreau argue about the thermostat for most of a shift. Both are wrong.
+
+FLIGHT DAY 09
+  Lind passes Moreau a note: “Don't do anything brave without me.”
+  Tied at 4 ballot(s); the crew's lean broke it: Open the channel. Lind keys the transmitter and the whole fleet listens to static for an hour.
+  Reyes spends the shift on the hydroponics, as you asked.
+  Okafor spends the shift on spare parts, as you asked.
+  Lind takes your advice to heart and tries to be braver.
+  The galley pump fails again. Singh fixes it and complains the entire time.
+  A private message for whoever looks after Tanaka. Tanaka finds three unlogged ration packs taped behind a panel. Nobody else knows.
+
+FLIGHT DAY 10
+  Lind did as their owner asked: Hand them in. Lind hands them to the galley. Dinner is briefly excellent.
+  On your word, Reyes gives Okafor the last good coffee.
+  Okafor spends the shift on spare parts, as you asked.
+  Lind saves Reyes the last good coffee.
+
+FLIGHT DAY 11
+  On your word, Reyes gives Singh the last good coffee.
+  Okafor spends the shift on the hydroponics, as you asked.
+  On your word, Lind gives Reyes the last good coffee.
+  Brooks spends the shift on spare parts, as you asked.
+  Moreau hitches a ride over to Ship 03.
+  A micrometeoroid nicks Singh's suit during an EVA. Singh makes it back inside, but the hand is bad.
+  Anyone can answer this one. One tap is enough. Singh needs a med kit from another ship. [Send a med kit / Let Brooks go]
+
+FLIGHT DAY 12
+  Okafor passes Tanaka a note: “Thinking of you out there.”
+  Tanaka passes Lind a note: “Thinking of you out there.”
+  Tanaka did as their owner asked: Hand them in. Tanaka hands them to the galley. Dinner is briefly excellent.
+  Help is on the way: Send a med kit. A med kit goes over on the next shuttle. Singh's hand is strapped up by lunch.
+  Reyes spends the shift on spare parts, as you asked.
+  On your word, Okafor gives Singh the last good coffee.
+  Lind takes your advice to heart and tries to be more settled.
+  Tanaka takes your advice to heart and tries to be braver.
+  Moreau heads back to Ship 06.
+  Lind and Reyes share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 13
+  On your word, Reyes gives Okafor the last good coffee.
+  Lind spends the shift on spare parts, as you asked.
+  Brooks quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 14
+  On your word, Reyes gives Moreau the last good coffee.
+  Lind saves Reyes the last good coffee.
+  On your word, Brooks gives Lind the last good coffee.
+  Reyes heads back to Ship 01.
+  Lind spots a glint off the starboard quarter. Lind logs it and watches from the window until it's gone.
+  A private message for whoever looks after Brooks. Brooks finds three unlogged ration packs taped behind a panel. Nobody else knows.
+  Singh and Moreau argue about the thermostat for most of a shift. Both are wrong.
+
+FLIGHT DAY 15
+  Lind passes Okafor a note: “Don't do anything brave without me.”
+  Reyes takes your advice to heart and tries to be blunter.
+  On your word, Okafor gives Lind the last good coffee.
+  Lind spends the shift on fuel trim, as you asked.
+  Tanaka spends the shift on fuel trim, as you asked.
+
+FLIGHT DAY 16
+  Reyes passes Okafor a note: “Don't do anything brave without me.”
+  Reyes spends the shift on fuel trim, as you asked.
+  On your word, Okafor gives Reyes the last good coffee.
+  On your word, Tanaka gives Brooks the last good coffee.
+  Brooks spends the shift on the hydroponics, as you asked.
+
+FLIGHT DAY 17
+  Reyes passes Tanaka a note: “Don't do anything brave without me.”
+  Lind passes Moreau a note: “You still owe me a coffee.”
+  Brooks did as their owner asked: Hand them in. Brooks hands them to the galley. Dinner is briefly excellent.
+  Reyes spends the shift on fuel trim, as you asked.
+  On your word, Okafor gives Tanaka the last good coffee.
+  On your word, Lind gives Brooks the last good coffee.
+  On your word, Brooks gives Moreau the last good coffee.
+  Reyes hitches a ride over to Ship 05.
+  Tanaka hitches a ride over to Ship 02.
+  Moreau quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 18
+  On your word, Reyes gives Okafor the last good coffee.
+  Okafor spends the shift on the hydroponics, as you asked.
+  On your word, Brooks gives Lind the last good coffee.
+  Okafor hitches a ride over to Ship 03.
+  A private message for whoever looks after Moreau. Moreau finds three unlogged ration packs taped behind a panel. Nobody else knows.
+
+FLIGHT DAY 19
+  Brooks passes Reyes a note: “Don't do anything brave without me.”
+  On your word, Okafor gives Moreau the last good coffee.
+  Lind saves Okafor the last good coffee.
+  Brooks spends the shift on spare parts, as you asked.
+  Brooks and Reyes share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 20
+  Reyes passes Okafor a note: “You still owe me a coffee.”
+  Reyes spends the shift on the hydroponics, as you asked.
+  Okafor spends the shift on the hydroponics, as you asked.
+  Lind saves Okafor the last good coffee.
+  On your word, Brooks gives Moreau the last good coffee.
+
+FLIGHT DAY 21
+  Moreau made up their own mind: Hand them in. Moreau hands them to the galley. Dinner is briefly excellent.
+  Reyes takes your advice to heart and tries to be blunter.
+  On your word, Tanaka gives Okafor the last good coffee.
+  On your word, Brooks gives Singh the last good coffee.
+  Lind hitches a ride over to Ship 06.
+  The galley pump fails again. Okafor fixes it and complains the entire time.
+  A private message for whoever looks after Singh. Singh finds three unlogged ration packs taped behind a panel. Nobody else knows.
+  Singh and Lind argue about the thermostat for most of a shift. Both are wrong.
+
+FLIGHT DAY 22
+  Reyes takes your advice to heart and tries to be more curious.
+  Brooks saves Reyes the last good coffee.
+  Reyes hitches a ride over to Ship 06.
+  Singh hitches a ride over to Ship 05.
+
+FLIGHT DAY 23
+  Reyes passes Lind a note: “Thinking of you out there.”
+  Lind passes Tanaka a note: “Don't do anything brave without me.”
+  Reyes spends the shift on spare parts, as you asked.
+  Okafor spends the shift on fuel trim, as you asked.
+  On your word, Lind gives Brooks the last good coffee.
+  Tanaka spends the shift on fuel trim, as you asked.
+  Brooks saves Singh the last good coffee.
+  Okafor hitches a ride over to Ship 06.
+  At 03:12 the dish picks up a reply. It's the fleet's own message, played back slowly. Tanaka is the first one awake.
+  Lind spots a glint off the starboard quarter. Lind logs it and watches from the window until it's gone.
+  A private message for whoever looks after Reyes. Reyes finds three unlogged ration packs taped behind a panel. Nobody else knows.
+  Brooks quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 24
+  Singh made up their own mind: Keep them quiet. Singh moves them to a locker. For emergencies. Probably.
+  Reyes spends the shift on spare parts, as you asked.
+  Okafor spends the shift on spare parts, as you asked.
+  Lind saves Moreau the last good coffee.
+  Tanaka spends the shift on the hydroponics, as you asked.
+  Reyes heads back to Ship 01.
+  Moreau hitches a ride over to Ship 01.
+  Singh heads back to Ship 07.
+  A private message for whoever looks after Okafor. Okafor finds three unlogged ration packs taped behind a panel. Nobody else knows.
+  Okafor and Lind share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 25
+  Reyes spends the shift on spare parts, as you asked.
+  Lind saves Okafor the last good coffee.
+  On your word, Tanaka gives Okafor the last good coffee.
+
+FLIGHT DAY 26
+  Reyes did as their owner asked: Keep them quiet. Reyes moves them to a locker. For emergencies. Probably.
+  Reyes spends the shift on fuel trim, as you asked.
+  Lind saves Okafor the last good coffee.
+  On your word, Tanaka gives Reyes the last good coffee.
+
+FLIGHT DAY 27
+  Okafor made up their own mind: Keep them quiet. Okafor moves them to a locker. For emergencies. Probably.
+  Reyes spends the shift on spare parts, as you asked.
+  Okafor spends the shift on the hydroponics, as you asked.
+  Lind saves Okafor the last good coffee.
+  On your word, Tanaka gives Lind the last good coffee.
+  Reyes hitches a ride over to Ship 06.
+  Brooks quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 28
+  Reyes takes your advice to heart and tries to be braver.
+  Okafor takes your advice to heart and tries to be braver.
+  Lind spends the shift on the hydroponics, as you asked.
+  On your word, Tanaka gives Moreau the last good coffee.
+  Brooks spends the shift on spare parts, as you asked.
+  Reyes and Lind argue about the thermostat for most of a shift. Both are wrong.
+
+FLIGHT DAY 29
+  On your word, Reyes gives Brooks the last good coffee.
+  Lind saves Reyes the last good coffee.
+  On your word, Tanaka gives Reyes the last good coffee.
+  Brooks takes your advice to heart and tries to be braver.
+  Reyes heads back to Ship 01.
+  Moreau and Reyes share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 30
+  Reyes takes your advice to heart and tries to be warmer.
+  Lind saves Okafor the last good coffee.
+  On your word, Tanaka gives Singh the last good coffee.
+  On your word, Brooks gives Singh the last good coffee.
+  Singh hitches a ride over to Ship 01.
+  The galley pump fails again. Reyes fixes it and complains the entire time.
+
+FLIGHT DAY 31
+  On your word, Reyes gives Okafor the last good coffee.
+  Lind saves Okafor the last good coffee.
+  Tanaka spends the shift on the hydroponics, as you asked.
+  Brooks spends the shift on fuel trim, as you asked.
+  Okafor hitches a ride over to Ship 01.
+  Lind heads back to Ship 03.
+
+FLIGHT DAY 32
+  Reyes takes your advice to heart and tries to be blunter.
+  On your word, Okafor gives Brooks the last good coffee.
+  Lind spends the shift on spare parts, as you asked.
+  Brooks spends the shift on the hydroponics, as you asked.
+  Okafor heads back to Ship 02.
+  Tanaka hitches a ride over to Ship 01.
+  Moreau quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 33
+  Reyes spends the shift on spare parts, as you asked.
+  On your word, Okafor gives Lind the last good coffee.
+  On your word, Tanaka gives Lind the last good coffee.
+  Brooks spends the shift on fuel trim, as you asked.
+  Brooks hitches a ride over to Ship 01.
+
+FLIGHT DAY 34
+  Reyes passes Brooks a note: “Don't do anything brave without me.”
+  Okafor passes Singh a note: “Don't do anything brave without me.”
+  On your word, Reyes gives Moreau the last good coffee.
+  On your word, Okafor gives Brooks the last good coffee.
+  Tanaka takes your advice to heart and tries to be warmer.
+  On your word, Brooks gives Lind the last good coffee.
+  Tanaka heads back to Ship 04.
+  Lind spots a glint off the starboard quarter. Lind logs it and watches from the window until it's gone.
+  Singh and Reyes argue about the thermostat for most of a shift. Both are wrong.
+
+FLIGHT DAY 35
+  On your word, Reyes gives Moreau the last good coffee.
+  On your word, Okafor gives Singh the last good coffee.
+  Tanaka spends the shift on the hydroponics, as you asked.
+  Brooks takes your advice to heart and tries to be more curious.
+  Brooks and Moreau share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 36
+  Reyes spends the shift on spare parts, as you asked.
+  On your word, Tanaka gives Reyes the last good coffee.
+  Brooks spends the shift on fuel trim, as you asked.
+  Moreau quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 37
+  On your word, Okafor gives Lind the last good coffee.
+  Tanaka takes your advice to heart and tries to be more careful.
+  On your word, Brooks gives Tanaka the last good coffee.
+  Reyes hitches a ride over to Ship 02.
+  Tanaka hitches a ride over to Ship 02.
+  Reyes finds the wrappers in Okafor's locker. The galley goes very quiet.
+
+FLIGHT DAY 38
+  Brooks passes Okafor a note: “Don't do anything brave without me.”
+  Reyes spends the shift on the hydroponics, as you asked.
+  On your word, Okafor gives Singh the last good coffee.
+  Brooks spends the shift on fuel trim, as you asked.
+  Brooks heads back to Ship 05.
+  Moreau hitches a ride over to Ship 05.
+
+FLIGHT DAY 39
+  Tanaka passes Brooks a note: “Thinking of you out there.”
+  On your word, Reyes gives Lind the last good coffee.
+  On your word, Okafor gives Moreau the last good coffee.
+  Lind spends the shift on fuel trim, as you asked.
+  On your word, Tanaka gives Reyes the last good coffee.
+  On your word, Brooks gives Moreau the last good coffee.
+  Reyes heads back to Ship 01.
+  Moreau heads back to Ship 06.
+  The galley pump fails again. Brooks fixes it and complains the entire time.
+
+FLIGHT DAY 40
+  Reyes passes Singh a note: “Thinking of you out there.”
+  Okafor passes Tanaka a note: “Don't do anything brave without me.”
+  Tanaka passes Reyes a note: “You still owe me a coffee.”
+  Reyes spends the shift on the hydroponics, as you asked.
+  Okafor takes your advice to heart and tries to be more settled.
+  On your word, Tanaka gives Okafor the last good coffee.
+  On your word, Brooks gives Tanaka the last good coffee.
+  Okafor hitches a ride over to Ship 01.
+  Tanaka heads back to Ship 04.
+  Moreau quietly fixes the galley pump again. Nobody asked; nobody needed to.
+
+FLIGHT DAY 41
+  Reyes spends the shift on fuel trim, as you asked.
+  On your word, Okafor gives Singh the last good coffee.
+  Lind spends the shift on spare parts, as you asked.
+  Tanaka spends the shift on spare parts, as you asked.
+  On your word, Brooks gives Tanaka the last good coffee.
+  Singh and Reyes argue about the thermostat for most of a shift. Both are wrong.
+  Singh and Reyes share the night watch. Mostly they talk about home.
+
+FLIGHT DAY 42
+  Tanaka passes Brooks a note: “Thinking of you out there.”
+  On your word, Okafor gives Moreau the last good coffee.
+  Tanaka spends the shift on the hydroponics, as you asked.
+  Brooks hitches a ride over to Ship 01.
+  Moreau hitches a ride over to Ship 01.
+  Arrival day. First Contact, Sort Of. The fleet arrives with a recording nobody can explain and a crew that won't stop talking about it.

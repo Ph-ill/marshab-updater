@@ -1,0 +1,96 @@
+{
+ "ending": "end_contact",
+ "cards_fired": {
+  "galley_pump": 5,
+  "beat_watch": 8,
+  "beat_argue": 7,
+  "quiet_fixer": 9,
+  "glint": 4,
+  "dec_signal": 1,
+  "dil_stash": 7,
+  "crisis_eva": 1,
+  "rescue_kit": 1,
+  "signal_reply": 1,
+  "stash_found": 1,
+  "end_contact": 1
+ },
+ "decisions": {
+  "closed": 1,
+  "no_ballots": 0,
+  "tie": 1
+ },
+ "dilemmas": {
+  "owner": 4,
+  "astronaut": 3
+ },
+ "rescues": {
+  "answered": 1,
+  "default": 0
+ },
+ "story_appearances": {
+  "Reyes": 11,
+  "Okafor": 4,
+  "Lind": 12,
+  "Tanaka": 3,
+  "Brooks": 11,
+  "Moreau": 10,
+  "Singh": 12
+ },
+ "entries": 408,
+ "out_bytes": 3264,
+ "state_bytes": 299,
+ "resources_end": {
+  "food": 89,
+  "fuel": 77,
+  "spares": 64
+ },
+ "crew_condition_end": {
+  "Reyes": "ok",
+  "Okafor": "ok",
+  "Lind": "ok",
+  "Tanaka": "ok",
+  "Brooks": "ok",
+  "Moreau": "ok",
+  "Singh": "ok"
+ },
+ "reference_digest": "5cca1692bc128b4c",
+ "records": 169,
+ "records_per_player": {
+  "Reyes": 48,
+  "Okafor": 37,
+  "Lind": 20,
+  "Brooks": 31,
+  "Tanaka": 33
+ },
+ "log_bytes": 2197,
+ "late_records": 3,
+ "determinism": {
+  "instant": {
+   "all_7_match": true,
+   "replays": 7,
+   "replayed_days": 56,
+   "deepest_rewrite_days": 7
+  },
+  "gossip": {
+   "all_7_match": true,
+   "replays": 268,
+   "replayed_days": 1276,
+   "deepest_rewrite_days": 8
+  },
+  "reverse": {
+   "all_7_match": true,
+   "replays": 270,
+   "replayed_days": 1465,
+   "deepest_rewrite_days": 9
+  },
+  "bursty": {
+   "all_7_match": true,
+   "replays": 220,
+   "replayed_days": 1111,
+   "deepest_rewrite_days": 12
+  }
+ },
+ "seconds_reference_season": 0.005,
+ "seconds_determinism_runs": 0.32,
+ "pack_bytes": 575
+}

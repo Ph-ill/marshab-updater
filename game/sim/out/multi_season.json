@@ -1,0 +1,35 @@
+{
+ "seasons": 300,
+ "seconds": 1.58,
+ "endings": {
+  "end_contact": 185,
+  "end_followed": 115
+ },
+ "seasons_where_card_fired": {
+  "beat_argue": 299,
+  "beat_watch": 300,
+  "crisis_eva": 300,
+  "dec_signal": 300,
+  "dil_stash": 300,
+  "end_contact": 185,
+  "end_followed": 115,
+  "galley_pump": 300,
+  "glint": 300,
+  "quiet_fixer": 300,
+  "rescue_kit": 300,
+  "signal_echo": 115,
+  "signal_reply": 185,
+  "stash_found": 269
+ },
+ "cards_never_fired": [
+  "end_long_way"
+ ],
+ "dilemmas": {
+  "owner": 1243,
+  "astronaut": 814
+ },
+ "decisions": {
+  "closed": 300,
+  "no_ballots": 0
+ }
+}
