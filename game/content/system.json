@@ -58,9 +58,9 @@
     "home": "{A} rides the transfer line back home to {S}.",
     "note": "{A} passes {T} a note: “{line}”",
     "dec_open": "Fleet vote:",
-    "dec_close": "Decision closed: {opt}. Votes cast: {n}.",
-    "dec_lean": "No votes came in, so the crew decided: {opt}.",
-    "dec_tie": "A tie, {n} votes in all. The crew broke it themselves: {opt}.",
+    "dec_close": "The fleet's advice, {n} ballots in: {opt}.",
+    "dec_lean": "No votes came in, so the flight director went with the crew's lean: {opt}.",
+    "dec_tie": "Split down the middle, {n} votes. The flight director takes the crew's lean: {opt}.",
     "dil_open": "Private, for whoever looks after {A}:",
     "dil_you": "{A} went with your call: {opt}.",
     "dil_self": "No word from home in time, so {A} chose: {opt}.",
@@ -149,11 +149,11 @@
       ],
       [
         "a_list",
-        "Got an answer from every name on the list but one, and read each aloud, pauses included."
+        "Got an answer from every name on the list, one postmarked from the sea, and read each aloud, pauses included."
       ],
       [
         "g_news",
-        "Added one name to the list on Mars, and keeps it current."
+        "Has a folding chair saved by the sea, for later."
       ],
       [
         "p_live_call",
@@ -181,7 +181,7 @@
       ],
       [
         "letter_open",
-        "Saved a letter for the hard day. Its last line is written down nowhere."
+        "Saved a letter for the hard day, and knows its last line by heart."
       ],
       [
         "letter_worn",
@@ -241,23 +241,23 @@
         ],
         [
           "end_through",
-          "Wrote when it landed. Kept writing. Was answered from the rim."
+          "Kept knocking until someone climbed the rim."
         ],
         [
           "end_long_orbit",
-          "Wrote when it landed. Kept writing. Kept a lamp lit for three weeks of passes."
+          "Kept a lamp lit for three weeks of passes."
         ],
         [
           "end_patience",
-          "Wrote when it landed. Kept writing through the cold. Was answered by hand, at the last."
+          "Kept knocking through the cold, and was answered by hand."
         ],
         [
           "end_friend",
-          "Wrote when it landed. Kept writing. Had a charge waiting for the truck."
+          "Gave a truck the charge it kept for the cold."
         ],
         [
           "end_close",
-          "Wrote when it landed. Kept writing. Heard back once, and it was enough."
+          "Heard back once, and it was enough."
         ],
         [
           "a_window_hail",
