@@ -23,7 +23,9 @@ players).
   a home ship; a ship may briefly hold 0 or 2.** Crossings happen only in a
   transfer window (every fifth day from day 7: a tethered line between hatches,
   paid for in propellant) or an unscheduled rescue window, and an empty ship
-  flies itself. Most two-person scenes happen over the fleet link, video, or an
+  flies itself. No crossing out after day 32, everyone home from day 37, none
+  on days 40–42. A card set on an ordinary day says "the last/next transfer
+  window", never a crossing that day. Most two-person scenes happen over the fleet link, video, or an
   EVA between ships; an in-person scene needs `when same A B` and reads as a
   visit. Check every `{A}`/`{B}` card for "next to", "hands {B}", "across the
   table" and the like.
@@ -44,7 +46,7 @@ players).
   thumbnail.
 - **Approach timeline.** Day 36–37: about twenty-five light-seconds out. Day 38:
   Mars "under three weeks out" in real flight. Day 41: inside five
-  light-seconds, about four days before atmospheric entry ("the last night
+  light-seconds, about five days before atmospheric entry ("the last night
   before entry" belongs to day 41). Day 42: entry morning. Arrival is direct
   entry from the crossing, or aerocapture into a long orbit if the fleet votes
   to wait.
@@ -200,7 +202,7 @@ after its `type` line:
   asked"), taping or pinning things to walls, "the channel goes quiet" and
   other hush endings. One of each in the whole deck at most; prefer an action.
 - The climax happens on the page: day 42 has an entry scene per arrival branch
-  (`e_entry_*`), cast to whoever was drilled on the manual abort, and each
+  (`e_entry_*`), cast to whoever was drilled on taking the landing by hand (take-manual, engine-out call, corridor correction; never "manual abort"), and each
   ending is a landing scene, not a summary. Every branch shows the event
   recorder (`a_log` when answered; the unanswered endings otherwise).
 - Voices belong to arcs, not people (casting is random). See STORY_BIBLE.md
@@ -218,6 +220,12 @@ after its `type` line:
 - Retired tics (round 5): "since Starbase", "slowly", "Around the fleet" and
   other filler fold lines (fold lines name a concrete chore), "nobody" anywhere
   in card or system text.
+- Retired tics (round 6): "Neither of them…" endings, "doesn't mention",
+  "reads it twice", "Slowly." (give a rate), pinning things above bunks (clip
+  them inside the logbook). Night scares stay grounded: no "by itself", no
+  "it has moved"; give the hardware a cause.
+- Fold lines: none on the final day, printed before a hook, never naming
+  anyone who had a scene that day.
 - Epilogue: every astronaut gets a line. Story lines first; fallbacks from
   `epi.axis` / `epi.bond` / `epi.plain` (sim `Renderer.epilogue(out, st)`).
 
