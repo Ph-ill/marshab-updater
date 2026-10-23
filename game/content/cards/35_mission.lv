@@ -27,7 +27,7 @@ once
 duration 2
 roles A B
 lean curious after home
-text The backup-site maps, stitched from imagery older than the cargo landings, show an unnamed crater small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants somewhere at home.
+text The backup-site maps, stitched from imagery older than the cargo landings (the orbiter meant to refresh them was written off), show an unnamed crater small enough for the fleet to name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants somewhere at home.
 option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
   set name_plan
   trait A curious 2
@@ -93,7 +93,7 @@ when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} finds the grey relay from the manifest in the catalog, spinning since a thruster stuck: a turn every 10.96 seconds, a beam eight and a half degrees wide, 2.4 percent of a turn. Both numbers were fitted to RF flashes heard after it failed. A lighthouse, unkept. {A} draws it in blue: who keeps it?
+text {A} looks up the grey relay: spinning since a thruster stuck: a turn every 10.96 seconds, a beam eight and a half degrees wide, 2.4 percent of a turn. Both numbers were fitted to RF flashes from short ground passes, weeks after it failed. A lighthouse, unkept. {A} draws it in blue.
 do who ow_theory A
 do mark t_theory
 do morale A 3
@@ -108,7 +108,7 @@ days 25 27
 roles A
 when since t_theory >= 3
 when is A ow_theory
-text Mission Control can't run the grey relay forward for {A}: its last good orbit data is two years stale. To fit the thirty-seven minutes, it would need an orbit of exactly one Mars day. The ground sends a drawing of a lighthouse anyway; {A} adds a keeper in blue and sleeps through the night.
+text The ground can't run the grey relay forward: its orbit data is two years stale. To fit the thirty-seven minutes it would need an orbit of exactly one sidereal Mars day, and even then it shouldn't vanish for half of it. "Check the dish schedule," the ground adds. {A} adds a keeper in blue.
 do morale A 2
 
 card c_theory
@@ -119,7 +119,7 @@ once
 days 38 38
 roles A
 when is A ow_theory
-text {A} takes the lighthouse drawing down for the entry checklist and stops. A relay would drag the knocks early and late by most of a tenth of a second each orbit, and never hide for half a day. These swing by a hundredth, once a day. Under the keeper, in blue: "Wrong lighthouse." Then: "Same keeper?"
+text {A} takes the lighthouse drawing down and stops. A relay would drag the knocks early and late by more than a tenth of a second each orbit, and never hide for half a day. These swing by a hundredth, once a day. Under the keeper, in blue: "Wrong lighthouse." Then: "Same keeper?"
 do trait A curious 2
 
 card m_flash1
@@ -131,7 +131,7 @@ once
 days 30 31
 roles A
 when !is A ow_theory
-text {A} pulls the weather orbiter's low-light night frames of the landing region. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor, almost certainly. {A} writes down both timestamps anyway.
+text {A} pulls an old survey orbiter's low-light night frames of the landing region. On dark ground near the edge of one frame, one pixel is lit. On the next frame it isn't. A cosmic-ray hit on the sensor, almost certainly. {A} writes down both timestamps anyway.
 do set flash_seen
 do mark t_flash
 do who flash_who A
@@ -161,7 +161,7 @@ duration 1
 roles A B
 when flag flash_twice
 lean curious look leave
-text {A} wants to ask the ground to task an orbiter for a fast sequence over the lit pixel, at the cost of the fleet's next deep-space pass, which the orbiter's data would ride home on: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
+text {A} wants to ask the ground to task an orbiter for a fast sequence over the lit pixel, at the cost of the fleet's next deep-space pass, because the orbiter's data needs the same ground antenna: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
 option look | Ask for the sequence | The request goes up. {A} writes the apology to six inboxes personally, and means each one.
   set flash_looked
   morale A -2
@@ -179,7 +179,7 @@ once
 days 34 34
 roles A
 when !fired h_dark
-text The first whole frame from Mars decodes in {A}'s log: a link request, signed with an old program key. Sequence 1, as if just switched on; challenge, new. It hung the comms computer until a watchdog cleared it. The ground: "Old key, no ID. Nothing we still fly." A parser guard goes up by evening.
+text The first whole frame from Mars decodes in {A}'s log: a link request, signed with an old program key. Sequence 1; challenge, new. It hung the comms computer until a watchdog cleared it. The ground: "Old key, no ID. Nothing we still fly." A parser guard goes up by evening.
 do trait A curious 2
 
 card flash_answer
@@ -208,7 +208,7 @@ roles A
 when flag flash_left
 when since t_flash >= 5
 when is A flash_who
-text An email reaches {A} from someone on the orbiter team who slipped the fast sequence into a gap in the plan: forty frames of dark ground, the pixel lighting, going out, lighting again, never moving against the rocks. Whatever it is, it isn't in orbit. The email ends: "You didn't hear this from me."
+text An email from the orbiter team reaches {A}: a calibration slot was free, and the pixel was in the swath. Forty frames of dark ground, the pixel lighting, going out, lighting again, never moving against the rocks. Whatever it is, it isn't in orbit. The email ends: "Officially, a star calibration."
 do set flash_ground
 do trait A curious 3
 
@@ -221,7 +221,7 @@ days 36 37
 roles A
 when is A flash_who
 when !fired h_band
-text The night frames of the lit pixel have gaps in them now, longest in the hour before dawn, the coldest there. {A} lines them up night by night: each gap a few knocks longer than the last. Whenever it comes back, it is on the beat. Midwinter at the landing region is three weeks off.
+text The night frames of the pixel have gaps now, longest in the hour before dawn, the coldest there. {A} lines them up night by night: each gap a few knocks longer than the last. Whenever it comes back, it is on the beat. Midwinter there is three weeks off; the plan lands into it anyway, for the ice.
 do morale A -2
 
 card m_overlay
@@ -270,7 +270,7 @@ days 38 38
 roles A
 when fired m_overlay
 when is A ow_song
-text With Mars under three weeks out, the old-channel carrier is loud enough on the dish to hear without folding. {A} pipes it into the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between the clicks. {A} plays them once on the galley keyboard and doesn't explain.
+text With Mars four days out, the old-channel carrier is loud enough on the dish to hear without folding. {A} pipes it into the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between the clicks. {A} plays them once on the galley keyboard and doesn't explain.
 do morale A -1
 
 card m_count
@@ -294,7 +294,7 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop, talking through its low-gain antenna: Cargo 2. From above it was always two pixels and a shadow. At each boot its floodlights flare. {A} counts it: logo, bar, chime, eleven.
+text The first sharp pass over the backup site in two years comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, dish jammed against its stop, talking through its low-gain antenna: Cargo 2. From above it was always two pixels and a shadow. Its floodlights flare with each hello, then go dark while it listens. {A} counts the dark: nine, ten, eleven, flare.
 do trait A curious 3
 
 card m_reveal_any
@@ -306,7 +306,7 @@ once
 days 40 40
 roles A
 when !fired m_reveal
-text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop, talking through its low-gain antenna: Cargo 2. From above it was always two pixels and a shadow. At each boot its floodlights flare. {A} counts it: logo, bar, chime, eleven.
+text The first sharp pass over the backup site in two years comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, dish jammed against its stop, talking through its low-gain antenna: Cargo 2. From above it was always two pixels and a shadow. Its floodlights flare with each hello, then go dark while it listens. {A} counts the dark: nine, ten, eleven, flare.
 do trait A curious 3
 
 card a_report
@@ -318,7 +318,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text The report that wrote Cargo 2 off runs a page: relay dead a month before landing, crash site at the last fix before the divert, six weeks of silence, a faint carrier filed as the relay tumbling. {A}'s runs forty to say one thing: every 10.96 seconds, a pad-test number, Cargo 2 wakes, asks a fresh question, listens until the next tick, then starts over. Every answer from Earth came too late. Reset is its only bypass.
+text The new report is forty pages. In cruise, Earth talked to Cargo 2 on a session set up on the pad. A last patch before landing restored the pad-test fault table; landing with the relay dead, it fell back to the pad handshake: every 10.96 seconds, wake, send a fresh hello and listen until the next tick. Earth's answers all came late; the dead relay was the only orbiter on that channel. A reset only restarts the loop.
 
 card a_report_any
 type event
@@ -329,7 +329,7 @@ days 40 40
 roles A
 when !fired a_report
 when !is A ow_theory
-text The report that wrote Cargo 2 off runs a page: relay dead a month before landing, crash site at the last fix before the divert, six weeks of silence, a faint carrier filed as the relay tumbling. {A}'s runs forty to say one thing: every 10.96 seconds, a pad-test number, Cargo 2 wakes, asks a fresh question, listens until the next tick, then starts over. Every answer from Earth came too late. Reset is its only bypass.
+text The new report is forty pages. In cruise, Earth talked to Cargo 2 on a session set up on the pad. A last patch before landing restored the pad-test fault table; landing with the relay dead, it fell back to the pad handshake: every 10.96 seconds, wake, send a fresh hello and listen until the next tick. Earth's answers all came late; the dead relay was the only orbiter on that channel. A reset only restarts the loop.
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
@@ -341,7 +341,7 @@ days 41 41
 roles A
 when flag signal_answered
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. All night the round trip has been shrinking toward its window. {A}'s receiver hears the knock five seconds later and answers at once, signed, under the one condition the ground set: the handshake and nothing else. The answer lands a breath before the next tick, inside the window. {A} says "Hi," out loud, ten seconds early. By the next orbiter night pass, the light has stopped blinking.
+text 04:10:07: Cargo 2 knocks. {A}'s receiver hears the knock five seconds later and answers at once, signed, under the one condition the ground set: the handshake and nothing else. The answer lands a breath before the next tick, inside the window. {A} says "Hi" out loud as it goes, five seconds before Cargo 2 hears it. By the next orbiter night pass, the light has stopped blinking.
 do set c2_answered
 do morale A 8
 
@@ -354,7 +354,7 @@ days 41 41
 roles A
 when fired a_window_hail
 when !is A ow_hail
-text Then Cargo 2 sends its event-recorder summary down the old channel, a line at a time. HELLO RX · REPLAY · DISCARD ×31,000: every hello Earth sent up the normal uplink. Then ×410,000 from the fleet since the vote: blind until the first frame decoded, signed since, every one late. At the bottom, one new line: HELLO RX · OK. {A} reads it out to the fleet.
+text Then Cargo 2 sends its event-recorder summary down the old channel, a line at a time. HELLO RX · REPLAY · DISCARD ×31,000: every hello Earth sent up the normal uplink. Then ×410,000 from the fleet since the vote, every one signed, every one late. At the bottom, one new line: HELLO RX · OK. {A} reads it out to the fleet.
 do morale A 2
 
 card a_window_quiet
@@ -366,7 +366,7 @@ days 41 41
 roles A
 when flag signal_ignored
 when is A ow_hail
-text 04:10:07: Cargo 2 knocks. Nothing on the fleet's schedule answers. It listens until its next tick, eleven seconds. Earth's answer would land minutes late; the fleet's, now, in ten and a half. Mission Control asks the fleet to hold: no one knows what two-year-old fault protection does with its first good handshake, and the ground wants a suit beside it, a hand on the breaker, when it finds out.
+text 04:10:07: Cargo 2 knocks. Nothing on the fleet's schedule answers. It listens until its next tick; the fleet's answer, now, would take about ten seconds. Mission Control asks the fleet to hold: there is no standing answer to point to, and a first transmission to two-year-old fault protection wants a review board that won't sit before landing, and a suit beside it, a hand on the breaker.
 do morale A -2
 
 # --- Day 41: the descent brief, one per arrival branch ----------------------------
@@ -378,9 +378,22 @@ once
 days 41 41
 roles A
 when flag arrive_hold
+when flag c2_answered
 when is A abort_who
 text The descent brief goes up five days out, and the formation opens out for entry, two minutes between ships. The storm fills the prime zone rim to rim. The backup site is no clearer, but it is flat, it was surveyed, and now it has a landmark that answers. The brief gains a line no one has written before: "radar for height, Cargo 2's radio for place". {A} flies the take-manual once in the sim, from memory.
 do morale A 2
+
+card a_descent_hold_q
+type event
+cat arrival
+due
+once
+days 41 41
+roles A
+when flag arrive_hold
+when !flag c2_answered
+when is A abort_who
+text The descent brief goes up five days out, and the formation opens out to two minutes between ships. The storm fills the prime zone rim to rim. The backup site is no clearer, but it is flat, it was surveyed, and now it has a landmark that keeps time: a known position, knocking every eleven seconds. New line: "radar for height, Cargo 2's knock for bearing". {A} flies the take-manual once in the sim, from memory.
 
 card a_descent_wait
 type event
