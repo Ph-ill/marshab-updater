@@ -367,13 +367,15 @@ class TestFairCasting(unittest.TestCase):
         self.assertGreaterEqual(len(text["core"]), 6)
         self.assertTrue(text["reveal"])
         # The climax schedule (STORY_BIBLE.md): exactly one mystery card on each of
-        # days 35-40, a window card on day 41, no blank story day 38-39, and an
-        # epilogue line for every astronaut.
+        # days 35-40, a window card on day 41, at least two story cards on every
+        # day 34-42, an epilogue line for every astronaut, a coda line, and each
+        # personal thread's late beat (c_*) for its owner.
         from render import Renderer
         cat = {i: c["cat"] for i, c in enumerate(lvc.build(CONTENT)[2].cards)}
         ids = [c["id"] for c in text["cards"]]
         window = {ids.index("a_window_hail"), ids.index("a_window_quiet")}
         opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
+        thread_beats = {ids.index(x) for x in ("c_letter", "c_dose", "c_list", "c_song", "c_theory", "c_hail")}
         ends = {}
         for i in range(300):
             key = bytes([(i >> 8) & 255, i & 255]) + b"season"
@@ -381,18 +383,22 @@ class TestFairCasting(unittest.TestCase):
             self.assertEqual(fair_play(st, text), [], "season %d" % i)
             ends[st.ending] = ends.get(st.ending, 0) + 1
             out = st.story
-            myst, days = {}, set()
+            myst, days = {}, {}
             for k in range(0, len(out), 8):
                 if out[k + 1] in opens:
-                    days.add(out[k])
+                    days[out[k]] = days.get(out[k], 0) + 1
                     if cat[out[k + 2]] == "mystery":
                         myst[out[k]] = myst.get(out[k], 0) + 1
             for d in range(35, 41):
                 self.assertEqual(myst.get(d, 0), 1, "season %d day %d" % (i, d))
-            self.assertTrue(days >= {38, 39}, "season %d" % i)
+            for d in range(34, 43):
+                self.assertGreaterEqual(days.get(d, 0), 2, "season %d day %d" % (i, d))
+            fired = {out[k + 2] for k in range(0, len(out), 8) if out[k + 1] == O.O_EVENT}
+            self.assertTrue(thread_beats <= fired, "season %d" % i)
             self.assertTrue(any(out[k + 1] == O.O_EVENT and out[k + 2] in window and out[k] == 41
                                 for k in range(0, len(out), 8)), "season %d" % i)
             self.assertEqual(len(Renderer(text).epilogue(out)), 7, "season %d" % i)
+            self.assertIsNotNone(Renderer(text).coda(out), "season %d" % i)
         n_end = sum(1 for c in text["cards"] if c["id"].startswith("end_"))
         self.assertEqual(len(ends), n_end)
         self.assertGreaterEqual(min(ends.values()), 15, ends)
