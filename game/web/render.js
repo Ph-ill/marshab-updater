@@ -22,10 +22,17 @@ export class Renderer {
     return c !== NONE && c < this.t.crew.length ? this.t.crew[c] : "someone";
   }
 
+  // A crewmate's own sign-off (roster.lv `voice`), for {Av}/{Bv}.
+  voice(c) {
+    const v = this.t.voice;
+    return v && c !== NONE && c < v.length ? v[c] : "Out.";
+  }
+
   fill(tpl, A = NONE, B = NONE, kw = {}) {
     return tpl.replace(/\{(\w+)\}/g, (m, k) => {
       if (k === "A") return this.name(A);
       if (k === "B") return this.name(B);
+      if (k === "Av" || k === "Bv") return this.voice(k === "Av" ? A : B);
       return k in kw ? String(kw[k]) : m;
     });
   }

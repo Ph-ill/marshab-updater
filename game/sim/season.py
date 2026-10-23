@@ -309,7 +309,7 @@ def fair_play(st, text):
 
 def main(argv):
     pack_path = os.path.join(ROOT, "build", "pack.bin")
-    text = json.load(open(os.path.join(ROOT, "build", "text.json"), encoding="utf-8"))
+    text = json.load(open(os.path.join(ROOT, "build", "text.dev.json"), encoding="utf-8"))
     outdir = os.path.join(HERE, "out")
     os.makedirs(outdir, exist_ok=True)
     seasons = int(argv[argv.index("--seasons") + 1]) if "--seasons" in argv else 0

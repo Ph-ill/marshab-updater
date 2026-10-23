@@ -5,6 +5,7 @@ Reads content/fleet.lv, content/roster.lv, content/system.json and content/cards
   build/pack.bin       binary logic table the Pico runs (no text at all)
   build/text.json      card text and templates the phone renders (minified)
   build/text.json.gz   what the Pico actually serves to phones
+  build/text.dev.json  text.json plus card ids, for sim/ and tools (never shipped)
 
 Usage: python3 tools/lvc.py [--content DIR] [--out DIR] [--check] [--verbose] [-h|--help]
 --check validates only and writes nothing. Exit code 1 on any error.
@@ -360,6 +361,11 @@ def parse_crew(t):
 
 
 HABIT_RE = re.compile(r'\bhabit\s+"((?:[^"\\]|\\.)*)"')  # \" for a quote inside
+# `voice "..."`: one short sign-off in that astronaut's own rhythm, taken from their
+# habits (never invented). Cards print it with {Av}/{Bv} for whoever holds the role,
+# so a crewmate sounds like themselves in any arc, in any season.
+VOICE_RE = re.compile(r'\bvoice\s+"([^"{}]*)"')
+VOICE_DEFAULT = "Out."
 # Used for anyone whose roster line has no habit yet. Deliberately generic: a real
 # habit is something the player sends in, never something the writers invent.
 HABIT_DEFAULT = "{A} keeps one small thing from home within reach of the console."
@@ -436,11 +442,14 @@ def parse_fleet(path, roster=None):
         with open(roster, encoding="utf-8") as f:
             for raw in f:
                 line, habits = split_habit(raw.split("#")[0])
+                vm = VOICE_RE.search(line)
+                line = VOICE_RE.sub("", line)
                 t = line.split()
                 if t and t[0] == "crew":
                     cr = parse_crew(t)
                     cr["habit"] = habits[0] if habits else None
                     cr["habits"] = habits
+                    cr["voice"] = vm.group(1).strip() if vm else None
                     fleet["crew"].append(cr)
     for cr in fleet["crew"]:
         if cr["quirk"] is None and fleet["key"]:
@@ -562,6 +571,7 @@ def mix_line(ctx):
 
 def check_style(cards, fleet, ctx):
     names = [cr["name"] for cr in fleet["crew"]]
+    voices = [cr.get("voice") or VOICE_DEFAULT for cr in fleet["crew"]] or [VOICE_DEFAULT]
     for c in cards:
         w = c["where"]
         parts = [("text", c["text"])] + [("option " + o["name"], o["text"]) for o in c["options"]]
@@ -576,6 +586,8 @@ def check_style(cards, fleet, ctx):
                 m = rx.search(t)
                 if m:
                     ctx.warnings.append("style: %s %s %r %s" % (w, what, m.group(0), why))
+            # Caps count a sign-off at its longest (any crewmate may hold the role).
+            t = re.sub(r"\{[AB]v\}", max(voices, key=len), t)
             cap = (MAX_ENDING if c["type"] == O.ENDING else
                    MAX_PAYOFF if (c["reveal"] or c["days"][0] >= PAYOFF_FROM) else MAX_TEXT)
             if len(t) > cap:
@@ -606,7 +618,9 @@ def validate(cards, ctx, fleet, system):
         for m in re.findall(r"\{(\w+)\}", c["text"] + "".join(o["text"] for o in c["options"])):
             if m in O.ROLES and O.ROLES.index(m) >= c["nroles"]:
                 ctx.errors.append("%s: text uses {%s} but the card binds %d role(s)" % (w, m, c["nroles"]))
-            elif m not in O.ROLES and m not in ("n",):
+            elif m in ("Av", "Bv") and O.ROLES.index(m[0]) >= c["nroles"]:
+                ctx.errors.append("%s: text uses {%s} but the card binds %d role(s)" % (w, m, c["nroles"]))
+            elif m not in O.ROLES and m not in ("n", "Av", "Bv"):
                 ctx.errors.append("%s: unknown template slot {%s}" % (w, m))
         names = [o["name"] for o in c["options"]]
         voted = c["type"] in (O.DECISION, O.DILEMMA, O.RESCUE)
@@ -789,6 +803,7 @@ def build(content_dir):
         "pack": pack_id.hex(),
         "crew": [cr["name"] for cr in fleet["crew"]],
         "ships": [cr["ship"] for cr in fleet["crew"]],
+        "voice": [cr.get("voice") or VOICE_DEFAULT for cr in fleet["crew"]],
         "flagship": next((i for i, cr in enumerate(fleet["crew"]) if cr["flagship"]), 0),
         "epi": epi,
         "cards": [dict({"id": c["id"], "t": c["text"], "o": [[o["label"], o["text"]] for o in c["options"]]},
@@ -843,7 +858,11 @@ def main(argv):
     if ctx.errors:
         print("%d error(s); nothing written" % len(ctx.errors), file=sys.stderr)
         return 1
-    tj = json.dumps(text, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    # The phone never needs card ids (entries carry card indices), so the shipped
+    # text.json leaves them out; text.dev.json keeps them for sim/ and the tests.
+    ship = dict(text, cards=[{k: v for k, v in c.items() if k != "id"} for c in text["cards"]])
+    tj = json.dumps(ship, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    tdev = json.dumps(text, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     tgz = gzip.compress(tj, 9, mtime=0)
     n = len(text["cards"])
     print("ok: %d cards, %d flags, %d vars; pack.bin %d B, text.json %d B, gzip %d B; pack id %s"
@@ -852,7 +871,8 @@ def main(argv):
         print(mix_line(ctx))
     if not check:
         os.makedirs(out, exist_ok=True)
-        for name, data in (("pack.bin", pack), ("text.json", tj), ("text.json.gz", tgz)):
+        for name, data in (("pack.bin", pack), ("text.json", tj), ("text.json.gz", tgz),
+                           ("text.dev.json", tdev)):
             with open(os.path.join(out, name), "wb") as f:
                 f.write(data)
     return 0

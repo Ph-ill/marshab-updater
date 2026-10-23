@@ -28,6 +28,11 @@ class Renderer:
     def name(self, c):
         return self.t["crew"][c] if c != NONE and c < len(self.t["crew"]) else "someone"
 
+    def voice(self, c):
+        # A crewmate's own sign-off (roster.lv `voice`), for {Av}/{Bv}.
+        v = self.t.get("voice") or []
+        return v[c] if c != NONE and c < len(v) else "Out."
+
     def fill(self, tpl, A=NONE, B=NONE, **kw):
         def sub(m):
             k = m.group(1)
@@ -35,6 +40,8 @@ class Renderer:
                 return self.name(A)
             if k == "B":
                 return self.name(B)
+            if k in ("Av", "Bv"):
+                return self.voice(A if k == "Av" else B)
             return str(kw.get(k, m.group(0)))
         return re.sub(r"\{(\w+)\}", sub, tpl)
 
@@ -122,6 +129,8 @@ class Renderer:
         last = out[len(out) - 8] if out else 0
         STORY = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
 
+        used = []
+
         def fold(day, folded, seen):
             names = []
             for c in folded:
@@ -133,12 +142,20 @@ class Renderer:
             if len(names) >= crew:
                 who = [self.t["sys"].get("fold_all", "everyone")]
             who = who[0] if len(who) == 1 else ", ".join(who[:-1]) + " and " + who[-1]
-            return self.fill(pool[day % len(pool)], who=who, n=len(names))
+            # Each fold takes the next line of the pool, starting from the first fold's
+            # day, so a season never repeats a fold line until the pool runs out.
+            if not used:
+                used.append(day)
+            k = used[0] + len(used) - 1
+            used.append(day)
+            return self.fill(pool[k % len(pool)], who=who, n=len(names))
 
         def flush(day, lines, folded, seen, hook_at):
             # Thinned: the fold appears on quiet days (at most one story line) and on
             # every third day otherwise, so it reads as an occasional note, not a tic.
-            f = fold(day, folded, seen) if (len(lines) <= 1 or day % 3 == 0) else None
+            # Once the pool is used up, only quiet days still get one.
+            spare = len(used) <= len(pool)
+            f = fold(day, folded, seen) if (len(lines) <= 1 or (day % 3 == 0 and spare)) else None
             if f:
                 lines.insert(len(lines) if hook_at is None else hook_at, f)
             for s in lines:
