@@ -26,7 +26,7 @@ days 31 35
 roles A
 when fired h_band
 when is A hook_who
-text It came back at 23:41:09, six knocks late and still on the beat. {A} lays the gap on the temperature maps: the coldest hour of the night side's coldest night. If the source has a battery heater, it skips knocks rather than wake short of power. It is getting harder to wake.
+text It came back six knocks late and still on the beat. {A} lays the gap on the temperature maps: the coldest hour of the night side's coldest night. If the source has a battery heater, it skips knocks rather than wake short of power. It is getting harder to wake.
 do morale A -2
 
 # --- 2. Cabin pressure -------------------------------------------------------
@@ -35,7 +35,7 @@ type event
 cat repair
 hook
 once
-days 4 35
+days 4 27
 weight 10
 roles A
 when cond A ok
@@ -88,7 +88,7 @@ type event
 cat repair skill
 hook
 once
-days 4 35
+days 4 27
 weight 10
 roles A
 when cond A ok
@@ -105,7 +105,7 @@ roles A
 when fired h_thruster
 when is A hook_who
 lean brave manual watch
-text By 02:30 the ship was steady again.
+text The ship was steady again within a quarter of an hour.
 option manual | Hand control | {A} took attitude into manual and held it by hand while the valve telemetry scrolled past. One valve reported "closed" while it leaked. It's isolated now, and the log of the night is a single calm page.
   trait A brave 2
   morale A 4
@@ -140,7 +140,7 @@ type event
 cat repair skill
 hook
 once
-days 4 35
+days 4 27
 weight 10
 roles A
 when cond A ok
@@ -156,7 +156,7 @@ days 5 36
 roles A
 when fired h_flood
 when is A hook_who
-text {A} found it at 01:30, buried on page nine: a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and the sleep log for that night is blank.
+text The log for that night: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list had been cut from 214 to a page, and the sleep log for that night is blank.
 do morale A 5
 do res spares -1
 
@@ -166,7 +166,7 @@ type event
 cat grim
 hook
 once
-days 10 35
+days 10 27
 weight 8
 roles A
 when cond A ok
@@ -182,7 +182,7 @@ days 11 36
 roles A
 when fired h_silence
 when is A hook_who
-text The reply arrived at 06:12. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} starts the answer with the weather.
+text The reply arrived before breakfast. A ground station had gone down in a storm at home, and the backup had to wait for Earth to turn. The message ends: "All good here. How are you?" {A} starts the answer with the weather.
 do morale A 6
 do trait A warm 2
 
@@ -192,7 +192,7 @@ type event
 cat grim
 hook
 once
-days 4 35
+days 4 27
 weight 9
 roles A
 when cond A ok
@@ -208,7 +208,7 @@ days 5 36
 roles A B
 when fired h_strike
 when is A hook_who
-text {A}'s morning EVA, {B} suited at the hatch, found a crater the size of a fingernail in a heat-shield tile, short of the bondline. The entry team runs it against the margins and clears it. {A} shot it next to a ruler, and the anomaly report finally has a good picture.
+text {A}'s morning EVA, {B} suited at the hatch, found a crater the size of a fingernail in a heat-shield tile, short of the bondline. The entry team clears it on one condition: {A}'s ship flies entry two degrees shallower, a longer, hotter ride, in every brief from now on. {A} shot it next to a ruler.
 do trait A brave 2
 do morale A 3
 
@@ -219,7 +219,7 @@ cat mystery
 hook
 once
 days 25 33
-weight 8
+weight 14
 roles A
 when cond A ok
 do who hook_who A
@@ -261,7 +261,7 @@ days 26 34
 roles A
 when fired h_voice
 when is A hook_who
-text {A} traced it by dawn: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired at 02:40 and cut out when the buffer ran dry. The rest plays at breakfast,. {A} listens with the volume very low.
+text {A} traced it the next morning: a message from home, recorded the night before launch and queued for this flight day. Last week's intercom update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. {A} listens with the volume very low.
 do morale A 6
 do trait A warm 3
 
@@ -272,7 +272,7 @@ cat mystery
 hook
 once
 days 25 33
-weight 8
+weight 14
 roles A
 when cond A ok
 do who hook_who A
@@ -288,6 +288,6 @@ days 26 34
 roles A
 when fired h_dark
 when is A hook_who
-text {A} was back by 00:41: the comms computer had hung on the first whole frame from Mars to decode, a link request signed with an old program key. Sequence number 1, as if just switched on; the challenge, new. The ground: "Old key, no ID. Nothing we still fly." A parser guard goes up that night.
+text {A} was back within the hour: the comms computer had hung on the first whole frame from Mars to decode, a link request signed with an old program key. Sequence 1; the challenge, new. The ground: "Old key, no ID. Nothing we still fly." A parser guard goes up that night.
 do trait A brave 3
 do morale A -2
