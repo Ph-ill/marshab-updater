@@ -156,6 +156,7 @@ class Server:
         self.ip = ip
         self.say = say
         self.phone = None       # lvphone.Phone, made on the first API request
+        ship.web = self         # the LED notifier waits while a request is in progress
         self.busy = 0
         self.served = 0
         self.refused = 0

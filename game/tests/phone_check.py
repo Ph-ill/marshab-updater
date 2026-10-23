@@ -177,6 +177,39 @@ async def main():
     if s != 200:
         fail("after the timeouts: %d" % s)
 
+    # The Ship light switch (CREW > your page): the LED notifier on and off from a phone,
+    # kept in ship.json (the rest of it kept too). Game firmware only, so on a plain
+    # interpreter it says off; "force" lets the on path run here.
+    import json as J
+    with open(DATA + "/ship.json", "w") as f:
+        f.write('{"ship_id": 3, "fleet_key": "kept"}')
+    HL = {"User-Agent": "led"}
+    s, _, b = await F.fake(srv, "10.0.0.11")("POST", "/api/login", b'{"crew":%d,"pin":"1234"}' % CB, HL)
+    HL["X-Crew-Token"] = F.js(b).get("token") or ""
+    led = F.fake(srv, "10.0.0.11")
+    s, _, b = await led("POST", "/api/led", b'{"on":true}', HL)
+    if s != 200 or F.js(b).get("led") is not lvship.game_fw():
+        fail("ship light on (game firmware %s): %d %s" % (lvship.game_fw(), s, b))
+    ship.cfg["led_notify"] = "force"
+    s, _, b = await led("POST", "/api/led", b'{"on":true}', HL)
+    cf = J.load(open(DATA + "/ship.json"))
+    if s != 200 or F.js(b).get("led") is not True or not ship.led.enabled or cf != {
+            "ship_id": 3, "fleet_key": "kept", "led_notify": True}:
+        fail("ship light on: %d %s, ship.json %s" % (s, b, cf))
+    if "lvledcfg" in sys.modules or "lvled" not in sys.modules:
+        fail("lvledcfg should be dropped after the switch, lvled kept")
+    ship.led.waiting = True
+    s, _, b = await led("GET", "/api/state", None, HL)
+    if s != 200 or F.js(b).get("led") is not True or ship.led.waiting:
+        fail("state after the switch: %d led %s, waiting %s" % (s, F.js(b).get("led"), ship.led.waiting))
+    s, _, b = await led("POST", "/api/led", b'{"on":false}', HL)
+    if s != 200 or F.js(b).get("led") is not False or ship.led.enabled or \
+            J.load(open(DATA + "/ship.json")).get("led_notify") is not False:
+        fail("ship light off: %d %s" % (s, b))
+    s, _, b = await F.fake(srv, "10.0.0.12")("POST", "/api/led", b'{"on":true}', {"User-Agent": "y"})
+    if s != 401:
+        fail("ship light signed out: %d" % s)
+
     # What phones opened survives a restart.
     srv.phone.save()
     p2 = lvphone.Phone(ship, ROOT, quiet)
