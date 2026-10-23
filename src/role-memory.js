@@ -55,7 +55,8 @@ export function roleClash(history, uid, role, roles){
 
 export function describeBoard(entry){
   const who = entry.ship_name || (entry.ship_id ? `ship #${entry.ship_id}` : 'a board');
-  const id = entry.uid ? ` (id ${entry.uid})` : '';
-  const when = entry.at ? `, saved ${new Date(entry.at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '';
-  return `${who}${id}${when}`;
+  const bits = [];
+  if(entry.uid) bits.push(`id ${entry.uid}`);
+  if(entry.at) bits.push(`saved ${new Date(entry.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
+  return bits.length ? `${who} (${bits.join(', ')})` : who;
 }
