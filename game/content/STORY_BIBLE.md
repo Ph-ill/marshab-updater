@@ -99,37 +99,43 @@ after it failed"), and why its beam width × spin gives exactly the flash duty c
 the catalogue was fitted to Cargo 2's flashes, so it matches by construction.
 `a_report` closes it: the dead relay was the only orbiter on that channel.
 Why the crash site was catalogued kilometres off: "the last fix before the
-divert" (told in `m_checked`: "its last tone flagged a divert, the search imaged
-the end of that track; six weeks of hails, no ack"; `l_manifest` only lists
+divert" (told in `m_checked`: "its last tone came mid-descent; at the end of that
+track the search found a burn scar, booked as the impact. Six weeks of hails,
+unanswered." The scar is the plume mark from the divert hover; `l_manifest` only lists
 Cargo 2's drill spares, which `end_friend` / `end_long_orbit` / `end_close` pay off).
-Why the search missed it: it imaged the end of the predicted track, not the divert.
+Why the search missed it: it found the hover scar at the end of the predicted track and booked it as the impact.
 Why the fleet never had the same fault: every ship dumped its own fault table
-(`a_log`, `a_window_quiet`: the patch went to cargo only). Why the floodlights
-blink: the pad crew's "awake" sign (`m_reveal`). Why no Doppler fix: the
+(the last patch gave the cargo ships a divert branch, and only Cargo 2 ever
+diverted, which is why Cargo 3 and Cargo 4 landed and work; `a_report`). Why the light
+blinks: a low-duty pad strobe with each knock, the pad crew's "awake" sign
+(`m_reveal`); after the answer the strobe stops and one status lamp stays lit
+(`a_window_hail`). The floodlights only come on for a landing (`end_lights`) or
+the rover (`end_friend`), which fits the battery rationing (`r_band`) and the cold
+endings. Why no Doppler fix: the
 flashes were too faint in short ground passes (`m_theory`). Why no hardware
-bypass: the pad table locks the hardware decoder too (`a_report`). Why the old
+bypass or hard reset: the pad table sits ahead of both decoders, and the dish a
+hard reset needs is jammed (`a_log`, `a_window_quiet`). Why the old
 key: first batch, the relay, the science lander, the early cargo, all dead or
-crashed (`m_key`, `r_dark`). Why no other orbiter
+crashed (`m_key`, day 34, every season; `r_dark` resolves `h_dark` on the next page with the hang only, no clue). Why no other orbiter
 heard it: the relay was the only listener on that band. Why the relay was gone
 at landing: its thruster stuck open a month before, and the landing went ahead
 on the autonomous plan. Why it flew with pad-test settings: in cruise Earth talked to it on a session
 set up on the pad; a last patch before landing restored the pad-test fault
 table (the update thread pays off here), so on losing the link it fell back to
-the short pad handshake. Why the ground never sent a bypass: "A reset only
-restarts the loop" (`a_report`). The weather orbiter was written off before
+the short pad handshake. Why the ground never sent a bypass: see the hard-reset line above. The weather orbiter was written off before
 landing; the night frames come from an old survey orbiter (`m_flash1`), and the
 backup-site maps predate the cargo landings (`dec_name`). `c_theory`'s "Same keeper?" is answered by those lines.
 
 **The window (day 41, fleet time):** Cargo 2 boots on a fixed 10.96 s tick (a
 pad-test value; the fresh-question handshake is planted by the transfer hatches,
 `l_dock_hello`, and named in `a_report`). Each cycle is
-wake, floodlight flare with the hello, then dark while it listens until the next
+wake, pad-strobe flare with the knock, then dark while it listens until the next
 tick (`m_reveal`: "nine, ten, eleven, flare");
 the window is boot to reset, and the challenge and failure counter live in RAM.
 The fleet is about 5.4 light-seconds out: knock at 04:10:07, heard about 5.3 s
 later, answered at once; the answer lands a breath before the next tick, under
 the ground's one condition (the handshake and nothing else). By the next
-orbiter night pass the light has stopped blinking. `HELLO RX · OK`. In the
+orbiter night pass the strobe has stopped; one status lamp burns steady. `HELLO RX · OK`. In the
 log-it branch (`a_window_quiet`): it listens until its next tick; the fleet's
 answer would take about ten seconds; the ground holds (no standing answer, a
 review board that won't sit before landing, and a suit beside it).
@@ -225,12 +231,12 @@ change, so every branch agrees the averaged beat never moves).
 `m_reveal` (`reveal`, day 40) is cast to the theory owner (`ow_theory`);
 `m_reveal_any` is the fallback and never fires in 300 seasons. Understated: the
 first sharp pass since before the cargo ships flew, Cargo 2 named once, dish
-jammed against its stop, floodlights at each boot's lamp test, the galley chime
+jammed against its stop, a pad strobe at each knock, the galley chime
 fitting the gap. `a_report` (day 40) carries the sting and the root cause: the
 relay was the only ear on that band; crash site from the last nav fix,
 pre-divert; six weeks of hails, no ack; a carrier too faint for Doppler, called
-relay tumble; a page and a half / forty pages (eleven seconds, the pad-test
-value, then a reset; the challenge lives in RAM).
+relay tumble. `a_report` now has a speaker ({A} reads the fleet the only
+paragraph that matters) and no page count.
 
 ## Threads (seven, one owner each per voyage)
 
@@ -321,8 +327,7 @@ Cargo 2 thirty kilometres past it. Unanswered endings answer in person.
 Cargo 2 has a job in every ending: floodlights as the place marker (`end_lights`),
 answered from the crater rim by the one who argued to answer, one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame (`end_through`); `end_lights` gets one extra granted command (lights), a manifest line read by pass and
 a spare drill bit (`end_long_orbit`), found dead after the cold, answered by hand
-(`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), its weather mast cross-checking the wind
-forecast (`end_friend`), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
+(`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), a rover drive with a real risk and every lamp flaring once as the rover's lights touch it (`end_friend`), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
 two storm endings open differently; the two orbit endings are scenes (week
 three, week two), not summaries. The recorder paragraph is worded differently
 in each.
@@ -441,3 +446,24 @@ fault protection, a suit beside it, one Mars day, transponder.
 - One respectful disagreement: a signed line of dissent in `dec_signal`.
 - `c_theory`'s keeper is on the page as the Sharpie packer (`a_recall_marker`).
 - `g_packer` moved to day 28 (fills the gap the half-frame retime left).
+
+## Round 9 notes
+
+- `m_carrier`: no one on Earth has *listened* to the old channel since the relay
+  was written off (Earth did hear flashes in the first weeks; `m_theory`). A week
+  of integration before the carrier shows.
+- `gains_payoff` waits for the corridor burn (`trim_done`, set by both `dec_trim` options).
+- The person who argued to answer (`ow_hail`) packs the drive bag in
+  `a_descent_clear`, so the clear-air endings' driver is named the day before.
+  In the unanswered branches `a_suit_plan` names the first suit out.
+- Entry pilots get epilogue lines (`e_entry_hold_q`, `e_entry_hold`, `e_entry_wait`).
+- Resolvers take a cost that stays: the reserve line (`r_pressure`), the last
+  pump (`r_flood`), one thruster short (`r_thruster`).
+- The ripple pays off in `m_count` (day 39).
+- Wonder: `w_zodiac`, `w_sun_small`; `w_aurora`, `beat_watch`, `beat_early_watch`
+  are now wonder; `dust_report` / `dust_worse` are mission.
+- Fold lines in the sim reader are left out on odd days that already have two
+  story lines (sim/render.py only; web/ untouched).
+- Casting: `p_live_call` is even over 300 seasons (37–49 each). The take-manual
+  trainee (`idle_mentor` B) leans to whoever is least featured mid-voyage, which
+  is engine fairness at work; unchanged.
