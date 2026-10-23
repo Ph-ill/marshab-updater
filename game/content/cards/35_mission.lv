@@ -179,7 +179,7 @@ once
 days 34 34
 roles A
 when !fired h_dark
-text {A} finds a link request from Mars in the log, signed with an old program key the fleet trusts. Sequence number 1, as if the sender had just been switched on; the challenge, new. The comms computer hung on it until a watchdog cleared it. Mission Control: "Not ours." A key-rotation ticket opens.
+text {A} finds a link request from Mars in the log, signed with an old program key. Sequence number 1, as if just switched on; the challenge, new. The comms computer hung on the old frame until a watchdog cleared it. The ground: "Old key, no ID. Nothing we still fly." A filter goes up by evening.
 do trait A curious 2
 
 card flash_answer
@@ -270,7 +270,7 @@ days 39 39
 roles A
 when !is A ow_theory
 when !is A ow_hail
-text {A} times the old-channel carrier on the galley clock, the way you count between lightning and thunder. Everything about the fleet's distance from Mars has changed since the first night. The gap hasn't. {A} stops counting before the number means anything.
+text {A} times the old-channel carrier on the galley clock, like lightning to thunder. Ten, eleven, knock: the same as the first night. The fleet's own round trip to the planet is about half a minute now, and shrinking by the hour. {A} writes both numbers on the galley whiteboard, one above the other.
 
 # --- The payoff: fires on day 40 in every season ------------------------------------
 card m_reveal
@@ -306,7 +306,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text {A} pulls up the report that wrote Cargo 2 off: a page and a half. The grey relay's thruster stuck open on the burn to cover its landing pass. Last packet: X-band amplifier OVERTEMP. Six weeks of ground hails, no acknowledgement; an old-band carrier, attributed to relay tumble. Ticket closed. {A}'s own report runs forty pages by midnight. Page one: watchdog. Page two: what lives in RAM.
+text The report that wrote Cargo 2 off runs a page and a half. Its relay, the only ear at Mars on that band, stuck a thruster open. Crash site: last nav fix, pre-divert. Six weeks of hails, no ack; a carrier too faint for Doppler, called relay tumble. {A}'s report runs forty pages. Page one: safe mode waits eleven seconds, the pad-test value, for a signed answer, then resets. Page two: the challenge lives in RAM.
 
 card a_report_any
 type event
@@ -317,7 +317,7 @@ days 40 40
 roles A
 when !fired a_report
 when !is A ow_theory
-text {A} pulls up the report that wrote Cargo 2 off: a page and a half. The grey relay's thruster stuck open on the burn to cover its landing pass. Last packet: X-band amplifier OVERTEMP. Six weeks of ground hails, no acknowledgement; an old-band carrier, attributed to relay tumble. Ticket closed. {A}'s own report runs forty pages by midnight. Page one: watchdog. Page two: what lives in RAM.
+text The report that wrote Cargo 2 off runs a page and a half. Its relay, the only ear at Mars on that band, stuck a thruster open. Crash site: last nav fix, pre-divert. Six weeks of hails, no ack; a carrier too faint for Doppler, called relay tumble. {A}'s report runs forty pages. Page one: safe mode waits eleven seconds, the pad-test value, for a signed answer, then resets. Page two: the challenge lives in RAM.
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail

@@ -36,8 +36,19 @@ due
 once
 days 3 9
 roles A
-text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the logo, a progress bar, the three-note chime, all over before {A} has counted to eleven. By the end of the week the whole fleet is humming the chime.
+text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the logo, a progress bar, the three-note chime, all over before {A} has counted to eleven, and logged out again. By the end of the week the whole fleet is humming the chime.
 do morale A 1
+
+card l_dock_hello
+type beat
+cat life
+clue core
+due
+once
+days 4 5
+roles A
+text The fourth tanker's docking computer bounces {A}'s hello, routed through the ground for sign-off: HELLO RX · REPLAY · DISCARD, stale. The docking lead at Mission Control doesn't look up. "It listens for a second, then wants a fresh hello. Go ship to ship." Ship to ship, it locks at once.
+do trait A curious 1
 
 card p_garden_plant
 type beat

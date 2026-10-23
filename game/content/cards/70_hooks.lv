@@ -20,7 +20,7 @@ text At 23:40 {A}'s dish logs a burst on the old common channel. The bearing is 
 card r_band
 type event
 cat mystery
-clue
+
 due
 once
 days 31 34
@@ -290,6 +290,6 @@ days 26 34
 roles A
 when fired h_dark
 when is A hook_who
-text {A} came back at 05:58. The comms computer had hung on a link request from Mars, signed with an old program key the fleet trusts, until the six-hour lost-link timer rebooted it. Sequence number 1, as if the sender were new; the challenge, new too. "Not ours," says the ground. A key ticket opens.
+text {A} was back by 00:41: the comms computer had hung on a link request from Mars, signed with an old program key, and both strings came up from cold. Sequence number 1, as if the sender were new; the challenge, new too. The ground: "Old key, no ID. Nothing we still fly." A filter goes up that night.
 do trait A brave 3
 do morale A -2
