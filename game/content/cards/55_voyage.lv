@@ -387,7 +387,7 @@ weight 14
 once
 roles A
 when cond A ok
-text Phobos is a speck beside Mars now, sliding across its face in an afternoon. {A} watches it cross a whole world in the time it takes to eat a meal, and can't remember the last time they wanted to stand on something this badly.
+text Phobos is a speck beside Mars now, crossing its face in under an hour. {A} watches it cross a whole world in the time it takes to eat a meal, and can't remember the last time they wanted to stand on something this badly.
 do trait A curious 2
 do morale A 3
 
@@ -400,7 +400,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Tonight Mars spills out around it on every side, rust and dark, and somewhere on the night side, too small to see, a light is holding steady.
+text On the last night before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Now Mars spills out around it on every side, rust and dark, and somewhere on the night side, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -412,7 +412,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Tonight Mars spills out around it on every side, rust and dark, and somewhere on the night side, too small to see, a light is keeping time.
+text On the last night before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Now Mars spills out around it on every side, rust and dark, and somewhere on the night side, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -435,7 +435,7 @@ once
 days 42 42
 roles A
 when flag name_home
-text On the entry map {A} finds the crater the fleet named for a small town at home, right where it should be. Cargo 2 has been standing in its shadow the whole time. Somewhere on Earth, a town newspaper is about to need a second front page.
+text On the entry map {A} finds the crater the fleet named for a small town at home, right where it should be. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a town newspaper is about to need a second front page.
 
 card a_recall_plan
 type event
@@ -445,7 +445,7 @@ once
 days 42 42
 roles A
 when flag name_plan
-text On the entry map {A} finds the crater the fleet named for the first person who ever wrote a Mars plan. Cargo 2 has been standing in its shadow the whole time. Somewhere on Earth, a committee is about to have a great deal more to argue about.
+text On the entry map {A} finds the crater the fleet named for the first person who ever wrote a Mars plan. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a committee is about to have a great deal more to argue about.
 
 card a_recall_photo
 type event

@@ -9,14 +9,14 @@ cat ending
 title Lights On
 when flag signal_answered
 when flag arrive_hold
-text The fleet holds the plan it voted for and goes straight down into the storm. At four kilometres the cameras see only brown; the radar has the ground but can't say which ground is flat. Then Cargo 2, answered in time at last, turns on every light it has and leaves them on. Seven ships land beside it, a careful kilometre off. In the hold, the first crate has Sharpie on it: "You'll thank me."
+text The fleet holds the plan it voted for, retargeted to the backup site. Cameras blind in the dust, radar sure of the ground; then Cargo 2, answered at last, sends a ranging tone and turns on every light it has. Seven ships land a careful three kilometres off. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_through
 type ending
 cat ending
 title Through the Dust
 when flag arrive_hold
-text The fleet holds the plan it voted for and goes straight down into the storm, cameras blind, radar sure of the ground and nothing else. Out of the brown, every eleven seconds, a light, still asking. Seven ships land beside it, a careful kilometre off, and the first suit out keys the old channel from close enough. The light stops blinking. In the hold, the first crate has Sharpie on it: "You'll thank me."
+text Retargeted to the backup site, as voted, the fleet goes down into the storm. The radar ranges on forty metres of standing steel; out of the brown, every eleven seconds, a light, still asking. Seven ships land three kilometres off. The first suit out carries the hail box and answers from close enough. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_long_orbit
 type ending
@@ -24,24 +24,24 @@ cat ending
 title The Long Orbit
 when flag signal_answered
 when flag arrive_wait
-text Aerocapture, as voted, then four nights of ration math in a long orbit, waiting out the dust. Answered at last, Cargo 2 sends a little more of its manifest every pass, in a format nobody has flown in years, and the fleet reads it aloud like letters from home. When the sky clears, seven ships go down to collect. In the hold, the first crate has Sharpie on it: "You'll thank me."
+text Aerocapture, as voted, then four nights of ration math in a long orbit. Answered at last, Cargo 2 sends a little more of its manifest every pass, and the fleet reads it aloud like letters from home. When the sky clears, seven ships land in the prime zone and drive the rover out to it. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_patience
 type ending
 cat ending
 title Patience
 when flag arrive_wait
-text Aerocapture, as voted, then four nights of half portions in a long orbit. Every night, through the dust, one point of light keeps time beside the landing zone, still asking. When the sky clears, seven ships land a careful kilometre from it, and the first suit out keys the old channel from close enough. The light holds steady. In the hold, the first crate has Sharpie on it: "You'll thank me."
+text Aerocapture, as voted, and four nights of half portions in orbit. On the third night the light skips a beat and seven people stop breathing; on the fourth it is back, faint in the dust, on time. When the sky clears the fleet lands, drives out, and answers the next knock from close enough. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_friend
 type ending
 cat ending
 title Old Friend
 when flag signal_answered
-text Seven ships come down in clear air, a careful kilometre from a ship that waited four years for someone close enough to answer in time. Its lights hold steady now. On the walk over, Cargo 2 sends its whole manifest, slowly, like something that has been rehearsing. In the hold, the first crate has Sharpie on it, in a hand they know: "You'll thank me." Beside it, a little ship with its fingers crossed.
+text Seven ships come down in clear air in the prime zone and drive out to a ship that waited two years for someone close enough to answer in time. Its lights hold steady now. On the drive out, Cargo 2 sends its whole manifest, slowly, like something that has been rehearsing. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_close
 type ending
 cat ending
 title Close Enough
-text Seven ships land in clear air. Afterwards they drive Cargo 4's rover out to Cargo 2, past its long shadow, and key the old channel from two hundred metres: the first answer in four years to arrive while it's listening. The light stops blinking and stays on. In the hold, the first crate has Sharpie on it, in a hand they know: "You'll thank me." They say it aloud, one at a time.
+text Seven ships land in clear air. Then they drive Cargo 4's rover out to Cargo 2 with a radio retuned for the purpose and answer the next knock from two hundred metres: the first answer in two years to arrive while it's listening. The light stops blinking and stays on. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."

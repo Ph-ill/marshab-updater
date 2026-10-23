@@ -27,7 +27,7 @@ once
 duration 2
 roles A B
 lean curious after home
-text The imaging pass has turned up an unnamed crater beside the landing zone, small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants to name it after somewhere at home.
+text The backup-site maps show an unnamed crater, small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants to name it after somewhere at home.
 option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
   set name_plan
   trait A curious 2
@@ -245,8 +245,8 @@ once
 days 38 38
 roles A
 when fired m_overlay
-when !is A ow_theory
-text With Mars a day and a half out, the old-channel carrier is loud enough to hear without folding. {A} pipes it into the cabin speaker for a minute: a click, a hiss, a long pause, a click. {A} turns it off before it starts to sound like anything.
+when is A ow_song
+text With Mars under three weeks out, the old-channel carrier is loud enough to hear without folding. {A} pipes it into the cabin speaker: a click, a hiss, a long pause, a click. The four bars fit between the clicks. {A} turns it off before it starts to sound like anything.
 do morale A -1
 
 card m_count
@@ -354,7 +354,7 @@ days 41 41
 roles A
 when flag arrive_hold
 when !is A ow_hail
-text Entry is tomorrow, straight in from the crossing. The storm fills the landing zone from rim to rim, and the entry plan has a line nobody has had to write before: "if the cameras go blind, trust the radar for height and the light for place". {A} reads it to the empty cabin, to hear how it sounds.
+text Entry is four days out, straight in from the crossing. The storm fills the prime zone rim to rim, so the plan retargets to the backup site and gains a line nobody has had to write before: "radar for height, Cargo 2 for place". {A} reads it to the empty cabin, then runs the manual abort once, from memory.
 do morale A 2
 
 card a_descent_wait
@@ -366,7 +366,7 @@ days 41 41
 roles A
 when flag arrive_wait
 when !is A ow_hail
-text Tomorrow the fleet skims the top of the atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, faint and on time, and sits down with the ration tables.
+text In four days the fleet skims the top of the atmosphere instead of landing through it, into the long orbit, to wait. Below, the storm lies over the landing zone like a hand over a mouth. {A} finds the light on the night frames, fainter in the dust, still on time, and sits down with the ration tables.
 do morale A -2
 
 card a_descent_clear
@@ -379,5 +379,5 @@ roles A
 when !flag arrive_hold
 when !flag arrive_wait
 when !is A ow_hail
-text Entry is tomorrow, straight in from the crossing, into clear air. The landing zone is exactly where the maps said, with one more thing beside it than the maps said. {A} packs a bag for a walk: water, a torch, a roll of tape, a marker. Old habits.
+text Entry is four days out, straight in from the crossing, into clear air. The prime zone is exactly where the maps said, with one more thing thirty kilometres past it. {A} packs a bag for the drive out: water, a torch, a roll of tape, a marker. Old habits.
 do morale A 3
