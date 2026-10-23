@@ -144,7 +144,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when !flag signal_answered
-text {A} was back inside three hours. A frame on the old channel, relayed from the listening dish, had hung the comms computer; the backup hung on the same frame, and the third boot quarantined it. The ground takes the old channel off the fleet net. The listening dish keeps recording.
+text {A} was back inside three hours. An old-channel frame, a link request with a challenge field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground takes the old channel off the fleet net. The listening dish keeps recording.
 do trait A brave 3
 do morale A -2
 
@@ -158,7 +158,7 @@ roles A
 when fired h_dark
 when is A hook_who
 when flag signal_answered
-text {A} was back inside three hours. A frame on the old channel, from the listening dish, had hung the comms computer; the backup hung on the same frame, and the third boot quarantined it. The ground moves the channel to a sandbox on the dish; the hellos go on from a box that can't hang a radio.
+text {A} was back inside three hours. An old-channel frame, a link request with a challenge field the new stack had never seen, hung the comms computer, then the backup; the third boot quarantined it. The ground moves the channel to a sandbox; the hellos go on from a box that can't hang a radio.
 do trait A brave 3
 do morale A -2
 

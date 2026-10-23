@@ -465,6 +465,57 @@ class TestFairCasting(unittest.TestCase):
         self.assertGreater(evas, 50)
         self.assertEqual(bad, [])
 
+    def test_ending_and_prop_roles_match_who_did_it_over_300_seasons(self):
+        # Round 15 regressions. Every ending role that a line credits with an earlier
+        # act must be the astronaut who did it, and props stay in the right hands:
+        #   all endings: A ("who wanted to answer") proposed the hello in dec_signal;
+        #   end_long_orbit: B ("who argued to wait") is dec_arrival's B;
+        #   end_through / end_lights: B is the pilot of the gusty entry (e_entry_hold*);
+        #   p_packer_note: the locker line goes to the stash keeper, before it's shared;
+        #   a_recall_shared: the last pack never goes to the one who already got one;
+        #   water_fail: no splinted wrist rides the line.
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        _, text, _ = lvc.build(CONTENT)
+        ids = [c["id"] for c in text["cards"]]
+        opens = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN, O.O_END)
+        bad, seen = [], {}
+        for i in range(300):
+            key = bytes([(i >> 8) & 255, i & 255]) + b"season"
+            out = reference_season(Pack(self.p.data), seed=1000 + i, voyage_key=key)[0].story
+            first = {}
+            for k in range(0, len(out), 8):
+                d, code, card, a, b = out[k:k + 5]
+                if code in opens:
+                    first.setdefault(ids[card], (d, a, b))
+
+            def check(label, ok):
+                seen[label] = seen.get(label, 0) + 1
+                if not ok:
+                    bad.append((i, label))
+            end = [c for c in first if c.startswith("end_")]
+            self.assertEqual(len(end), 1, "season %d" % i)
+            end = end[0]
+            _, ea, eb = first[end]
+            if "dec_signal" in first:
+                check("ending A proposed the hello", ea == first["dec_signal"][1])
+            if end == "end_long_orbit":
+                check("long orbit B argued to wait", eb == first["dec_arrival"][2])
+            if end in ("end_through", "end_lights"):
+                pilot = [first[c][1] for c in ("e_entry_hold", "e_entry_hold_q") if c in first]
+                check("%s B flew the gusty entry" % end, pilot == [eb])
+            if "p_packer_note" in first:
+                st = first.get("dil_stash")
+                check("packer note locker holder", st is not None and st[1] == first["p_packer_note"][1]
+                      and ("stash_found" not in first or first["stash_found"][0] > first["p_packer_note"][0]))
+            if "a_recall_shared" in first:
+                check("last pack to a new hand", first["a_recall_shared"][2] != first["stash_found"][2])
+            if "water_fail" in first and "crisis_eva" in first and first["crisis_eva"][0] < first["water_fail"][0]:
+                check("no splint on the line", first["water_fail"][2] != first["crisis_eva"][1])
+        self.assertEqual(bad, [])
+        self.assertGreater(seen.get("ending A proposed the hello", 0), 250)
+        self.assertGreater(seen.get("long orbit B argued to wait", 0), 20)
+
     def test_fair_play_and_endings_over_300_seasons(self):
         # Every season must deliver the core clue set before the reveal, and every
         # ending must be reachable at a real rate (>= 5%). Same seasons and keys as

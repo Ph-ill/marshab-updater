@@ -29,7 +29,7 @@ roles A B
 when is A ow_hail
 when since t_carrier >= 4
 when fired m_theory
-text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against fleet time by about a second and a half a day, the fleet's closing rate on Mars. Hour to hour, the residuals are flat. {A} books the dish again.
+text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against fleet time by nearly two seconds a day, the fleet's closing rate on Mars. Hour to hour, the residuals are flat. {A} books the dish again.
 do bond A B 3
 do open dec_signal
 
@@ -45,14 +45,12 @@ lean curious open log
 when fired m_alias
 when is A ow_hail
 text If it's the grey relay, it may still know a standard hello. {A} wants clearance to answer every burst with one, signed with the old program key the fleet carries as a relay fallback: a courtesy, and a test. {B} points out that every reply ties up the comms computer.
-option open | Answer every burst | The ground clears it inside a day: hello only, nothing that commands. {A} adds one line to the comms schedule, and the first hello goes out at 14:02, timed to the millisecond. {B} files one line of dissent, signed, and leaves it there.
+option open | Answer every burst | The ground clears it inside a day: hello only, nothing that commands, inhibits set from the ground. The first hello goes out at 14:02, timed to the millisecond. {B} files one line of dissent, signed, and leaves it there.
   set signal_answered
-  mark t_signal
   morale B -3
   trait A curious 5
-option log | File it, keep going | The carrier goes into the anomaly file under "later". {A} clips the folded trace inside the binder, just in case, and the comms computer stays on the letters. {A} writes a dissent, signed; {B} countersigns it.
+option log | File it, keep going | The carrier goes into the anomaly file under "later". {A} clips the folded trace inside the binder, just in case. {A} writes a dissent, signed; {B} countersigns it.
   set signal_ignored
-  mark t_signal
   morale A -5
 
 card signal_reply
@@ -90,7 +88,7 @@ once
 days 39 39
 roles A
 when is A ow_hail
-text {A} works out how many times the old-channel carrier has knocked since the fleet first heard it: close to half a million. Every gap has a reason, Mars in the way or a cold night, and every knock lands on the beat. "Half a million. Every gap explained. Out," {A} sends.
+text {A} works out how many times the old-channel carrier has knocked since the fleet first heard it, a hundred and twenty days back: close to half a million. Every gap has a reason, Mars in the way or a cold night, and every knock lands on the beat. "Every gap explained. Out," {A} sends.
 do trait A curious 1
 
 card crisis_eva
@@ -116,12 +114,12 @@ roles A B
 default volunteer
 when cond A injured
 when apart B A
-text {A} needs the ultrasound probe from another ship's medical kit, and the next scheduled transfer window is days away.
-option send | Send the kit | The fleet holds formation tight for an unscheduled transfer, and the kit rides the line across alone. {A}'s wrist is scanned and splinted by lunch, and the anomaly report runs to four pages.
+text {A} needs the ultrasound probe from another ship's medical kit, and the next scheduled crossing window is days away.
+option send | Send the kit | The kit rides the line across alone. {A}'s wrist is scanned and splinted by lunch, and the anomaly report runs to four pages.
   kit A
   res fuel -1
   morale A 6
-option volunteer | {B} brings it over | {B} rides the line across with the kit in an unscheduled window and splints the wrist personally. The report calls it "nominal". Six ships read it, and every one of them knows better.
+option volunteer | {B} brings it over | {B} rides the line across with the kit and splints the wrist personally. The report calls it "nominal". Six ships read it, and every one of them knows better.
   kitfrom B A
   move B A
   res fuel -1

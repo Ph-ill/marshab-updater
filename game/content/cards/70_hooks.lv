@@ -72,7 +72,7 @@ when flag valve_out
 when is A valve_who
 when since t_valve >= 6
 when home A
-text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The thruster-select table the ground uplinked has a new row, and the change note carries {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
+text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The ground's thruster-select table has a new row with {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
 do morale A -1
 
 # --- 5. Alarm flood -----------------------------------------------------------
@@ -81,7 +81,7 @@ type event
 cat repair skill
 hook
 once
-days 4 27
+days 8 27
 weight 10
 roles A
 when cond A ok

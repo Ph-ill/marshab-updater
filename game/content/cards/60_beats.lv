@@ -1,6 +1,6 @@
 # Crew beats: small human moments, most of the log. Idle-friendly beats make an
 # absent player's astronaut look good. Each astronaut has a home ship; `same A B`
-# beats only happen while someone is visiting in a transfer window.
+# beats only happen while someone is visiting in a crossing window.
 # House style: content/STYLE.md.
 
 card beat_coffee
@@ -11,7 +11,7 @@ weight 8
 once
 roles A B
 when same A B
-text {A} and {B} try to bake bread in the galley oven while the visit lasts. Without gravity it rises in every direction at once and comes out shaped like a lung. They eat all of it, warm, with the lights down, and agree not to describe it to anyone at home.
+text {A} and {B} try to bake bread in the galley oven. Without gravity it rises in every direction at once and comes out shaped like a lung. They eat all of it, warm, with the lights down, and agree not to describe it to anyone at home.
 do bond A B 5
 
 card beat_cards
@@ -32,7 +32,7 @@ days 6 10
 weight 12
 once
 roles A B
-text {A} and {B} keep a channel open as Earth and the Moon slide into the same frame, each at their own window on their own ship. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: the Moon, half lit, over a sliver of Earth.
+text {A} and {B} keep a channel open as Earth and the Moon slide into the same frame, each at their own window. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: the Moon, half lit, over a sliver of Earth.
 do bond A B 6
 
 card beat_gym
@@ -69,7 +69,7 @@ when !fired p_birthday
 when bond A B >= 0
 when away A
 when home B
-text {A}, visiting since the last transfer window, cuts {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} pays in coffee.
+text {A}, visiting since the last crossing, cuts {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} pays in coffee.
 do bond A B 5
 
 card beat_home_msg
@@ -179,7 +179,7 @@ weight 8
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in Sharpie. {A} logs it, with a thank-you in the margin.
+text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in marker. {A} logs it, with a thank-you in the margin.
 do res spares 1
 
 # --- Habits: one clone per astronaut, text from roster.lv `habit` ---------------

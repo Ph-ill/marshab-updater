@@ -13,7 +13,6 @@ days 1 1
 roles A
 text {A} calls home while the delay is still under a second. Someone tells a bad joke and {A} laughs on the beat, in real time, with everyone at the table. Afterwards {A} writes down who was there and what they ate, and folds the list into a flight-suit pocket.
 do who ow_list A
-do mark t_call
 do morale A 5
 
 card p_music
@@ -48,7 +47,7 @@ due
 once
 days 12 12
 roles A
-text Transfer window. The next ship's hatch takes a code that goes stale in a fifth of a second. The procedure still says to read them up via the ground. {A} does, once: CODE STALE. Ship to ship it opens first time, and {A} files a correction to page two.
+text Crossing window. The next ship's hatch takes a code that goes stale in a fifth of a second. The procedure still says to read them up via the ground. {A} does, once: CODE STALE. Ship to ship it opens first time, and {A} files a correction to page two.
 do trait A curious 1
 
 card p_garden_plant
@@ -72,7 +71,7 @@ due
 once
 days 5 7
 roles A
-text {A} reads the manifest like a shopping list: water on Cargo 3, rover on Cargo 4. Write-offs: a drill rig left in Earth orbit; a grey relay, "thruster stuck open"; the last window's hopper, "tipped, beacon intermittent"; Cargo 2, drill spares, "lost on landing, scar imaged"; socks, "reason unknown".
+text {A} reads the manifest like a shopping list: water on Cargo 3, rover on Cargo 4. Write-offs: a grey relay, "thruster stuck open"; the last window's hopper, "tipped, beacon intermittent"; Cargo 2, drill spares, "lost on landing, scar on a survey frame"; socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -92,7 +91,7 @@ due
 once
 days 2 2
 roles A
-text The ships hold formation a few kilometres apart, trimmed with RCS. One seat a ship, so no one failure takes two people, and the next ship reads back every critical command. Every few days they close up: a tethered line, oxygen first. {A} has the first crossing and already calls it "educational".
+text The ships hold formation a few kilometres apart. One seat a ship, so no one failure takes two people, and the next ship reads back every critical command. Every few days they close up: a tethered line, after a morning of prebreathe. {A} has the first crossing and already calls it "educational".
 do trait A brave 2
 
 card l_handshake
@@ -127,8 +126,22 @@ due
 once
 days 16 17
 roles A
+when flag stash_kept
+when is A stash_who
+when !flag stash_exposed
+text A voice note from the Starbase loading crew reaches {A}, a forklift beeping behind it. The one with the Sharpie: "Eat the good rations first. The bad ones keep. And say hello to the hardware for us. It sulks if no one does." {A} checks the locker. True.
+do morale A 2
+
+card p_packer_note_g
+type beat
+cat human
+due
+once
+days 16 17
+roles A
 when !is A ow_list
-text A voice note from the Starbase loading crew reaches {A}, recorded on a forklift by the sound of it. The one with the Sharpie: "Eat the good rations first. The bad ones keep. And say hello to the hardware. Ours won't start till you do." {A} checks the locker. True.
+when !flag stash_kept
+text A voice note from the Starbase loading crew reaches {A}, a forklift beeping behind it. The one with the Sharpie: "Eat the good rations first. The bad ones keep. And say hello to the hardware for us. It sulks if no one does." {A} checks the galley log: the good rations went first, fleet-wide. True.
 do morale A 2
 
 card g_news
@@ -345,7 +358,7 @@ weight 7
 once
 roles A B
 when same A B
-text Movie night with {B}, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun, right on cue. {A} pauses it, and the two of them listen until it stops. Then {A} puts on something with a sky in it.
+text Movie night with {B}, on a tablet stuck to the ceiling: {A} picked a film set on a submarine. Halfway through, the hull ticks as the ship turns out of the sun. {A} pauses it, and the two of them listen until it stops. Then {A} puts on something with a sky in it.
 do bond A B 4
 
 card p_dream
@@ -428,7 +441,7 @@ once
 roles A
 when fired dil_stash
 when cond A ok
-text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list, and under it a laminated card in a bag: an old handshake procedure, step by step, headed in the same Sharpie hand: "Old manners, for old hardware." Beside it, the little ship again, fingers crossed.
+text Under the last tray in the spares locker, {A} finds a roll of tape that isn't on any list, and under it a laminated card in a bag: an old handshake procedure, headed in the same Sharpie hand: "Old manners, for old hardware." Beside it, the little ship again, fingers crossed.
 do res spares 1
 do morale A 5
 
@@ -465,7 +478,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is holding steady.
+text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: three parts rust, one part dark, the dawn line curved along one edge. Just past that line, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -477,7 +490,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: half rust, half dark, the dawn line straight down the middle. Just past that line, too small to see, a light is keeping time.
+text {A} holds a thumb up to the window, the old Earth-watch habit. Mars still fits behind it, for a few more nights: three parts rust, one part dark, the dawn line curved along one edge. Just past that line, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -489,7 +502,7 @@ days 41 41
 roles A B
 when is A ow_dose
 when !flag arrive_wait
-text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. {B} sets an alarm for it.
+text The last nights before entry. {A} checks the water tanks that shielded the bunk all these weeks, by hand, the way you'd pat a horse. On the fleet channel {B} is doing the same on another ship. "Same time tomorrow?" {B} asks. "On the ground," {A} says. "One way or the other." {B} sets an alarm for it.
 do bond A B 6
 
 card a_last_night_o
@@ -569,7 +582,8 @@ days 40 40
 roles A B
 when flag stash_exposed
 when is A stash_who
-text {A} sent {B} the last pack from the locker on the last transfer window, with a note on the bag in borrowed handwriting: "You'll thank me." {B} opens it tonight.
+when !is B stash_b
+text {A} sent {B} the last pack from the locker on the last crossing, with a note on the bag in borrowed handwriting: "You'll thank me." {B} opens it tonight.
 do bond B A 3
 
 card a_recall_marker
@@ -667,7 +681,7 @@ weight 10
 once
 roles A
 when cond A ok
-text Through the shade filter the Sun is a coin held further off each week. The solar arrays say it first, a percent or two less on every page. {A} turns the cabin heater up a notch, notes why, and caps the filter on a star that used to be a sky.
+text Through the shade filter the Sun is a coin held further off each week. The solar arrays say it first, a percent or two less on every page. {A} turns the cabin heater up a notch, and caps the filter on a star that used to be a sky.
 do morale A 2
 
 card w_milky

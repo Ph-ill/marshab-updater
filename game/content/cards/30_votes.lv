@@ -28,7 +28,7 @@ days 18 39
 roles A
 when flag photo_taken
 when cond A ok
-text The clippings arrive: the fleet portrait made the front page of every news site on Earth, weeks ago now. {A} zooms in past six ships and the edge of the seventh to the blue behind them and finds, just, the coastline where one of those papers was printed.
+text The clippings arrive: the fleet portrait made the front page of every news site on Earth. {A} zooms in past six ships and the edge of the seventh to the blue behind them and finds, just, the coastline where one of those papers was printed.
 do morale A 5
 
 card photo_stamp
@@ -62,7 +62,7 @@ option strip | Strip it now | The processor spends nine hours in pieces on the d
   mark t_water
   res spares -1
   trait A curious 3
-option degrade | Run it degraded | The fleet goes on water rationing. The complaints stay off the channel. {A} writes down the recovery rate every hour; it slips a tenth at a time.
+option degrade | Run it degraded | The fleet goes on water rationing. {A} writes down the recovery rate every hour; it slips a tenth at a time.
   set water_rationed
   who water_who A
   morale A -3
@@ -79,7 +79,8 @@ when is A water_who
 when apart B A
 when cond B ok
 when home A
-text The degraded water processor on {A}'s ship quits at 04:00. {B} rides the transfer line over in an unscheduled window with the spare valve, and the two of them have water flowing by breakfast. It tops out at ninety-five percent, for good now.
+when !is B eva_who
+text The degraded water processor on {A}'s ship quits at 04:00. {B} rides the transfer line over with the spare valve, and the two of them have water flowing by breakfast. It tops out at ninety-five percent, for good now.
 do move B A
 do bond A B 8
 do res spares -1
@@ -133,7 +134,7 @@ once
 days 31 34
 roles A
 when flag clock_kept
-text Since the fleet kept its own clock, the ground's handover lands in the fleet's first coffee, and the night crew's last hour is the fleet's first. {A} knows them all by name now, and they know {A}'s coffee order, which is no use to anyone across this much space.
+text Since the fleet kept its own clock, the ground's handover lands in the fleet's first coffee. {A} knows them all by name now, and they know {A}'s coffee order, which is no use to anyone across this much space.
 
 # --- Course correction -------------------------------------------------------
 card dec_trim
@@ -203,7 +204,8 @@ when flag dust_seen
 when since t_dust >= 3
 when !fired dec_arrival
 when cond A ok
-text The new weather frames come down: the dust storm over the landing zone has doubled overnight, and the brown thumbprint now covers the zone with room to spare. {A} puts the ruler away.
+when since t_flash >= 4
+text The new weather frames come down: the dust storm over the landing zone has doubled overnight, and the brown thumbprint now covers the zone with room to spare. On the shared map, the ruler line no longer reaches clear ground.
 do open dec_arrival
 
 card dec_arrival
@@ -221,5 +223,6 @@ option hold | Hold the plan | The flight director takes it: the arrival plan sta
   set arrive_hold
 option wait | Long orbit, wait | The flight director takes it: aerocapture and the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
   set arrive_wait
+  who wait_who B
   res fuel -4
 

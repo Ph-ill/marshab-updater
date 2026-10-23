@@ -30,7 +30,7 @@ option keep | Keep them quiet | {A} thanks the Sharpie silently. The packs go in
   mark t_stash
   who stash_who A
   morale A 6
-option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch, and the bag is folded into the inventory binder.
+option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch.
   who stash_who A
   res food 3
   morale A 2
@@ -45,10 +45,11 @@ roles A B
 when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
-text It's been a long week. {A} opens the locker before breakfast, tags one pack for {B} for the next transfer window, and eats the other on video with {B}, reading the Sharpie on the bag aloud like the back of a cereal box.
+text It's been a long week. {A} opens the locker before breakfast, tags one pack for {B} for the next crossing window, and eats the other on video with {B}, reading the Sharpie on the bag aloud like the back of a cereal box.
 do bond A B 6
 do morale A 3
 do set stash_exposed
+do who stash_b B
 
 card beat_watch
 type beat
@@ -85,7 +86,6 @@ when cond A ok
 lean brave closer window
 text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
 option closer | Get a closer look | {A} talks Mission Control into a camera slew: a flake of ice from the last waste-water dump, tumbling, a little smaller every hour.
-  var glints 1
   trait A brave 3
 option window | Track it from the window | {A} notes its bearing hourly. By the fourth hour it's plainly tumbling, each flash a face of ice from the last waste-water dump, a little smaller each time. The notes are neat enough to frame.
   trait A curious 2
