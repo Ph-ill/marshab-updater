@@ -431,6 +431,35 @@ def check_mix(cards, ctx):
                             % (mix["skill"], n, int(MAX_SKILL * 100)))
 
 
+# Slow burn (STYLE.md, "The slow burn"). Nothing uncanny before day 11: cards that
+# can fire earlier may not use spooky vocabulary, may not be `cat mystery`, and a
+# cliffhanger that can fire before day 25 may not be `cat mystery`.
+QUIET_UNTIL = 11
+UNCANNY_HOOKS_FROM = 25
+SPOOKY = re.compile(r"\b(eerie\w*|impossible|strange\w*|wrong|chill\w*|uncanny|creep\w*|spooky|"
+                    r"ghost\w*|haunt\w*|ominous\w*|unexplained|sinister|nobody (says|knows) why|"
+                    r"no one (says|knows) why|not from earth|hair on)\b", re.I)
+
+
+def check_ramp(cards, ctx):
+    for c in cards:
+        d0, w = c["days"][0], c["where"]
+        if d0 >= QUIET_UNTIL:
+            continue
+        for t in [c["text"]] + [o["text"] for o in c["options"]]:
+            m = SPOOKY.search(t)
+            if m:
+                ctx.warnings.append("style: %s %s can fire on day %d and says %r; keep days 1-%d quiet"
+                                    % (w, c["id"], d0, m.group(0), QUIET_UNTIL - 1))
+        if c["cat"] == "mystery":
+            ctx.warnings.append("style: %s %s is cat mystery but can fire on day %d (min %d)"
+                                % (w, c["id"], d0, QUIET_UNTIL))
+    for c in cards:
+        if c["flags"] & O.F_HOOK and c["cat"] == "mystery" and c["days"][0] < UNCANNY_HOOKS_FROM:
+            ctx.warnings.append("style: %s %s is an uncanny cliffhanger before day %d; early hooks stay grounded"
+                                % (c["where"], c["id"], UNCANNY_HOOKS_FROM))
+
+
 def mix_line(ctx):
     n = sum(v for k, v in ctx.mix.items() if k != "skill")
     if not n:
@@ -466,6 +495,7 @@ def validate(cards, ctx, fleet, system):
     check_pronouns(cards, system, ctx)
     check_style(cards, fleet, ctx)
     check_mix(cards, ctx)
+    check_ramp(cards, ctx)
     ids = [c["id"] for c in cards]
     for c in cards:
         w = c["where"]
@@ -609,6 +639,7 @@ def build(content_dir):
     if len(cards) > 250:
         ctx.errors.append("too many cards (max 250)")
     validate(cards, ctx, fleet, system)
+    ctx.cards = cards
     if ctx.errors:
         return None, None, ctx
     ids = [c["id"] for c in cards]

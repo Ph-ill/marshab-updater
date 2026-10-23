@@ -187,6 +187,7 @@ class TestHouseStyle(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.pack, cls.text, cls.ctx = lvc.build(CONTENT)
+        cls.cards = cls.ctx.cards
 
     def test_compiles(self):
         self.assertEqual(self.ctx.errors, [])
@@ -236,6 +237,28 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
     def test_bad_category_is_an_error(self):
         _, _, ctx = lvc.build(mini_content("card x\ntype beat\ncat plumbing\nroles A\ntext {A}.\n"))
         self.assertTrue(any("cat is" in e for e in ctx.errors))
+
+    def test_slow_burn_lint(self):
+        src = ("card early\ntype beat\ncat life\ndays 2 20\nroles A\ntext {A} feels a chill. Something is wrong.\n\n"
+               "card early_m\ntype beat\ncat mystery\ndays 5 20\nroles A\ntext {A} logs a number.\n\n"
+               "card late\ntype beat\ncat mystery\ndays 30 40\nroles A\ntext {A} feels a chill.\n")
+        _, _, ctx = lvc.build(mini_content(src))
+        ws = [w for w in ctx.warnings if "keep days" in w or "cat mystery but" in w]
+        self.assertTrue(any("early " in w and "chill" in w for w in ws))
+        self.assertTrue(any("early_m" in w for w in ws))
+        self.assertFalse(any(" late " in w for w in ws))
+
+    def test_mystery_ramp(self):
+        # STYLE.md "The slow burn": nothing in days 1-10, most of the thread after 25.
+        phases = [0, 0, 0, 0]
+        for c in self.cards:
+            if c["cat"] == "mystery":
+                d0 = c["days"][0]
+                phases[0 if d0 <= 10 else 1 if d0 <= 24 else 2 if d0 <= 36 else 3] += 1
+        self.assertEqual(phases[0], 0)
+        self.assertLess(phases[1], phases[2])
+        self.assertGreater(phases[3], 0)
+        print("mystery cards by first day, phases 1-4:", phases, file=sys.stderr)
 
     def test_mech_twin_is_not_exclusive(self):
         # The tagged twin must have an untagged sibling so anyone can draw the card.
