@@ -11,6 +11,16 @@ type ending
 when flag echo_heard
 text Company. Seven ships make orbit. Just above them, on a slightly higher path, the carrier is still transmitting every 11 seconds. Nobody has answered it yet.
 
+card end_patience
+type ending
+when flag arrive_wait
+text Patience. The fleet parks in a long orbit and watches a dust storm the size of a continent swallow the landing zone. When it clears, seven ships are still waiting above it, with margins thin as foil and every one of them intact.
+
+card end_through
+type ending
+when flag arrive_hold
+text Through the Dust. The fleet holds the plan. The storm reaches the landing zone hours after the last ship is down, and the last thing the cameras see from orbit is seven ships under an orange sky, hatches sealed.
+
 card end_long_way
 type ending
 text The Long Way Round. Seven ships, one planet, and a log that's mostly propellant figures and small kindnesses. Mission Control sends one word: "Nominal." Everyone aboard knows it was more than that.
