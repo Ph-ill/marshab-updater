@@ -28,6 +28,7 @@ if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py
   "$MP" tests/mp_codes.py
   "$MP" -X heapsize=160k tests/mp_engage.py
+  "$MP" -X heapsize=192k tests/mp_merge.py
 else
   echo "micropython not found: skipped tests/mp_check.py (set MICROPYTHON=...)"
 fi

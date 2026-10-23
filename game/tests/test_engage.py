@@ -46,6 +46,25 @@ class FakeTicks:
 NOON = 1792843200000   # 2026-10-24 12:00 UTC
 
 
+class TestMergeCollect(unittest.TestCase):
+    # lv/chlog.py collects every GC_EVERY new records (MicroPython only by default).
+    def test_collects_every_32_new_records_only(self):
+        from lv import chlog
+        log = ChoiceLog(S.FLEET_KEY)
+        self.assertIsNone(log.collect)          # off on CPython
+        calls = []
+        log.collect = lambda: calls.append(len(log))
+        recs = [r for _, r in S.reference_season(load(os.path.join(ROOT, "build", "pack.bin")), seed=1)[1]]
+        for r in recs:
+            log.merge(r)
+        self.assertEqual(len(calls), len(recs) // chlog.GC_EVERY)
+        self.assertEqual(calls[0], chlog.GC_EVERY - 1)   # before the 32nd insert
+        n = len(calls)
+        for r in recs:
+            self.assertEqual(log.merge(r), chlog.DUP)
+        self.assertEqual(len(calls), n)          # duplicates never collect
+
+
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
 

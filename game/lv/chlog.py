@@ -2,7 +2,21 @@
 # Merging is a set union, so the result doesn't depend on the order or timing
 # in which records arrive. Records index by effective day so the engine can ask
 # "what takes effect today?" without scanning the whole log.
+import sys
+
 from lv import record as R
+
+# A long sync merges hundreds of records back to back. On the Pico's heap that makes many
+# small dict/list resizes, and without a collection in between the heap fragments until a
+# resize fails with MemoryError although most of the heap is free (seen on MicroPython's
+# 32-bit port at ~220 records with 172 KB free). So the log collects every GC_EVERY new
+# records. CPython doesn't need it (and the sims would slow down), so there it is off.
+GC_EVERY = 32
+if sys.implementation.name == "micropython":
+    import gc
+    _collect = gc.collect
+else:  # pragma: no cover - CPython
+    _collect = None
 
 NEW = 1
 DUP = 0
@@ -18,6 +32,9 @@ class ChoiceLog:
         self.recs = {}      # int key -> 13-byte record
         self.by_eff = {}    # effective day -> list of keys (unsorted)
         self.unknown = []   # newer-schema records: kept and relayed, never interpreted
+        self.collect = _collect   # called every GC_EVERY new records (None: never)
+        self._since = 0
+        self.gcs = 0
 
     def __len__(self):
         return len(self.recs)
@@ -35,6 +52,11 @@ class ChoiceLog:
         k = R.key(rec)
         old = self.recs.get(k)
         if old is None:
+            self._since += 1
+            if self._since >= GC_EVERY and self.collect:
+                self._since = 0
+                self.gcs += 1
+                self.collect()
             self.recs[k] = rec
             e = R.eff_day(rec)
             lst = self.by_eff.get(e)

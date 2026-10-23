@@ -29,7 +29,7 @@ except ImportError:
     import uhashlib as hashlib
 
 from lv.pack import load            # noqa: E402
-from lv.chlog import ChoiceLog      # noqa: E402
+from lv.chlog import ChoiceLog, GC_EVERY      # noqa: E402
 from lv.state import State          # noqa: E402
 from lv.engine import Engine        # noqa: E402
 from lv import record as R          # noqa: E402
@@ -45,9 +45,8 @@ with open("build/season_log.bin", "rb") as f:
     raw = f.read()
 log = ChoiceLog(FLEET_KEY)
 for i in range(0, len(raw), R.LEN):
-    log.merge(raw[i:i + R.LEN])
-    if i % (32 * R.LEN) == 0:
-        gc.collect()   # see ENGAGEMENT.md: without this a 192 KB heap can fragment
+    log.merge(raw[i:i + R.LEN])   # ChoiceLog collects every GC_EVERY new records itself
+assert log.gcs == (len(log) // GC_EVERY if log.collect else 0), (log.gcs, len(log))
 raw = None
 st = State(pack)
 eng = Engine(pack, st, log)
