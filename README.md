@@ -67,7 +67,7 @@ micropython.org. Then run `python3 tools/validate_firmware.py --online` to downl
 ## Tests
 
 ```bash
-sh tests/run.sh            # node --check, 6 unit + 11 integration checks, validator
+sh tests/run.sh            # node --check, 8 unit + 12 integration checks, validator
 sh tests/run.sh --online   # also verifies the micropython.org .uf2 sha256 values
 ```
 

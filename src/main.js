@@ -9,7 +9,7 @@ import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, de
 import { CREW, validateCodes, sharedCodes, crewConfig, writeCrewConfig, randomCode, codeList, newSalt, loadCodes, saveCodes, forgetCodes } from './crew-codes.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
-const SHIP_COUNT = 7;
+const SHIP_COUNT = 8;
 const DEFAULT_LOGS = ['coex_log.csv', 'coex_log.old', 'coex_boot.txt'];
 
 const state = {

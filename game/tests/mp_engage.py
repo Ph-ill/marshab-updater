@@ -34,6 +34,7 @@ from lv.state import State          # noqa: E402
 from lv.engine import Engine        # noqa: E402
 from lv import record as R          # noqa: E402
 from lv import engage as E          # noqa: E402
+from lv.state import N              # noqa: E402
 from lv.clock import Clock          # noqa: E402
 from lv.led import Notifier         # noqa: E402
 
@@ -56,7 +57,7 @@ h = hashlib.sha256()
 m_story = mem()
 for d in range(1, pack.season + 1):
     eng.tick()
-    for c in range(7):
+    for c in range(N):
         if d % 3 == c % 3:
             local.open(c, d)       # some crew open some drops
         minute = (d * 97 + c * 41) % 1440 if d % 5 else None
@@ -65,7 +66,7 @@ for d in range(1, pack.season + 1):
             local.visit(c, keys)
         h.update(bytes(str(keys), "utf-8"))
         mem()
-for c in range(7):
+for c in range(N):
     h.update(en.drops(c))
     for d in range(1, pack.season + 1):
         h.update(bytes(str(en.job(c, d)), "utf-8"))

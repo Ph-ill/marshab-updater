@@ -18,7 +18,7 @@ FOOD, FUEL, SPARES = 0, 1, 2
 # Which condition ops take roles in a (and b)
 _ROLE_A = (O.C_TRAIT_GE, O.C_TRAIT_LE, O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART,
            O.C_COND, O.C_IDLE_GE, O.C_MORALE_LE, O.C_MORALE_GE, O.C_KIT_ELSE,
-           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY, O.C_CREW)
+           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY, O.C_CREW, O.C_ISNT)
 _ROLE_B = (O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART, O.C_BESTBOND)
 
 
@@ -86,6 +86,8 @@ class Engine:
             return self._best_bond(rb) == ra
         if op == O.C_IS:
             return s.vars[b] == ra + 1
+        if op == O.C_ISNT:
+            return s.vars[b] != ra + 1
         if op == O.C_HOME:
             return s.loc[ra] == ra
         if op == O.C_AWAY:
@@ -383,26 +385,44 @@ class Engine:
 
     # ---- wandering (simulated, never tied to real proximity) -------------------------
     def _wander(self):
+        # Crossings are deliberate: only in a transfer window, never to a third ship,
+        # and only to a ship that holds just its own astronaut (so at most 2 aboard).
         s, rng = self.s, self.rng
+        d = s.day
+        if d >= O.TRANSFER_HOME:
+            # Entry prep: everyone flies home on day 37, and anyone a late rescue
+            # carried across goes back the next morning. Nobody crosses out.
+            for c in range(N):
+                if s.loc[c] != c and s.cond[c] != O.COND_HOME:
+                    self._move(c, c)
+            return
+        if d < O.TRANSFER_FROM or (d - O.TRANSFER_FROM) % O.TRANSFER_EVERY:
+            return
         for c in range(N):
             if s.cond[c] != O.COND_OK:
                 continue
-            if s.loc[c] != c and rng.chance(12):
-                self._move(c, c)
+            if s.loc[c] != c:
+                if rng.chance(O.TRANSFER_BACK):
+                    self._move(c, c)
+                continue
+            if d > O.TRANSFER_LAST_OUT:
                 continue
             cur = s.trait(c, 1)
-            if not rng.chance(6 + (cur // 5 if cur > 0 else 0)):
+            if not rng.chance(O.TRANSFER_OUT + (cur // 8 if cur > 0 else 0)):
                 continue
+            held = [0] * N
+            for k in range(N):
+                held[s.loc[k]] += 1
             w = []
             for j in range(N):
-                if j == c or s.cond[j] == O.COND_HOME or s.loc[j] == s.loc[c]:
+                if j == c or s.cond[j] == O.COND_HOME or s.loc[j] != j or held[j] != 1:
                     w.append(0)
                 else:
                     v = s.bond(c, j) + 60
                     w.append(v if v > 1 else 1)
             j = rng.weighted(w)
             if j >= 0:
-                self._move(c, s.loc[j])
+                self._move(c, j)
 
     # ---- picking events ---------------------------------------------------------
     def _fire(self, card, roles):
@@ -534,10 +554,20 @@ class Engine:
             self._fire(c, r)
 
     def _ending(self):
+        # The ending is chosen on flags alone (role conditions pass while unbound).
+        # It may then name crew: each `is X var` condition puts that var's holder in
+        # role X. No casting and no dice, so the choice never changes, and one person
+        # may fill both roles; an unset var leaves the role empty.
         s = self.s
+        ops = self.p.data
         for c in self.p.endings:
-            if self._check(self.p.conds(c), bytearray([NONE] * 4)):
+            off = self.p.conds(c)
+            roles = bytearray([NONE] * 4)
+            if self._check(off, roles):
+                for i in range(off + 1, off + 1 + 4 * ops[off], 4):
+                    if ops[i] == O.C_IS and s.vars[ops[i + 2]]:
+                        roles[ops[i + 1]] = s.vars[ops[i + 2]] - 1
                 s.ending = c
                 s.fired[c] = s.day
-                s.emit(O.O_END, c)
+                s.emit(O.O_END, c, roles[0], roles[1])
                 return

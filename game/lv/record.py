@@ -27,7 +27,7 @@ NOTE = 4     # a = preset line (0..2), b = target crew
 GIFT = 5     # a = gift item, b = target crew, c = mode (0 give, 1 ask for, 2 answer an ask)
 GIFT_GIVE, GIFT_ASK, GIFT_ANSWER = 0, 1, 2
 
-ADMIN_SHIP = 7
+ADMIN_SHIP = 15  # outside the crew range 0..7; the author field is 4 bits (0..15)
 
 
 def hmac_sha256(key, msg):

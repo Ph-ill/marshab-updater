@@ -1,38 +1,69 @@
-# Fleet votes and their callbacks. House style: content/STYLE.md.
+# The old-channel thread and the injury rescue. Arc, owners and plants:
+# content/STORY_BIBLE.md (spoilers). Voice: content/STYLE.md.
+# Thread owners (`who ow_*`) are cast once per voyage and never overlap.
+
+card m_carrier
+type event
+cat mystery
+clue core
+due
+once
+days 15 19
+roles A
+when !is A ow_list
+when !is A ow_song
+when !is A ow_garden
+when !is A ow_letter
+when !is A ow_dose
+text {A}'s arrival-test dish scans the old common channel toward Mars, where the ground now checks only for the hopper's beacon. A week of integration shows a faint carrier: folded at a shade under 10.96 seconds, it stands up like a fence post. "An alias, probably," {A} says.
+do who ow_hail A
+do mark t_carrier
+
+card m_alias
+type event
+cat mystery
+due
+once
+days 20 21
+roles A B
+when is A ow_hail
+when since t_carrier >= 4
+when fired m_theory
+text {B} aims a second dish at the carrier for {A}. Bursts hit both the same millisecond and slip a fixed 10.96-second clock by 1.5 seconds a day this week: the fleet's closing rate on Mars. A two-hour orbit would show; a week of residuals is too sparse to tell. "Booked again. {Av}"
+do bond A B 3
+do open dec_signal
 
 card dec_signal
 type decision
 cat mystery
-clue
-days 12 17
-weight 5
+days 20 23
+weight 1
 once
 duration 2
 roles A B
 lean curious open log
-text The high-gain antenna logs a weak carrier on a frequency the fleet stopped using years ago, coming and going every 11 seconds: some retired probe's beacon, probably. {A} wants to turn a dish and answer it. {B} points out that turning the dish costs propellant the fleet hasn't got to spare.
-option open | Answer it | {A} spends the propellant, and the whole fleet listens to static for an hour. Then the carrier changes pitch.
+when fired m_alias
+when is A ow_hail
+text If it's the grey relay, it may still know a standard hello. {A} wants clearance to answer every burst with one, signed with the old program key the fleet carries as a relay fallback: a courtesy, and a test. {B} points out that every reply ties up the comms computer.
+option open | Answer every burst | The ground clears it inside a day: hello only, nothing that commands, inhibits set from the ground. The first hello goes out at 14:02, timed to the millisecond. {B} files one line of dissent, signed, and leaves it there.
   set signal_answered
-  mark t_signal
-  res fuel -3
+  morale B -3
   trait A curious 5
-option log | Log it, keep going | The signal goes into the anomaly log under "later". {A} tapes a printout of the waveform above their bunk, just in case.
+option log | File it, keep going | The carrier goes into the anomaly file under "later". {A} files a signed dissent; {B} countersigns it.
   set signal_ignored
-  mark t_signal
   morale A -5
 
-# Weeks later: the callback for whichever way the fleet voted.
 card signal_reply
 type event
 cat mystery
 due
 once
-days 25 41
+days 25 26
 roles A
 when flag signal_answered
-when since t_signal >= 14
-text At 03:12 the dish locks onto a reply: a burst of housekeeping telemetry in a format nobody has used in years, answering a hail it shouldn't have been able to hear. {A} is the first one awake. Mission Control's reply comes 40 minutes later, in full: "say again??"
-do set signal_contact
+when is A ow_hail
+do mark t_frame
+text Stacked over a week of bursts, the receiver pulls out half a frame of housekeeping on the old channel, cut off. One field is a counter, up twenty-seven thousand and change in a week. {A} logs the figure under the date of the first hello, no remark. "Counter logged. {Av}"
 do trait A curious 4
 
 card signal_echo
@@ -40,15 +71,26 @@ type event
 cat mystery
 due
 once
-days 25 41
+days 25 27
 roles A
 when flag signal_ignored
-when since t_signal >= 14
-text {A} finds the carrier in the dish logs again. It's stronger now, and its bearing has drifted toward the arrival corridor. Nobody uses the word "following". The anomaly report uses the word "persistent".
-do set echo_heard
+when is A ow_hail
+do mark t_frame
+text Folding a week of noise, {A} finds half a frame of housekeeping on the old channel, cut off partway. Its period holds to the millisecond. One field is a counter, stuck since the first scrap a week back. Whatever it counts, nothing has given it one.
 do morale A -3
 
 # Injury and rescue: needs supplies from another ship.
+card c_hail
+type beat
+cat mystery
+due
+once
+days 39 39
+roles A
+when is A ow_hail
+text Nearly half a million knocks heard since the first, every gap explained: Mars in the way, a cold night. Last night's cold gap ran forty; the next knock came a decibel weaker. {A} adds the point; the line steepens: the beat runs out a few nights after landing, not weeks. "{Av}"
+do trait A curious 1
+
 card crisis_eva
 type event
 cat grim
@@ -58,8 +100,10 @@ weight 6
 roles A
 when cond A ok
 when kit_elsewhere A
-text A micrometeoroid hits the hull during {A}'s EVA, close enough to feel through the boots. {A} secures every tool, works back along the tether hand over hand, and comes inside with a wrist that won't bend.
+when !is A cam_who
+text On {A}'s scheduled EVA a tether snags on a bracket and wrenches {A}'s arm, with the next ship closed up and a suited crewmate clipped in at its hatch. {A} frees it, works back along the line hand over hand, and comes inside with a wrist that won't bend.
 do cond A injured
+do who eva_who A
 do morale A -10
 do open rescue_kit
 
@@ -70,13 +114,16 @@ duration 1
 roles A B
 default volunteer
 when cond A injured
-when bestbond B A
-text {A} needs a medical kit from another ship, and the next transfer window is tight.
-option send | Send the kit | A kit crosses on the next transfer. {A}'s wrist is splinted by lunch, and the anomaly report runs to four pages.
+when apart B A
+text {A} needs the ultrasound probe from another ship's medical kit, and the next scheduled crossing window is days away.
+option send | Send the kit | The kit rides the line across alone. {A}'s wrist is scanned and splinted by lunch, and the anomaly report runs to four pages.
   kit A
+  res fuel -1
   morale A 6
-option volunteer | {B} brings it over | {B} doesn't wait for the paperwork, makes the crossing in the next window, and splints the wrist personally. The mission log calls it "nominal". Everyone aboard knows it was more than that.
+option volunteer | {B} brings it over | {B} rides the line across with the kit and splints the wrist personally. The report calls it "nominal". Seven ships read it and know better.
   kitfrom B A
   move B A
+  res fuel -1
   bond A B 12
   morale B 4
+

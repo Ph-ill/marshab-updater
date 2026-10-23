@@ -1,145 +1,182 @@
 # Crew beats: small human moments, most of the log. Idle-friendly beats make an
-# absent player's astronaut look good. House style: content/STYLE.md.
+# absent player's astronaut look good. Each astronaut has a home ship; `same A B`
+# beats only happen while someone is visiting in a crossing window.
+# House style: content/STYLE.md.
 
 card beat_coffee
 type beat
 cat life
-days 3 42
+days 7 39
 weight 8
 once
 roles A B
 when same A B
-text {A} and {B} try to bake bread in the galley oven. Without gravity it rises in every direction at once and comes out shaped like a lung. They eat all of it, warm, with the lights down, and agree not to describe it to anyone at home.
+text {A} and {B} bake bread from one recipe in two galley ovens, over the link. Without gravity it rises in every direction at once and comes out shaped like a lung, twice. They eat it warm on camera with the lights down, and agree not to describe it to anyone at home.
 do bond A B 5
-
-card beat_cards
-type beat
-cat life
-days 2 42
-weight 8
-cooldown 12
-roles A B
-when same A B
-text {A} teaches {B} a card game from home. By the end of the shift {B} is winning, and the rules have been amended twice.
-do bond A B 5
-
-card beat_window
-type beat
-cat wonder
-days 1 8
-weight 12
-once
-roles A B
-when same A B
-text {A} and {B} take turns at the window as Earth and the Moon slide into the same frame. Neither says anything for a long time. Neither needs to.
-do bond A B 6
-
-card beat_gym
-type beat
-cat life
-days 3 42
-weight 7
-cooldown 9
-roles A B
-when same A B
-text {A} and {B} share the exercise slot, two hours a day so their bones still work at Mars. They keep score. Nobody knows what the score measures.
-do bond A B 4
-do morale A 2
 
 card beat_zipties
 type beat
 cat life skill
-days 10 42
+due
+days 11 11
 weight 6
 once
 roles A B
-when same A B
-text {A} and {B} finally agree on which drawer the zip ties live in. It has taken the whole flight so far, and it may be the most important engineering decision made aboard.
+text {A} and {B} get all eight ships to agree on which drawer the zip ties live in. It takes forty-one emails. The ground asks for the list, for the next fleet.
 do bond A B 4
 
 card beat_haircut
 type beat
 cat life
-days 12 42
+days 12 39
 weight 5
 once
 roles A B
 when same A B
+when !fired p_birthday
 when bond A B >= 0
-text {A} cuts {B}'s hair with the vacuum clippers. The result is logged as "within tolerance". {B} agrees and tips in coffee.
+when away A
+when home B
+when cond A ok
+when !is A eva_who
+text {A}, aboard on a visit, cuts {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} pays in coffee.
 do bond A B 5
 
-card beat_home_msg
+card beat_home_msg2
 type beat
 cat human
-days 8 42
+days 25 39
 weight 6
-cooldown 10
+once
 roles A
 when cond A ok
-text {A} records a message for a school group back home that's been following the fleet. The kids send back forty questions, mostly about the toilet. {A} answers every one.
+text The school group writes again: they've built Mars in the classroom out of papier-mâché and want to know if it's the right red. {A} sends back a photo through the window, unprocessed, and a note: "Close. A bit more butterscotch."
 do morale A 4
-do trait A warm 2
 
 card beat_shelter_night
 type beat
 cat life
-days 6 42
+days 8 39
 weight 5
-cooldown 12
+once
 roles A B
-when same A B
 when var storms >= 1
-text {A} and {B} reorganize the storm shelter between the water tanks so the next flare night is less miserable. Two more sleeping spots, one hook for the cards, and a sign that reads "the Sun is not your friend".
+text {A} and {B} compare storm shelters on video and steal each other's best ideas, and a sign, now on every ship, that reads "the Sun is not your friend".
 do bond A B 4
 
 card beat_early_watch
 type beat
-cat human
-days 1 8
+cat wonder
+days 1 5
 weight 10
-cooldown 3
+once
 roles A B
-when same A B
-text {A} and {B} stand the night watch. Earth still fills most of the window, blue and close. {A} holds up a thumb, and the planet spills out around it on every side. They talk about home as if it were down the road. Each day it's a little less true.
+when cond B ok
+text {A} and {B} share the night watch over the fleet link. From low orbit Earth fills the window, its dark side strung with cities. {A} holds up a thumb, and the planet spills out around it on every side. They talk about home as if it were down the road. For a few more days, it is.
 do bond A B 5
+
+card beat_early_call
+type beat
+cat human
+days 2 5
+weight 8
+once
+roles A B
+when cond B ok
+text {A} and {B} watch the last top-off tankers come and go and narrate each docking on the fleet channel like a sports commentary. By the third they have a catchphrase; by the fourth it is fleet-wide.
+do bond A B 4
 
 # --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
 card idle_watch
 type beat
 cat life
-days 4 42
+days 4 22
 weight 10
-cooldown 10
+once
 roles A
 when idle A >= 3
 when cond A ok
-text {A} takes an extra night watch so everyone else can sleep before the burn. Nobody asked. The log entry is two lines long and perfectly neat.
+text {A} stands the night watch for the whole fleet so the other seven can sleep. Unasked. The watch report is two lines long and neat.
 do morale A 2
 do trait A warm 2
 
 card idle_mentor
 type beat
 cat life
-days 6 42
+days 6 39
 weight 8
-cooldown 12
+once
 roles A B
 when idle A >= 3
-when same A B
 when cond B ok
-text {A} walks {B} through the backup docking procedure step by step, until {B} can do it without the checklist. Neither of them mentions why it matters.
+when is B abort_who
+text {A} walks {B} through taking the landing by hand over the link: hold, pick a new spot, commit. Step by step, until {B} can call it without the checklist. {A} logs the hours in {B}'s book as training.
+do who abort_who B
 do bond B A 6
 do trait B brave 2
 
 card idle_spares
 type beat
+once
 cat life
-days 8 42
+days 13 39
 weight 8
-cooldown 9
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a filter cartridge the manifest says was never loaded. Somebody at Starbase packed a margin, and ticked the bag in Sharpie. {A} logs it and says a quiet thank-you to whoever it was.
+text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Someone at Starbase packed a margin and ticked it in marker. {A} logs a thank-you: "Found it. {Av}"
 do res spares 1
+
+# --- Quirks: per-crewmate lines from roster.lv `habit "..."` (round 19) -------
+# `each habit N` clones the card once per astronaut who has a real Nth habit; the
+# clone binds role A to that astronaut only, so a line only ever renders for its
+# owner. Three slots, early / mid / late, about 2-3 touches per crewmate a season.
+# The table is the roster: a new crew line with its habits gets clones on rebuild.
+card quirk_1
+type beat
+cat life
+each habit 1
+once
+days 2 6
+weight 14
+roles A
+when cond A ok
+text {habit}
+do morale A 1
+
+card quirk_2
+type beat
+cat life
+each habit 2
+once
+days 23 29
+weight 14
+roles A
+when cond A ok
+text {habit}
+do morale A 1
+
+card quirk_3
+type beat
+cat life
+each habit 3
+once
+days 35 39
+weight 14
+roles A
+when cond A ok
+text {habit}
+do morale A 1
+
+card quirk_4
+type beat
+cat life
+each habit 4
+once
+days 20 23
+weight 14
+roles A
+when cond A ok
+text {habit}
+do morale A 1
+

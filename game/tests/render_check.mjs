@@ -14,7 +14,7 @@ const lines = [];
 let last = -1;
 for (const [day, s] of new Renderer(text, eng).lines(story)) {
   if (day !== last) {
-    lines.push("", `FLIGHT DAY ${String(day).padStart(2, "0")}`);
+    lines.push("", pageHeading(day));
     last = day;
   }
   lines.push("  " + s);
@@ -28,4 +28,9 @@ if (js !== py) {
   process.exit(1);
 }
 console.log(`render.js matches sim/render.py (${a_len(js)} lines)`);
+// Mirrors sim/render.py page_heading (web/render.js has no copy yet: web hand-off).
+function pageHeading(day) {
+  const a = day <= 6 ? day : 7 + 5 * (day - 7), b = day <= 6 ? day : a + 4;
+  return `LOG PAGE ${String(day).padStart(2, "0")} \u00b7 ${a === b ? "DAY " + a : `DAYS ${a}\u2013${b}`}`;
+}
 function a_len(s) { return s.split("\n").length; }

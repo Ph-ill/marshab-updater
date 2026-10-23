@@ -22,16 +22,16 @@
   ],
   "artifacts": [
     {"id": "class_patch", "n": "Class patch", "t": "Your astronaut's training-class patch, frayed at one corner from years on a flight jacket."},
-    {"id": "pad_photo", "n": "Pad photo", "t": "All seven ships on the pad the night before launch, lit from below."},
-    {"id": "stopwatch", "n": "Launch-day stopwatch", "t": "A wind-up stopwatch from the launch control room. Still keeps time."},
+    {"id": "pad_photo", "n": "Pad photo", "t": "The whole fleet on the pad the night before launch, lit from below."},
+    {"id": "stopwatch", "n": "Launch-day stopwatch", "t": "A wind-up stopwatch from the launch control room. Still runs true."},
     {"id": "grain", "n": "Sample bag 01", "t": "A micrometeoroid, smaller than a grain of rice. Labelled and dated."},
     {"id": "quarter", "n": "1969 quarter", "t": "Packed for luck, lost in a tool pouch, and found again."}
   ],
   "file": {
-    "_doc": "Three entries per crewmate. met: they appear in your log. shared: your astronaut and they share a log line. traded: a gift or ask between you. {T} = crewmate, {S} = their ship, {lean} = their strongest character word.",
+    "_doc": "Three entries per crewmate; traded has one line per crew member, in roster order (8, tools/lve.py checks). met: they appear in your log. shared: your astronaut and they share a log line. traded: a gift or ask between you. {T} = crewmate, {S} = their ship, {lean} = their strongest character word.",
     "met": "{T}, {S}. In your log.",
     "shared": "Has worked a shift alongside your astronaut. Reads as {lean}.",
-    "traded": ["Keeps a paper notebook of every alarm ever silenced.", "Packed one real mug. Drinks from a pouch anyway.", "Labels every cable, including the labelled ones.", "Has a favourite wrench and won't say which.", "Can name every star the tracker uses.", "Saves the dessert pouches for Sundays.", "Hums during checklists. Always the same tune."],
+    "traded": ["Keeps a paper notebook of every alarm ever silenced.", "Packed one real mug. Drinks from a pouch anyway.", "Labels every cable, including the labelled ones.", "Has a favourite wrench and won't say which.", "Can name every star the tracker uses.", "Saves the dessert pouches for Sundays.", "Hums during checklists. Always the same tune.", "Writes bass lines for the pumps and fans, and plays them back on the galley table."],
     "lean": [["brave", "careful"], ["curious", "settled"], ["warm", "blunt"]]
   }
 }

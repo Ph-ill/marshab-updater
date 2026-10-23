@@ -109,7 +109,7 @@ nav button+button{border-left:1px solid var(--rule)}
 .tl{position:relative;height:16px;font:13px var(--mono);color:var(--ink2)}
 .tl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .tl span:first-child{transform:none}.tl span:last-child{transform:translateX(-100%)}
-.fleet{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--rule);margin-top:8px}
+.fleet{display:grid;grid-template-columns:repeat(8,1fr);border:1px solid var(--rule);margin-top:8px}
 .fleet div{min-height:72px;padding:4px 0;text-align:center;font:13px/18px var(--mono)}
 .fleet div+div{border-left:1px solid var(--rule)}
 .fleet div b{display:block;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--rule);padding-bottom:4px;margin-bottom:4px}
@@ -143,7 +143,7 @@ nav button+button{border-left:1px solid var(--rule)}
 <script>
 /*RENDER_JS*/
 /*ENGAGE_JS*/
-const N=7;
+const N=8;
 const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];
 const KIND={3:"Fleet vote",4:"Private",5:"Anyone can answer"};
@@ -407,11 +407,11 @@ function actSheet(){
 function ending(){
   bar("ARRIVAL",`FD ${S.season}/${S.season}`);
   const c=T.cards[S.ending],E=T.epi||{};
-  let dec=0,res=0,notes=0,acts=0;
+  let dec=0,res=0,notes=0,acts=0,ea=NONE,eb=NONE;
   const b=Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0));
-  for(let i=0;i<b.length;i+=8){const k=b[i+1];dec+=k===O.DEC_CLOSE;res+=k===O.RES_CLOSE;notes+=k===O.NOTE;acts+=k===O.ACT&&b[i+6]===0}
+  for(let i=0;i<b.length;i+=8){const k=b[i+1];dec+=k===O.DEC_CLOSE;res+=k===O.RES_CLOSE;notes+=k===O.NOTE;acts+=k===O.ACT&&b[i+6]===0;if(k===O.END){ea=b[i+3];eb=b[i+4]}}
   const rw=Object.keys(S.updated).filter((d)=>rewritten(+d)).length;
-  const ttl=first(c.t),rest=c.t.slice(ttl.length).trim();
+  const ct=R.fill(c.t,ea,eb),ttl=first(ct),rest=ct.slice(ttl.length).trim();
   let o=`<div class=kick><div class=lab>Mission report · ${h(ship(S.you))}</div><h1>${h(ttl.replace(/\.$/,""))}</h1><p class=lead>${h(rest)}</p></div>`;
   o+=`<section><div class=lab><span>The voyage</span><span>${S.season} days</span></div><div class=tbl><div>Fleet votes settled</div><div>${dec}</div><div>Calls for help answered</div><div>${res}</div><div>Instructions followed</div><div>${acts}</div><div>Notes passed</div><div>${notes}</div><div>Days re-run by late signals</div><div>${rw}</div></div></section>`;
   const lost=S.cond.filter((x)=>x===2).length;
@@ -440,8 +440,8 @@ function reread(){
 
 // ---- first run ------------------------------------------------------------------------
 function hello(){
-  bar("THE LONG VOYAGE","7 SHIPS");
-  let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Seven ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
+  bar("THE LONG VOYAGE","8 SHIPS");
+  let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Eight ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
   o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"${codeSet[c]===false?" disabled":""}><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span>${codeSet[c]===false?"<span class=lab>Not set up</span>":""}</button>`).join("");
   $("v").innerHTML=o+`</section>`;
   dock("","");

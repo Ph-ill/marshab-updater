@@ -10,22 +10,40 @@ export const O = {
   MOVE: 7, NOTE: 8, END: 9, RES_OPEN: 10, RES_CLOSE: 11, SHORT: 12, GIFT: 13,
 };
 const NONE = 255;
+const VOICE_CARDS = 2;
 
 export class Renderer {
   constructor(text, eng = null) {
     this.t = text;
     this.e = eng; // engage.json, optional: without it gift lines are skipped
     this.roles = new Map(); // card -> [A, B] from the entry that opened it
+    this.ties = 0; // tie closes seen so far: steps through sys.dec_tie
+    this.vcards = {}; // crew -> cards that printed their voice this season
+    this.card = NONE;
   }
 
   name(c) {
     return c !== NONE && c < this.t.crew.length ? this.t.crew[c] : "someone";
   }
 
+  // A crewmate's own sign-off (roster.lv `voice`), for {Av}/{Bv}.
+  // Each crewmate's voice prints on at most VOICE_CARDS cards a season (render.py too).
+  voice(c) {
+    const v = this.t.voice;
+    if (!v || c === NONE || c >= v.length) return "Out.";
+    const seen = this.vcards[c] || (this.vcards[c] = []);
+    if (!seen.includes(this.card)) {
+      if (seen.length >= VOICE_CARDS) return "Noted.";
+      seen.push(this.card);
+    }
+    return v[c];
+  }
+
   fill(tpl, A = NONE, B = NONE, kw = {}) {
     return tpl.replace(/\{(\w+)\}/g, (m, k) => {
       if (k === "A") return this.name(A);
       if (k === "B") return this.name(B);
+      if (k === "Av" || k === "Bv") return this.voice(k === "Av" ? A : B);
       return k in kw ? String(kw[k]) : m;
     });
   }
@@ -34,6 +52,7 @@ export class Renderer {
     const [, code, card, a, b, c, d] = e;
     const t = this.t, sy = t.sys;
     const cd = card !== NONE ? t.cards[card] : null;
+    this.card = card;
     switch (code) {
       case O.EVENT: {
         let s = this.fill(cd.t, a, b);
@@ -57,7 +76,12 @@ export class Renderer {
         let lead;
         if (code === O.RES_CLOSE) lead = this.fill(sy[c ? "res_default" : "res_close"], NONE, NONE, { opt });
         else if (c === 1) lead = this.fill(sy.dec_lean, NONE, NONE, { opt });
-        else if (c === 2) lead = this.fill(sy.dec_tie, NONE, NONE, { opt, n: b });
+        else if (c === 2) {
+          // dec_tie may be a list: each tie close in the log takes the next wording,
+          // so a season's ties never repeat (render.py does the same).
+          const tie = Array.isArray(sy.dec_tie) ? sy.dec_tie[this.ties++ % sy.dec_tie.length] : sy.dec_tie;
+          lead = this.fill(tie, NONE, NONE, { opt, n: b });
+        }
         else lead = this.fill(sy.dec_close, NONE, NONE, { opt, n: b });
         return lead + " " + this.fill(cd.o[a][1], A, B);
       }
@@ -84,7 +108,7 @@ export class Renderer {
       case O.SHORT:
         return sy.short;
       case O.END:
-        return sy.end + " " + cd.t;
+        return sy.end + " " + this.fill(cd.t, a, b);
       default:
         return null; // unknown code from a newer pack: skip, don't break the page
     }
@@ -94,6 +118,8 @@ export class Renderer {
   // themselves (the page folds them into one "kept the ship running" line).
   lines(out, routine = false) {
     const res = [];
+    this.ties = 0;
+    this.vcards = {};
     for (let i = 0; i + 8 <= out.length; i += 8) {
       const e = Array.from(out.slice(i, i + 8));
       if (!routine && e[1] === O.ACT && e[6] === 1 && e[4] !== 0) continue;
