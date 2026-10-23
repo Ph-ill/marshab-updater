@@ -80,6 +80,24 @@ await t('ship config written atomically and read back', async () => {
   assert.ok(existsSync(join(root, 'data/ship.bak')));
 });
 
+await t('saving ship settings keeps the bench day and other board keys; launch date set and cleared', async () => {
+  const path = join(root, 'data/ship.json');
+  const before = JSON.parse(readFileSync(path, 'utf8'));
+  writeFileSync(path, JSON.stringify({ ...before, day: 9, day_start: '21:30', fleet_key: 'k', launch_date: '2026-10-01' }));
+  const opts = { count: 8, roles: ['A', 'B'] };
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 3, ship_name: 'Starship-03b', hotspot_password: 'correcthorse', role: 'B', launch_date: '2026-10-24' }, opts));
+  let on = JSON.parse(readFileSync(path, 'utf8'));
+  assert.deepEqual([on.day, on.day_start, on.fleet_key, on.launch_date, on.ship_id], [9, '21:30', 'k', '2026-10-24', 3]);
+  await writeShipConfig(dev, validateShipConfig({ ship_id: 3, ship_name: 'Starship-03b', hotspot_password: 'correcthorse', role: 'B' }, opts));
+  on = JSON.parse(readFileSync(path, 'utf8'));
+  assert.equal(on.day, 9, 'the bench day survives a save');
+  assert.ok(!('launch_date' in on), 'a cleared launch date is removed');
+  // The board reads it: no launch date -> the manual day.
+  const r = spawnSync('python3', ['-c', 'import sys; sys.path[:0] = [sys.argv[1], sys.argv[1] + "/.."]; import lvship; c = lvship.load_config(sys.argv[2]); print(c["day"], repr(c["launch_date"]))',
+    join(repo, 'game', 'board'), path], { encoding: 'utf8' });
+  assert.equal(r.stdout.trim(), "9 ''", r.stderr);
+});
+
 await t('crew codes written to data/crew.json and accepted by the game core', async () => {
   const cfg = await crewConfig(['1234', '', '0420', '9999', '0000', '1111', '2222', '3333'], newSalt());
   await writeCrewConfig(dev, cfg);
