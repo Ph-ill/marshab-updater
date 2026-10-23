@@ -1278,3 +1278,38 @@ ending must-fixes; fair play; the editor's line fixes; quirk and voice texture.
 - **Budget.** gzip 24,920 (cap 24,933), paid for by trimming tails in
   `dil_bracket`, `dil_eva_cam`, `dec_photo`, `dec_name`, `dil_letter`, `m_carrier`.
 
+
+## Round 22 notes (final pass)
+
+Blind round 22 (hunter, editor). Final content pass; no review rounds follow.
+
+- **Habit pins.** `quirk_3` lines no longer say "entry"/"Mars"-only beats that
+  could fire on p35-39 out of order: Jacques "Every night now", Kim "On each
+  corridor burn", Michelle "Near Mars now", Dorian "As Mars fills the cameras".
+  A day-41 `due` window was tried and declined (crowding 300/300).
+- **New quirks (Phill's list).** Fourth habit slot per crewmate (Phill: none),
+  fired by `quirk_4` (days 20-23): Kim's cats Mango and Dirt; Jai's fantasy
+  lineup, dad at JetBlue, wedding dance floor; Diego's three cats (corrected
+  from two) and opening calls with strangers; Dorian's kid at home and the
+  Uncrustables count; Jacques's PCB career, chihuahua and two cats; Michelle's
+  Disney-then-Tesla briefings; Marco's Elgin-to-BMW-Mexico move and one cologne.
+  Pets stay at home, heard about by mail or video. No politics for Diego.
+- **Continuity.** `g_packer` is cast from `ow_theory` so the forklift-photo
+  holder matches `end_friend`. `a_window_hail` no longer implies the hello fixed
+  the galley screen ("by pure coincidence"). `c_dose`: "Pump it on entry
+  morning." `h_thruster` starts day 7 (after the departure burn).
+  `l_handshake` window widened to day 36. `signal_echo` loses the doubled
+  "hasn't moved".
+- **Endings.** `end_friend` "enough to get there, not back"; `end_lights` HOLD
+  clause reads as banked charge; `end_long_orbit` tray order fixed and the HOLD
+  choice (lamp or tray heater; trays froze in week two) explains why the lamp
+  outlasts p39's "runs out a few nights after landing"; `end_close` "the rover's
+  spare packs went to heaters".
+- **Retired for budget.** `dil_interlock` (its motif-echo mentions above are now history)
+  and `water_fail2` (duplicate, fired 10/300). Tail
+  trims on `dec_arrival`, `dec_clock`, `dec_photo`, `dil_letter`, `dec_flash`,
+  `dil_gains`; two fold-pool lines cut; epilogue line added for `dil_eva_cam`.
+- **Declined.** `m_ripple` payoff (no gzip room); p37 WHO-early note (by
+  instruction).
+- **Numbers.** 211 cards, 31 vars, gzip 24,929 B; endings over 300 seasons
+  77/66/57/45/29/26.
