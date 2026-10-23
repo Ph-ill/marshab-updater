@@ -7,6 +7,7 @@ set -e
 cd "$(dirname "$0")/.."
 python3 tools/lvc.py
 python3 tests/test_core.py
+python3 tests/mp_codes.py
 python3 sim/season.py > /dev/null
 python3 - <<'PY'
 import json, sys
@@ -20,6 +21,7 @@ python3 web/build.py
 MP="${MICROPYTHON:-$(command -v micropython || true)}"
 if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py
+  "$MP" tests/mp_codes.py
 else
   echo "micropython not found: skipped tests/mp_check.py (set MICROPYTHON=...)"
 fi

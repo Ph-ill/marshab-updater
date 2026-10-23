@@ -16,6 +16,7 @@ from lv.prng import Rng, day_seed       # noqa: E402
 from lv.pack import load                # noqa: E402
 from lv.state import State              # noqa: E402
 from lv.engine import Engine            # noqa: E402
+from lv import codes as K               # noqa: E402
 
 FK = b"test-fleet-key-not-secret"
 PACK = os.path.join(ROOT, "build", "pack.bin")
@@ -143,6 +144,71 @@ class TestEngine(unittest.TestCase):
         log.merge(R.encode(FK, R.ACTION, 0, 3, 1, 5, 0, 0, 1))   # gift to crew 1, effect day 8
         late = self.run_days(log, 12).digest()
         self.assertNotEqual(base, late)
+
+
+class TestCodes(unittest.TestCase):
+    SALT = bytes(range(16))
+
+    def book(self):
+        return K.CodeBook(K.make_config(["1234", "0000", None, "9999", "4711", "2024", "0420"], self.SALT))
+
+    def test_known_digest(self):
+        # The same vector is checked on the updater side (tests/unit.test.mjs), so the
+        # browser and the board agree on how a code is hashed.
+        self.assertEqual(K.digest(self.SALT, 0, "1234"),
+                         "0cc8d81bab788a28b5390ce71859e989a5b3e623b8e1cb44c6bfadccc5ff03e4")
+
+    def test_right_wrong_and_unset(self):
+        b = self.book()
+        self.assertEqual(b.check(0, "1234", 0), (K.OK, 0))
+        self.assertEqual(b.check(0, "1235", 0), (K.WRONG, 4))
+        self.assertEqual(b.check(1, "1234", 0), (K.WRONG, 4))   # codes are per person
+        self.assertEqual(b.check(2, "1234", 0), (K.NO_CODE, 0))
+        self.assertEqual(b.check(7, "1234", 0), (K.BAD, 0))
+        self.assertEqual(b.check(0, "12a4", 0), (K.BAD, 0))
+        self.assertEqual(b.check(0, "123", 0), (K.BAD, 0))
+
+    def test_lockout_after_five_wrong(self):
+        b = self.book()
+        got = [b.check(3, "0000", 1000)[0] for _ in range(5)]
+        self.assertEqual(got, [K.WRONG] * 4 + [K.LOCKED])
+        # Even the right code is refused while locked, and the wait counts down.
+        self.assertEqual(b.check(3, "9999", 1000), (K.LOCKED, 300))
+        self.assertEqual(b.check(3, "9999", 1000 + 60000), (K.LOCKED, 240))
+        self.assertEqual(b.check(3, "9999", 1000 + 299001), (K.LOCKED, 1))
+        # Other crew members aren't affected.
+        self.assertEqual(b.check(0, "1234", 1000), (K.OK, 0))
+        # After five minutes there's a fresh set of five tries.
+        self.assertEqual(b.check(3, "0001", 1000 + K.LOCK_MS), (K.WRONG, 4))
+        self.assertEqual(b.check(3, "9999", 1000 + K.LOCK_MS), (K.OK, 0))
+
+    def test_right_code_resets_the_count(self):
+        b = self.book()
+        for _ in range(4):
+            b.check(4, "0000", 0)
+        self.assertEqual(b.check(4, "4711", 0), (K.OK, 0))
+        self.assertEqual(b.check(4, "0000", 0), (K.WRONG, 4))
+
+    def test_phone_remembered_for_the_flight_day_only(self):
+        b = self.book()
+        b.remember("192.168.4.2|ua", 4, 8)
+        self.assertEqual(b.recall("192.168.4.2|ua", 8), 4)
+        self.assertIsNone(b.recall("192.168.4.3|ua", 8))
+        self.assertIsNone(b.recall("192.168.4.2|ua", 9))
+        self.assertIsNone(b.recall("192.168.4.2|ua", 8))   # day 9 cleared it
+        b.remember("p", 1, 9)
+        b.remember("p", 2, 9)                              # signing in as someone else replaces
+        self.assertEqual(b.recall("p", 9), 2)
+        b.forget("p")
+        self.assertIsNone(b.recall("p", 9))
+
+    def test_remembered_list_is_bounded(self):
+        b = self.book()
+        for i in range(K.MAX_PHONES + 5):
+            b.remember("p%d" % i, 0, 1)
+        self.assertEqual(len(b.phones), K.MAX_PHONES)
+        self.assertIsNone(b.recall("p0", 1))
+        self.assertEqual(b.recall("p%d" % (K.MAX_PHONES + 4), 1), 0)
 
 
 if __name__ == "__main__":
