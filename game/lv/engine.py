@@ -16,7 +16,7 @@ FOOD, FUEL, SPARES = 0, 1, 2
 # Which condition ops take roles in a (and b)
 _ROLE_A = (O.C_TRAIT_GE, O.C_TRAIT_LE, O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART,
            O.C_COND, O.C_IDLE_GE, O.C_MORALE_LE, O.C_MORALE_GE, O.C_KIT_ELSE,
-           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY)
+           O.C_BESTBOND, O.C_IS, O.C_HOME, O.C_AWAY, O.C_CREW)
 _ROLE_B = (O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART, O.C_BESTBOND)
 
 
@@ -88,6 +88,8 @@ class Engine:
             return s.loc[ra] == ra
         if op == O.C_AWAY:
             return s.loc[ra] != ra
+        if op == O.C_CREW:
+            return (b >> ra) & 1 == 1
         return False
 
     def _check(self, off, roles):

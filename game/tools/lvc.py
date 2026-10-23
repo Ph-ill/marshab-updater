@@ -23,6 +23,7 @@ Card format (one card per `card` line, indentation only matters for option effec
   lean curious open log           # tie-break/default: axis, option if >= 0, option if < 0
   default send                    # rescue: option used when nobody answers
   when trait A curious >= 10      # condition (see COND_SYNTAX below)
+  when tag A mech                 # A is a crew member tagged `mech` in roster.lv
   text {A} wants to answer it.    # phone template; {A} {B} are crew names
   do set seen_rock                # effect when the card fires (see EFFECT_SYNTAX)
   option open | Open the channel | {A} keys the transmitter.
@@ -61,6 +62,7 @@ class Ctx:
         self.var_read = {}
         self.errors = []
         self.warnings = []
+        self.crew = []       # roster lines, for `when tag`
 
     def flag(self, name, where, setting):
         if not ID_RE.match(name):
@@ -159,6 +161,16 @@ def condition(tokens, card, ctx, where):
         return (O.C_HOME, role(t[1], card), 0, 0)
     if w == "away":
         return (O.C_AWAY, role(t[1], card), 0, 0)
+    if w == "tag":
+        # Resolved at compile time into a bitmask of the crew who carry the tag, so the
+        # engine only tests a bit. An unknown tag is an error, not a silent "nobody".
+        mask = 0
+        for i, cr in enumerate(ctx.crew):
+            if t[2] in cr["tags"]:
+                mask |= 1 << i
+        if not mask:
+            raise PackError("no crew member in roster.lv has tag %r" % t[2])
+        return (O.C_CREW, role(t[1], card), mask, 0)
     raise PackError("unknown condition %r" % " ".join(t))
 
 
@@ -272,19 +284,23 @@ def parse_cards(path, ctx):
 
 
 def parse_crew(t):
-    # crew <name> ship <ship words...> [quirk <q>] [flagship]
-    cr = {"name": t[1], "quirk": None, "ship": "", "flagship": False}
+    # crew <name> ship <ship words...> [quirk <q>] [tag <t>]... [flagship]
+    cr = {"name": t[1], "quirk": None, "ship": "", "flagship": False, "tags": []}
     i = 2
     ship = []
     while i < len(t):
         if t[i] == "ship":
             i += 1
-            while i < len(t) and t[i] not in ("quirk", "flagship"):
+            while i < len(t) and t[i] not in ("quirk", "flagship", "tag"):
                 ship.append(t[i])
                 i += 1
             continue
         if t[i] == "quirk":
             cr["quirk"] = t[i + 1]
+            i += 2
+            continue
+        if t[i] == "tag":
+            cr["tags"].append(t[i + 1])
             i += 2
             continue
         if t[i] == "flagship":
@@ -477,6 +493,7 @@ def encode_card(c, ids):
 def build(content_dir):
     ctx = Ctx()
     fleet = parse_fleet(os.path.join(content_dir, "fleet.lv"), os.path.join(content_dir, "roster.lv"))
+    ctx.crew = fleet["crew"]
     with open(os.path.join(content_dir, "system.json"), encoding="utf-8") as f:
         system = json.load(f)
     cards = []

@@ -39,6 +39,7 @@ C_IS = 22         # a = role, b = var holding crew index + 1
 C_DAY_GE = 23     # b = day
 C_HOME = 24       # a = role is aboard its own ship
 C_AWAY = 25
+C_CREW = 26       # a = role, b = bitmask of crew indices (compiled from roster tags)
 
 # Effects
 E_SET = 1         # a = flag
