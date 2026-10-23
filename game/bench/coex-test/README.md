@@ -43,14 +43,18 @@ Tasks in `main.py`:
 1. Flash MicroPython **v1.29.0** (cyw43-driver 1.1.1, pico-sdk 2.3.0) on both boards.
    - Pico W: `RPI_PICO_W` uf2. Pico 2 W: `RPI_PICO2_W` uf2.
    - Don't mix firmware versions between the two boards.
-2. Edit `config.py`: `SHIP_ID = 0` for board A, `SHIP_ID = 1` for board B.
+2. Give each board its settings in `data/ship.json` (untracked; start from
+   `cp data/ship.example.json data/ship.json`): role `A` or `B`, ship number, and an 8-63 character
+   `hotspot_password`. Without it the board falls back to the placeholder `CHANGE_ME` in `config.py`,
+   which is public. (Or edit `SHIP_ID` in `config.py` as before: 0 for board A, 1 for board B.)
 3. Copy the files to each board:
-   `mpremote cp config.py main.py index.html :`
+   `mpremote cp config.py main.py index.html :` and `mpremote mkdir :data; mpremote cp data/ship.json :data/ship.json`
    then `mpremote reset`.
 4. Capture board A's serial log on the laptop:
    `mpremote connect /dev/ttyACM0 repl | ts '%Y-%m-%d %H:%M:%S' > boardA.log`
    (`ts` comes from moreutils). Board B can run on a USB power bank; read its log from flash afterwards.
-5. Join the laptop to `COEX-0` (WPA2 password `CHANGE_ME`; set `AP_PASSWORD=""` for an open network) and run `python3 host/probe.py --minutes 1440`.
+5. Join the laptop to `COEX-0` (WPA2, with the `hotspot_password` from `data/ship.json`; `"hotspot_open": true` there, or
+   `AP_PASSWORD=""` in `config.py`, for an open network) and run `python3 host/probe.py --minutes 1440`.
 6. Join 1-3 phones to `COEX-0` and leave the page open with the screen kept on.
    - An old phone on a charger is ideal.
    - Note which phone joined first: iOS and Android show the captive sheet differently.
@@ -103,9 +107,9 @@ If phase 2 fails, repeat it once in each fallback mode before you change anythin
 
 ## Flash with the web updater
 
-1. Open https://your-server.example/?product=long-voyage in desktop Chrome, Edge or Brave.
+1. Open `https://your-server.example/?product=long-voyage` (your deployment of the updater) in desktop Chrome, Edge or Brave.
 2. If the board does not run MicroPython 1.29.0, follow the runtime steps on the page (BOOTSEL, then drag the UF2).
-3. Connect device, then click Install latest (0.0.1-coex).
+3. Connect device, then click Install latest (0.0.2-coex).
 4. In SHIP CONFIG pick ship number, name, role A or B and (optional) hotspot password, then Save.
    The values go to `/data/ship.json` and `config.py` applies them at boot. Role A runs as COEX-0 and role B as COEX-1.
 5. Click Disconnect. The board restarts and the test runs.
