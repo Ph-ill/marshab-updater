@@ -10,12 +10,15 @@ export const O = {
   MOVE: 7, NOTE: 8, END: 9, RES_OPEN: 10, RES_CLOSE: 11, SHORT: 12,
 };
 const NONE = 255;
+const VOICE_CARDS = 2;
 
 export class Renderer {
   constructor(text) {
     this.t = text;
     this.roles = new Map(); // card -> [A, B] from the entry that opened it
     this.ties = 0; // tie closes seen so far: steps through sys.dec_tie
+    this.vcards = {}; // crew -> cards that printed their voice this season
+    this.card = NONE;
   }
 
   name(c) {
@@ -23,9 +26,16 @@ export class Renderer {
   }
 
   // A crewmate's own sign-off (roster.lv `voice`), for {Av}/{Bv}.
+  // Each crewmate's voice prints on at most VOICE_CARDS cards a season (render.py too).
   voice(c) {
     const v = this.t.voice;
-    return v && c !== NONE && c < v.length ? v[c] : "Out.";
+    if (!v || c === NONE || c >= v.length) return "Out.";
+    const seen = this.vcards[c] || (this.vcards[c] = []);
+    if (!seen.includes(this.card)) {
+      if (seen.length >= VOICE_CARDS) return "Noted.";
+      seen.push(this.card);
+    }
+    return v[c];
   }
 
   fill(tpl, A = NONE, B = NONE, kw = {}) {
@@ -41,6 +51,7 @@ export class Renderer {
     const [, code, card, a, b, c, d] = e;
     const t = this.t, sy = t.sys;
     const cd = card !== NONE ? t.cards[card] : null;
+    this.card = card;
     switch (code) {
       case O.EVENT: {
         let s = this.fill(cd.t, a, b);
@@ -102,6 +113,7 @@ export class Renderer {
   lines(out, routine = false) {
     const res = [];
     this.ties = 0;
+    this.vcards = {};
     for (let i = 0; i + 8 <= out.length; i += 8) {
       const e = Array.from(out.slice(i, i + 8));
       if (!routine && e[1] === O.ACT && e[6] === 1 && e[4] !== 0) continue;

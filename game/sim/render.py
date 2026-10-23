@@ -19,19 +19,31 @@ def page_heading(day):
     return "LOG PAGE %02d \u00b7 %s" % (day, ("DAY %d" % a) if a == b else ("DAYS %d\u2013%d" % (a, b)))
 
 
+VOICE_CARDS = 2  # web/render.js uses the same cap
+
 class Renderer:
     def __init__(self, text):
         self.t = text
         self.roles = {}  # card -> (A, B) from the entry that opened it
         self.ties = 0    # tie closes seen so far: steps through sys.dec_tie
+        self.vcards = {}  # crew -> cards that printed their voice this season
+        self.card = NONE
 
     def name(self, c):
         return self.t["crew"][c] if c != NONE and c < len(self.t["crew"]) else "someone"
 
     def voice(self, c):
-        # A crewmate's own sign-off (roster.lv `voice`), for {Av}/{Bv}.
+        # A crewmate's own sign-off (roster.lv `voice`), for {Av}/{Bv}. Each crewmate's
+        # voice prints on at most VOICE_CARDS cards a season; later cards get "Noted."
         v = self.t.get("voice") or []
-        return v[c] if c != NONE and c < len(v) else "Out."
+        if c == NONE or c >= len(v):
+            return "Out."
+        seen = self.vcards.setdefault(c, [])
+        if self.card not in seen:
+            if len(seen) >= VOICE_CARDS:
+                return "Noted."
+            seen.append(self.card)
+        return v[c]
 
     def fill(self, tpl, A=NONE, B=NONE, **kw):
         def sub(m):
@@ -49,6 +61,7 @@ class Renderer:
         day, code, card, a, b, c, d, _ = e
         t, sy = self.t, self.t["sys"]
         cd = t["cards"][card] if card != NONE else None
+        self.card = card
         if code == O.O_EVENT:
             s = self.fill(cd["t"], a, b)
             if c != NONE:
@@ -105,6 +118,7 @@ class Renderer:
         # Yields (day, text). routine=False hides self-chosen chores, which the phone
         # folds into a one-line "the rest of the crew kept the ship running".
         self.ties = 0
+        self.vcards = {}
         for i in range(0, len(out), 8):
             e = out[i:i + 8]
             if not routine and e[1] == O.O_ACT and e[6] == 1 and e[4] != 0:
@@ -162,6 +176,7 @@ class Renderer:
                 yield day, s
 
         self.ties = 0
+        self.vcards = {}
         day, lines, folded, seen, hook_at = None, [], [], set(), None
         for i in range(0, len(out), 8):
             e = out[i:i + 8]
