@@ -1,8 +1,10 @@
 // End to end: the real phone page (build/app.html.gz, as the board serves it) in headless
 // Chrome, against the board's own server code (board/lvweb.py + lvphone.py via
 // tests/phone_serve.py) on CPython or the MicroPython unix port. Drives the app's own
-// buttons: wrong code, sign in, story renders, vote (or answer), a gift, a drop opened,
-// a crewmate's tap reaching this phone by polling (the board has no WebSocket), sign out.
+// buttons: the eight portraits on the sign-in list, wrong code, sign in, the crew briefing a
+// first sign-in shows (every card, then Go aboard), story renders, vote (or answer), a gift,
+// a drop opened, a crewmate's tap reaching this phone by polling (the board has no
+// WebSocket), sign out, and a second sign-in that skips the briefing.
 // Fails on page exceptions, console errors and unexpected HTTP errors.
 //   node --experimental-websocket tests/app_e2e.mjs [day]          (from game/)
 //   BOARD_PY="/path/to/micropython -X heapsize=1m" ... runs the server on MicroPython
@@ -50,6 +52,15 @@ try {
   await send('Page.navigate', { url: BASE + '/' });
   await until(`document.querySelectorAll('[data-who]').length===8`, 15000, 'the crew list');
   const C = crew;
+  step('portraits');
+  // The portraits: eight on the sign-in list, eight distinct helmet shells, each crew entry
+  // just [visor, helmet detail] (no chest symbols), Phill's flagship crest in portrait 0.
+  const pt = JSON.parse(await ev(`JSON.stringify({svgs:document.querySelectorAll('[data-who] svg').length,hel:HEL.length,
+    shells:new Set(HEL.map(x=>x[0])).size,pics:new Set([0,1,2,3,4,5,6,7].map(i=>portrait(i))).size,
+    entries:CREW.every(x=>x.length===2),crest:portrait(0).includes('M29.6 10.3L31 3.5H33')})`));
+  check(pt.svgs === 8 && pt.hel === 8 && pt.shells === 8 && pt.pics === 8, 'portraits: ' + JSON.stringify(pt));
+  check(pt.entries, 'crew portrait entries carry more than visor and helmet detail (a chest symbol?)');
+  check(pt.crest, "Phill's flagship crest is missing from portrait 0");
   step('crew list');
   // A wrong code first: the ship counts down.
   check(await click(`[data-who="${C}"]`), 'crew button');
@@ -58,7 +69,22 @@ try {
   step('code 1234');
   for (const k of '1234') await click(`[data-key="${k}"]`);
   await until(`typeof S==='object'&&S!==null&&S.you===${C}`, 15000, 'signed in, state loaded');
-  if (await ev(`!!document.querySelector('.big')`)) await click('[data-go="home"]');
+  step('briefing');
+  // A first sign-in: the ship says `first`, so the meet screen offers the crew briefing
+  // instead of Go aboard. Every card, then Go aboard lands on Home and the phone remembers.
+  await until(`route==='meet'&&tutDue&&!!document.querySelector('.big')`, 8000, 'meet screen (briefing due) on the first sign-in');
+  check(await click('[data-go="how"]'), 'meet screen: no Crew briefing button on a first sign-in');
+  await until(`!!document.querySelector('.tut')`, 4000, 'crew briefing card');
+  const cards = await ev('TUT().length');
+  check(cards === 6, 'briefing has ' + cards + ' cards (expected 6 with engagement)');
+  let seen = 1;
+  for (let i = 1; i < cards; i++) {
+    await click('[data-tut=next]');
+    if (await until(`!!document.querySelector('.tut')&&tutStep()===${i}`, 4000, 'briefing card ' + (i + 1))) seen++;
+  }
+  check(seen === cards, 'briefing cards seen ' + seen + '/' + cards);
+  check(await click('[data-tut=done]'), 'last briefing card: no Go aboard button');
+  await until(`route==='home'&&localStorage.getItem('lv-briefed')==='1'`, 4000, 'briefing done: home, remembered');
   step('state');
   const st = JSON.parse(await ev(`JSON.stringify({day:S.day,season:S.season,here:S.here,v:S.v,story:S.story.length,open:S.open.map(o=>[o.card,o.type,o.mine]),lines:story().length||Object.keys(story()).length})`));
   check(st.day === DAY && st.here === 2 && st.story > 0 && st.story % 4 === 0, 'state: ' + JSON.stringify(st));
@@ -112,6 +138,15 @@ try {
   check(crewRows === 7, 'crew page lists ' + crewRows + ' crewmates');
   await click('[data-out]');
   await until(`tok===""&&document.querySelectorAll('[data-who]').length===8`, 4000, 'signed out');
+  step('second sign-in');
+  // Signing in again: not first any more, and the phone remembers the briefing: straight Home.
+  await click(`[data-who="${C}"]`);
+  for (const k of '1234') await click(`[data-key="${k}"]`);
+  await until(`tok!==""&&route==='home'&&!tutDue&&!document.querySelector('.tut')`, 15000, 'second sign-in goes straight Home');
+  await ev(`go("crew")`);
+  await until(`!!document.querySelector('[data-out]')`, 4000, 'sign-out button');
+  await click('[data-out]');
+  await until(`tok===""`, 4000, 'signed out again');
   // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404).
   // (and /api/me's 401 when the page opens signed out).
   const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me'));
@@ -119,7 +154,7 @@ try {
   check(wsTried, 'the page tried the WebSocket and fell back to polling');
   check(problems.length === 0, 'page problems: ' + JSON.stringify(problems));
   console.log(`app e2e on ${py.split('/').pop()}, day ${DAY}, crew ${C}: ${http.length} requests, ` +
-    `${voted ? 'voted card ' + voted[0] : 'nothing to vote on'}, gift sent${drop ? ', drop ' + drop : ''}, poll saw a crewmate, signed out: ${fails.length ? 'FAIL' : 'ok'}`);
+    `${voted ? 'voted card ' + voted[0] : 'nothing to vote on'}, gift sent${drop ? ', drop ' + drop : ''}, poll saw a crewmate, briefing ${cards} cards, 8 portraits, signed out: ${fails.length ? 'FAIL' : 'ok'}`);
   sock.close();
   done(fails.length ? 1 : 0);
 } catch (e) { console.log('FAIL', e.message); done(1); }
