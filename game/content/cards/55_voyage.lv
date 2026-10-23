@@ -24,7 +24,7 @@ once
 days 2 2
 roles A
 when !is A ow_list
-text {A} plays the same four bars on a travel guitar at the end of every watch, into the fleet channel, never the rest of the song. By the end of the week six ships are guessing at the fifth bar, six different ways.
+text {A} plays the same four bars on a travel guitar at the end of every watch, into the fleet channel, never the rest of the song. By the last tanker six ships are guessing at the fifth bar, six different ways.
 do who ow_song A
 do trait A warm 1
 
@@ -36,7 +36,7 @@ due
 once
 days 3 9
 roles A
-text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the logo, a progress bar, the three-note chime, all over before {A} has counted to eleven, and logged out again. By the end of the week the whole fleet is humming the chime.
+text The galley screen on {A}'s ship takes a 2.3-gigabyte update overnight and restarts at breakfast: the logo, a progress bar, the three-note chime, all over before {A} has counted to eleven, and logged out again. By departure the whole fleet is humming the chime.
 do morale A 1
 
 card l_dock_hello
@@ -47,7 +47,7 @@ due
 once
 days 4 5
 roles A
-text The fourth tanker's docking computer bounces {A}'s hello, routed via the ground: HELLO RX · REPLAY · DISCARD, stale. The docking lead at Mission Control doesn't look up. "It listens for a second, then wants a fresh hello. Pad-test default. Go ship to ship." Ship to ship, it locks at once.
+text The fourth tanker's docking computer bounces {A}'s hello, routed via the ground: HELLO RX · REPLAY · DISCARD, stale. The docking lead doesn't look up. "It only takes an answer to the hello it just sent, within one tick. Pad-test default. Go ship to ship." Ship to ship, it locks at once.
 do trait A curious 1
 
 card p_garden_plant
@@ -71,7 +71,7 @@ due
 once
 days 5 9
 roles A
-text {A} reads the arrival manifest: water on Cargo 3, the rover on Cargo 4. The written-off page: a drill rig left in Earth orbit, a grey relay, "thruster stuck open", a nitrogen pallet vented on the pad, a weather orbiter, Cargo 2, "lost on landing, divert called, no ack", socks, "reason unknown".
+text {A} reads the arrival manifest: water on Cargo 3, the rover on Cargo 4. Written off: a drill rig left in Earth orbit, a grey relay, "thruster stuck open", a weather orbiter, Cargo 2, "lost on landing, divert flagged on last tone, no ack" (drill spares, habitat film), socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -102,7 +102,7 @@ once
 days 12 20
 roles A
 when !is A ow_list
-text The galley screen on {A}'s ship has started to sulk: after every restart it sits on its logo a little longer than it used to, then boots with a sad cloud icon and the word OFFLINE. {A} files a ticket titled "manners".
+text The galley screen on {A}'s ship has started to sulk: after every restart it sits on its logo longer than it used to, twelve now on {A}'s count, then boots with a sad cloud icon and the word OFFLINE. {A} files a ticket titled "manners".
 do morale A 1
 
 # --- Thread: the list ------------------------------------------------------------
@@ -316,7 +316,7 @@ once
 roles A B
 when same A B
 when !fired beat_haircut
-text It's {B}'s birthday by the ground calendar, and {A} is still aboard from the last transfer window. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
+text It's {B}'s birthday by the ground calendar, and {A} is still aboard from the last crossing. {A} produces a candle that can't be lit, a cake that is a ration bar with a slice of dried mango on it, and a card signed by the whole fleet. {B} keeps the candle.
 do bond A B 6
 do morale B 5
 
@@ -448,7 +448,7 @@ days 41 41
 roles A
 when flag c2_answered
 when !is A ow_hail
-text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is holding steady.
+text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is holding steady.
 do morale A 5
 
 card w_mars_disc_q
@@ -460,7 +460,7 @@ days 41 41
 roles A
 when !flag c2_answered
 when !is A ow_hail
-text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. For forty days everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is keeping time.
+text On the last log page before entry, {A} holds a thumb up to the window, the old habit from the Earth watches. Since the Earth watches, everything has fitted behind it. Mars still does, for a few more nights: rust at the edges, dark in the middle. Somewhere on the night side, too small to see, a light is keeping time.
 do morale A 5
 
 card a_last_night
@@ -493,53 +493,53 @@ type event
 cat arrival
 due
 once
-days 42 42
+days 39 39
 roles A
 when flag name_home
-text On the entry map {A} finds the crater the fleet named for a small town at home, right where it should be. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a town newspaper is about to need a second front page.
+text On the approach map {A} finds the crater the fleet named for a small town at home, right where it should be. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a town newspaper is about to need a second front page.
 
 card a_recall_plan
 type event
 cat arrival
 due
 once
-days 42 42
+days 39 39
 roles A
 when flag name_plan
-text On the entry map {A} finds the crater the fleet named for the first person who ever wrote a Mars plan. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a committee is about to have a great deal more to argue about.
+text On the approach map {A} finds the crater the fleet named for the first person who ever wrote a Mars plan. Cargo 2 has been standing behind its rim the whole time. Somewhere on Earth, a committee is about to have a great deal more to argue about.
 
 card a_recall_photo
 type event
 cat arrival
 due
 once
-days 42 42
+days 38 38
 roles A
 when flag photo_taken
-text {A} stows the tablet with the fleet portrait on it: six ships and the edge of a seventh, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have today. Worth it, {A} decides.
+text {A} stows the tablet with the fleet portrait on it: six ships and the edge of a seventh, Earth behind them, and the propellant it took to fly them that close, which would have been nice to have for the descent. Worth it, {A} decides.
 
 card a_recall_wrist
 type event
 cat arrival
 due
 once
-days 42 42
+days 41 41
 roles A
 when fired crisis_eva
 when is A eva_who
-text {A} straps in for entry with the wrist that wouldn't bend, mostly bending now, and reports it to the flight surgeon as "bending", which is mostly true.
+text {A} runs the entry seat checks with the wrist that wouldn't bend, mostly bending now, and reports it to the flight surgeon as "bending", which is mostly true.
 
 card a_recall_valve
 type event
 cat arrival
 due
 once
-days 42 42
+days 39 39
 roles A
 when flag valve_out
 when is A valve_who
 when !is A abort_who
-text Before entry {A} flies the valve workaround once more in the simulator, one thruster short. The model rolls the wrong way out of the blackout and comes back, the way it did that night. {A} initials the log line and closes the panel.
+text Before the descent brief {A} flies the valve workaround once more in the simulator, one thruster short. The model rolls the wrong way out of the blackout and comes back, the way it did that night. {A} initials the log line and closes the panel.
 
 card a_recall_shared
 type event
@@ -575,7 +575,7 @@ roles A
 when flag signal_ignored
 when is A ow_hail
 when cond A ok
-text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, with the old program key on a card taped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which said no for six weeks, says yes.
+text {A} packs a handheld radio into a suit thigh pocket, retuned to the old channel, with the old program key on a card taped to the back. "First one out goes to say hello," {A} tells the ground. The ground, which asked for a suit beside it, says yes.
 do morale A 3
 
 # --- Day 42: the entry itself, last on the page; one scene per arrival branch, told by whoever was drilled on taking the landing by hand.
@@ -588,7 +588,7 @@ days 42 42
 roles A
 when flag arrive_hold
 when is A abort_who
-text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had, and the take-manual call sits on {A}'s tongue, the one drilled over the link and flown five days ago from memory. Then the radar finds the ground, and {A} doesn't call it.
+text Entry interface. Four minutes of plasma blackout, seven ships silent in turn. From twenty kilometres down the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar finds the ground a hundred metres up, on a slope, and {A} calls the take-manual, the one drilled over the link, and puts the ship down on the flat.
 do morale A 3
 
 card e_entry_wait
