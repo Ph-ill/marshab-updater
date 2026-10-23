@@ -16,7 +16,7 @@ option fly | Fly the formation | Eight ships close to a hundred metres for twelv
   set photo_taken
   res fuel -2
   morale A 4
-option decline | Politely decline | The fleet sends a polite no and a very good photo of a single ship. Public affairs replies with one word: "Noted."
+option decline | Politely decline | The fleet sends a polite no and a very good photo of a single ship.
 
 # --- Water recovery -------------------------------------------------------
 card dec_water
@@ -61,25 +61,6 @@ do bond A B 8
 do res spares -1
 do clr water_rationed
 
-card water_fail2
-type event
-cat repair
-due
-once
-days 27 27
-roles A B
-when flag water_rationed
-when is A water_who
-when apart B A
-when cond B ok
-when home A
-when !is B eva_who
-text The degraded water processor on {A}'s ship quits at 04:00 on a crossing day. {A} drinks from the reserve bag through a morning of {B}'s prebreathe while the next ship closes up. By afternoon {B} is across with the spare valve; water flows by dinner. It tops out at ninety-five percent, for good.
-do move B A
-do bond A B 8
-do res spares -1
-do clr water_rationed
-
 card water_good
 type beat
 cat repair
@@ -105,7 +86,7 @@ duration 2
 roles A B
 lean curious shift keep
 text Mission Control proposes moving the fleet's clocks two hours forward, to line up with the ground team's shifts. {A} is for it. {B} has seen how this study ended last time.
-option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days and then fine, as the study predicted. {B} files the last page in one word: "Predicted."
+option shift | Change the clocks | The fleet shifts its clocks. Everyone is tired for three days, then fine. {B} files the last page in one word: "Predicted."
   set clock_shifted
 option keep | Keep fleet time | The fleet keeps its clocks. The ground team adjusts instead, and sends a photo of the night shift's pizza.
   set clock_kept
@@ -215,7 +196,7 @@ lean warm wait hold
 text The storm over the landing zone is still growing; the flight director wants the crew's call. {A} wants to hold the arrival plan and trust the margins. {B} wants to skim the atmosphere into a long parking orbit and wait it out, at a real cost in food.
 option hold | Hold the plan | The arrival plan stands. {A} posts the entry numbers for the worst-case dust load where everyone can see.
   set arrive_hold
-option wait | Long orbit, wait | Aerocapture, then the long orbit. {B} recomputes every margin. They are thinner than anyone would like, and they are enough.
+option wait | Long orbit, wait | Aerocapture, then the long orbit. {B} recomputes every margin. Thin, and enough.
   set arrive_wait
   who wait_who B
   res fuel -4

@@ -73,7 +73,7 @@ days 33 38
 roles A
 when is A ow_dose
 when home A
-text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it." Then, because someone once checked on {A}: "Thanks for checking."
+text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it on entry morning." Then, because someone once checked on {A}: "Thanks for checking."
 do trait A warm 1
 
 # --- Thread: the letter ---------------------------------------------------------
@@ -101,7 +101,7 @@ duration 3
 roles A
 when !fired dil_letter
 lean warm now save
-text The airlock is the one place aboard with no camera feed to the ground, so reading it now means reading it there. Saving it means carrying it unread until a quiet moment that may never come.
+text The airlock is the one place aboard with no camera feed to the ground, so reading it now means reading it there. Saving it means carrying it unread until a quiet moment.
 option now | Read it now | {A} reads it in the airlock and comes out ten minutes later without saying what it said. That evening {A} calls the other ships one by one, about nothing in particular.
   set letter_read
   morale A 6
@@ -169,7 +169,7 @@ when cond A ok
 when home A
 lean brave tune wait
 text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A switch to the alternate gain set would probably settle it. Procedure says the guidance team signs off any switch.
-option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles. The ground signs off in the morning, and adds a second signature line for next time.
+option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles. The ground signs off in the morning.
   set gains_tuned
   who gains_who A
   trait A brave 2
@@ -244,22 +244,4 @@ option go | Close up and go out | With the next ship closed up and a suit at its
   morale A 4
 option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which the risk assessment calls acceptable.
   trait A brave -2
-
-card dil_interlock
-type dilemma
-once
-cat repair skill
-days 10 36
-weight 8
-duration 3
-roles A
-when cond A ok
-when home A
-lean brave override vote
-text The airlock on {A}'s ship won't cycle. One door sensor says "closed". The other says "ajar". The interlock won't move until they agree. The door is obviously closed, and {A} has the override code.
-option override | Use the override | {A} reads the override back with the next ship and cycles; it stalls at ten kilopascals on a slow leak. Both sensors had a point: the door was closed, and a seal had crept a millimetre. {A} reseats it and opens a ticket.
-  trait A brave 2
-option vote | Find a third opinion | {A} pulls the lock's pressure trace as a tiebreaker. The door is sealed, and the "ajar" sensor is lying. {A} swaps it, the interlock is satisfied, and nothing was overridden.
-  trait A curious 2
-  res spares -1
 
