@@ -202,12 +202,12 @@ Each needs ≥ 5% of 300 seasons (tested).
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 15.7% |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 22.0% |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 19.3% |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 16.0% |
-| 5 | *Old Friend* (`end_friend`) | answered, clear air | 12.7% |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 14.3% |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 18.7% |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 20.0% |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 21.3% |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 19.3% |
+| 5 | *Old Friend* (`end_friend`) | answered, clear air | 10.3% |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 10.3% |
 
 ## Epilogue
 
