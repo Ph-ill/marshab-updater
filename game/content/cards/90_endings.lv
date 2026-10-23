@@ -22,7 +22,7 @@ when is A ow_hail
 when is B abort_who
 title Through the Dust
 when flag arrive_hold
-text Dust to the windows. Radar for height, the knock on two antennas for bearing, the last metre by feel. Contact. Then the gust: {B}'s ship rocks, a strut folds, the horizon tilts and stays. Checklist: return stage, NO GO. {B} sits a long minute on the bottom rung, then lists what it can still be: habitat, store, mast. Two sols on, the folded ship's battery rides a sled up the rim; {A} answers inside the tick, then the HOLD off the laminated card. Cargo 2's hold unlocks: panels, a mast, a winch. {B} adds to the list: neighbour. To Starbase: "Landed. Eight down, seven to fly." From a loading bay: "Tell it the bay says hello."
+text Dust to the windows. The knock on two antennas, the last metre by feel. Contact. Then the gust: {B}'s ship rocks, a strut folds, the horizon tilts and stays. Return stage: NO GO. {B} sits a long minute on the rung, then lists what it can still be: habitat, store, mast. Two sols on, the folded ship's last battery rides a sled up the rim; {A} answers inside the tick, then the HOLD off the laminated card. Cargo 2's hold unlocks: panels, a mast, a winch. By pure coincidence, a galley screen boots ONLINE. {B} adds to the list: neighbour. To Starbase: "Landed. Eight down, seven to fly." From a loading bay: "Tell it the bay says hello."
 
 card end_long_orbit
 type ending
@@ -33,7 +33,7 @@ when is B wait_who
 title The Long Orbit
 when flag signal_answered
 when flag arrive_wait
-text Week two in the long orbit, half rations. Each pass Cargo 2 reads its hold up the old channel: tank liners, a glove, a drill bit. Eight hungry people cheer a drill bit they can't reach. Then germination trays, and a line from its power log: ON HOLD, LAMP OR TRAY HEAT. {B} calls the roll, ship by ship. "Lamp." "Lamp." Seven times; {B} votes last. By morning the trays are frozen, and seven sign {B}'s log. The lamp holds, nights past its forecast. On the last night it skips twice. {B} flies down first. To Starbase: "Landed. All eight. The ninth kept the porch light on." From a loading bay: "Thank it for the drill bit."
+text Week two in the long orbit, half rations. Each pass Cargo 2 reads its hold up the old channel: tank liners, a glove, a drill bit. Eight hungry people cheer a drill bit they can't reach. Then the next crew's germination trays, and from its power log: ON HOLD, LAMP OR TRAY HEAT. {B} calls the roll, ship by ship. "Lamp," seven times, and {B} makes it eight. By morning the trays are frozen. Eight names sign the loss. The lamp holds past its forecast. On the last night it skips twice; {B} asks for the first slot down. To Starbase: "Landed. All eight. The ninth kept the porch light on." From a loading bay: "Thank it for the drill bit."
 
 card end_patience
 type ending
@@ -43,7 +43,7 @@ when is A ow_hail
 when is B ow_theory
 title Patience
 when flag arrive_wait
-text Dawn on the rim; all eight came down last night. Under the rim's frost a battery has been choosing which knock to skip; at midnight the flashes stopped. {A} kneels at the service port with the suit's heater pack, {B} a step behind, counting. Eleven: nothing. Twenty-two: nothing. {A} clips it on anyway, fingers numb. Thirty-three: a click, late and faint. The answer goes in by hand inside the tick, then the HOLD off the laminated card. Its log scrolls up the link, two years of one line, NO REPLY, then: REPLY RX. Its lamp comes on and stays. To Starbase: "Landed. All eight. The ninth is warm." From a loading bay: "Knew it'd keep."
+text Week three, storm spent; all eight came down last night. On the rim a battery has been choosing which knock to skip; at midnight the flashes stopped. {A} kneels at the service port with a heater pack, {B} counting the dark aloud. Eleven: nothing. Twenty-two: nothing. {A} clips it on anyway. Thirty-three: a click, faint. The answer lands inside the tick, then the HOLD off the laminated card. Its log scrolls up, two years of one line, NO REPLY, then: REPLY RX. Its lamp comes on and stays; by pure coincidence, a galley screen reads ONLINE. To Starbase: "Landed. All eight. The ninth is warm." From a loading bay: "Knew it'd keep."
 
 card end_friend
 type ending
@@ -62,5 +62,5 @@ roles A B
 when is A ow_hail
 when is B ow_theory
 title Close Enough
-text Third sol. Cargo 3's drill snapped its bit; the spare is in Cargo 2's hold, behind a door on ship power, and the rover's spare packs went to heaters. The ruling says spare power in hand; the drill says now. {A} counts the dark, nine, ten, eleven, and answers anyway. HELLO RX · OK. Its patch wakes every heater at once, and the door. The HOLD goes out on the next tick. By then it has nothing left to hear it with. {B} puts a glove flat on the cold hull for eleven seconds. They drive back heaters off, the bit in {B}'s lap. To Starbase: "Landed. All eight. The ninth paid for the drill." From a loading bay: "It always did overpack."
+text Third sol. The drill bit snapped; the spare is in Cargo 2's hold, behind a door on ship power, and the rover's spare battery went to heaters. The ruling: spare power in hand. The drill says now. {A} counts the dark, nine, ten, eleven, and answers anyway. HELLO RX · OK. Its patch wakes heaters and door. The HOLD goes on the next tick. By then it has nothing left to hear it with. A galley screen blinks ONLINE, then OFFLINE. {B} puts a glove flat on the cold hull for eleven seconds. They drive home cold, the bit in {B}'s lap. To Starbase: "Landed. All eight. The ninth paid for the drill." From a loading bay: "It always did overpack."
 
