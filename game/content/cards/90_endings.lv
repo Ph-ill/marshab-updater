@@ -6,42 +6,61 @@
 card end_lights
 type ending
 cat ending
+roles A B
+when is A ow_hail
+when is B abort_who
 title Lights On
 when flag signal_answered
 when flag arrive_hold
-text Seven ships stand on the flat in the settling brown, three kilometres short of a glow. At two kilometres up the brown had turned white from underneath: the board cleared one more command at midnight, and the one who answered sent it. Lights. Cargo 2 spent its saved battery on every floodlight it had, and seven ships turned for it, each blind in its own plume at the last. The glow is dimmer now, still there. The first crate out of Cargo 2's hold says, in Sharpie: "You'll thank me." To Starbase: "Landed. All eight."
+text Seven ships stand on the flat in the settling brown, three kilometres short of a glow. At midnight the board cleared one more command, lights only, nothing that moves, and {A} sent it. At two kilometres up the brown turned white from underneath: Cargo 2, spending its saved battery on every floodlight it had, and every pilot at a manual takeover had a mark to steer by, each blind in their own plume at the last. {B} set down closest. The glow is dimmer now, still there. The first crate out of Cargo 2's hold says, in Sharpie: "You'll thank me." To Starbase: "Landed. All eight."
 
 card end_through
 type ending
 cat ending
+roles A B
+when is A ow_hail
+when is B abort_who
 title Through the Dust
 when flag arrive_hold
-text The seventh ship is the one the gust caught. It stands upright on the slope three kilometres from Cargo 2, a leg strut folded under it, and the first walk-round says what the readouts said: it will not fly home. Its pilot sits on the bottom rung for a long minute, then starts a list of what it can still be: habitat, store, radio mast. Two sols later the first suit out, who lost the vote to answer, climbs the rim, counts the dark between flares, and answers from two hundred metres, inside the tick. HELLO RX · OK. To Starbase: "Landed. Seven down, six to fly. Found the eighth."
+text {B}'s ship is the one the gust caught. It stands upright on the slope three kilometres from Cargo 2, a leg strut folded under it, and the first walk-round says what the readouts said: it will not fly home. {B} sits on the bottom rung for a long minute, then starts a list of what it can still be: habitat, store, radio mast. Two sols later {A}, who wanted to answer from the start, climbs the rim with a second suit at the foot of it, counts the dark between flares, and answers from two hundred metres, inside the tick. HELLO RX · OK. To Starbase: "Landed. Seven down, six to fly. Found the eighth."
 
 card end_long_orbit
 type ending
 cat ending
+roles A B
+when is A ow_hail
+when is B abort_who
 title The Long Orbit
 when flag signal_answered
 when flag arrive_wait
-text Week three in the long orbit, night pass, half rations on seven galley tables. Below, the storm; on the night side, one lamp, steady since the handshake, blinking twice whenever the fleet passes over. Cargo 2's manifest comes up a line a pass, read aloud in turn: tank liners, a glove, tyres. Tonight's line is a drill bit, and seven hungry people cheer a drill bit. A week later the storm clears. On the way down a tile on one hinge line runs hotter than the brief allowed, and holds, and seven ships land. The first crate the rover brings back says, in Sharpie: "You'll thank me." To Starbase: "Landed. All eight."
+text Week three in the long orbit, night pass, half rations on seven galley tables. Below, the storm; on the night side, one lamp, steady since the handshake, blinking twice as the fleet passes over. Cargo 2's manifest comes up a line a pass, and tonight {A} reads: tank liners, a glove, a drill bit. Seven hungry people cheer a drill bit. The tile on {B}'s hinge line read hot on the way in; nobody says so tonight. A week later the storm clears. Seven entry streaks, one an orbit behind, waiting on a kinder angle. The tile holds. The first crate the rover brings back says, in Sharpie: "You'll thank me." To Starbase: "Landed. All eight."
 
 card end_patience
 type ending
 cat ending
+roles A B
+when is A ow_hail
+when is B ow_theory
 title Patience
 when flag arrive_wait
-text Dawn on the rim, frost on the wing. For two weeks a battery under that frost has been choosing which knock to skip; the strobe has been dark since midnight. The first suit out, the one who wanted to answer weeks ago, kneels at the service port with a battery pack and a radio, counting aloud. Clip, latch, wait. Nine. Ten. Eleven. A click, slow, like something clearing its throat. The answer goes in by hand, from two metres, inside the tick. HELLO RX · OK. Overhead, the last ship from the long orbit draws its entry streak. To Starbase: "Landed. All seven. Found the eighth."
+text Dawn on the rim, frost on the wing. The long orbit is over: by last night all seven ships were down on the flat. For two weeks a battery under that frost has been choosing which knock to skip, and the strobe has been dark since midnight. {A} kneels at the service port with a battery pack and a radio, {B} a step behind in the second suit, counting aloud. Clip, latch, wait. Nine. Ten. Eleven. A click, slow, like something clearing its throat. The answer goes in by hand, from two metres, inside the tick. HELLO RX · OK. To Starbase: "Landed. All seven. Found the eighth."
 
 card end_friend
 type ending
 cat ending
+roles A B
+when is A ow_hail
+when is B ow_theory
 title Old Friend
 when flag signal_answered
-text Second sol, thirty kilometres out, two in the cab, and the steady light ahead hasn't moved in an hour. The one who packed the bag drives with one eye on the battery, already past half. Two kilometres out, Cargo 2 hears the rover and runs the pad crew's arrival routine, written for a truck from the hangar: floods, strobe, hatch lamp, across the empty plain. The driver laughs out loud; the passenger hooks the last spare battery to its port, and they drive home slow. The first crate says, in Sharpie: "You'll thank me." To Starbase: "Landed. All eight."
+text Second sol, thirty kilometres out, {A} driving, {B} watching the battery go past half while the steady light ahead gets no closer. The sums are plain: there and back is more than the rover has. {A} keeps driving. Two kilometres out, Cargo 2 hears the rover and runs the pad crew's arrival routine, written for a truck from the hangar: floods, strobe, hatch lamp, and a charge port on the landing leg, warm and waiting. {A} laughs out loud. {B} plugs the rover in, and they drive home slow on Cargo 2's sunlight. The first crate says, in Sharpie: "You'll thank me." To Starbase: "Landed. All eight."
 
 card end_close
 type ending
 cat ending
+roles A B
+when is A ow_hail
+when is B ow_theory
 title Close Enough
-text Third sol, two hundred metres from Cargo 2, the rover parked nose to the strobe, two in the cab. On the first sol Cargo 3's drill snapped its only bit; the spare is in that hold. The spare batteries went into the rover's heaters on the second night, when the cold came early; the last one is flat. The one who packed the bag counts the dark: nine, ten, eleven, flare, and answers. HELLO RX · OK. Then Cargo 2 does what flight mode says, wakes every survival heater before it reads the battery, and the strobe goes out for good: two years of asking, and one answer left. To Starbase: "Landed. All seven. Found the eighth, in time."
+text Third sol, two hundred metres from Cargo 2, the rover parked nose to the strobe, {A} and {B} in the cab. On the first sol Cargo 3's drill snapped its only bit; the spare is in that hold. The rover's spare batteries went into its heaters on the second night, when the cold came early; the last one is flat. {A} counts the dark: nine, ten, eleven, flare, and answers. HELLO RX · OK. The hold unlatches. Then Cargo 2 does what the pad patch says, wakes every survival heater at once with no battery check, and the strobe goes out for good. To Starbase: "Landed. All seven. Found the eighth, in time."
+
