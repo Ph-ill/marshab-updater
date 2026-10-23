@@ -62,7 +62,7 @@ days 28 31
 roles A
 when flag signal_answered
 when is A ow_hail
-text At 03:12 the receiver catches half a frame of housekeeping on the old channel, in a format nobody flies now, cut off a byte before the field that says who sent it. Since the answers started, the carrier's beat runs a few milliseconds long. Mission Control replies eight minutes later: "say again."
+text At 03:12 the receiver catches half a frame of housekeeping on the old channel, in a format no one flies now, cut off a byte before the field that says who sent it. The fleet's answers go out on schedule, every one. Mission Control replies eight minutes later: "say again."
 do trait A curious 4
 
 card signal_echo
@@ -74,7 +74,7 @@ days 28 31
 roles A
 when flag signal_ignored
 when is A ow_hail
-text {A} pulls the old-channel carrier out of the receiver logs again, unasked. It's stronger now, the way anything gets louder as you close on it, and its period hasn't moved by a millisecond. The anomaly report uses the word "persistent", and leaves it there. {A} keeps the printout up.
+text {A} pulls the old-channel carrier out of the receiver logs again, unasked. It's stronger now, the way anything gets louder as you close on it, and its period, averaged over a day, hasn't moved by a millisecond. The anomaly report calls it "persistent", and leaves it there.
 do morale A -3
 
 # Injury and rescue: needs supplies from another ship.
@@ -86,7 +86,7 @@ once
 days 39 39
 roles A
 when is A ow_hail
-text {A} works out how many times the old-channel carrier has knocked since the fleet first heard it: about a hundred and fifty thousand, and never once late. "Somebody is very patient," {A} tells the fleet channel. Nobody laughs, quite.
+text {A} works out how many times the old-channel carrier has knocked since the fleet first heard it: most of a million, and not one missed. "Somebody is very patient," {A} tells the fleet channel. On the ground, the key-rotation ticket has quietly been moved to after landing.
 do trait A curious 1
 
 card crisis_eva
