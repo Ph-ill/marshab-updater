@@ -3,9 +3,9 @@
     {
       "id": "gift",
       "label": "Give a gift",
-      "you": "On your word, {A} gives {T} the last good coffee.",
-      "self": "{A} saves {T} the last good coffee.",
-      "owner": "{A} gives {T} the last good coffee, on their owner's word."
+      "you": "On your word, {A} looks after {T} today.",
+      "self": "{A} checks in on {T}.",
+      "owner": "{A} looks after {T}, on a word from home."
     },
     {
       "id": "advice",
@@ -19,14 +19,14 @@
       "label": "Set a task",
       "you": "{A} spends the shift on {res}, as you asked.",
       "self": "{A} spends the shift on {res}.",
-      "owner": "{A} spends the shift on {res}, as their owner asked."
+      "owner": "{A} spends the shift on {res}, on a word from home."
     },
     {
       "id": "rest",
       "label": "Tell them to rest",
       "you": "{A} takes the day off, on your orders.",
       "self": "{A} sleeps through the morning watch.",
-      "owner": "{A} takes the day off, on their owner's orders."
+      "owner": "{A} takes the day off, on a word from home."
     }
   ],
   "axis_words": [
@@ -62,8 +62,8 @@
     "dec_lean": "Nobody voted, so the crew decided: {opt}.",
     "dec_tie": "Tied at {n} ballot(s); the crew's lean broke it: {opt}.",
     "dil_open": "A private message for whoever looks after {A}.",
-    "dil_you": "{A} did as their owner asked: {opt}.",
-    "dil_self": "{A} made up their own mind: {opt}.",
+    "dil_you": "{A} went with your call: {opt}.",
+    "dil_self": "{A} decided alone: {opt}.",
     "res_open": "Anyone can answer this one. One tap is enough.",
     "res_close": "Help is on the way: {opt}.",
     "res_default": "Nobody answered in time, so it fell to the crew: {opt}.",
@@ -90,6 +90,64 @@
     "head": [
       "Seven ships made orbit. Nobody was left behind.",
       "Seven ships, one planet, and every seal held."
+    ],
+    "story": [
+      [
+        "m_reveal",
+        "Saw the light first, and was there when it had a name."
+      ],
+      [
+        "m_reveal_any",
+        "Was the one who saw the ship standing."
+      ],
+      [
+        "m_flash1",
+        "Kept both timestamps. Still has them."
+      ],
+      [
+        "m_overlay",
+        "Taped two traces side by side and never took them down."
+      ],
+      [
+        "m_carrier",
+        "Heard it first, and filed it under courtesy."
+      ],
+      [
+        "signal_reply",
+        "Was the only one awake for the reply."
+      ],
+      [
+        "m_theory",
+        "Drew an orbit in blue marker. Was nearly right."
+      ],
+      [
+        "sharpie2",
+        "Knows a handwriting from Starbase on sight."
+      ],
+      [
+        "dil_stash",
+        "Found the first of the notes."
+      ],
+      [
+        "l_manifest",
+        "Read the manifest all the way to the end."
+      ],
+      [
+        "l_reboot",
+        "Can still hum the galley chime."
+      ],
+      [
+        "p_garden_sprout",
+        "Carried the seedling down in a coat pocket."
+      ],
+      [
+        "crisis_eva",
+        "Landed with a wrist that bends again."
+      ],
+      [
+        "g_news",
+        "Flew the whole way carrying news from home, and flew well."
+      ]
     ]
   }
 }

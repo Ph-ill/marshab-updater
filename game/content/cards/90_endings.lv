@@ -1,31 +1,41 @@
 # Endings: checked in this order on arrival day; the last one has no conditions.
+# Each ending is one carrier clause (answered or logged) times one arrival clause
+# (held the plan into the storm, waited it out in orbit, or no storm). The core
+# truth is the same in all six; see STORY_BIBLE.md.
 
-card end_contact
+card end_lights
 type ending
 cat ending
-when flag signal_contact
-when res food >= 1
-text Old Friend. Their hail reached Cargo 2 between boots, years late and just in time. The blinking stops. On the next pass it answers, in a format nobody has used in years. Anyone could have answered. One tap was enough.
-
-card end_followed
-type ending
-cat ending
-when flag echo_heard
-text Company. Seven ships set down beside Cargo 2. Its lights are still blinking every eleven seconds, the way they did the whole time nobody answered. It can wait a little longer. Somebody gets to knock.
-
-card end_patience
-type ending
-cat ending
-when flag arrive_wait
-text Patience. The fleet waits out the storm in a long orbit. Every night, through the dust, one point of light keeps time at the edge of the landing zone. When the sky clears, seven ships go down to meet it.
+when flag signal_answered
+when flag arrive_hold
+text Lights On. The fleet holds the plan and goes down into the storm. At four kilometers the radar fills with sand and the altimeters stop agreeing. Then Cargo 2, awake since their hail landed between boots, turns on every light it has and leaves them on. Seven ships land on it.
 
 card end_through
 type ending
 cat ending
 when flag arrive_hold
-text Through the Dust. The fleet holds the plan and goes down into the storm, radar full of sand. Out of the brown, every eleven seconds, a light. Seven ships land on it.
+text Through the Dust. The fleet holds the plan and goes down into the storm, radar full of sand. At two kilometers one altimeter drops out, and the ships fly on the other two, the way they were built to. Out of the brown, every eleven seconds, a light. Seven ships land on it.
+
+card end_long_orbit
+type ending
+cat ending
+when flag signal_answered
+when flag arrive_wait
+text The Long Orbit. Four nights of ration math, waiting out the dust. Every pass, Cargo 2 sends a little more of its manifest, slowly, in a format nobody has used in years, and the fleet reads it aloud like letters from home. When the sky clears, seven ships go down to collect.
+
+card end_patience
+type ending
+cat ending
+when flag arrive_wait
+text Patience. The fleet waits out the storm in a long orbit: four nights of ration math and half portions, and nobody complains out loud. Every night, through the dust, one point of light keeps time at the edge of the landing zone. When the sky clears, seven ships go down to meet it.
+
+card end_friend
+type ending
+cat ending
+when flag signal_answered
+text Old Friend. On final approach the fleet hails it once more on the old channel, between boots. The lights blink, and then hold steady. On the next pass Cargo 2 sends its whole manifest, slowly, in a format nobody has used in years, like something that has been rehearsing.
 
 card end_long_way
 type ending
 cat ending
-text The Long Way Round. Seven ships, one planet. After landing, they walk to Cargo 2 in their suits and open the hold. The first crate has Sharpie on it, in a hand they know: "You'll thank me." Everyone does.
+text The Long Way Round. Seven ships land in clear air. Afterwards they walk to Cargo 2 in their suits, past its long shadow, and open the hold. The first crate has Sharpie on it, in a hand they know: "You'll thank me." They say it out loud, one at a time, into a hold that has been dark for years.
