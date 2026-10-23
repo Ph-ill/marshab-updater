@@ -27,7 +27,7 @@ once
 duration 2
 roles A B
 lean curious after home
-text The backup-site maps show an unnamed crater, small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants to name it after somewhere at home.
+text The backup-site maps, stitched from imagery older than the cargo landings, show an unnamed crater small enough that the fleet gets to suggest a name. {A} wants to name it after the first person who ever wrote a Mars mission plan. {B} wants somewhere at home.
 option after | Honor the planners | The name goes in the request. Somewhere, a committee will argue about it for years, which {A} considers part of the honor.
   set name_plan
   trait A curious 2
@@ -75,7 +75,7 @@ once
 days 20 23
 roles A
 when since t_carrier >= 5
-text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there most of a day, gone for a few hours, and back thirty-seven minutes later every morning. {A} blames the receiver's scan schedule, re-plots it, and the thirty-seven minutes stay.
+text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there for half the day, gone for the rest, and back thirty-seven minutes later each morning. {A} blames the dish's scan schedule, re-plots it, and the thirty-seven minutes stay.
 do mark t_dropout
 
 card m_theory
@@ -92,7 +92,7 @@ when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} finds the grey relay from the manifest in the catalog: its stuck thruster left it spinning, one turn every 10.96 seconds, one orbit for every turn of Mars against the stars. Its beam, nine degrees wide, is 2.4 percent of a circle. A lighthouse nobody keeps. {A} draws it in blue marker.
+text {A} finds the grey relay from the manifest in the catalog: spinning since its thruster stuck, one turn every 10.96 seconds, going by RF flashes heard in the weeks after it failed. Its beam, eight and a half degrees wide, is 2.4 percent of a circle. A lighthouse, unkept. {A} draws it in blue marker.
 do who ow_theory A
 do mark t_theory
 do morale A 3
@@ -107,7 +107,7 @@ days 25 27
 roles A
 when since t_theory >= 3
 when is A ow_theory
-text Mission Control runs the grey relay's last orbit forward for {A}: it comes round thirty-seven minutes later each morning and hides behind Mars for a few hours at a time. The ground team sends a drawing of a lighthouse. {A} tapes it beside the blue marker and sleeps through the night.
+text Mission Control runs the grey relay's orbit forward for {A}: it comes round thirty-seven minutes later each morning, and slips behind Mars for an hour or so. Not half a day. Close enough, {A} decides. The ground sends a drawing of a lighthouse; {A} adds a keeper in blue and sleeps through the night.
 do morale A 2
 
 card c_theory
@@ -118,7 +118,7 @@ once
 days 38 38
 roles A
 when is A ow_theory
-text {A} takes the lighthouse drawing down to make room for the entry checklist and stops with it half off the wall. A relay in orbit would pull the beat back and forth a little every orbit. This beat hasn't moved a millisecond in weeks. {A} writes in the corner, small: "Wrong lighthouse. Same keeper?"
+text {A} takes the lighthouse drawing down for the entry checklist and stops. A relay would drag the knocks early and late by most of a tenth of a second each orbit, and never hide for half a day. These swing by a hundredth, once a day. Under the keeper, in blue: "Wrong lighthouse." Then: "Same keeper?"
 do trait A curious 2
 
 card m_flash1
@@ -233,7 +233,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_looked
-text Mission Control answers the overlay: nothing near that pixel still has power, and nothing they fly at Mars listens on the old band. The nearest entry is the crash site catalogued for Cargo 2, kilometres off, cold for two years. Crash sites don't blink. It goes on the next survey anyway.
+text Mission Control answers the overlay: nothing near that pixel still has power. The nearest entry is the crash site catalogued for Cargo 2, kilometres off, written off after six weeks of ground hails and no acknowledgement. Crash sites don't blink. It goes on the next survey anyway.
 do morale A 1
 
 card m_checked_g
@@ -245,7 +245,7 @@ days 37 38
 roles A
 when fired m_overlay
 when flag flash_left
-text Mission Control answers the overlay: nothing near that pixel still has power, and nothing they fly at Mars listens on the old band. The nearest entry is the crash site catalogued for Cargo 2, kilometres off, cold for two years. Crash sites don't blink. The orbiter-team stranger adds: "Surveying it."
+text Mission Control answers the overlay: nothing near that pixel still has power. The nearest entry is the crash site catalogued for Cargo 2, kilometres off, written off after six weeks of ground hails and no acknowledgement. Crash sites don't blink. The orbiter-team stranger adds: "Surveying it."
 do morale A 1
 
 card m_listen
@@ -281,7 +281,7 @@ once
 days 40 40
 roles A
 when is A ow_theory
-text The backup-site survey comes in sharp. Thirty kilometres past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish aimed at empty sky: Cargo 2. In the night video its lights blink once, the way a panel's do on a restart, then again. {A} has been humming the galley chime for a while before noticing that it fits the gap exactly.
+text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop: Cargo 2. From straight above it was always two pixels and a shadow. In the night video its floodlights flare at power-up, die, flare again. {A} hums the galley chime; it fits the gap.
 do trait A curious 3
 
 card m_reveal_any
@@ -293,7 +293,7 @@ once
 days 40 40
 roles A
 when !fired m_reveal
-text The backup-site survey comes in sharp. Thirty kilometres past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish aimed at empty sky: Cargo 2. In the night video its lights blink once, the way a panel's do on a restart, then again. {A} has been humming the galley chime for a while before noticing that it fits the gap exactly.
+text The first sharp pass over the backup site since before the cargo ships flew comes down. Past the prime zone, behind a crater rim, a ship stands on its legs, tilted, one solar wing half open, its dish jammed against its stop: Cargo 2. From straight above it was always two pixels and a shadow. In the night video its floodlights flare at power-up, die, flare again. {A} hums the galley chime; it fits the gap.
 do trait A curious 3
 
 card a_report
@@ -305,7 +305,7 @@ days 40 40
 roles A
 when fired m_reveal
 when is A flash_who
-text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half: a last position, one coarse frame from the afternoon orbit, a smudge and a streak, "no further signal". The one {A} starts tonight is at forty pages by midnight. Page one is a single word: watchdog.
+text {A} pulls up the report that wrote Cargo 2 off: a page and a half. The grey relay's thruster stuck open on the burn to cover its landing pass. Last packet: X-band amplifier OVERTEMP. Six weeks of ground hails, no acknowledgement; an old-band carrier, attributed to relay tumble. Ticket closed. {A}'s own report runs forty pages by midnight. Page one: watchdog. Page two: what lives in RAM.
 
 card a_report_any
 type event
@@ -316,7 +316,7 @@ days 40 40
 roles A
 when !fired a_report
 when !is A ow_theory
-text {A} pulls up the report that wrote Cargo 2 off. It runs to a page and a half: a last position, one coarse frame from the afternoon orbit, a smudge and a streak, "no further signal". The one {A} starts tonight is at forty pages by midnight. Page one is a single word: watchdog.
+text {A} pulls up the report that wrote Cargo 2 off: a page and a half. The grey relay's thruster stuck open on the burn to cover its landing pass. Last packet: X-band amplifier OVERTEMP. Six weeks of ground hails, no acknowledgement; an old-band carrier, attributed to relay tumble. Ticket closed. {A}'s own report runs forty pages by midnight. Page one: watchdog. Page two: what lives in RAM.
 
 # --- Day 41: the window, one card per carrier branch --------------------------------
 card a_window_hail
