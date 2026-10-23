@@ -64,7 +64,7 @@ nav button+button{border-left:1px solid var(--rule)}
 .log li.big::before{background:var(--ink);border-color:var(--ink)}
 .log li.you::before{background:var(--rust);border-color:var(--rust)}
 .log li.fold{color:var(--ink2);font-size:16px}
-.day{padding-top:24px}
+.day{padding-top:24px;scroll-margin-top:calc(56px + var(--st))}
 .day>.lab{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:8px;color:var(--ink)}
 .day>.lab span{white-space:nowrap}.day>.lab .dim{margin-left:auto}
 .upd{border-left:2px solid var(--rust);padding:0 0 0 8px;margin:4px 0 8px;font-size:14px;line-height:20px;color:var(--ink2)}
@@ -345,7 +345,7 @@ function crew(c){
   $("v").innerHTML=o;
   dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to ${h(nm(S.you))}</span><i>←</i></button>`,"crew");
 }
-function log(){
+function log(at){
   shipTop();
   let o=`<div class=kick><div class=lab>Voyage log · ${h(ship(S.you))}</div><h2>${S.day} days, newest first</h2></div>`;
   for(let d=S.day;d>=1;d--){
@@ -356,6 +356,7 @@ function log(){
   }
   $("v").innerHTML=o;
   dock("","log");
+  if(at&&$("d"+at))$("d"+at).scrollIntoView();
 }
 function item(card){
   const o=S.open.find((x)=>x.card===card);
@@ -421,8 +422,20 @@ function ending(){
     const l2=R.fill(E.bond||"",NONE,NONE,{T:nm(S.best[k])});
     return `<div class=epi><span class=pt style="width:56px;height:56px">${portrait(k)}</span><div><b>${h(nm(k))}</b> <span class="m dim" style="font-size:14px">${h(ship(k))}</span><p>${h(l1)} ${h(l2)}</p></div></div>`;
   }).join("")+`</section>`;
+  o+=reread();
   $("v").innerHTML=o;
   dock(`<button class="btn sec" data-go="log"><span>Read the whole log</span><i>${S.season} days</i></button>`,"home");
+}
+
+// After the ending: the flight days worth a second look (text.json "reread", cards marked
+// `clue`), as a plain list of days into the log. Deliberately unexplained.
+function reread(){
+  const want=new Set(T.reread||[]);if(!want.size)return"";
+  const b=Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0)),days=new Set();
+  for(let i=0;i+8<=b.length;i+=8)if([O.EVENT,O.DEC_OPEN,O.DIL_OPEN,O.RES_OPEN].includes(b[i+1])&&want.has(b[i+2]))days.add(b[i]);
+  if(!days.size)return"";
+  const ds=[...days].sort((x,y)=>x-y);
+  return `<section><div class=lab><span>Read again</span><span>${ds.length} ${ds.length===1?"day":"days"}</span></div>${ds.map((d)=>`<button class=row data-go="log/${d}"><span class=t>Flight day ${pad(d)}</span><span class="m dim">→</span></button>`).join("")}</section>`;
 }
 
 // ---- first run ------------------------------------------------------------------------
@@ -466,7 +479,7 @@ function view(){
     if(!S)return;
     if(a==="meet")return meet();
     if(a==="crew")return crew(b!=null?+b:null);
-    if(a==="log")return log();
+    if(a==="log")return log(b!=null?+b:0);
     if(a==="item")return item(+b);
     if(a==="act")return actSheet();
     if(EG&&S.eng&&ENG[a])return ENG[a](b);
