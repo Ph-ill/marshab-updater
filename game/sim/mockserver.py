@@ -12,6 +12,10 @@ page can mark "log updated". Your own taps become real signed records that take
 effect tomorrow. The simulated player for your seat is silenced from today on.
 Nothing is stored on the phone: the session token lives in page memory.
 
+Engagement (lv/engage.py): every request may carry the phone's clock (X-Phone-Time,
+X-Phone-TZ), which the mock learns like a ship would; add &now=HH:MM to pretend it's
+another time of day. Drops opened and "seen at last visit" are kept per crew in memory.
+
 Crew codes work as on the board (lv/codes.py): set up front (here every code is 1234
 unless codes= lists them; an empty entry means "not set up"), five wrong tries lock that
 name for five minutes, and a phone that signed in is remembered, by IP and User-Agent,
@@ -38,6 +42,8 @@ sys.path.insert(0, ROOT)
 from lv import ops as O                       # noqa: E402
 from lv import record as R                    # noqa: E402
 from lv import codes as K                     # noqa: E402
+from lv import engage as EN                   # noqa: E402
+from lv.clock import Clock                    # noqa: E402
 from lv.engine import Engine                  # noqa: E402
 from lv.pack import load as load_pack         # noqa: E402
 from lv.state import State, N                 # noqa: E402
@@ -91,9 +97,14 @@ class Game:
         self.mine = []            # (day, record) tapped on this mock
         self.seq = [1000] * N
         self.cache = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()   # gift() checks, then taps
         self.changed = threading.Condition()
         self.version = 0
+        self.etable = EN.load_table(os.path.join(BUILD, "engage.bin"))
+        self.eng = EN.Engage(self.etable, self.pack.voyage_key, self.pack.season)
+        self.etext = json.load(open(os.path.join(BUILD, "engage.json"), encoding="utf-8"))
+        self.local = EN.Local(self.pack.season)
+        self.clock = Clock()
 
     # -- the world as one ship sees it ------------------------------------------------
     def ship_view(self, you, day):
@@ -106,7 +117,7 @@ class Game:
             self.cache[key] = ships[you]
         return self.cache[key]
 
-    def state(self, you, day, last):
+    def state(self, you, day, last, minute=None):
         sh = self.ship_view(you, day)
         st, p = sh.st, self.pack
         eng = Engine(p, st, sh.log)
@@ -149,7 +160,32 @@ class Game:
             "open": opens, "act": act, "ending": st.ending,
             "story": base64.b64encode(story).decode(),
             "updated": {str(d): a for d, a in sorted(sh.updated.items())},
+            "eng": EN.view(self.eng, self.local, p, st, sh.log, you, minute),
         }
+
+    def gift(self, you, day, item, to, mode):
+        """The board's rules for a gift tap. Returns an error string or None."""
+        sh = self.ship_view(you, day)
+        flags = self.etable.gift_flags
+        if not (0 <= to < N) or to == you or not (0 <= item < len(flags)) or mode not in (0, 1, 2):
+            return "bad request"
+        if sh.st.cond[to] == O.COND_HOME:
+            return "They're home now."
+        _, _, asks, (gave, asked) = EN.gifts(sh.log, you, day, self.etable.ask_days)
+        if mode == R.GIFT_GIVE:
+            if not flags[item] & 1:
+                return "bad request"
+            if gave:
+                return "One gift a day. Tomorrow's cargo run has room."
+        elif mode == R.GIFT_ASK:
+            if not flags[item] & 2:
+                return "bad request"
+            if asked:
+                return "One ask a day."
+        elif not any(a[1] == to and a[2] == item for a in asks):
+            return "Nothing to answer."
+        self.tap(you, day, R.GIFT, item, to, mode)
+        return None
 
     def tap(self, you, day, kind, a, b=0, c=0):
         with self.lock:
@@ -209,6 +245,18 @@ class H(BaseHTTPRequestHandler):
     def phone(self):
         return "%s|%s" % (self.client_address[0], self.headers.get("User-Agent", ""))
 
+    def minute(self, q):
+        # The local minute of the day: ?now=HH:MM (mock only), else the learned clock.
+        G.clock.learn_headers(lambda k: self.headers.get(k))
+        v = q.get("now", [None])[0]
+        if v:
+            try:
+                h, m = v.split(":")
+                return (int(h) * 60 + int(m)) % 1440
+            except ValueError:
+                pass
+        return G.clock.minute()
+
     def day(self, q):
         try:
             return max(1, min(G.pack.season, int(q.get("day", [G.day])[0])))
@@ -223,6 +271,9 @@ class H(BaseHTTPRequestHandler):
                              "text/html; charset=utf-8", gz=True)
         if u.path == "/text.json":
             return self.send(200, gzip.compress(json.dumps(G.text, ensure_ascii=False).encode()),
+                             gz=True)
+        if u.path == "/engage.json":
+            return self.send(200, gzip.compress(json.dumps(G.etext, ensure_ascii=False).encode()),
                              gz=True)
         if u.path == "/api/crew":
             return self.send(200, {"set": [G.book.is_set(c) for c in range(N)], "day": self.day(q)})
@@ -240,8 +291,9 @@ class H(BaseHTTPRequestHandler):
                 return self.send(401, {"err": "signed out"})
             d = self.day(q)
             last = int(q.get("last", [max(0, d - 3)])[0])
+            minute = self.minute(q)
             with G.lock:
-                body = G.state(you, d, last)
+                body = G.state(you, d, last, minute)
             body["v"] = G.version
             return self.send(200, body)
         if u.path == "/ws" and self.headers.get("Upgrade", "").lower() == "websocket":
@@ -308,7 +360,22 @@ class H(BaseHTTPRequestHandler):
         if you is None:
             return self.send(401, {"err": "signed out"})
         d = self.day(q)
+        self.minute(q)
         try:
+            if u.path == "/api/open":
+                x = int(b.get("day", d))
+                if not 1 <= x <= d:
+                    return self.send(400, {"err": "bad request"})
+                with G.lock:
+                    G.local.open(you, x)
+                tier, item = G.eng.drop(you, x)
+                return self.send(200, {"ok": True, "day": x, "tier": tier, "item": item})
+            if u.path == "/api/gift":
+                with G.lock:
+                    err = G.gift(you, d, int(b["item"]), int(b["to"]), int(b.get("mode", 0)))
+                if err:
+                    return self.send(409 if err != "bad request" else 400, {"err": err})
+                return self.send(200, {"ok": True, "v": G.version})
             if u.path == "/api/act":
                 G.tap(you, d, R.ACTION, int(b["act"]), int(b.get("param", 0)), int(b.get("tgt", 0)))
             elif u.path == "/api/vote":
