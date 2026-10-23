@@ -205,7 +205,7 @@ after its `type` line:
   asked"), taping or pinning things to walls, "the channel goes quiet" and
   other hush endings. One of each in the whole deck at most; prefer an action.
 - The climax happens on the page: day 42 has an entry scene per arrival branch
-  (`e_entry_*`), cast to whoever was drilled on taking the landing by hand (take-manual, engine-out call, corridor correction; never "manual abort"), and each
+  (`e_entry_*`), cast to whoever was drilled on taking the landing by hand (manual takeover, engine-out call, corridor correction; never "manual abort"), and each
   ending is a landing scene, not a summary. Every branch shows the event
   recorder (`a_log` when answered; the unanswered endings otherwise).
 - Voices belong to arcs, not people (casting is random). See STORY_BIBLE.md

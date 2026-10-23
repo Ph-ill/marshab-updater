@@ -121,7 +121,7 @@ the hover burn left the scar the search booked as the impact (`a_report`,
 `m_checked`). Why Earth never caught the half-sol outages: the catalogue fit used
 three short passes (`m_theory`); the 37 minutes is decoded once, late, in
 `c_theory` (day 38). Why the old
-key: first batch, the relay, the science lander, the early cargo, all dead or
+key: first batch, the relay, the early cargo, all dead or
 crashed (`m_key`, day 34, every season; `r_dark` resolves `h_dark` on the next page with the hang only, no clue). Why no other orbiter
 heard it: the relay was the only listener on that band. Why the relay was gone
 at landing: its thruster stuck open a month before, and the landing went ahead
@@ -215,7 +215,7 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 |---|---|---|---|---|---|
 | 1 | `l_reboot` | 1 | yes | A galley update, an in-joke about the chime | A boot is eleven seconds |
 | 1b | `l_dock_hello` (11–12) | 2 | yes | A hatch-code procedure gets a page-two correction | Late answers are discarded as stale |
-| 2 | `l_manifest` | 1 | yes | A shopping list: cargo ships, then write-offs (drill rig, grey relay, an orbiter, an old science lander, Cargo 2, socks) | Cargo 2, one of two surface candidates |
+| 2 | `l_manifest` | 1 | yes | A shopping list: cargo ships, then write-offs (drill rig, grey relay, last year's hopper, Cargo 2, socks) | Cargo 2, one of two surface candidates (the hopper is the decoy) |
 | 3 | System text `res_open` | all | – | UI copy | One tap is enough |
 | 4 | `m_carrier` | 2 | yes | An old probe's beacon on the old channel | Cargo 2, every 10.96 s |
 | 5 | `m_ripple` | 2 | – | A coolant-pump control loop hunting | The same rhythm in the noise floor |
@@ -230,8 +230,10 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 Misdirections: `m_carrier` ("an alias, something of ours"; retracted by
 `m_alias`, not a clue), `m_theory` / `m_theory_confirm` (the relay), `w_phosphene`
 (cosmic-ray pixels), `r_ghost` (a cover plate shed at
-departure, still flying with them), `m_key` / `r_dark` ("Nothing on it still flies."), the old science lander
-(`m_flash2`, the ground's first guess; `m_checked` puts it 400 km east),
+departure, still flying with them), `m_key` / `r_dark` ("Nothing on it still flies."), last year's hopper
+(`l_manifest` "tipped over, last heard sol 9"; `m_flash2`, the ground's first guess;
+it flew on a newer key, so `m_key` on day 34 rules it out for a careful reader;
+`m_checked` puts it 90 km south, still silent),
 `signal_reply` (cut off partway; it no longer claims a timing
 change, so every branch agrees the averaged beat never moves).
 
@@ -292,9 +294,9 @@ day.
 **The climax on the page (day 42):** `idle_mentor` binds `abort_who` (the one
 drilled on taking the landing by hand). `a_descent_hold` (41, answered) / `a_descent_hold_q` (41, unanswered: "Cargo 2's
 knock for bearing") opens the formation (two minutes between ships) and has
-them fly the take-manual "from memory"; then one entry scene per branch, cast to them,
+them fly the manual takeover "from memory"; then one entry scene per branch, cast to them,
 printed after the other day-42 beats: `e_entry_hold`
-(answered: Cargo 2's ping holds the bearing; `e_entry_hold_q` unanswered) (blackout, brown cameras, a gust, the take-manual called at a hundred metres
+(answered: Cargo 2's ping holds the bearing; `e_entry_hold_q` unanswered) (blackout, brown cameras, a gust, the manual takeover called at a hundred metres
 and the ship put down on the flat), `e_entry_wait`
 (aerocapture, eleven seconds late, a manual corridor correction ready),
 `e_entry_clear` (an engine lights a half second late; the engine-out call
@@ -432,12 +434,12 @@ key rotation, auto-answer, fleet time, lost-link timer, boot ROM, OVERTEMP,
 ground hails, sequence number, standard handshake, floodlights, dish jammed,
 first sharp pass, two pixels, relay tumble, entry interface, plasma blackout,
 The window after each knock is eleven, half a million, half the day, abort
-call, keeper, Same keeper, Wrong lighthouse, eight and a half degrees, I'll be
+call, keeper, question mark, eight and a half degrees, I'll be
 counting, pad-test, lamp test, battery heater, slower to wake, still on time,
 docking lead, last nav fix, weather mast, drill bit, All dead or crashed,
 first batch, Old key, Item located, Wrong book, divert, page two, CODE STALE, Seven down, six to fly,
 parser guard, blind hellos, first whole frame, Every gap explained, harder to
-wake, take-manual, engine-out call, corridor correction, Found the eighth,
+wake, manual takeover, engine-out call, corridor correction, Found the eighth,
 All seven, low-gain antenna, logo, bar, chime, eleven, First one out, say hello,
 fault protection, a suit beside it, one Mars day, transponder.
 
@@ -473,7 +475,7 @@ fault protection, a suit beside it, one Mars day, transponder.
   are now wonder; `dust_report` / `dust_worse` are mission.
 - Fold lines in the sim reader are left out on odd days that already have two
   story lines (sim/render.py only; web/ untouched).
-- Casting: `p_live_call` is even over 300 seasons (37–49 each). The take-manual
+- Casting: `p_live_call` is even over 300 seasons (37–49 each). The manual takeover
   trainee (`idle_mentor` B) leans to whoever is least featured mid-voyage, which
   is engine fairness at work; unchanged.
 
@@ -500,7 +502,7 @@ fault protection, a suit beside it, one Mars day, transponder.
   (`dil_gains`, `gains_payoff`); the valve fix is an uplinked thruster-select
   table (`valve_later`); the key rides in a crypto slot (`a_suit_plan`).
 - **Casting.** `l_reboot` (day 3–9, cast evenly) now sets `abort_who`, and
-  `idle_mentor` requires `is B abort_who`, so the take-manual trainee is even
+  `idle_mentor` requires `is B abort_who`, so the manual takeover trainee is even
   across the crew (37–48 each over 300 seasons).
 - **Blank days.** `w_milky` (day 20) and `w_moon_pair` (day 22) are due wonder
   cards; blank story days on 20 and 22 drop to 0.
@@ -581,3 +583,80 @@ fault protection, a suit beside it, one Mars day, transponder.
   ending's first sentence as the heading. But `/text.json` is fetched whole on
   day 1, so titles and endings are readable in devtools: see the text-exposure
   hand-off above (strip `ti` or move it to the day-42 chunk).
+
+## Round 12 notes
+
+- **Delay the who.** Second surface suspect: `l_manifest` lists last year's
+  hopper ("tipped over, last heard sol 9") in place of the old science lander
+  (and drops "an orbiter" for length; `dec_name` still says one was written
+  off). `m_flash2` ends on the ground guessing the hopper. The hopper stays
+  live until `m_key` (day 34: old key, first batch, two years) splits them.
+  `m_checked` / `m_checked_g`: the hopper is 90 km south and silent; the
+  nearest scar was "filed two years ago as impact debris" (no cargo number;
+  "Cargo 2" is first named again in `m_reveal`). `c_theory` ends on a question
+  mark under the keeper (no "Wrong lighthouse / Same keeper?"). `c_hail` drops
+  "Patient."; `m_alias` ends "Not aboard, then", books the dish again;
+  `m_theory` drops "a lighthouse with no keeper" (it sketches a lighthouse; the
+  keeper arrives in `m_theory_confirm`). `signal_reply` / `signal_echo`: "a
+  format the receiver has to look up" (was "no one flies now"). Day-11 plant and
+  every why-clue unchanged.
+- **Mechanism.** `a_report`: the last patch, tested on the pad, took the
+  divert for a pad landing and waits for the pad crew; reboots don't clear it
+  (the latch is post-touchdown). `m_theory`: the relay's thruster stuck open
+  just before the cargo landings; the catalogue passes came after.
+  `dec_signal`: the fleet carries the old key "as a relay fallback"; `sharpie2`
+  now finds the key card under the tape roll, "Old manners, for old hardware"
+  (fires in ~all seasons, but `dec_signal` stands alone). `a_log`: "HAIL RX ·
+  WRONG CHALLENGE ×31,000" (Earth) and "HELLO RX · LATE · DISCARD ×41,000"
+  (only the hellos that locked are counted; the rest were too faint to class).
+  `a_window_quiet`: the ground drafted a reply the day the key decoded; it
+  reached the board a day into entry week, and the board won't wake Cargo 2
+  until every ship is down, in orbit or not (covers slot 4 and pre-staging).
+  `a_window_hail`: handshake only; Cargo 2 stays in its safe hold. `r_dark`:
+  back "before the third hour was out" (two reboots), frame relayed from the
+  listening dish, and the ground puts the old channel under review and
+  filters it.
+- **Realism.** `dec_trim` residual under a millimetre per second. `r_ghost`:
+  a few metres a minute, slides past tonight; Starbase counts its cover plates.
+  `r_strike`: entry a few tenths of a degree steeper (sharper peak, shorter
+  soak); its "in every brief" plant is cut, and `end_long_orbit`'s hinge-line
+  tile stays generic. `r_strike` B must be `cond ok` and not the injured EVA
+  astronaut. `water_good`: thousandth hour, gated `since t_water >= 9`.
+  `dil_interlock` override stalls at ten kilopascals on a slow leak.
+  `dil_eva_cam` go waits for the ground's GO on the next pass. `storm_dose`:
+  "close to fifty". `w_venus_shadow`: so faint you move the hand to see it.
+  "take-manual" is now "manual takeover" everywhere.
+- **Continuity.** `c_dose`: "because the flight surgeon once asked".
+  `p_movie` names {B}. `l_transfer` moved to day 2 (premise up front: one seat a
+  ship, close up every few days); `l_long_table` is now due on day 7.
+  `m_listen`: "a few pages out". `a_list`: "sends them without a single pause".
+  `w_phosphene`: "shuts both eyes". `dil_gains`: "a second signature line added
+  for next time". `end_patience`: typo fixed, "the one who wanted to answer
+  weeks ago", a battery choosing which knock to skip. `end_close`: the spare
+  batteries went into the rover's heaters on the second night; flight mode
+  wakes every survival heater before it reads the battery. `end_friend`: two in
+  the cab. `end_lights` starts on the ground (`e_entry_hold` now stops at the
+  manual-takeover call, so the ending no longer rewinds). `end_long_orbit`:
+  the lamp blinks twice when the fleet passes over.
+- **Epilogue.** `epi.story` now leads with the landing pilot's lines
+  (`e_entry_hold_q` "kept the ship upright on a folded strut", `e_entry_hold`,
+  `e_entry_wait`), then the window lines, then a new `e_entry_clear` ("kept the
+  engine-out call behind their teeth"). `a_log` copies the Earth count into the
+  notes ("reads twice" retired).
+- **Habits.** Three remain, one per thread owner, so never two on one person:
+  `hb_watch` (`ow_dose`, days 12–20), `hb_card` (`ow_list`, clipped in the
+  flight-plan binder), `hb_leaf` (`ow_letter`, sleeve pocket, "files it as a
+  status"). Cut: pebble, key, pick (clashed with the song), stub. No
+  "nobody", tape, or "clipped above the bunk".
+- **Tension.** New irreversible loss, `l_crystals` (grim event, days 20–28,
+  weight 40, ~98% of seasons): a lab's protein crystals cook when a freezer fan
+  seizes; no second batch. `h_dark` days 26–31, weight 90 (~76–80% of seasons;
+  hooks stay random behind HOOK_GAP/HOOK_PCT). `r_dark` due 27–32. `h_band`
+  weight 60 (~69%). `h_voice` can't move before day 25 (lint: early hooks stay
+  grounded).
+- **Sim reader.** `fold_pool` is 16 lines; the fold shows on quiet days and
+  every third day, so a pool length coprime with 3 keeps the same line from
+  recurring on days 6/21/36. `sys.dec_open`: "Both options are cleared; the
+  flight director wants the fleet's call." `dust_report` weight 5 (endings
+  stay even).
+
