@@ -41,6 +41,13 @@ await t('reads a board running another project', async () => {
   assert.equal(summarizeDeviceInfo(info).version, 'other firmware');
 });
 
+await t('tells two boards apart by machine.unique_id()', async () => {
+  assert.equal((await readDeviceInfo(dev)).uid, 'e6614c311b2a3d2f');
+  const other = await readDeviceInfo(new SimDevice(root, { uid: 'e6614c31aa55aa55' }));
+  assert.equal(other.uid, 'e6614c31aa55aa55');
+  assert.match(summarizeDeviceInfo(other).board, /id e6614c31aa55aa55$/);
+});
+
 await t('clean install of the latest release over a foreign board', async () => {
   await installRelease(dev, voyage, { clean: true, onLog: log });
   const files = readdirSync(root).sort();
