@@ -260,6 +260,14 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
         self.assertGreater(phases[3], 0)
         print("mystery cards by first day, phases 1-4:", phases, file=sys.stderr)
 
+    def test_second_read_clues(self):
+        # STORY_BIBLE.md: 6-10 fair-play clues, at least two in the earliest phase.
+        rr = self.text["reread"]
+        self.assertTrue(6 <= len(rr) + 1 <= 10)  # +1: the clue in system text
+        early = [i for i in rr if self.cards[i]["days"][0] <= 10]
+        self.assertGreaterEqual(len(early), 2)
+        self.assertTrue(all(self.cards[i]["clue"] for i in rr))
+
     def test_mech_twin_is_not_exclusive(self):
         # The tagged twin must have an untagged sibling so anyone can draw the card.
         ids = [c["id"] for c in self.text["cards"]]
@@ -304,6 +312,59 @@ class TestCompactPack(unittest.TestCase):
             self.assertFalse(p.cards[i].flags & (O.F_DUE | O.F_HOOK))
         for lst in (p.events, p.beats, p.decisions):
             self.assertEqual(list(lst), sorted(lst))
+
+
+class TestFairCasting(unittest.TestCase):
+    """Role casting tries the least-featured crew first (Engine._cast_order), so the
+    spotlight evens out without anyone being locked out of a card."""
+
+    def setUp(self):
+        pack, _, _ = lvc.build(CONTENT)
+        self.p = Pack(pack)
+
+    def test_order_prefers_least_featured(self):
+        from lv import engine as E
+        st = State(self.p)
+        eng = Engine(self.p, st, ChoiceLog(FK))
+        st.spot[:] = bytes([9, 9, 0, 9, 9, 9, 1])
+        order = eng._cast_order(0)
+        self.assertEqual(order[:2], [2, 6])  # bucket 0 first, ties rotate from start
+        self.assertEqual(sorted(order), list(range(7)))
+        st.spot[:] = bytes(7)
+        self.assertEqual(eng._cast_order(3), [3, 4, 5, 6, 0, 1, 2])
+        self.assertEqual(E.FAIR_BUCKET, 2)
+
+    def test_spot_survives_snapshot(self):
+        st = State(self.p)
+        st.spot[:] = bytes([1, 2, 3, 4, 5, 6, 7])
+        self.assertEqual(State.load(st.dump()).spot, st.spot)
+
+    def test_spotlight_spread_over_seasons(self):
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        tot = [0] * 7
+        for seed in range(1, 31):
+            st = reference_season(Pack(self.p.data), seed=seed)[0]
+            out = st.story
+            for i in range(0, len(out), 8):
+                if out[i + 1] in (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN):
+                    for x in (out[i + 3], out[i + 4]):
+                        if x < 7:
+                            tot[x] += 1
+        mean = sum(tot) / 7.0
+        for v in tot:
+            self.assertLess(abs(v - mean) / mean, 0.10, tot)
+
+    def test_reveal_pays_off_every_season(self):
+        sys.path.insert(0, os.path.join(ROOT, "sim"))
+        from season import reference_season
+        _, text, _ = lvc.build(CONTENT)
+        ids = [c["id"] for c in text["cards"]]
+        rv = ids.index("m_reveal")
+        for seed in range(1, 21):
+            key = bytes([0, seed]) + b"season"
+            st = reference_season(Pack(self.p.data), seed=seed, voyage_key=key)[0]
+            self.assertTrue(st.fired[rv], seed)
 
 
 if __name__ == "__main__":

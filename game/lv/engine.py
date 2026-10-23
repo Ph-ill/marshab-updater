@@ -8,6 +8,7 @@ from lv.prng import Rng, day_seed
 from lv.state import N
 
 NONE = O.NONE
+FAIR_BUCKET = 2  # appearances per casting-priority step (see Engine._cast_order)
 
 # Daily instruction menu (payload of an ACTION record)
 A_GIFT, A_ADVICE, A_TASK, A_REST = 0, 1, 2, 3
@@ -128,16 +129,22 @@ class Engine:
                 roles[k] = preset[k]
                 k += 1
         start = self.rng.below(N)
-        if self._bind(card, roles, k, start):
+        if self._bind(card, roles, k, self._cast_order(start)):
             return roles
         return None
 
-    def _bind(self, card, roles, k, start):
+    def _cast_order(self, start):
+        # Fair casting: whoever has been in the story least is tried first, in
+        # buckets of FAIR_BUCKET appearances so the dice still mix the order;
+        # ties rotate from the day's random start. Pure function of state + rng.
+        s = self.s
+        return sorted(range(N), key=lambda c: (s.spot[c] // FAIR_BUCKET) * N + (c - start) % N)
+
+    def _bind(self, card, roles, k, order):
         if k >= self.p.h(card, P.H_NROLES):
             return self._check(self.p.conds(card), roles)
         s = self.s
-        for i in range(N):
-            c = (start + i) % N
+        for c in order:
             if s.cond[c] == O.COND_HOME:
                 continue
             taken = False
@@ -149,7 +156,7 @@ class Engine:
             if k == 0 and self.p.h(card, P.H_TYPE) == O.DILEMMA and not self._can_offer(card, c):
                 continue
             roles[k] = c
-            if self._check(self.p.conds(card), roles) and self._bind(card, roles, k + 1, start):
+            if self._check(self.p.conds(card), roles) and self._bind(card, roles, k + 1, order):
                 return True
         roles[k] = NONE
         return False
@@ -248,6 +255,7 @@ class Engine:
             s.emit(O.O_RES_OPEN, card, roles[0], roles[1])
         else:
             s.emit(O.O_DEC_OPEN, card, roles[0], roles[1])
+        s.add_spot(roles)
         self.apply(self.p.eff[card], roles)
         return True
 
@@ -390,6 +398,7 @@ class Engine:
             opt = self.p.h(card, P.H_LPOS) if s.trait(a, self.p.h(card, P.H_LAXIS)) >= 0 else self.p.h(card, P.H_LNEG)
         # Emit first so anything the card opens reads after it in the log.
         s.emit(O.O_EVENT, card, roles[0], roles[1], opt)
+        s.add_spot(roles)
         self.apply(self.p.eff[card], roles)
         if opt != NONE:
             self.apply(self.p.opt(card, opt), roles)
