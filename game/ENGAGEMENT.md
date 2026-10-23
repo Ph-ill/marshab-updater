@@ -49,7 +49,12 @@ runs (`tests/test_engage.py`, inactive season). Nothing is stored on the phone.
   day.
 * **LED notifier.** See below.
 
-## Integration contract (firmware main loop; no main exists yet on this branch)
+## Integration contract (firmware main loop)
+
+`board/lvship.py` is the first main loop: BLE sync (README, "Ship-to-ship sync"), the
+story, gifts in and out, the LED notifier (off unless `led_notify` is true in
+`/data/ship.json`) and a small status server. The phone game server is still to come; it
+follows this contract.
 
 * Every phone request sends `X-Phone-Time` (epoch ms) and `X-Phone-TZ` (minutes east of
   UTC). Feed them to `Clock.learn_headers(get)`; out-of-range values are ignored, changes
@@ -111,5 +116,6 @@ threads, like STORY_BIBLE.md) or lvc's slow-burn vocabulary. Patches show a neut
 `tests/run.sh` (with `MICROPYTHON=...`) runs lvc/lve, the unit and sim tests, the 8-ship
 x 4-delivery-order determinism check, `tests/test_engage.py` (38 tests: merge collection, eight crew (Marco's gifts, drops, crew-file line, local file), content safety, drops, jobs,
 streak/cover days, gifts limits, waiting/seen, clock, LED quiet hours/budget/disabled,
-inactive season), render parity, page size, sign-in, and both MicroPython checks.
+inactive season), render parity, page size, sign-in, the BLE sync tests
+(`tests/test_sync.py`, `tests/mp_sync.py`, `tests/mp_sync_heap.py`) and the MicroPython checks.
 `web/shots_engage.sh` writes the 390x844 screenshots.
