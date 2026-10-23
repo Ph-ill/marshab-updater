@@ -1,0 +1,40 @@
+/* Engagement screens (web/engage.js). Same paper-and-ink rules as app.html: hairlines,
+   mono labels, one rust accent, no rounded corners, shadows or gradients (an inset 1px
+   box-shadow is used only as a second hairline, so a chosen state never shifts layout).
+   Spacing steps 4/8/12/16/24/32 px are --s1..--s6 in app.html; type steps are 13 mono
+   label, 15 small, 17 body, 20 lead, 22 h2, 32 h1. A rust square means "act on this" or
+   "new since your last visit"; an ink fill means "chosen". Comments here are stripped by
+   build.py; the ones in app.html would ship, so the notes live here. */
+nav.n4{grid-template-columns:repeat(4,1fr)}
+.hook{border:2px solid var(--ink);margin-top:16px}
+.hook>.lab{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--ink);color:var(--ink)}
+.hook>.lab.r{background:var(--rust-t);color:var(--paper);border-color:var(--rust-t)}
+.hook .body{padding:12px 16px 16px}
+.hook .then{border-top:1px solid var(--rule);margin-top:12px;padding-top:8px}
+.go .new{color:var(--rust-t);white-space:nowrap}
+.go .new::before{content:"";display:inline-block;width:8px;height:8px;background:var(--rust);margin-right:6px;vertical-align:1px}
+.go small{display:block;font-size:15px;line-height:20px;color:var(--ink2);margin-top:2px}
+.wline{display:flex;gap:var(--s3);text-align:left;justify-content:space-between;align-items:center;width:100%;min-height:48px;border-bottom:1px solid var(--rule);font:15px var(--mono);color:var(--ink2)}
+.wline b{color:var(--ink);font-weight:600}
+.seal{border:1px dashed var(--ink);padding:var(--s6) var(--s4);text-align:center;margin-top:16px}
+.seal b{display:block;font:700 22px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.watch{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;margin-top:8px;font:12px var(--mono);color:var(--ink2);align-items:center}
+.watch i{display:block;height:28px;border:1px solid var(--rule);font-style:normal;text-align:center;line-height:26px}
+.watch i.w{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.watch i.c{border:1px dashed var(--ink);color:var(--ink)}
+.watch i.t{border:2px solid var(--rust)}
+.key{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font:13px var(--mono);color:var(--ink2)}
+.key i{display:inline-block;width:12px;height:12px;border:1px solid var(--ink);vertical-align:-1px;margin-right:6px}
+.patches{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.patch{border:1px solid var(--ink);padding:8px;display:flex;gap:8px;align-items:flex-start;min-height:88px}
+.patch svg{flex:none;width:40px;height:40px}
+.patch b{display:block;font-size:15px;line-height:20px}
+.patch small{display:block;font-size:13px;line-height:18px;color:var(--ink2)}
+.patch.no{border-style:dashed;border-color:var(--ink2);color:var(--ink2)}
+.patch.no b{color:var(--ink2);font-weight:400}
+.pct{font:700 48px/56px var(--mono)}
+.cf{padding:12px 0;border-bottom:1px solid var(--rule);display:flex;gap:16px}
+.cf:last-child{border-bottom:0}
+.cf p{margin:2px 0 0;font-size:15px;line-height:20px}
+.cf p.no{color:var(--ink2)}
+.items .opt{min-height:56px}

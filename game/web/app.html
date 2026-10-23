@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>The Long Voyage</title>
+<style>
+:root{--paper:#F2ECDF;--ink:#1C1B19;--graph:#8A867E;--ink2:#57534C;--rule:#CBC3B2;--rust:#C8552B;--rust-t:#A8441F;--tint:#E7DFCE;
+--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+--mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono","Droid Sans Mono",monospace;
+--key:64px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+@media (prefers-color-scheme:dark){:root{--paper:#1C1B19;--ink:#ECE5D6;--graph:#7D796F;--ink2:#B3AC9F;--rule:#3D3A35;--rust:#D9673C;--rust-t:#E07A50;--tint:#2A2825}}
+*{box-sizing:border-box;margin:0;padding:0;border-radius:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font:17px/1.45 var(--sans);-webkit-tap-highlight-color:transparent;min-height:100vh;min-height:100dvh;font-feature-settings:"kern"}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+:focus:not(:focus-visible){outline:0}
+nav button:focus-visible,.keys button:focus-visible,#top button:focus-visible{outline-offset:-4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.m{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lab{font:600 13px/16px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lab.r{color:var(--rust-t)}
+.dim{color:var(--ink2)}
+#top{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--ink);padding:var(--st) calc(var(--s4) + var(--sr)) 0 calc(var(--s4) + var(--sl));display:flex;justify-content:space-between;align-items:center;height:calc(48px + var(--st))}
+#top b{font:700 15px var(--mono);letter-spacing:.08em}
+#top span{font:15px var(--mono);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+main{padding:0 calc(var(--s4) + var(--sr)) calc(152px + var(--sb)) calc(var(--s4) + var(--sl))}
+main.nodock{padding-bottom:calc(var(--s6) + var(--sb))}
+main.short{padding-bottom:calc(96px + var(--sb))}
+main.pinpad{padding-bottom:calc(4 * var(--key) + var(--s5) + var(--sb))}
+section{padding:var(--s5) 0 0}
+section>.lab:first-child{display:flex;justify-content:space-between;gap:var(--s3);border-bottom:1px solid var(--ink);padding-bottom:var(--s2);margin-bottom:var(--s2)}
+h1{font:700 32px/40px var(--sans);letter-spacing:-.015em}
+h2{font:600 22px/28px var(--sans);letter-spacing:-.005em}
+p{margin:var(--s2) 0 0}
+.kick{padding-top:var(--s5)}
+.kick .lab{margin-bottom:var(--s2)}
+.kick h1+p,.kick h2+p{margin-top:var(--s1)}
+#dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-top:1px solid var(--ink);padding:0 var(--sr) var(--sb) var(--sl)}
+#dock .act{padding:var(--s2) var(--s4)}
+.btn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:56px;padding:0 var(--s4);border:1px solid var(--ink);font:700 16px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.btn i{font-style:normal;font-weight:400;color:var(--ink2);white-space:nowrap;margin-left:var(--s3)}
+.btn.pri{border-width:2px}
+.btn.pri::before{content:"";width:8px;height:8px;background:var(--rust);margin-right:var(--s3);flex:none}
+.btn.pri span{flex:1}
+.btn[disabled]{border-style:dashed;border-color:var(--ink2);color:var(--ink2);cursor:default}
+.btn[disabled]::before{background:none;outline:1px solid var(--ink2);outline-offset:-1px}
+.btn+.btn{margin-top:var(--s2)}
+.btn.sec{border-color:var(--ink2);font-weight:600}
+.row,.go,.opt,.btn,.wline,nav button,.keys button{transition:background-color .15s,color .15s,box-shadow .15s}
+.row:active,.go:active,.opt:active,.btn:not([disabled]):active,.wline:active{background:var(--tint)}
+.done{min-height:56px;display:flex;flex-direction:column;justify-content:center;font-size:16px;line-height:22px;padding-left:20px;border-left:2px solid var(--ink)}
+nav{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule)}
+nav button{position:relative;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:600 12px/14px var(--mono);letter-spacing:.12em;color:var(--ink2);border-top:3px solid transparent;margin-top:-1px}
+nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+nav button[aria-current]{color:var(--ink);border-top-color:var(--ink);font-weight:700}
+nav button[aria-current] svg{stroke-width:2}
+nav button+button{border-left:1px solid var(--rule)}
+nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16px;padding:0 3px;background:var(--rust-t);color:var(--paper);font:700 11px/16px var(--mono);letter-spacing:0;text-align:center}
+.row{display:flex;gap:var(--s4);align-items:center;min-height:56px;padding:var(--s2) 0;border-bottom:1px solid var(--rule);width:100%}
+.row:last-child{border-bottom:0}
+.row .t{flex:1;min-width:0}
+.row .t small{display:block;font-size:15px;line-height:20px;color:var(--ink2)}
+.row[disabled]{cursor:default}
+.row[disabled] .t,.row[disabled] .pt{opacity:.55}
+.pt{flex:none;width:48px;height:48px;border:1px solid var(--ink);display:block;background:var(--paper)}
+.pt svg,.port svg{display:block;width:100%;height:100%}
+.go{border:1px solid var(--ink);padding:var(--s3) var(--s4);margin-top:var(--s2);display:block;width:100%;min-height:72px}
+.go .lab{display:flex;justify-content:space-between;gap:var(--s3);margin-bottom:var(--s1)}
+.go b{font-weight:600;display:block}
+.log li{list-style:none;padding:var(--s2) 0 var(--s2) var(--s4);border-left:1px solid var(--rule);position:relative}
+.log li::before{content:"";position:absolute;left:-4px;top:17px;width:7px;height:7px;background:var(--paper);border:1px solid var(--ink2)}
+.log li.big::before{background:var(--ink);border-color:var(--ink)}
+.log li.you::before{background:var(--rust);border-color:var(--rust)}
+.log li.fold{color:var(--ink2);font-size:15px}
+.day{padding-top:var(--s5);scroll-margin-top:calc(56px + var(--st))}
+.day>.lab{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:var(--s2);margin-bottom:var(--s2);color:var(--ink)}
+.day>.lab span{white-space:nowrap}.day>.lab .dim{margin-left:auto;font-weight:400}
+.nw>.lab>span:first-child::before{content:"";display:inline-block;width:8px;height:8px;background:var(--rust);margin-right:var(--s2);vertical-align:1px}
+.chg{font:13px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0 0 var(--s1)}
+.upd{border-left:2px solid var(--rust);padding:0 0 0 var(--s2);margin:var(--s1) 0 var(--s2);font-size:15px;line-height:20px;color:var(--ink2)}
+.upd b{color:var(--rust-t);font-weight:600}
+.gauge{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:0 var(--s2);padding:var(--s2) 0}
+.gauge svg{grid-column:1/4;width:100%;height:24px;display:block;margin-top:var(--s1)}
+.gauge .lo{font-size:15px;color:var(--ink2)}
+.gauge .hi{font-size:15px;color:var(--ink2);text-align:right}
+.gauge .v{font:600 15px var(--mono)}
+.gauge .on{color:var(--ink);font-weight:600}
+.me{display:flex;gap:var(--s4);padding-top:var(--s5);align-items:flex-start}
+.port{border:1px solid var(--ink);width:112px;height:112px;flex:none}
+.big .port{width:100%;height:auto;aspect-ratio:1/1;max-width:224px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:var(--s1) var(--s4);margin-top:var(--s2);font-size:16px}
+.facts dt{font:600 13px/22px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.opt{position:relative;display:flex;gap:var(--s4);align-items:stretch;width:100%;border:1px solid var(--ink);margin-top:var(--s2);min-height:72px}
+.opt .k{position:relative;flex:none;width:56px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--ink);font:700 22px var(--mono);transition:background-color .15s,color .15s}
+.opt .t{flex:1;padding:var(--s3) var(--s4) var(--s3) 0;display:flex;flex-direction:column;justify-content:center}
+.opt .t b{display:block;font-weight:600}
+.opt .t small{display:block;font:14px/20px var(--mono);color:var(--ink2);margin-top:var(--s1)}
+.opt[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--ink)}
+.opt[aria-pressed=true] .k{background:var(--ink);color:var(--paper)}
+.opt.mine .k::after{content:"";position:absolute;top:6px;right:6px;width:6px;height:6px;background:var(--rust)}
+.opt .bar{position:absolute;left:72px;right:var(--s4);bottom:var(--s2);height:2px;background:var(--rule)}
+.opt .bar i{display:block;height:100%;background:var(--ink2)}
+.opt[aria-pressed=true] .bar i{background:var(--ink)}
+.opt.tv .t{padding-bottom:var(--s5)}
+.note{border-top:1px solid var(--rule);margin-top:var(--s5);padding-top:var(--s2);font-size:15px;line-height:22px;color:var(--ink2)}
+.empty{display:flex;gap:var(--s3);align-items:baseline;padding:var(--s3) 0;border-bottom:1px solid var(--rule);font-size:15px;color:var(--ink2)}
+.empty b{font:600 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+.card{border:1px solid var(--ink);margin-top:var(--s4)}
+.card>.lab{display:flex;justify-content:space-between;gap:var(--s3);padding:var(--s2) var(--s4);border-bottom:1px solid var(--ink);color:var(--ink)}
+.card>.lab.r{background:var(--rust-t);color:var(--paper);border-color:var(--rust-t)}
+.card .body{padding:var(--s4)}
+.card .body p:first-child{margin:0}
+.lead{font-size:20px;line-height:28px}
+.pin{display:grid;grid-template-columns:repeat(4,56px);gap:var(--s2);margin-top:var(--s5)}
+.pin span{height:var(--key);border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 28px var(--mono)}
+.pin span.cur{box-shadow:inset 0 0 0 1px var(--ink)}
+.pin span.cur::after{content:"";width:2px;height:28px;background:var(--rust);animation:blink 1.1s steps(1) infinite}
+.keys{display:grid;grid-template-columns:repeat(3,1fr)}
+.keys button{height:var(--key);border-bottom:1px solid var(--ink);text-align:center;font:600 26px var(--mono)}
+.keys button.fn{font-size:14px;letter-spacing:.08em;color:var(--ink2)}
+.keys button:not(:nth-child(3n)){border-right:1px solid var(--ink)}
+.keys button:nth-last-child(-n+3){border-bottom:0}
+.keys button:active{background:var(--ink);color:var(--paper)}
+.keys button[disabled]{color:var(--rule);background:none}
+.err{color:var(--rust-t);font:600 15px var(--mono);min-height:24px;margin-top:var(--s4)}
+.traj{width:100%;height:40px;display:block;margin-top:var(--s4)}
+.tl{position:relative;height:16px;font:13px var(--mono);color:var(--ink2)}
+.tl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.tl span:first-child{transform:none}.tl span:last-child{transform:translateX(-100%)}
+.fleet{display:grid;grid-template-columns:repeat(8,1fr);border:1px solid var(--ink);margin-top:var(--s2)}
+.fleet div{min-height:76px;padding:0 0 var(--s1);text-align:center;font:13px/18px var(--mono);min-width:0}
+.fleet div+div{border-left:1px solid var(--rule)}
+.fleet div b{display:block;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--rule);padding:var(--s1) 0;margin-bottom:var(--s1)}
+.fleet div.here b{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.fleet .y{color:var(--rust-t);font-weight:700}
+.fleet i{font-style:normal;color:var(--ink2)}
+.stores{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);margin-top:var(--s4)}
+.stores div{padding:var(--s2) var(--s3)}
+.stores div+div{border-left:1px solid var(--rule)}
+.stores b{display:block;font:600 22px var(--mono)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-top:var(--s2)}
+.grid2 .opt{margin:0;min-height:56px}
+.grid2 .opt .t{padding:var(--s2) var(--s3);align-items:flex-start}
+.grid2 .opt .k{width:44px;font-size:16px}
+.rep{border-bottom:3px double var(--ink);padding-bottom:var(--s4)}
+.rep .tl{margin-bottom:var(--s1)}
+.epi{display:grid;grid-template-columns:56px 1fr;gap:0 var(--s4);padding:var(--s4) 0;border-bottom:1px solid var(--rule)}
+.epi:last-child{border-bottom:0}
+.epi .pt{width:56px;height:56px}
+.epi h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 var(--s2);font:600 17px/24px var(--sans)}
+.epi h3 small{font:13px/24px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.epi h3 .r{margin-left:auto;color:var(--rust-t)}
+.epi p{margin:var(--s1) 0 0;font-size:16px;line-height:24px}
+.epi.y .pt{box-shadow:0 0 0 1px var(--ink)}
+.epi.coda{border-top:1px dashed var(--ink2);border-bottom:0;margin-top:-1px}
+.epi.coda .pt{border:1px dashed var(--ink2)}
+.man{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule);margin-top:var(--s2)}
+.man div{padding:var(--s2) var(--s1);text-align:center;font:13px/16px var(--mono);border-bottom:1px solid var(--rule);min-width:0}
+.man div:not(:nth-child(4n)){border-right:1px solid var(--rule)}
+.man div:nth-last-child(-n+4){border-bottom:0}
+.man .pt{width:48px;height:48px;margin:0 auto 6px}
+.man b{display:block;font:600 14px/20px var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.man span{color:var(--ink2);letter-spacing:.06em}
+.man .x span{color:var(--rust-t)}
+.man .y{box-shadow:inset 0 0 0 2px var(--ink)}
+.man .y b{color:var(--rust-t)}
+.tbl{display:grid;grid-template-columns:1fr auto;border-top:1px solid var(--ink);margin-top:var(--s2)}
+.tbl div{padding:var(--s2) 0;border-bottom:1px solid var(--rule);font-size:16px}
+.tbl div:nth-child(even){font:600 16px var(--mono);text-align:right}
+/*ENGAGE_CSS*/
+.off{display:flex;align-items:center;gap:var(--s2);min-height:44px;padding:var(--s1) 0;font:600 13px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule)}
+.off::before{content:"";flex:none;width:8px;height:8px;background:var(--rust);animation:blink 2s steps(1) infinite}
+.off button{margin-left:auto;min-height:44px;padding:0 0 0 var(--s4);text-decoration:underline;text-underline-offset:3px}
+#dock .off{padding:var(--s1) var(--s4)}
+.caret{display:inline-block;width:.5em;height:1.05em;background:var(--rust);vertical-align:-.18em;margin-left:var(--s1);animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (max-height:640px){:root{--key:52px}#top{height:calc(44px + var(--st))}#dock .act{padding:6px var(--s4)}.btn,.done{min-height:52px}nav button{height:48px;gap:1px}nav svg{width:16px;height:16px}nav .bd{top:3px}section{padding-top:var(--s4)}.kick{padding-top:var(--s4)}.pin{margin-top:var(--s4)}.err{margin-top:var(--s2)}}
+@media (max-height:520px){.kick .help{display:none}}
+@media (prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important}}
+.tsteps{display:flex;gap:var(--s1);list-style:none;margin:var(--s3) 0 var(--s4);padding:0}
+.tsteps li{flex:1;height:4px;background:var(--rule)}
+.tsteps li.d{background:var(--ink)}
+.tsteps li.c{background:var(--rust)}
+.tut h1{outline-offset:4px}
+.tut .lead{font-size:17px;line-height:26px}
+.fig{margin-top:var(--s4);padding:var(--s3);border:1px solid var(--rule)}
+.fig svg{display:block;width:100%;height:auto;overflow:visible}
+.fig .lab{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s2);margin:var(--s2) 0 0;font-size:12px}
+.bl{list-style:none;margin:var(--s4) 0 0;padding:0;border-top:1px solid var(--ink)}
+.bl li{display:grid;grid-template-columns:104px 1fr;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--rule);font-size:16px;line-height:22px}
+.bl b{font:600 12px/22px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.fine{margin-top:var(--s4);font:13px/18px var(--mono);letter-spacing:.04em;color:var(--ink2)}
+.tnav{display:grid;grid-template-columns:2fr 3fr;gap:var(--s2)}
+.tnav .btn+.btn{margin-top:0}
+@media (max-width:359px){.bl li{grid-template-columns:1fr;gap:0}.tut .lead{font-size:16px;line-height:24px}}
+</style>
+</head>
+<body>
+<header id="top"><b>THE LONG VOYAGE</b><span>CONNECTING</span></header>
+<main id="v" class="nodock"><div class="kick" role="status"><div class="lab">Starship fleet · Earth to Mars</div><h1>The Long Voyage</h1><p class="dim">Raising the ship<span class="caret"></span></p></div></main>
+<div id="dock" hidden></div>
+<script>
+/*RENDER_JS*/
+/*ENGAGE_JS*/
+const N=8;
+const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
+const COND=["Fit for duty","Injured","Sent home"];
+const KIND={3:"Fleet vote",4:"Private",5:"Anyone can answer"};
+const Q=new URLSearchParams(location.search),DQ=Q.get("day")?"?day="+encodeURIComponent(Q.get("day")):"";
+let T=null,S=null,R=null,tok="",me=-1,codeSet=[],PRE=null,DSTART=360,preT=0,lockUntil={},pin="",draft=null,pick={},net="live",ws=null,poll=0,lines=null,logSeen=0,logCut=-1;
+const RM=matchMedia("(prefers-reduced-motion: reduce)");
+const $=(id)=>document.getElementById(id);
+const h=(s)=>String(s).replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const nm=(c)=>c<N?T.crew[c]:"someone";
+const pad=(n)=>String(n).padStart(2,"0");
+const ship=(c)=>T.ships[c];
+const fill=(s,a,b)=>R.fill(s,a,b);
+const first=(s)=>{const m=s.match(/^.*?[.!?](\s|$)/);return m?m[0].trim():s};
+
+async function api(path,body){
+  // The phone's clock rides along: the ship has none, and learns the time from this (lv/clock.py).
+  const o={headers:{"X-Crew-Token":tok,"X-Phone-Time":String(Date.now()),"X-Phone-TZ":String(-new Date().getTimezoneOffset())}};
+  if(body){o.method="POST";o.body=JSON.stringify(body);o.headers["Content-Type"]="application/json"}
+  const r=await fetch(path+(path.startsWith("/api/")?DQ:""),o);
+  const j=await r.json().catch(()=>({}));
+  if(r.status===401&&path!=="/api/me"){tok="";me=-1;go("hello");throw new Error("signed out")}
+  if(!r.ok)throw Object.assign(new Error(j.err||"The ship didn't answer. Try again."),{j,status:r.status});
+  return j;
+}
+
+// ---- live updates: WebSocket, falling back to polling ---------------------------------
+function live(){
+  try{
+    ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws");
+    ws.onmessage=(m)=>{const v=JSON.parse(m.data).v;if(S&&v!==S.v)refresh().catch(lost)};
+    ws.onclose=ws.onerror=()=>{ws=null;startPoll()};
+  }catch(e){startPoll()}
+}
+function startPoll(){
+  if(poll)return;net="poll";
+  poll=setInterval(async()=>{try{const j=await api("/api/v");if(S&&(net==="lost"||j.v!==S.v))await refresh()}catch(e){lost(e)}},15000);
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tok)refresh().catch(lost)});
+// The ship went quiet (out of Wi-Fi range, or rebooting): keep showing the last copy and say so.
+function lost(e){if(e&&e.message==="signed out")return;if(S&&net!=="lost"){net="lost";view()}}
+
+async function refresh(){
+  S=await api("/api/state");
+  if(net==="lost")net=poll?"poll":"live";
+  lines=null;engSeen();
+  view();
+}
+
+// ---- story ----------------------------------------------------------------------------
+function story(){
+  if(lines)return lines;
+  const raw=Uint8Array.from(atob(S.story),(c)=>c.charCodeAt(0));
+  R=new Renderer(T,EG);
+  const days={};
+  for(let i=0;i+8<=raw.length;i+=8){
+    const e=Array.from(raw.slice(i,i+8)),d=e[0],code=e[1];
+    const L=days[d]||(days[d]={big:[],fold:0});
+    if(code===O.ACT&&e[6]===1&&e[4]!==0){L.fold++;continue}
+    let s;
+    // Someone else's instruction: "on your word" would read as if you gave it.
+    if(code===O.ACT&&e[3]!==S.you&&!e[6]){const k=R.t.actions;R.t.actions=k.map((x)=>({...x,you:x.owner||x.you}));s=R.entry(e);R.t.actions=k}
+    else if(code===O.DIL_OPEN&&e[3]!==S.you){R.roles.set(e[2],[e[3],NONE]);s=R.fill(T.sys.dil_open,e[3])}
+    else s=R.entry(e);
+    if(!s)continue;
+    const mine=(code===O.ACT&&e[3]===S.you)||(code===O.DIL_CLOSE&&e[3]===S.you&&!e[5]);
+    L.big.push({s:s.trim(),cls:mine?"you":[O.EVENT,O.DEC_CLOSE,O.RES_CLOSE,O.DIL_CLOSE,O.END,O.DEC_OPEN,O.RES_OPEN].includes(code)?"big":""});
+  }
+  return(lines=days);
+}
+function dayList(d,max){
+  const L=story()[d];
+  if(!L)return"<li class=fold>A quiet day.</li>";
+  let out=L.big.slice(0,max||99).map((x)=>`<li class="${x.cls}">${h(x.s)}</li>`).join("");
+  if(L.fold)out+=`<li class=fold>${L.fold===1?"One chore":L.fold+" chores"} done without being asked.</li>`;
+  return out;
+}
+// A day is normally rewritten once, the next day, as yesterday's taps arrive from
+// other ships. Only a later rewrite is news worth marking.
+function rewritten(d){const a=S.updated[d];return a&&a>=d+2&&d<S.day?a:0}
+
+// ---- drawing --------------------------------------------------------------------------
+function hash(s){let x=2166136261;for(const c of s)x=Math.imul(x^c.charCodeAt(0),16777619)>>>0;return x}
+// Crew portraits: one suit and collar for everyone, then each astronaut's own helmet shell
+// (so the silhouette alone says who it is), visor and helmet detail (by roster order), a plain
+// chest ring, then trait and condition marks. Suits and helmets only: no faces. The flagship's
+// chest ring is rust.
+const PI="var(--ink)",PP="var(--paper)",PR="var(--rust)";
+const pL=(d,w=1.5,c=PI)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}"/>`;
+const pF=(d,c=PI)=>`<path d="${d}" fill="${c}"/>`;
+const pS=(d,w=1.5)=>`<path d="${d}" fill="${PP}" stroke="${PI}" stroke-width="${w}"/>`;
+const pC=(x,y,r,f=PI,st="")=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"${st}/>`;
+const VIS=[
+  pF("M19 25Q32 17 45 25L43 34Q32 40 21 34Z")+pL("M23 25Q27 22 31 21.5",1.5,PP),
+  pC(32,28,10.5)+pL("M25.5 24Q27.5 20.5 31 19.5",1.5,PP),
+  pF("M17.5 23H46.5V32H17.5Z")+pL("M21 25.5H29",1.5,PP),
+  pF("M20 22H44V30Q32 37 20 30Z")+pL("M23 24.5H28",1.5,PP),
+  pF("M18.5 25H45.5V30.5Q32 33.5 18.5 30.5Z")+pL("M21.5 27.2H27",1.5,PP),
+  pF("M18.5 24.5Q32 21 45.5 24.5L44 33Q32 38.5 20 33Z")+pL("M37 31L40 28M40.5 32.5L42.5 30.5",1.2,PP),
+  pF("M18.5 22.5H45.5V28.5H35V37.5Q32 39 29 37.5V28.5H18.5Z")+pL("M21 25H27",1.5,PP)];
+// Helmet shells: [outline (starts on the left side, runs clockwise over the crown), rust crown
+// as [offset, length] in pathLength 100, antenna root y at x 41, top-line y, side-vent x].
+const HEL=[
+  ["M15 30V20L21 13L32 9.5L43 13L49 20V30L45 39L37 45H27L19 39Z",[9,37],12.4,13.6,15.5],
+  ["M15 28V20Q15 11 24 11H40Q49 11 49 20V28Q49 45 32 45Q15 45 15 28Z",[6,39],11,13.3,15],
+  ["M16.5 26.5A15.5 19.5 0 0 1 47.5 26.5A15.5 19.5 0 0 1 16.5 26.5Z",[10,30],9.3,12.6,16.5],
+  ["M16 27Q16 10.5 32 10.5Q48 10.5 48 27L46.5 37Q45 44.5 38.5 45.5H25.5Q19 44.5 17.5 37Z",[4,35],10.8,13,16],
+  ["M11.5 26.5A20.5 20.5 0 0 1 52.5 26.5A20.5 20.5 0 0 1 11.5 26.5Z",[7,36],8,9,12],
+  ["M13.5 30A18.5 15 0 0 1 50.5 30A18.5 15 0 0 1 13.5 30Z",[9,32],16.9,17.4,15.5],
+  ["M15.5 22V17.5L32 8.5L48.5 17.5V35L32 45.5L15.5 35Z",[0,42],12.8,12.5,15.5],
+  ["M15.5 29Q16.5 13 32 6Q47.5 13 48.5 29Q48.5 45 32 45Q15.5 45 15.5 29Z",[7,35],12.6,12.5,15.5]];
+// [visor, helmet detail]. The chest patch is a plain ring for everyone (rust for the flagship).
+const CREW=[
+  // Phill: a flagship commander's armoured helmet, centre crest and ridge, flared cheek guards, T-visor.
+  [6,pS("M29.6 10.3L31 3.5H33L34.4 10.3")+pL("M32 10.3V22.5",1.2)+pS("M15.4 29L10.5 32.5L14 41.5L21.5 41L19 35ZM48.6 29L53.5 32.5L50 41.5L42.5 41L45 35Z")],
+  // Jacques: a squared service helmet with rank chevrons and a side rail.
+  [2,pL("M19 16.5L21.5 18.5L24 16.5M19 19.5L21.5 21.5L24 19.5",1.2)+pL("M15 26.5H12.5V31.5H15")],
+  // Kim: a tall mecha-pilot shell with side pods and a V-fin.
+  [1,pL("M32 8L25 1.8M32 8L39 1.8",2)+pF("M29.5 8.2L32 4.6L34.5 8.2Z")+pS("M16.6 21.5L11.5 24.5V33.5L17.2 36.5ZM47.4 21.5L52.5 24.5V33.5L46.8 36.5Z")],
+  // Jai: a full-face racing helmet, chin bar, rear spoiler and twin stripes.
+  [4,pS("M22.5 10.8L20.5 6.8H43.5L41.5 10.8")+pL("M29.5 10.8V25M34.5 10.8V25",1.2)+pL("M27.5 39.5H36.5M29 42.3H35",1.1)],
+  // Michelle: one wide, clean glass bubble with a glint.
+  [3,pL("M16.5 21Q18.5 13.5 25 10.2",1.1)],
+  // Diego: a squat, wide shell under a comms headset (always up for a chat), boom mic, bolted collar.
+  [0,pL("M11.5 24Q11.5 9 32 9Q52.5 9 52.5 24",2.2)+pS("M9 25.5Q9 23 11.5 23H15V36H11.5Q9 36 9 33.5ZM55 25.5Q55 23 52.5 23H49V36H52.5Q55 36 55 33.5Z")+pL("M52 36Q52 42 42.5 42",1.2)+pC(41,42,1.6)+pC(23.5,47.5,.9)+pC(40.5,47.5,.9)],
+  // Dorian: a faceted hex shell with a little network of nodes on the crown.
+  [3,pL("M21 18.5L25 14.5L29 17.5ZM29 17.5L32 13",1)+pC(21,18.5,1.3)+pC(25,14.5,1.3)+pC(29,17.5,1.3)+pC(32,13,1.3)],
+  // Marco: a pointed, aerodynamic shell, level-meter bars and a wraparound visor.
+  [5,pL("M37.5 22V18.5M40 22V15.5M42.5 22V19",1.6)]];
+function portrait(c){
+  const t=S?S.traits[c]:[0,0,0],cond=S?S.cond[c]:0,[vi,det]=CREW[c%8],[hd,cr,ay,ly,sx]=HEL[c%8],fl=c===T.flagship;
+  let g=`<path d="M6 64C7 52 18 47.5 32 47.5S57 52 58 64" fill="${PP}" stroke="${PI}" stroke-width="1.5"/>`+pL("M20 47.5L22 64M44 47.5L42 64",1);
+  g+=pS(hd)+pS("M20.5 46H43.5V49H20.5Z");
+  if(t[2]>15)g+=`<path d="${hd}" pathLength="100" fill="none" stroke="${PR}" stroke-width="3" stroke-dasharray="0 ${cr[0]} ${cr[1]} 100"/>`;
+  else if(t[2]<-15)g+=pL(`M${sx} 31h2.5M${64-sx} 31h-2.5`,2.5);
+  if(t[0]<-15)g+=`<path d="${hd}" transform="matrix(.86 0 0 .86 4.5 3.9)" fill="none" stroke="${PI}" stroke-width=".85" stroke-dasharray="1.7 1.7"/>`;
+  g+=VIS[vi]+det;
+  if(t[1]>15)g+=pL(`M41 ${ay}L46 4`)+`<rect x="44.5" y="2" width="3.5" height="3.5" fill="${PI}"/>`;
+  else if(t[1]<-15)g+=pL(`M27 ${ly}H37`,1);
+  if(t[0]>15)g+=pL("M18 36L21 34.5M19.5 39L22.5 37.5",1);
+  g+=pC(32,57,6.5,PP,` stroke="${fl?PR:PI}" stroke-width="${fl?2:1.2}"`);
+  if(cond===1)g+=pL("M43 37L49 41M43.5 41L48.5 36.5",2,PR);
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"${cond===2?' opacity=".4"':""}>${g}</svg>`;
+}
+function ticks(v,n){
+  // n ticks either side of zero, filled from the centre to the value.
+  const W=2*n,on=Math.round(Math.abs(v)/100*n)*Math.sign(v);
+  let s="";
+  for(let i=-n;i<=n;i++){
+    const x=(i+n)/W*96+2,lit=i===0||(on>0&&i>0&&i<=on)||(on<0&&i<0&&i>=on);
+    const y=i===0?2:lit?6:12;
+    s+=`<line x1="${x.toFixed(2)}" x2="${x.toFixed(2)}" y1="${y}" y2="22" stroke="var(--${lit?"ink":"graph"})" stroke-width="${lit?1.6:.8}" vector-effect="non-scaling-stroke"/>`;
+  }
+  return `<svg viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="100" y1="22" y2="22" stroke="var(--ink)" stroke-width="1" vector-effect="non-scaling-stroke"/>${s}</svg>`;
+}
+function meter(v){
+  // 0-100 as 20 ticks filled from the left (no bars: tick gauges only).
+  let s="";
+  for(let i=0;i<=20;i++){const x=i*4.8+2,lit=i>0&&i*5<=v;s+=`<line x1="${x.toFixed(2)}" x2="${x.toFixed(2)}" y1="${lit?6:i%5?14:10}" y2="22" stroke="var(--${lit?"ink":"graph"})" stroke-width="${lit?1.6:.8}" vector-effect="non-scaling-stroke"/>`}
+  return `<svg viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="100" y1="22" y2="22" stroke="var(--ink)" stroke-width="1" vector-effect="non-scaling-stroke"/>${s}</svg>`;
+}
+function gauge(c,a){
+  const v=S.traits[c][a],w=Math.abs(v)<8?"Even":POLES[a][v>0?1:0];
+  return `<div class=gauge role=img aria-label="${POLES[a][0]} to ${POLES[a][1]}: ${w}"><span class="lo ${v<-7?"on":""}">${POLES[a][0]}</span><span class=v>${v>0?"+":""}${v}</span><span class="hi ${v>7?"on":""}">${POLES[a][1]}</span>${ticks(v,10)}</div>`;
+}
+function traj(){
+  const d=S.day,L=S.season,x=(n)=>8+n/L*(100-16);
+  let s=`<line x1="${x(0)}" x2="${x(d)}" y1="24" y2="24" stroke="var(--ink)" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+  s+=`<line x1="${x(d)}" x2="${x(L)}" y1="24" y2="24" stroke="var(--graph)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`;
+  for(let i=0;i<=L;i+=7)s+=`<line x1="${x(i)}" x2="${x(i)}" y1="${i%14?20:17}" y2="28" stroke="var(--ink)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  return `<div style="position:relative"><svg class=traj viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">${s}<line x1="${x(d)}" x2="${x(d)}" y1="10" y2="34" stroke="var(--rust)" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>
+  <div class=tl><span style="left:0">EARTH</span><span style="left:${x(14)}%">FD 14</span><span style="left:${x(28)}%">FD 28</span><span style="left:100%">MARS</span></div></div>`;
+}
+
+// ---- screens --------------------------------------------------------------------------
+function bar(l,r){$("top").hidden=false;$("top").innerHTML=`<b>${l}</b><span>${r}</span>`}
+// Tab glyphs (20 px, drawn in the portraits' line weights): the ship, a helmet, log lines, a dossier.
+const ICO={home:"M10 1.5c2.4 2.3 3.3 5.1 3.3 8.4V16H6.7V9.9c0-3.3.9-6.1 3.3-8.4ZM6.7 12 4 15v3h2.7M13.3 12l2.7 3v3h-2.7M8.5 7.5h3",
+  crew:"M3.5 9a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0ZM6.5 7.5h7V11h-7ZM3 19c.6-2.6 3.3-3.8 7-3.8s6.4 1.2 7 3.8",
+  log:"M8 4.5h9.5M8 10h9.5M8 15.5h6M2.5 3.5h2.5V6H2.5ZM2.5 9h2.5v2.5H2.5ZM2.5 14.5h2.5V17H2.5Z",
+  file:"M2.5 4h5.5l1.5 2h8v11h-15ZM2.5 9h15"};
+// What each tab is holding for you: unanswered items at home, log pages since your last visit.
+function waiting(){let n=S.open.filter((o)=>o.mine==null).length;if(EG&&S.eng){const d=S.eng.drops[S.eng.drops.length-1];if(d&&!d[3])n++}return n}
+function unread(){return S?Math.max(0,S.day-Math.max(S.last,logSeen)):0}
+function dock(html,tabs){
+  const d=$("dock");
+  d.hidden=!html&&!tabs;
+  const tb=EG?["home","crew","log","file"]:["home","crew","log"];
+  const bd={home:tabs!=="home"&&S&&S.ending===NONE?waiting():0,log:tabs!=="log"?unread():0};
+  const say={home:"waiting on you",log:"new log pages"};
+  d.innerHTML=(html?`<div class=act>${html}</div>`:"")+(tabs?`<nav class="${EG?"n4":""}" aria-label="Sections">${tb.map((t)=>`<button data-go="${t}"${tabs===t?" aria-current=page":""}><svg viewBox="0 0 20 20" aria-hidden=true><path d="${ICO[t]}"/></svg>${t.toUpperCase()}${bd[t]?`<b class=bd>${bd[t]>9?"9+":bd[t]}</b><span class=sr>, ${bd[t]} ${say[t]}</span>`:""}</button>`).join("")}</nav>`:"");
+  $("v").className=html&&tabs?"":tabs||html?"short":"nodock";
+}
+function shipTop(){bar(`${ship(S.you).toUpperCase()}`,`FD ${pad(S.day)}/${S.season}`)}
+function actDock(){
+  if(S.cond[S.you]===2)return `<div class=done><span class=dim>${h(nm(S.you))} is on the capsule home. Votes still count.</span></div>`;
+  if(S.act){const [a,p,tg]=S.act;return `<div class=done><span><b>Logged:</b> ${h(actLabel(a,p,tg))}</span><span class=dim>Takes effect FD ${pad(S.day+1)}. One a day.</span></div>`}
+  return `<button class="btn pri" data-go="act"><span>Instruct ${h(nm(S.you))}</span><i>1/day</i></button>`;
+}
+function actLabel(a,p,tg){
+  if(a===0)return `Give ${nm(tg)} a gift`;
+  if(a===1)return `Try to be ${T.axis_words[p][tg?0:1]}`;
+  if(a===2)return `Work on ${T.res_words[p]}`;
+  return "Rest";
+}
+function openRow(o){
+  const c=T.cards[o.card],last=o.close-1;
+  const when=last<=S.day?"Last day":`To FD ${pad(last)}`;
+  const tag=o.mine!=null?"Answered":when;
+  return `<button class=go data-go="item/${o.card}"><span class="lab ${o.type===4?"r":""}"><span>${KIND[o.type]}</span><span>${tag}</span></span><b>${h(first(fill(c.t,o.a,o.b)))}</b></button>`;
+}
+function home(){
+  if(S.ending!==NONE)return ending();
+  shipTop();
+  const here=[...Array(N).keys()].filter((c)=>S.loc[c]===S.you&&S.cond[c]!==2);
+  const away=S.loc[S.you]!==S.you;
+  const since=[];for(let d=Math.max(1,S.last+1);d<S.day;d++)since.push(d);
+  const rw=since.filter(rewritten);
+  let o=`<div class=kick><div class=lab>Flight day</div><h1 class=m>${pad(S.day)} <span class=dim style="font-weight:400">/ ${S.season}</span></h1>
+  <p class=dim>${S.season-S.day} days to Mars orbit.</p>${traj()}</div>`;
+  o+=engTop();
+  const on=(s)=>[...Array(N).keys()].filter((c)=>S.loc[c]===s&&S.cond[c]!==2);
+  o+=`<section><div class=lab><span>Who's where</span><span>${N-S.cond.filter((c)=>c===2).length} flying</span></div><div class=fleet role=img aria-label="${h([...Array(N).keys()].map((s)=>ship(s)+": "+(on(s).map(nm).join(", ")||"empty")).join(". "))}">${[...Array(N).keys()].map((s)=>`<div class="${s===S.you?"here":""}"><b>${pad(s+1)}</b>${on(s).map((c)=>`<span class="${c===S.you?"y":""}">${h(nm(c).slice(0,3).toUpperCase())}</span>`).join("<br>")||"<i>—</i>"}</div>`).join("")}</div>`;
+  o+=here.map((c)=>`<button class=row data-go="${c===S.you?"crew":"crew/"+c}"><span class=pt>${portrait(c)}</span><span class=t>${h(nm(c))}<small>${c===S.you?"Your astronaut":"Visiting from "+h(ship(c))}${S.cond[c]===1?" · injured":""}</small></span></button>`).join("");
+  if(!here.length)o+=`<div class=row><span class="t dim">Nobody aboard ${h(ship(S.you))} right now.</span></div>`;
+  if(away)o+=`<button class=row data-go="crew"><span class=pt>${portrait(S.you)}</span><span class=t>${h(nm(S.you))}<small>Your astronaut · visiting ${h(ship(S.loc[S.you]))}</small></span></button>`;
+  o+=`</section><section><div class=lab><span>Today</span><span>FD ${pad(S.day)}</span></div><ul class=log>${dayList(S.day)}</ul></section>`;
+  if(since.length){
+    o+=`<section class=nw><div class=lab><span>Since your last visit</span><span>FD ${pad(since[0])}–${pad(since[since.length-1])}</span></div><ul class=log>`;
+    for(const d of since.slice().reverse())o+=dayList(d,2);
+    o+=`</ul>${rw.length?`<p class=upd style="margin-top:12px"><b>Log updated</b> · late signals re-ran ${rw.length===1?"FD "+pad(rw[0]):rw.length+" days"}</p>`:""}<button class="btn sec" style="margin-top:16px" data-go="log"><span>Full log</span><i>${S.day} pages</i></button></section>`;
+  }
+  o+=`<section><div class=lab><span>Fleet stores</span><span>shared</span></div><div class=stores>${T.res.map((r,i)=>`<div><span class=lab>${r}</span><b>${S.res[i]}</b></div>`).join("")}</div></section>`;
+  $("v").innerHTML=o;
+  dock(actDock(),"home");
+}
+function bondWord(b){return b>=40?"Close":b>=15?"Friendly":b>-15?"Neutral":b>-40?"Prickly":"At odds"}
+function crew(c){
+  const mine=c===S.you||c==null;c=mine?S.you:c;
+  shipTop();
+  let o=`<div class=me><span class=port>${portrait(c)}</span><div><div class=lab>${mine?"Your astronaut":h(ship(c))}</div><h1>${h(nm(c))}</h1>
+  <dl class=facts><dt>Ship</dt><dd>${h(ship(c))}${c===T.flagship?" · flagship":""}</dd><dt>Aboard</dt><dd>${S.loc[c]===c?"Home ship":h(ship(S.loc[c]))}</dd><dt>Status</dt><dd>${COND[S.cond[c]]}</dd></dl></div></div>`;
+  o+=`<section><div class=lab><span>Character</span><span>−100 / +100</span></div>${[0,1,2].map((a)=>gauge(c,a)).join("")}</section>`;
+  o+=`<section><div class=lab><span>Morale</span><span>${S.morale[c]}</span></div><div class=gauge style="padding-top:0"><span class=lo>Low</span><span></span><span class=hi>High</span>${meter(S.morale[c])}</div></section>`;
+  if(mine){
+    const ord=[...Array(N).keys()].filter((j)=>j!==c).sort((a,b)=>S.bonds[b]-S.bonds[a]);
+    o+=`<section><div class=lab><span>Crewmates</span><span>bond</span></div>`+ord.map((j)=>`<button class=row data-go="crew/${j}"><span class=pt>${portrait(j)}</span><span class=t>${h(nm(j))}<small>${bondWord(S.bonds[j])}${S.cond[j]===2?" · sent home":""}</small></span><span class=m style="width:88px;height:24px">${ticks(S.bonds[j],5)}</span></button>`).join("")+`</section>`;
+  }
+  const mentions=[];
+  for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if(x.s.includes(nm(c))&&mentions.length<3)mentions.push([d,x.s]);
+  o+=`<section><div class=lab><span>Lately</span></div><ul class=log>${mentions.map(([d,s])=>`<li><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(s)}</li>`).join("")||"<li class=fold>Nothing logged yet.</li>"}</ul></section>`;
+  if(mine)o+=`<section>${EG?"":`<button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button>`}${S.led!=null?`<button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>the board's LED</i></button>`:""}<button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
+  $("v").innerHTML=o;
+  dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to ${h(nm(S.you))}</span><i>←</i></button>`,"crew");
+}
+function log(at){
+  shipTop();
+  if(logCut<0)logCut=Math.max(S.last,logSeen);
+  const nu=S.day-logCut;
+  let o=`<div class=kick><div class=lab>Voyage log · ${h(ship(S.you))}</div><h2>${S.day} ${S.day===1?"page":"pages"}, newest first</h2>${nu>0?`<p class=dim style="font-size:15px">${nu} new since your last visit, marked <span class="m" style="color:var(--rust-t)">■</span></p>`:""}</div>`;
+  for(let d=S.day;d>=1;d--){
+    const a=rewritten(d);
+    o+=`<div class="day${d>logCut?" nw":""}" id="d${d}"><div class=lab>${pageHead(d)}${d>logCut?"<span class=sr>, new since your last visit</span>":""}</div>${d>=S.day-1?`<p class=chg>${d===S.day?"Today":"Yesterday"} · may still change</p>`:""}`;
+    if(a)o+=`<p class=upd><b>Log updated</b> FD ${pad(a)} · a late signal re-ran this page</p>`;
+    o+=`<ul class=log>${dayList(d)}</ul></div>`;
+  }
+  $("v").innerHTML=o;
+  logSeen=S.day;
+  dock("","log");
+  if(at&&$("d"+at))$("d"+at).scrollIntoView();
+}
+// render.js pageHeading "LOG PAGE 12 · DAYS 32–36", split across the rule: page left, days right.
+function pageHead(d){const [p,r]=pageHeading(d).split(" · ");return `<span>${p}</span><span class=dim>${r}</span>`}
+function item(card){
+  const o=S.open.find((x)=>x.card===card);
+  if(!o)return go("home");
+  shipTop();
+  const c=T.cards[card],chosen=pick[card]!=null?pick[card]:o.mine;
+  const ballots=o.tally.reduce((a,b)=>a+b,0),last=o.close-1;
+  const head={3:["Fleet vote","Every ship gets one ballot."],4:["Private",`Only you see this. You look after ${nm(o.a)}.`],5:["Anyone can answer","One tap from any ship is enough."]}[o.type];
+  let x=`<div class=card><div class="lab ${o.type===4?"r":""}"><span>${head[0]}</span><span>${last<=S.day?"Last day":"To FD "+pad(last)}</span></div><div class=body><p class=lead>${h(fill(c.t,o.a,o.b))}</p><p class=dim style="font-size:16px">${h(head[1])}</p></div></div>`;
+  x+=`<section style="padding-top:16px">`+c.o.map((op,i)=>{
+    let sub=o.type===3?`${o.tally[i]} ballot${o.tally[i]===1?"":"s"} in`:"";
+    if(i===o.lean)sub+=(sub?" · ":"")+(o.type===4?`${nm(o.a)} leans this way`:o.type===5?"Happens if nobody answers":"The crew leans this way");
+    if(o.mine===i)sub+=(sub?" · ":"")+"your answer";
+    const bar=o.type===3&&ballots?`<span class=bar><i style="width:${Math.round(100*o.tally[i]/ballots)}%"></i></span>`:"";
+    return `<button class="opt${o.mine===i?" mine":""}${bar?" tv":""}" data-pick="${card}:${i}" aria-pressed="${chosen===i}"><span class=k>${"ABCD"[i]}</span><span class=t><b>${h(fill(op[0],o.a,o.b))}</b>${sub?`<small>${h(sub)}</small>`:""}</span>${bar}</button>`;
+  }).join("")+`</section>`;
+  const why={3:`Votes close at the end of FD ${pad(last)}. Most ballots win; a tie or no ballots goes the way the crew leans. Ballots reach other ships as they pass, so counts here may be behind.`,
+    4:`If you don't answer by the end of FD ${pad(last)}, ${nm(o.a)} decides alone, in character. Nobody else is told what you picked.`,
+    5:`Any ship can answer until the end of FD ${pad(last)}. ${ballots?ballots+" already have.":"Nobody has yet."}`}[o.type];
+  x+=`<p class=note>${h(why)}</p>`;
+  $("v").innerHTML=x;
+  const verb={3:"Cast ballot",4:"Send answer",5:"Answer"}[o.type];
+  const changed=chosen!=null&&chosen!==o.mine;
+  dock(o.mine!=null&&!changed?`<div class=done><span><b>Sent:</b> ${h(fill(c.o[o.mine][0],o.a,o.b))}</span><span class=dim>Tap another option to change it until FD ${pad(last)}.</span></div>`:
+    `<button class="btn pri" data-send="${card}"${chosen==null?" disabled":""}><span>${verb}</span><i>${chosen==null?"pick one":"ABCD"[chosen]}</i></button>`,"home");
+}
+function actSheet(){
+  if(S.act)return go("home");
+  $("top").hidden=false;$("top").innerHTML=`<b>INSTRUCTION</b><button data-go="home" class=m style="height:48px;padding:0 0 0 16px;font-size:15px;text-decoration:underline">Cancel</button>`;
+  const d=draft||(draft={a:null,p:null,t:null});
+  const A=nm(S.you);
+  const acts=[["Give a gift","Bond with one crewmate"],["Give advice","Nudge "+A+"'s character"],["Set a task","Top up a fleet store"],["Rest","Morale back up"]];
+  let o=`<div class=kick><div class=lab>One a day · takes effect FD ${pad(S.day+1)}</div><h2>What should ${h(A)} do?</h2></div><section style="padding-top:8px">`;
+  o+=acts.map(([l,s],i)=>d.a!=null&&d.a!==i?"":`<button class=opt data-act="${d.a===i?"x":i}" aria-pressed="${d.a===i}"><span class=k>${i+1}</span><span class=t><b>${l}</b><small>${h(d.a===i?"Tap to choose something else":s)}</small></span></button>`).join("");
+  o+=`</section>`;
+  if(d.a===0){
+    const mates=[...Array(N).keys()].filter((j)=>j!==S.you&&S.cond[j]!==2);
+    o+=`<section><div class=lab><span>To whom</span></div><div class=grid2>${mates.map((j)=>`<button class=opt data-sub="t:${j}" aria-pressed="${d.t===j}"><span class=k>${pad(j+1)}</span><span class=t>${h(nm(j))}</span></button>`).join("")}</div></section>`;
+  }else if(d.a===1){
+    o+=`<section><div class=lab><span>Try to be</span></div><div class=grid2>${[0,1,2].flatMap((p)=>[1,0].map((dir)=>`<button class=opt data-sub="p:${p}:${dir}" aria-pressed="${d.p===p&&d.t===dir}"><span class=k>${dir?"+":"−"}</span><span class=t>${h(T.axis_words[p][dir?0:1])}</span></button>`)).join("")}</div></section>`;
+  }else if(d.a===2){
+    o+=`<section><div class=lab><span>Work on</span></div>${[0,1,2].map((p)=>`<button class=opt data-sub="p:${p}" aria-pressed="${d.p===p}"><span class=k>${T.res[p][0].toUpperCase()}</span><span class=t><b>${h(T.res_words[p])}</b><small>${T.res[p]} now ${S.res[p]}</small></span></button>`).join("")}</section>`;
+  }
+  $("v").innerHTML=o;
+  const ok=d.a===3||(d.a===0&&d.t!=null)||(d.a===1&&d.p!=null)||(d.a===2&&d.p!=null);
+  if(ok)$("v").insertAdjacentHTML("beforeend",`<p class=note><b style="color:var(--ink)">${h(actLabel(d.a,d.p,d.t))}.</b> ${h(A)} does it on FD ${pad(S.day+1)}.</p>`);
+  dock(`<button class="btn pri" data-send="act"${ok?"":" disabled"}><span>Log instruction</span><i>${ok?"FD "+pad(S.day+1):"choose"}</i></button>`,"");
+}
+function storyBytes(){return Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0))}
+function ending(){
+  bar("ARRIVAL",`FD ${S.season}/${S.season}`);
+  const c=T.cards[S.ending];
+  let dec=0,res=0,notes=0,acts=0,ea=NONE,eb=NONE;
+  const b=storyBytes();
+  for(let i=0;i<b.length;i+=8){const k=b[i+1];dec+=k===O.DEC_CLOSE;res+=k===O.RES_CLOSE;notes+=k===O.NOTE;acts+=k===O.ACT&&b[i+6]===0;if(k===O.END){ea=b[i+3];eb=b[i+4]}}
+  const rw=Object.keys(S.updated).filter((d)=>rewritten(+d)).length;
+  const ct=R.fill(c.t,ea,eb),ttl=first(ct),rest=ct.slice(ttl.length).trim();
+  let o=`<div class="kick rep"><div class=lab>Mission report · ${h(ship(S.you))}</div><h1>${h(ttl.replace(/\.$/,""))}</h1><p class=lead>${h(rest)}</p>${traj()}</div>`;
+  o+=`<section><div class=lab><span>The voyage</span><span>${S.season} days</span></div><div class=tbl><div>Fleet votes settled</div><div>${dec}</div><div>Calls for help answered</div><div>${res}</div><div>Instructions followed</div><div>${acts}</div><div>Notes passed</div><div>${notes}</div><div>Days re-run by late signals</div><div>${rw}</div></div></section>`;
+  const lost=S.cond.filter((x)=>x===2).length;
+  o+=`<section><div class=lab><span>Manifest</span><span>${N-lost} of ${N} landed</span></div><div class=man>${[...Array(N).keys()].map((k)=>`<div class="${S.cond[k]===2?"x":""}${k===S.you?" y":""}"><span class=pt>${portrait(k)}</span><b>${h(nm(k))}</b><span>${S.cond[k]===2?"HOME":"LANDED"}</span></div>`).join("")}</div></section>`;
+  $("v").innerHTML=o;
+  dock(`<button class="btn pri" data-go="epilogue"><span>Epilogue</span><i>${N} crew</i></button>`,"home");
+}
+// The last screen: one line per astronaut (render.js epilogue, story lines first, the
+// final state filling any gap), the coda for the one who isn't crew, then the reread days.
+function epilogue(){
+  if(S.ending===NONE)return home();
+  bar("EPILOGUE",`FD ${S.season}/${S.season}`);
+  const b=storyBytes(),E=T.epi||{},lost=S.cond.filter((x)=>x===2).length;
+  // The ship sends each astronaut's closest crewmate and that bond (best/bestb); that is
+  // all the fallback reads. Older ships send only your own bonds.
+  const st={trait:(c,a)=>S.traits[c][a],bond:(c,j)=>S.bestb?(j===S.best[c]?S.bestb[c]:-999):c===S.you?S.bonds[j]:-999};
+  const L=R.epilogue(b,st),cd=R.coda(b);
+  let o=`<div class=kick><div class=lab>Epilogue · ${h(ship(S.you))}</div><h1>Afterwards</h1>${E.head?`<p class=dim>${h(E.head[lost?1:0])}</p>`:""}</div>`;
+  o+=`<section><div class=lab><span>The crew</span><span>${N-lost} of ${N} landed</span></div>`;
+  o+=[...Array(N).keys()].map((k)=>`<div class="epi${k===S.you?" y":""}"><span class=pt>${portrait(k)}</span><div><h3>${h(nm(k))}<small>${pad(k+1)}</small>${S.cond[k]===2?"<small class=r>Sent home</small>":k===S.you?"<small class=r>Yours</small>":""}</h3><p>${h(L[k]||"")}</p></div></div>`).join("");
+  if(cd)o+=`<div class="epi coda"><span class=pt>${beacon()}</span><div><h3>${h(cd[0])}</h3><p>${h(cd[1])}</p></div></div>`;
+  o+=`</section>`+reread();
+  $("v").innerHTML=o;
+  dock(`<button class="btn sec" data-go="log"><span>Read the log</span><i>${S.season} pages</i></button>`,"home");
+}
+// Not crew, so no portrait: a beacon mark in the same line weights.
+function beacon(){
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="4" fill="var(--rust)"/><path d="M22 22A14 14 0 0 0 22 42M42 22A14 14 0 0 1 42 42M15 15A24 24 0 0 0 15 49M49 15A24 24 0 0 1 49 49" stroke="var(--ink)" stroke-width="1.5" fill="none"/></svg>`;
+}
+
+// After the ending: the flight days worth a second look (text.json "reread", cards marked
+// `clue`), as a plain list of days into the log. Deliberately unexplained.
+function reread(){
+  const want=new Set(T.reread||[]);if(!want.size)return"";
+  const b=Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0)),days=new Set();
+  for(let i=0;i+8<=b.length;i+=8)if([O.EVENT,O.DEC_OPEN,O.DIL_OPEN,O.RES_OPEN].includes(b[i+1])&&want.has(b[i+2]))days.add(b[i]);
+  if(!days.size)return"";
+  const ds=[...days].sort((x,y)=>x-y);
+  return `<section><div class=lab><span>Read again</span><span>${ds.length} ${ds.length===1?"day":"days"}</span></div>${ds.map((d)=>{const [x,y]=pageDays(d);return `<button class=row data-go="log/${d}"><span class=t>Log page ${pad(d)}<small>${x===y?"Day "+x:`Days ${x}–${y}`}</small></span><span class="m dim">→</span></button>`}).join("")}</section>`;
+}
+
+// ---- first run ------------------------------------------------------------------------
+// Before launch the ship says {day: 0, launch, until} on /api/crew: a countdown instead of
+// the sign-in, rechecked every 30 s (each check carries this phone's clock to the ship).
+function hm(m){return m%60?pad(m/60|0)+":"+pad(m%60):String(m/60|0)}
+function wait(m){if(m==null)return "soon";if(m<1)return "under a minute";const d=m/1440|0,hh=(m%1440)/60|0,mm=m%60;return d?`${d} day${d>1?"s":""}${hh?` ${hh} h`:""}`:hh?`${hh} h${mm?` ${mm} min`:""}`:`${mm} min`}
+function crewInfo(j){codeSet=j.set||[];if(j.start!=null)DSTART=j.start;PRE=j.day===0&&j.launch?j:null;
+  clearInterval(preT);if(PRE)preT=setInterval(async()=>{try{crewInfo(await api("/api/crew"));if(!tok&&route==="hello")view()}catch(e){}},30000)}
+function hello(){
+  bar("THE LONG VOYAGE","8 SHIPS");
+  let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Eight ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
+  if(PRE){let when=PRE.launch;try{when=new Date(PRE.launch+"T12:00").toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"})}catch(e){}
+    o=`<div class="kick pre"><div class=lab>Pre-launch · FD 00</div><h1>Launch in ${wait(PRE.until)}</h1><p>Flight day 01 starts at ${pad(DSTART/60|0)}:${pad(DSTART%60)} on ${h(when)}. Boarding opens then; this page checks by itself.</p></div><section>`}
+  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"${codeSet[c]===false||PRE?" disabled":""}><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span>${codeSet[c]===false?"<span class=lab>Not set up</span>":""}</button>`).join("");
+  $("v").innerHTML=o+`</section>`;
+  dock("","");
+}
+function portraitBare(c){const s=S;S=null;const r=portrait(c);S=s;return r}
+function pinScreen(err){
+  const wait=lockLeft();
+  if(wait&&!err)err=`Too many tries. Try again in ${wait>59?Math.ceil(wait/60)+" min":wait+" s"}.`;
+  bar(h(ship(me).toUpperCase()),"SIGN IN");
+  let o=`<div class=kick><div class=lab>${h(nm(me))}</div><h2>Your crew code</h2><p class="dim help">The 4 digits that came with your ship. This phone stays signed in until the next flight day.</p>`;
+  o+=`<div class=pin aria-hidden=true>${[0,1,2,3].map((i)=>`<span class="${i===pin.length&&!wait?"cur":""}">${pin[i]?"•":""}</span>`).join("")}</div><p class=sr aria-live=polite>${err?h(err):pin.length+" of 4 digits entered"}</p><div class=err aria-hidden=true>${err?h(err):""}</div></div>`;
+  $("v").innerHTML=o;
+  dock(`<div class=keys style="margin:-8px -16px">${["1","2","3","4","5","6","7","8","9","BACK","0","DEL"].map((k)=>`<button class="${k.length>1?"fn":""}" data-key="${k}" aria-label="${{BACK:"Back to names",DEL:"Delete digit"}[k]||k}"${wait&&k!=="BACK"?" disabled":""}>${k}</button>`).join("")}</div>`,"");
+  $("v").className="pinpad";
+}
+function meet(){
+  bar(h(ship(S.you).toUpperCase()),"WELCOME ABOARD");
+  const A=nm(S.you);
+  let o=`<div class="kick big"><div class=lab>Your astronaut</div><div style="display:flex;gap:16px;align-items:flex-end;margin-top:8px"><span class=port style="width:152px;height:152px">${portrait(S.you)}</span><div><h1>${h(A)}</h1><p class=dim style="margin-top:0">${h(ship(S.you))}${S.you===T.flagship?" · flagship":""}</p></div></div>`;
+  o+=`<p>Once a day you can give ${h(A)} one instruction. Everything else, ${h(A)} decides. The voyage carries on while you're away.</p></div>`;
+  o+=`<section><div class=lab><span>Starting character</span></div>${[0,1,2].map((a)=>gauge(S.you,a)).join("")}</section>`;
+  $("v").innerHTML=o;
+  dock(tutDue?`<button class="btn pri" data-go="how"><span>Crew briefing</span><i>${EG?6:4} cards</i></button>`:`<button class="btn pri" data-go="home"><span>Go aboard</span><i>FD ${pad(S.day)}</i></button>`,"");
+}
+
+// ---- crew briefing (how to play) -------------------------------------------------------
+// Mechanics only, never story. Shown once after a first sign-in (the ship says `first`),
+// then filed under FILE (or your own crew page) as "How to play". The one thing this page
+// keeps on the phone is that it has been read; if the browser forgets, nothing breaks.
+const TK="lv-briefed";
+const briefed=()=>{try{return localStorage.getItem(TK)==="1"}catch(e){return false}};
+let tutDue=false,tutFrom="home";
+function briefDone(){try{localStorage.setItem(TK,"1")}catch(e){}tutDue=false;go(tutFrom)}
+function tFig(kind){
+  if(kind===1){let t="";const Q=S.season;for(let i=1;i<=Q;i++){const x=(i-.5)*100/Q,on=S&&i<=S.day,now=S&&i===S.day;t+=`<line x1="${x}" x2="${x}" y1="${now?2:i%7?10:6}" y2="22" stroke="${now?PR:on?PI:"var(--rule)"}" stroke-width="${now?2:1}" vector-effect="non-scaling-stroke"/>`}
+    return `<div class=fig><svg viewBox="0 0 100 24" preserveAspectRatio="none" style="height:24px">${t}</svg><div class=lab><span>FD 01</span><span>Today FD ${pad(S.day)}</span><span>FD ${pad(Q)}</span></div></div>`}
+  if(kind===3){let t="";for(let i=0;i<8;i++){const x=1+i*12.4;t+=`<rect x="${x}" y="1" width="9" height="9" fill="${[0,1,3,4,6].includes(i)?PI:"none"}" stroke="${PI}" stroke-width="1"/>`;if(i<7)t+=`<path d="M${x+9.5} 5.5H${x+12.4}" stroke="${PI}" stroke-dasharray="1 1" stroke-width=".75"/>`}
+    return `<div class=fig><svg viewBox="0 0 100 11">${t}</svg><div class=lab><span>8 ships</span><span>5 ballots heard here</span></div></div>`}
+  let t="";["w","w","c","w","w","w","t"].forEach((k,i)=>{t+=`<rect x="${1+i*14}" y="1" width="12" height="12" fill="${k==="w"?PI:"none"}" stroke="${k==="t"?PR:PI}" stroke-width="${k==="t"?2:1}"${k==="c"?' stroke-dasharray="2 1.5"':""}/>`});
+  return `<div class=fig><svg viewBox="0 0 100 14">${t}</svg><div class=lab><span>Solid: watch</span><span>Dashed: covered</span><span>Rust: today</span></div></div>`;
+}
+function TUT(){
+  const A=h(nm(S.you)),file=EG?"FILE":"CREW",st0=S.start!=null?S.start:DSTART;
+  const st=[
+    ["The voyage","One page a day",`The voyage runs ${S.season} flight days, from Earth orbit to Mars orbit. A new flight day starts every ${st0<720?"morning":"day"} at ${hm(st0)}. The voyage takes ${S.season%7?S.season+" days":(["one week","two weeks","three weeks","four weeks","five weeks","six weeks","seven weeks","eight weeks"][S.season/7-1]||S.season/7+" weeks")}. Each flight day adds one page to the log.`,tFig(1),
+      [["Your astronaut",`You look after ${A}. Once a flight day you may give ${A} one instruction: a gift, some advice, a task, or rest.`],["Everything else",`${A} decides. Instructions and answers take effect on the next flight day.`]]],
+    ["Needs you","Things waiting on you",`Home lists only what is waiting on you. Each item shows the flight day it closes. New ones carry a rust mark.`,"",
+      [["Private",`A question only you are asked. Nobody else is told what you picked.`],["Anyone",`Any ship can answer. One tap from anywhere is enough.`],["Fleet vote","Every ship gets a ballot. See next card."]].concat(EG?[["Timed job",`${A}'s job for the day. The result posts at the time shown.`]]:[]).concat([["Left alone",`It settles itself: the crew's lean, or ${A}'s own judgement.`]])],
+    ["Fleet votes","One ship, one ballot",`A fleet vote goes to all eight ships. The most ballots by the closing day wins. A tie, or no ballots at all, goes the way the crew leans.`,tFig(3),
+      [["Ballots travel","Ships pass ballots along whenever they are in range of each other. Your count is what your ship has heard so far, so it may lag. It catches up."],["Second thoughts","You can change your ballot until the vote closes."]]]];
+  if(EG)st.push(
+    ["Deliveries","Drops and cargo",`Small extras. None of them are required.`,"",
+      [["Daily drop","One sealed item for your ship each flight day. It keeps. Open it whenever you like."],["Gifts","Send one crewmate one gift a flight day. It warms the bond and lifts their morale a little."],["Asks","Ask for one thing a flight day. Anyone may answer it for 3 days, after which it lapses quietly."],["Cargo in","Anything sent to you waits on Home."]]],
+    ["Watch duty","Keeping watch",`Anything you send on a flight day counts as a watch: an instruction, a ballot, an answer, a gift or an ask.`,tFig(5),
+      [["Grace days",`Miss a day and ${A} covers it, up to twice a flight week. Today never counts against you.`],["Badges",`Awarded at ${EG.badges.map((b)=>b[0]).join(", ").replace(/, (\d+)$/," and $1")} days.`],["Broken run","A new watch starts with your next tap. No paperwork."]]]);
+  st.push(["The log","At your own pace",`The log reads newest page first. Pages new since your last visit carry a rust square.`,"",
+    [["Late signals","Today's and yesterday's pages may still change as word arrives from other ships. That is normal."],["Days off",`Miss a day, or a week. ${A} carries on in character, votes close with whoever voted, and nothing waits on anyone.`],["Filed under",`${file} › How to play, for when you need it again.`]]]);
+  return st;
+}
+function how(n){
+  const L=TUT();n=Math.min(Math.max(0,n|0),L.length-1);
+  const [k,t,p,fig,li]=L[n],last=n===L.length-1;
+  $("top").hidden=false;$("top").innerHTML=`<b>CREW BRIEFING</b>${last?`<span>${pad(n+1)}/${pad(L.length)}</span>`:`<button data-tut=skip class=m style="height:48px;padding:0 0 0 16px;font-size:15px;text-decoration:underline">Skip</button>`}`;
+  let o=`<section class="kick tut" aria-labelledby=th aria-roledescription="briefing card"><div class=lab style="display:flex;justify-content:space-between;gap:var(--s3)"><span>Briefing ${pad(n+1)}/${pad(L.length)}</span><span>${k}</span></div>`;
+  o+=`<ol class=tsteps aria-hidden=true>${L.map((_,i)=>`<li class="${i<n?"d":i===n?"c":""}"></li>`).join("")}</ol>`;
+  o+=`<h1 id=th tabindex=-1><span class=sr>Step ${n+1} of ${L.length}: </span>${t}</h1><p class=lead>${p}</p>${fig?fig.replace("<svg",'<svg aria-hidden="true"'):""}`;
+  o+=`<ul class=bl>${li.map(([a,b])=>`<li><b>${a}</b><span>${b}</span></li>`).join("")}</ul>`;
+  if(last)o+=`<p class=fine>Issued to all crews. Retain this card, or don't: it is filed under How to play.</p>`;
+  $("v").innerHTML=o+`</section>`;
+  dock(`<div class=tnav>${n?`<button class="btn sec" data-tut=back aria-label="Previous card"><span>Back</span></button>`:`<button class="btn sec" data-tut=skip><span>Skip</span></button>`}<button class="btn pri" data-tut="${last?"done":"next"}"><span>${last?"Go aboard":"Next"}</span><i>${last?"done":pad(n+2)+"/"+pad(L.length)}</i></button></div>`,"");
+  requestAnimationFrame(()=>$("th")&&$("th").focus({preventScroll:true}));
+}
+function tutStep(){return +(route.split("/")[1]||0)}
+function tutKey(v){
+  const n=tutStep();
+  if(v==="next")return go("how/"+(n+1));
+  if(v==="back")return go("how/"+Math.max(0,n-1));
+  briefDone();
+}
+document.addEventListener("keydown",(e)=>{
+  if(!route.startsWith("how")||e.altKey||e.ctrlKey||e.metaKey)return;
+  const n=tutStep(),m=TUT().length-1;
+  if(e.key==="ArrowRight"&&n<m){e.preventDefault();tutKey("next")}
+  else if(e.key==="ArrowLeft"&&n>0){e.preventDefault();tutKey("back")}
+  else if(e.key==="Escape"){e.preventDefault();briefDone()}
+});
+
+// ---- routing & input ------------------------------------------------------------------
+let route="hello";
+function go(r){
+  const n=r!==route;
+  if(n&&r.startsWith("how")&&!route.startsWith("how"))tutFrom=route.startsWith("meet")||route.startsWith("pin")?"home":route;
+  if(n){route=r;history.replaceState(null,"","#"+r);scrollTo(0,0);if(!r.startsWith("log"))logCut=-1}
+  view();
+  if(n&&!RM.matches&&$("v").animate)$("v").animate([{opacity:0,transform:"translateY(6px)"},{opacity:1,transform:"none"}],{duration:140,easing:"cubic-bezier(.2,.7,.3,1)"});
+}
+function view(){
+  if(!tok&&!["hello","pin"].includes(route))route="hello";
+  const [a,b]=route.split("/");
+  try{
+    if(a==="hello")return hello();
+    if(a==="pin")return pinScreen();
+    if(!S)return;
+    if(a==="meet")return meet();
+    if(a==="crew")return crew(b!=null?+b:null);
+    if(a==="log")return log(b!=null?+b:0);
+    if(a==="item")return item(+b);
+    if(a==="act")return actSheet();
+    if(a==="how")return how(+b||0);
+    if(EG&&S.eng&&ENG[a])return ENG[a](b);
+    if(a==="end")return S.ending!==NONE?ending():home();
+    if(a==="epilogue")return epilogue();
+    return home();
+  }finally{if(net!=="live"&&tok&&S)$("v").insertAdjacentHTML("afterbegin",net==="lost"?"<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>":"<div class=off role=status>Live link down · checking every 15 s</div>")}
+}
+// Lockout countdown: the ship decides when it ends; the phone's clock only draws the minutes.
+function lockLeft(){const u=lockUntil[me];return u?Math.max(0,Math.ceil((u-Date.now())/1000)):0}
+let lockT=0;
+function lockTick(){clearInterval(lockT);lockT=setInterval(()=>{if(route!=="pin"){clearInterval(lockT);return}if(!lockLeft()){clearInterval(lockT);delete lockUntil[me]}pinScreen()},1000)}
+let busy=false;
+async function key(k){
+  if(k==="BACK"){pin="";busy=false;return go("hello")}
+  if(busy)return;   // a code is on its way to the ship: don't start the next one
+  if(k==="DEL")pin=pin.slice(0,-1);
+  else if(pin.length<4)pin+=k;
+  pinScreen();
+  if(pin.length===4){
+    busy=true;
+    try{
+      const j=await api("/api/login",{crew:me,pin});
+      tok=j.token;pin="";busy=false;tutDue=!!j.first&&!briefed();
+      await refresh();live();
+      go(j.first?"meet":"home");
+    }catch(e){
+      pin="";const j=e.j||{};
+      if(j.wait){lockUntil[me]=Date.now()+j.wait*1000;lockTick()}
+      busy=false;
+      pinScreen(j.wait?"":j.left!=null?`That code doesn't match. ${j.left} ${j.left===1?"try":"tries"} left.`:e.message);
+    }
+  }
+}
+document.addEventListener("click",async(ev)=>{
+  const el=ev.target.closest("button");if(!el||el.disabled)return;
+  const D=el.dataset;
+  if(D.go){if(D.go==="act")draft=null;return go(D.go)}
+  if(D.eng)return engClick(el,D.eng);
+  if(D.tut)return tutKey(D.tut);
+  if(D.who){me=+D.who;pin="";if(lockLeft())lockTick();return go("pin")}
+  if(D.out){
+    try{await api("/api/logout",{})}catch(e){}
+    if(ws){ws.onclose=ws.onerror=null;ws.close();ws=null}
+    clearInterval(poll);poll=0;net="live";tok="";me=-1;S=null;return go("hello");
+  }
+  if(D.led){el.disabled=true;try{const j=await api("/api/led",{on:!S.led});S.led=!!j.led}catch(e){}return view()}
+  if(D.key)return key(D.key);
+  if(D.retry){if(!T)return location.reload();el.disabled=true;return refresh().catch(()=>{el.disabled=false})}
+  if(D.pick){const [c,i]=D.pick.split(":").map(Number);pick[c]=i;return view()}
+  if(D.act){draft={a:D.act==="x"?null:+D.act,p:null,t:null};return view()}
+  if(D.sub){const p=D.sub.split(":");if(p[0]==="t")draft.t=+p[1];else{draft.p=+p[1];if(p[2]!=null)draft.t=+p[2]}return view()}
+  if(D.send){
+    el.disabled=true;
+    try{
+      if(D.send==="act"){const d=draft;await api("/api/act",{act:d.a,param:d.p||0,tgt:d.t||0});draft=null;await refresh();return go("home")}
+      const c=+D.send,o=S.open.find((x)=>x.card===c);
+      await api(o.type===4?"/api/answer":"/api/vote",{card:c,opt:pick[c]});
+      delete pick[c];await refresh();
+    }catch(e){el.disabled=false;const d=$("dock");d.querySelector(".off")?.remove();d.insertAdjacentHTML("afterbegin",`<div class=off role=alert>${h(e.message)}</div>`)}
+  }
+});
+// ?probe: a one-line readout of what the page really gets (for measuring the captive sheet on a real phone).
+if(/[?&]probe\b/.test(location.search)){
+  const z=document.createElement("div");
+  z.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--ink);color:var(--paper);font:12px/16px var(--mono);padding:4px 8px calc(4px + var(--sb))";
+  const sa=document.createElement("div");sa.style.cssText="position:fixed;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)";
+  document.body.append(z,sa);
+  const ua=navigator.userAgent,ios=/iPhone|iPad/.test(ua);
+  const upd=()=>{const c=getComputedStyle(sa),v=window.visualViewport;
+    z.textContent=`${innerWidth}x${innerHeight} vv ${v?Math.round(v.width)+"x"+Math.round(v.height):"-"} safe ${c.paddingTop}/${c.paddingBottom} dpr ${devicePixelRatio} ${ios?(/Safari\//.test(ua)?"iOS Safari":"iOS sheet"):/; wv\)/.test(ua)?"Android WebView":"browser"}`};
+  upd();addEventListener("resize",upd);window.visualViewport?.addEventListener("resize",upd);
+}
+function fail(){
+  bar("THE LONG VOYAGE","NO SIGNAL");
+  $("v").innerHTML=`<div class=kick role=alert><div class="lab r">Link status</div><h1>No signal from the ship</h1><p>This phone has to be on the ship's own <span style="white-space:nowrap">Wi-Fi</span> to reach it. Stay close to the model, check the <span style="white-space:nowrap">Wi-Fi</span> settings, then try again.</p></div>`;
+  dock(`<button class="btn pri" data-retry=1><span>Try again</span><i>reload</i></button>`,"");
+}
+(async()=>{
+  try{T=await (await fetch("/text.json")).json()}catch(e){return fail()}
+  await engLoad();
+  R=new Renderer(T,EG);
+  try{crewInfo(await api("/api/crew"))}catch(e){}
+  // Signed in on this phone earlier today? The ship remembers it (by IP and browser) until the next flight day.
+  try{const j=await api("/api/me");tok=j.token;me=j.crew;await refresh();live();route="home"}catch(e){}
+  view();
+})();
+</script>
+</body>
+</html>

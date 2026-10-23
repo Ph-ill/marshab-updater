@@ -1,0 +1,336 @@
+{
+  "actions": [
+    {
+      "id": "gift",
+      "label": "Give a gift",
+      "you": "On your word, {A} looks after {T} today.",
+      "self": "{A} checks in on {T}.",
+      "owner": "{A} looks after {T}, on a word from home."
+    },
+    {
+      "id": "advice",
+      "label": "Give advice",
+      "you": "{A} takes your advice to heart and tries to be {axis}.",
+      "self": "{A} has a think about being {axis}.",
+      "owner": "{A} takes some advice from home and tries to be {axis}."
+    },
+    {
+      "id": "task",
+      "label": "Set a task",
+      "you": "{A} spends the shift on {res}, as you asked.",
+      "self": "{A} spends the shift on {res}.",
+      "owner": "{A} spends the shift on {res}, on a word from home."
+    },
+    {
+      "id": "rest",
+      "label": "Tell them to rest",
+      "you": "{A} takes the day off, on your orders.",
+      "self": "{A} sleeps through the morning watch.",
+      "owner": "{A} takes the day off, on a word from home."
+    }
+  ],
+  "axis_words": [
+    [
+      "braver",
+      "more careful"
+    ],
+    [
+      "more curious",
+      "more settled"
+    ],
+    [
+      "warmer",
+      "blunter"
+    ]
+  ],
+  "res_words": [
+    "the galley stores",
+    "propellant trim",
+    "the spares locker"
+  ],
+  "notes": [
+    "Thinking of you out there.",
+    "You still owe me a coffee.",
+    "Don't do anything brave without me."
+  ],
+  "sys": {
+    "move": "{A} rides the transfer line across to {S} for a few days, and leaves the home ship flying itself, as it was built to.",
+    "home": "{A} rides the transfer line back home to {S}.",
+    "note": "{A} passes {T} a note: “{line}”",
+    "dec_open": "Fleet vote:",
+    "dec_close": "With the ballots in, the fleet's advice: {opt}.",
+    "dec_lean": "No votes came in, so the flight director went with the crew's lean: {opt}.",
+    "dec_tie": [
+      "{n} ballots, split evenly; the flight director breaks the tie on the crew's lean: {opt}.",
+      "A dead heat at {n} ballots, so the crew's lean decides it: {opt}.",
+      "Even split across {n} ballots. The tie goes to the crew's lean: {opt}.",
+      "The {n} ballots cancel out, so the crew's lean carries it: {opt}."
+    ],
+    "dil_open": "Private, for whoever looks after {A}:",
+    "dil_you": "{A} went with your call: {opt}.",
+    "dil_self": "No word from home in time, so {A} chose: {opt}.",
+    "res_open": "Anyone can answer; one tap is enough.",
+    "res_close": "The fleet's answer: {opt}.",
+    "res_default": "No answer in time, so it fell to the crew: {opt}.",
+    "short": "Food stores are running low.",
+    "end": "From the log:",
+    "fold": "{who} ran the water rounds. The reclaimer printed its blessing: RECLAIMED. DRINK SPARINGLY.",
+    "fold_pool": [
+      "{who} ran the water rounds. The reclaimer printed its blessing: RECLAIMED. DRINK SPARINGLY.",
+      "{who} swapped scrubber cartridges two days early, because the trend lines said so.",
+      "{who} answered mail from home: weather, a dog, a fence that needs mending.",
+      "{who} read the water ledger aloud at shift change and signed it, as the checklist requires.",
+      "{who} ran the pre-sleep checklist with the next ship, call and answer, forty lines.",
+      "{who} recalibrated cabin sensors reading half a degree warm.",
+      "{who} swept cabins with leak detectors and found nothing, which is the point.",
+      "{who} recorded bedtime stories for home, with the delay built into the pauses.",
+      "{who} wiped down windows and watched Mars not move.",
+      "{who} wrote letters home and dated them for after landing.",
+      "{who} slept nine hours on the flight surgeon's orders.",
+      "{who} panned the hull cameras seam by seam and found every seam whole."
+    ]
+  },
+  "epi": {
+    "axis": [
+      [
+        "Volunteered first, every time.",
+        "Checked every seal twice, and was thanked for it."
+      ],
+      [
+        "Has a notebook full of things worth a second look.",
+        "Knew where everything was, always."
+      ],
+      [
+        "Kept a seat free at every long table.",
+        "Said the true thing when it needed saying."
+      ]
+    ],
+    "bond": "Closest to {T} by the end.",
+    "plain": "Kept the ship running, quietly and well. The checklists say so, in small handwriting.",
+    "head": [
+      "Eight ships, eight crews, every one accounted for.",
+      "Eight ships, one planet, and every seal held."
+    ],
+    "story": [
+      [
+        "e_entry_hold_q",
+        "Took the landing back from a gust on a slope, and made the folded ship a neighbour."
+      ],
+      [
+        "e_entry_hold",
+        "Called the manual takeover at three hundred metres in the brown, and put the ship down on the flat."
+      ],
+      [
+        "e_entry_wait",
+        "Came out of the blackout nine seconds late, reading the orbit numbers aloud."
+      ],
+      [
+        "a_window_hail",
+        "Set an answer running weeks early. The printout of the first OK is over the habitat bunk."
+      ],
+      [
+        "a_window_quiet",
+        "Wanted to answer weeks early, then carried the answer the last stretch in person."
+      ],
+      [
+        "e_entry_clear",
+        "Heard an engine light late at the landing burn, and kept the engine-out call behind their teeth."
+      ],
+      [
+        "m_carrier",
+        "Still scans the old channel every night, out of habit."
+      ],
+      [
+        "m_reveal",
+        "Got the lighthouse wrong and the keeper right. The drawing hangs by the airlock."
+      ],
+      [
+        "m_theory",
+        "Ran out of blue marker in the first month on Mars."
+      ],
+      [
+        "a_list",
+        "Got an answer from every name on the list, one postmarked from the sea, and read each aloud, pauses included."
+      ],
+      [
+        "g_news",
+        "Has a folding chair saved by the sea, for later."
+      ],
+      [
+        "p_live_call",
+        "Kept a list of who was at the table."
+      ],
+      [
+        "a_song",
+        "Taught the fifth bar to seven people who had guessed it wrong."
+      ],
+      [
+        "p_music",
+        "Never told anyone the song's name."
+      ],
+      [
+        "p_garden_sprout",
+        "Strapped the seedling beside the seat, and planted it in the lee of the ship."
+      ],
+      [
+        "p_garden_none",
+        "Carried a seed that never came up all the way to Mars, to plant it properly."
+      ],
+      [
+        "p_garden_plant",
+        "Still says good night to the plants, out loud, on Mars."
+      ],
+      [
+        "letter_open",
+        "Saved a letter for the hard day, and knows its last line by heart."
+      ],
+      [
+        "letter_worn",
+        "Wore a letter thin at the fold, and read its last line aloud within sight of Mars."
+      ],
+      [
+        "a_letter",
+        "Read the last line of a letter aloud, within sight of Mars."
+      ],
+      [
+        "dose_swap",
+        "Moved the bunk beside the water on a friend's better numbers, and slept."
+      ],
+      [
+        "dose_ok",
+        "Thanked the ground for checking, and slept beside the water wall until entry pumped it down."
+      ],
+      [
+        "a_last_night",
+        "Sleeps by water, still, and sleeps well."
+      ],
+      [
+        "l_dose",
+        "Topped the fleet's dose chart, and flew on."
+      ],
+      [
+        "m_flash1",
+        "Counted the frames between flashes, and got eleven seconds every time."
+      ],
+      [
+        "m_overlay",
+        "Laid the pixel over the carrier, and was first to say it out loud."
+      ],
+      [
+        "sharpie2",
+        "Knows a handwriting from Starbase on sight."
+      ],
+      [
+        "l_stash",
+        "Found the packer's first note, behind a stowage panel, and kept the bag."
+      ],
+      [
+        "m_ripple",
+        "Heard the knock first, in the noise floor, and logged it to the hundredth of a hertz."
+      ],
+      [
+        "crisis_eva",
+        "Landed with a wrist that bends again."
+      ],
+      [
+        "a_log",
+        "Copied Cargo 2's last line by hand, in capitals."
+      ],
+      [
+        "idle_spares",
+        "Found the margin Starbase packed, and said thanks."
+      ],
+      [
+        "h_thruster",
+        "Was at the console before the second thruster fired."
+      ],
+      [
+        "w_mars_disc_q",
+        "Held a thumb up to Mars until Mars won."
+      ],
+      [
+        "p_birthday",
+        "Made a ration-bar cake for a birthday no calendar agreed on."
+      ],
+      [
+        "crisis_air",
+        "Had the backup scrubber running in nine minutes."
+      ],
+      [
+        "idle_mentor",
+        "Taught the landing by hand, one step at a time."
+      ],
+      [
+        "a_drill_plan",
+        "Read out the drill plan, and was gentle with it."
+      ],
+      [
+        "zip_back",
+        "Kept the zip ties interim all the way to Mars."
+      ],
+      [
+        "dil_gains",
+        "Saw the wobble first."
+      ],
+      [
+        "dil_eva_cam",
+        "Weighed an iced lens against an unplanned EVA."
+      ],
+      [
+        "l_manifest",
+        "Read the manifest like a shopping list, and asked after the socks."
+      ],
+      [
+        "l_long_table",
+        "Gave the first toast: eleven words, left to stand."
+      ],
+      [
+        "storm_shelter2",
+        "Re-signed the forms between hands, and dealt."
+      ],
+      [
+        "p_movie",
+        "Never picked a submarine film again."
+      ],
+      ["r_smoke", "Found the bad fan by counting breakers, in a mask."],
+      ["r_tank", "Signed for every litre of the austerity, every morning."],
+      ["g_ledger", "Read the losses ledger aloud, every line, and signed."],
+      ["r_strike", "Went out to see a crater the size of a fingernail."],
+      ["r_flood", "Found the one real alarm in 214."],
+      ["r_voice", "Sat up till dawn for a message from home."]
+    ],
+    "coda": {
+      "name": "Cargo 2",
+      "lines": [
+        [
+          "end_lights",
+          "Wrote when it landed. Kept writing. Spent its lights bringing eight down."
+        ],
+        [
+          "end_through",
+          "Kept the beat for eight blind pilots, and was answered on the rim."
+        ],
+        [
+          "end_long_orbit",
+          "Kept a lamp lit for three weeks of passes."
+        ],
+        [
+          "end_patience",
+          "Kept knocking through the cold, and was answered by hand."
+        ],
+        [
+          "end_friend",
+          "Gave a truck the charge it kept for the cold."
+        ],
+        [
+          "end_close",
+          "Heard back once, and it was enough."
+        ],
+        [
+          "a_window_hail",
+          "Wrote when it landed. Kept writing. Was answered in time."
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coex test</title>
+<style>body{font:14px/1.4 ui-monospace,Menlo,monospace;background:#F2ECDF;color:#1C1B19;margin:16px}
+h1{font-size:16px;margin:0 0 8px}td{padding:1px 10px 1px 0;vertical-align:top}.bad{color:#C8552B}small{color:#8A867E}</style></head>
+<body><h1 id="t">Coex test</h1><small>Leave this page open. It measures round trips over WebSocket (falls back to HTTP polling).</small>
+<table id="c"></table><h1>Board</h1><table id="s"></table>
+<script>
+var c={transport:'-',sent:0,ok:0,fail:0,rtt_last:0,rtt_max:0,rtt_p95:0,ws_reconnects:0,gap_max_s:0},rtts=[],lastOk=Date.now(),ws=null,pend={};
+function p95(){var a=rtts.slice().sort(function(x,y){return x-y});return a.length?a[Math.floor(a.length*.95)]:0}
+function good(ms){c.ok++;c.rtt_last=ms;if(ms>c.rtt_max)c.rtt_max=ms;rtts.push(ms);if(rtts.length>300)rtts.shift();c.rtt_p95=p95();
+ var g=(Date.now()-lastOk)/1000;if(g>c.gap_max_s)c.gap_max_s=Math.round(g);lastOk=Date.now()}
+function show(id,o){var h='';for(var k in o)h+='<tr><td>'+k+'</td><td'+((/fail|stall|err|leaves|missed/.test(k)&&o[k]>0)?' class=bad':'')+'>'+o[k]+'</td></tr>';document.getElementById(id).innerHTML=h}
+function board(j){try{var d=JSON.parse(j);document.getElementById('t').textContent='Coex test: ship '+d.ship+' ('+d.mode+')';show('s',d)}catch(e){}}
+function openWs(){try{ws=new WebSocket('ws://'+location.host+'/ws')}catch(e){ws=null;return}
+ ws.onopen=function(){c.transport='websocket'};
+ ws.onmessage=function(e){if(e.data.charAt(0)=='p'){var t=pend[e.data];if(t){delete pend[e.data];good(Date.now()-t)}}else board(e.data)};
+ ws.onclose=function(){c.transport='http-poll';ws=null;c.ws_reconnects++;setTimeout(openWs,5000)}}
+function tick(){var id='p'+(++c.sent);var t=Date.now();
+ if(ws&&ws.readyState==1){pend[id]=t;ws.send(id);setTimeout(function(){if(pend[id]){delete pend[id];c.fail++}},5000)}
+ else{var x=new XMLHttpRequest();x.open('GET','/api/stats?'+id);x.timeout=5000;x.onload=function(){good(Date.now()-t);board(x.responseText)};
+  x.onerror=x.ontimeout=function(){c.fail++};x.send()}
+ show('c',c)}
+openWs();setInterval(tick,2000);
+</script></body></html>

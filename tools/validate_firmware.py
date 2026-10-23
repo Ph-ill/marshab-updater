@@ -6,16 +6,23 @@ Exit 1 on any problem.
 
     python3 tools/validate_firmware.py            # offline
     python3 tools/validate_firmware.py --online   # also download the upstream UF2s and check their sha256
+    python3 tools/validate_firmware.py --root DIR # another tree (served-tree and runtime checks need its files)
 """
 import base64, hashlib, json, re, sys, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if "--root" in sys.argv:          # check another tree (the tests build releases in a temp dir)
+    ROOT = Path(sys.argv[sys.argv.index("--root") + 1]).resolve()
 SERVED = ["index.html", "styles.css", "favicon.svg", "src", "firmware"]  # what the Dockerfile copies
-NEVER_SERVE = {"secrets.py", "secrets.json", "ship.json", "device.json"}
+NEVER_SERVE = {"secrets.py", "secrets.json", "ship.json", "crew.json", "device.json"}
 SAFE = re.compile(r"^(?!/)(?!.*\.\.)[A-Za-z0-9_./-]+$")
-SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
+SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
+CHANNELS = ("stable", "beta", "bench", "test")
+NOT_LATEST = ("test",)  # listed for hand-picked installs only, never "latest"
 SHA = re.compile(r"^[0-9a-f]{64}$")
+CORE = re.compile(r"^[0-9a-f]{12}$")
+LVX = re.compile(r"^lvx/([a-z_][a-z0-9_]*)\.(mpy|py)$")
 errors, notes = [], []
 
 
@@ -38,7 +45,7 @@ def web_path(url):
 def check_release(path, version):
     rel = load(path)
     if rel is None:
-        return
+        return None
     name = path.relative_to(ROOT)
     if rel.get("version") != version:
         err(f"{name}: version {rel.get('version')} != index entry {version}")
@@ -73,7 +80,47 @@ def check_release(path, version):
         total += len(raw)
     if rel.get("payload_bytes") != total:
         err(f"{name}: payload_bytes {rel.get('payload_bytes')} != {total}")
-    notes.append(f"{name}: {len(paths)} files, {total} B")
+    part = check_frozen(rel, paths, name)
+    notes.append(f"{name}: {len(paths)} files, {total} B{part}")
+    return rel
+
+
+def check_frozen(rel, paths, name):
+    """A partial release for the game firmware (a frozen core): no lv/, overrides only of
+    the core's modules in lvx/, lv and lvx cleared first. Anything else must not ship lvx/."""
+    fz = rel.get("frozen")
+    lvx = [p for p in paths if p.startswith("lvx/")]
+    if fz is None:
+        if lvx:
+            err(f"{name}: ships lvx/ overrides but names no frozen core")
+        return ""
+    if not isinstance(fz, dict) or not CORE.match(str(fz.get("requires", ""))) or not fz.get("id"):
+        err(f"{name}: frozen must name id and a 12-hex core hash in 'requires'")
+        return ""
+    mods = set(fz.get("modules") or [])
+    if not mods:
+        err(f"{name}: frozen lists no modules")
+    for p in paths:
+        if p == "lv" or p.startswith("lv/"):
+            err(f"{name}: ships {p}: a /lv folder hides the frozen core")
+    names = []
+    for p in lvx:
+        m = LVX.match(p)
+        if not m or m.group(1) not in mods:
+            err(f"{name}: {p} is not an override of a frozen module")
+        elif m.group(1) in names:
+            err(f"{name}: two overrides for lv.{m.group(1)}")
+        else:
+            names.append(m.group(1))
+    if sorted(names) != sorted(rel.get("overrides") or []):
+        err(f"{name}: overrides {rel.get('overrides')} != lvx/ files {sorted(names)}")
+    for d in ("lv", "lvx"):
+        if d not in (rel.get("delete") or []):
+            err(f"{name}: a frozen-core release must delete {d} before installing")
+    for d in rel.get("preserve") or []:
+        if d.rstrip("/") in ("lv", "lvx") or d.startswith(("lv/", "lvx/")):
+            err(f"{name}: must not preserve {d}")
+    return f", partial: {fz['id']} core {fz['requires']}, overrides [{', '.join(sorted(names))}]"
 
 
 def check_index():
@@ -88,14 +135,22 @@ def check_index():
     for ch, v in (idx.get("channels") or {}).items():
         if v not in versions:
             err(f"index.json: channel {ch} -> {v} not in releases")
+    by_version = {r.get("version"): r for r in idx.get("releases", [])}
+    if idx.get("latest") in by_version and by_version[idx["latest"]].get("channel") in NOT_LATEST:
+        err(f"index.json: latest {idx['latest']} is a {by_version[idx['latest']].get('channel')} release")
     for r in idx.get("releases", []):
+        if r.get("channel") not in CHANNELS:
+            err(f"index.json {r.get('version')}: unknown channel {r.get('channel')!r}")
         if not SEMVER.match(r.get("version", "")):
             err(f"index.json: bad version {r.get('version')!r}")
         rp = web_path(r.get("path"))
         if not rp or not rp.is_file():
             err(f"index.json {r.get('version')}: release file {r.get('path')} missing")
         else:
-            check_release(rp, r["version"])
+            rel = check_release(rp, r["version"])
+            want = ((rel or {}).get("frozen") or {}).get("requires")
+            if rel is not None and r.get("frozen") != want:
+                err(f"index.json {r.get('version')}: frozen {r.get('frozen')} != release {want}")
     notes.append(f"index.json: {len(versions)} release(s), latest {idx.get('latest')}")
 
 

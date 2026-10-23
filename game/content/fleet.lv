@@ -1,0 +1,15 @@
+# Fleet setup: compiled into the pack, so every ship starts from the same roster.
+season 42
+voyage_key 4c56533130303031        # 8 bytes; seeds every flight day
+resources food 110 fuel 40 spares 6
+medkits 1                          # per ship
+
+#     name     brave  curious  warm   (negative ends: cautious, settled, prickly)
+quirk bold     brave 35  curious 10  warm -5
+quirk tinkerer brave 0   curious 35  warm 5
+quirk carer    brave -10 curious 0   warm 35
+quirk grump    brave 10  curious -5  warm -30
+quirk dreamer  brave -20 curious 25  warm 15
+quirk steady   brave -10 curious -20 warm 10
+
+# The crew roster lives in roster.lv.

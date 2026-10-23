@@ -1,14 +1,15 @@
 import { MicroPythonSerial } from './webserial-micropython.js';
 import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
-import { loadReleaseIndex, compareVersions } from './releases.js';
+import { loadReleaseIndex, compareVersions, latestVersion, isTestRelease } from './releases.js';
 import { loadRuntimeSpec } from './releases.js';
 import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
-import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, hotspotForRole, shipNumberForRole } from './ship-config.js';
+import { validateShipConfig, writeShipConfig, SHIP_CONFIG_KEYS, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from './ship-config.js';
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, describeBoard } from './role-memory.js';
+import { CREW, validateCodes, sharedCodes, crewConfig, writeCrewConfig, randomCode, codeList, newSalt, loadCodes, saveCodes, forgetCodes } from './crew-codes.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
 
-const SHIP_COUNT = 7;
+const SHIP_COUNT = 8;
 const DEFAULT_LOGS = ['coex_log.csv', 'coex_log.old', 'coex_boot.txt'];
 
 const state = {
@@ -66,9 +67,20 @@ Object.assign(els, {
   shipRoleWarn: $('shipRoleWarn'),
   shipPassword: $('shipPassword'),
   shipOpen: $('shipOpen'),
+  shipLed: $('shipLed'),
+  shipLaunch: $('shipLaunch'),
+  shipDay: $('shipDay'),
   shipShowPw: $('shipShowPw'),
   shipHotspot: $('shipHotspot'),
   saveShipBtn: $('saveShipBtn'),
+});
+Object.assign(els, {
+  crewCodes: $('crewCodes'),
+  crewCodesWarn: $('crewCodesWarn'),
+  saveCodesBtn: $('saveCodesBtn'),
+  fillCodesBtn: $('fillCodesBtn'),
+  copyCodesBtn: $('copyCodesBtn'),
+  forgetCodesBtn: $('forgetCodesBtn'),
 });
 Object.assign(els, {
   logList: $('logList'),
@@ -106,6 +118,10 @@ function resetProgress(status = 'Standing by.', visible = false){
   setProgress(0, status, '');
 }
 function hotspotName(){
+  // A release that names its hotspot itself (the game: prefix + ship number) wins over the coex roles.
+  const installed = state.deviceInfo?.version?.version;
+  const named = hotspotForRelease(state.releaseCache.get(installed) || state.releaseCache.get(state.selectedVersion), state.deviceInfo?.ship);
+  if(named) return named;
   const role = state.deviceInfo?.ship?.role;
   return role ? hotspotForRole(role) : 'the ship hotspot (COEX-0 or COEX-1)';
 }
@@ -119,7 +135,8 @@ function hidePowerCycleModal(){ els.powerCycleModal.hidden = true; }
 function releaseLabel(release){
   const parts = [release.version];
   if(release.label && release.label !== release.version) parts.push(`· ${release.label}`);
-  if(release.channel && release.channel !== 'stable') parts.push(`[${release.channel}]`);
+  if(isTestRelease(release)) parts.push('[TEST BUILD]');
+  else if(release.channel && release.channel !== 'stable') parts.push(`[${release.channel}]`);
   if(release.date) parts.push(`(${release.date})`);
   return parts.join(' ');
 }
@@ -131,7 +148,7 @@ function boardLabel(id){
 
 function deviceControls(){
   const list = [];
-  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.saveShipBtn);
+  list.push(els.shipId, els.shipName, els.shipRole, els.shipPassword, els.shipOpen, els.shipLed, els.shipLaunch, els.saveShipBtn, els.saveCodesBtn);
   list.push(els.refreshLogsBtn, els.downloadAllLogsBtn, ...els.logList.querySelectorAll('button'));
   list.push(els.bootselBtn);
   return list;
@@ -182,6 +199,8 @@ async function describeSelected(){
 }
 
 function renderIndex(index){
+  // A test build is never "latest", whatever the index says (see releases.js).
+  index = { ...index, latest: latestVersion(index) };
   state.index = index;
   state.releaseCache.clear();
   setText(els.latestVersion, index.latest || 'none published');
@@ -231,6 +250,8 @@ function clearDeviceUi(){
   els.shipName.value = '';
   els.shipPassword.value = '';
   els.shipOpen.checked = false;
+  els.shipLed.checked = false;
+  els.shipLaunch.value = '';
   els.shipRole.value = '';
   setText(els.shipHotspot, '—');
   renderShipSsid();
@@ -344,6 +365,9 @@ function renderShipFields(){
     els.shipName.value = cfg.ship_name || '';
     els.shipPassword.value = '';
     els.shipOpen.checked = !!cfg.hotspot_open;
+    els.shipLed.checked = !!cfg.led_notify;
+    // The board's own launch date; one it lacks is offered from the last ship saved in this browser.
+    els.shipLaunch.value = cfg.launch_date || lastLaunchDate();
     if(cfg.role && roles.includes(cfg.role)) els.shipRole.value = cfg.role;
   }
   const formKey = state.device ? (state.deviceInfo?.uid || 'board') : null;
@@ -352,10 +376,14 @@ function renderShipFields(){
     applyShipDefaults(cfg, roles);
   }
   setText(els.shipHotspot, state.device ? hotspotSummary(cfg) : '—');
+  setText(els.shipDay, !state.device ? '—' : cfg?.launch_date ? `from the calendar: FD 01 = ${cfg.launch_date} 06:00` : `fixed (bench): day ${cfg?.day ?? 1}`);
   renderShipSsid();
   els.shipName.placeholder = defaultShipName(els.shipId.value || 1);
   els.shipPassword.disabled = !state.device || state.busy || els.shipOpen.checked;
 }
+
+const LAUNCH_KEY = 'lv-launch-date';
+function lastLaunchDate(){ try{ return localStorage.getItem(LAUNCH_KEY) || ''; }catch(_err){ return ''; } }
 
 // First fill of the form for a newly connected board: if it has no role yet, preselect one the last
 // board configured from this browser is not using.
@@ -418,7 +446,9 @@ async function saveShipConfig(){
       // blank keeps whatever password the ship already has (or the firmware's WPA2 default)
       hotspot_password: typed || (els.shipOpen.checked ? '' : previous.hotspot_password || ''),
       hotspot_open: els.shipOpen.checked,
+      led_notify: els.shipLed.checked,
       role: els.shipRole.value,
+      launch_date: els.shipLaunch.value,
     }, { count: SHIP_COUNT, roles: shipRoles() });
     const clash = roleClash(loadRoleHistory(), state.deviceInfo?.uid || null, cfg.role, shipRoles());
     if(clash && !confirm(`The last board configured from this browser, ${describeBoard(clash)}, is role ${clash.role || 'none'} and broadcasts ${hotspotForRole(cfg.role, shipRoles())}. `
@@ -428,15 +458,102 @@ async function saveShipConfig(){
     if(cfg.hotspot_open && !confirm('Run this ship\'s hotspot as an open network, with no password? Anyone nearby can join it.')){
       log('ship settings not saved'); return;
     }
-    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}`);
+    log(`writing ship settings: #${cfg.ship_id} ${cfg.ship_name}${cfg.role ? `, role ${cfg.role}` : ''}, hotspot ${hotspotSummary(cfg)}${cfg.led_notify ? ", LED notifier on" : ""}${cfg.launch_date ? `, launch ${cfg.launch_date}` : ", fixed bench day"}`);
     const written = await writeShipConfig(state.device, cfg);
+    if(written.launch_date) try{ localStorage.setItem(LAUNCH_KEY, written.launch_date); }catch(_err){}
     recordRole({ uid: state.deviceInfo?.uid || null, role: written.role, ship_id: written.ship_id, ship_name: written.ship_name });
     state.shipIdFollowsRole = false; // the board has a number of its own now
-    state.deviceInfo = { ...(state.deviceInfo || {}), ship: written };
+    // data/ship.json keeps the keys this page doesn't own (the bench "day", "day_start", ...).
+    const kept = Object.fromEntries(Object.entries(previous).filter(([k]) => !SHIP_CONFIG_KEYS.includes(k)));
+    state.deviceInfo = { ...(state.deviceInfo || {}), ship: { ...kept, ...written } };
     renderDeviceInfo(state.deviceInfo, { quiet: true });
     log('ship settings saved; they take effect when the ship restarts (Disconnect restarts it)');
   }catch(err){
     log(`ship settings not saved: ${err.message}`);
+  }finally{
+    setBusy(false);
+  }
+}
+
+// ---------------------------------------------------------------- crew codes
+// The codes can be typed and kept with no ship connected; only "Save codes to ship" needs one.
+function codeInputs(){ return [...els.crewCodes.querySelectorAll('input')]; }
+function typedCodes(){ return codeInputs().map(i => i.value.trim()); }
+
+function renderCrewCodes(){
+  const kept = loadCodes();
+  els.crewCodes.innerHTML = '';
+  CREW.forEach((name, i) => {
+    const label = document.createElement('label');
+    label.className = 'field';
+    label.innerHTML = `<span>${String(i + 1).padStart(2, '0')} ${name}</span>`;
+    const input = document.createElement('input');
+    Object.assign(input, { type: 'text', inputMode: 'numeric', maxLength: 4, autocomplete: 'off', placeholder: '----', value: kept?.codes?.[i] || '' });
+    input.pattern = '\\d{4}';
+    input.setAttribute('aria-label', `${name}'s code`);
+    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); keepCodes(); });
+    label.append(input);
+    els.crewCodes.append(label);
+  });
+  checkCodes();
+}
+
+function keepCodes(){
+  const salt = loadCodes()?.salt || newSalt();
+  saveCodes({ salt, codes: typedCodes() });
+  checkCodes();
+}
+
+function checkCodes(){
+  const codes = typedCodes();
+  const short = CREW.filter((_, i) => codes[i] && codes[i].length !== 4);
+  const shared = sharedCodes(codes.map(c => c.length === 4 ? c : ''));
+  const msgs = [];
+  if(short.length) msgs.push(`${short.join(', ')}: a code needs 4 digits.`);
+  for(const names of shared) msgs.push(`${names.join(' and ')} have the same code. That works, but either could sign in as the other.`);
+  els.crewCodesWarn.hidden = !msgs.length;
+  els.crewCodesWarn.textContent = msgs.join(' ');
+}
+
+function fillCodes(){
+  const taken = new Set(typedCodes().filter(c => c.length === 4));
+  for(const input of codeInputs()){
+    if(input.value.length === 4) continue;
+    let c; do{ c = randomCode(); }while(taken.has(c));
+    taken.add(c); input.value = c;
+  }
+  keepCodes();
+  log('filled the blank crew codes at random; they are kept in this browser for the next ship');
+}
+
+async function copyCodes(){
+  const text = `The Long Voyage: crew codes\n${codeList(typedCodes())}`;
+  try{ await navigator.clipboard.writeText(text); log('crew code list copied'); }
+  catch(_err){ log(`could not copy; here it is:\n${text}`); }
+}
+
+function forgetCrewCodes(){
+  if(!confirm('Forget the crew codes kept in this browser? Ships keep theirs; the next ship you set up would need the codes typed again.')) return;
+  forgetCodes();
+  renderCrewCodes();
+  log('crew codes forgotten in this browser');
+}
+
+async function saveCrewCodes(){
+  if(!state.device){ log('connect a ship first'); return; }
+  setBusy(true);
+  try{
+    const codes = validateCodes(typedCodes());
+    const kept = loadCodes();
+    const salt = kept?.salt || newSalt();
+    saveCodes({ salt, codes });
+    const cfg = await crewConfig(codes, salt);
+    const set = codes.filter(Boolean).length;
+    log(`writing crew codes: ${set} of ${CREW.length} set${set < CREW.length ? ` (not set up: ${CREW.filter((_, i) => !codes[i]).join(', ')})` : ''}`);
+    await writeCrewConfig(state.device, cfg);
+    log('crew codes saved to data/crew.json; they take effect when the ship restarts (Disconnect restarts it)');
+  }catch(err){
+    log(`crew codes not saved: ${err.message}`);
   }finally{
     setBusy(false);
   }
@@ -614,7 +731,8 @@ async function installVersion(version){
         log('install cancelled'); resetProgress(); return;
       }
     }
-    if(version !== state.index.latest && !confirm(`Install ${version}? Ship settings in data/ and the bench logs are kept.`)){
+    const testNote = isTestRelease(release) ? ' This is a TEST BUILD for the bench, not a stable release; install the latest release again to go back.' : '';
+    if(version !== state.index.latest && !confirm(`Install ${version}?${testNote} Ship settings in data/ and the bench logs are kept.`)){
       log('install cancelled'); resetProgress(); return;
     }
     log(`installing ${version}${clean ? ' (clean: removing old files first)' : ''}`);
@@ -659,6 +777,10 @@ function initEvents(){
   els.shipRole.addEventListener('change', () => { followRoleWithShipId(); renderShipSsid(); });
   els.shipShowPw.addEventListener('change', () => { els.shipPassword.type = els.shipShowPw.checked ? 'text' : 'password'; });
   els.shipOpen.addEventListener('change', () => { els.shipPassword.disabled = !state.device || els.shipOpen.checked; });
+  els.saveCodesBtn.addEventListener('click', () => { saveCrewCodes(); });
+  els.fillCodesBtn.addEventListener('click', fillCodes);
+  els.copyCodesBtn.addEventListener('click', () => { copyCodes(); });
+  els.forgetCodesBtn.addEventListener('click', forgetCrewCodes);
   els.refreshLogsBtn.addEventListener('click', () => { refreshLogs(); });
   els.downloadAllLogsBtn.addEventListener('click', () => { downloadLogs(null); });
   els.bootselBtn.addEventListener('click', () => { enterBootsel(); });
@@ -674,6 +796,7 @@ async function main(){
     log('Web Serial available; plug in a ship over USB and click Connect ship');
   }
   initEvents();
+  renderCrewCodes();
   clearDeviceUi();
   setBusy(false);
   try{
