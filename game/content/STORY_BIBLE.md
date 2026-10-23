@@ -49,16 +49,18 @@ One flight day in the log stands for about five days of real flight (STYLE.md).
 
 | Phase | Mystery content |
 |---|---|
-| 1 (days 1–10) | No mystery cards. Three phase-1 core clues hide in ordinary life: `l_reboot` (day 3, the screen counts eleven and logs out again), `l_dock_hello` (days 4–5, a tanker's docking computer discards a ground-relayed hello as stale; ship to ship it locks at once), `l_manifest` (day 5, Cargo 2 one line in a long, funny written-off page). |
+| 1 (days 1–10) | No mystery cards. Three phase-1 core clues hide in ordinary life: `l_reboot` (day 3, the screen counts eleven and logs out again), `l_manifest` (days 5–7, a shopping list ending on the socks; Cargo 2 is one of two written-off surface landers, beside an old science lander "silent since winter"). Phase 2 adds `l_dock_hello` (days 11–12, a transfer-hatch code goes stale relayed via the ground and opens first time ship to ship; filed as a page-two correction, with its own short tick). |
 | 2 (days 11–24) | The carrier (`m_carrier`, due days 15–19) on the spare dish trained on Mars, called an alias, then retracted (`m_alias`, days 18–19: same millisecond on two ships, drifting against the fleet clock, opens `dec_signal`). The ripple (`m_ripple`, due every season). The crew's theory (`m_theory`, days 21–23): a written-off relay whose catalogued spin and beam width were both fitted to RF flashes heard after it failed. The 37-minute dropout (`m_dropout`, days 24–27, after the theory, so it reads as confirmation). |
-| 3 (days 25–36) | The theory confirmed (`m_theory_confirm`, the decoy holds). The reply (`signal_reply` / `signal_echo`). The uncanny hooks (ghost, voice, dark from day 25). The clock (`h_band` / `r_band` days 30–35, or `c2_cold` 36–37): the knock is getting slower to wake. The flash (30), the second sighting and its vote (32), the key (34), the ground answer (35), the overlay (36). |
+| 3 (days 25–36) | The theory confirmed (`m_theory_confirm`, the decoy holds). The reply (`signal_reply` / `signal_echo`, days 25–27: the half frame, sets mark `t_frame`). The uncanny hooks (ghost and voice from day 25; `h_dark` days 26–29, only after `t_frame`, so the whole frame never precedes the half frame; `r_dark` 31–34). Tested in `test_fair_play_and_endings_over_300_seasons`. The clock (`h_band` / `r_band` days 30–35, or `c2_cold` 36–37): the knock is getting slower to wake. The flash (30), the second sighting and its vote (32), the key (34), the ground answer (35), the overlay (36). |
 | 4 (days 37–42) | Checked (the ground hails), listen, count, the reveal (40), the window (41), the entry scene and endings (42). |
 
 Measured (lvc ramp line): mystery cards by first day 0 / 6 / 15 / 6. Per season
 (metrics, 300 seasons): 0.0 / 6.0 / 9.4 / 4.0 mystery cards fired by phase.
 The WHAT (it's on the ground) is not inferable before about day 28: the
 dropout lands after the theory, and the ground answer comes on day 35. The WHY
-(late answers are discarded) is fair from day 5 (`l_dock_hello`).
+(late answers are discarded) is fair from day 11 (`l_dock_hello`) but is
+meant to stay under 40% for a sharp reader until about day 33: the plant reads
+as paperwork, and the divert / no-ack detail waits for `m_checked` (37).
 
 ## The twist, in layers
 
@@ -97,8 +99,17 @@ after it failed"), and why its beam width × spin gives exactly the flash duty c
 the catalogue was fitted to Cargo 2's flashes, so it matches by construction.
 `a_report` closes it: the dead relay was the only orbiter on that channel.
 Why the crash site was catalogued kilometres off: "the last fix before the
-divert" (planted in `l_manifest`: "divert flagged on last tone, no ack", next to
-the drill spares that `end_long_orbit` / `end_close` pay off). Why no other orbiter
+divert" (told in `m_checked`: "its last tone flagged a divert, the search imaged
+the end of that track; six weeks of hails, no ack"; `l_manifest` only lists
+Cargo 2's drill spares, which `end_friend` / `end_long_orbit` / `end_close` pay off).
+Why the search missed it: it imaged the end of the predicted track, not the divert.
+Why the fleet never had the same fault: every ship dumped its own fault table
+(`a_log`, `a_window_quiet`: the patch went to cargo only). Why the floodlights
+blink: the pad crew's "awake" sign (`m_reveal`). Why no Doppler fix: the
+flashes were too faint in short ground passes (`m_theory`). Why no hardware
+bypass: the pad table locks the hardware decoder too (`a_report`). Why the old
+key: first batch, the relay, the science lander, the early cargo, all dead or
+crashed (`m_key`, `r_dark`). Why no other orbiter
 heard it: the relay was the only listener on that band. Why the relay was gone
 at landing: its thruster stuck open a month before, and the landing went ahead
 on the autonomous plan. Why it flew with pad-test settings: in cruise Earth talked to it on a session
@@ -110,9 +121,10 @@ landing; the night frames come from an old survey orbiter (`m_flash1`), and the
 backup-site maps predate the cargo landings (`dec_name`). `c_theory`'s "Same keeper?" is answered by those lines.
 
 **The window (day 41, fleet time):** Cargo 2 boots on a fixed 10.96 s tick (a
-pad-test value, planted in `l_dock_hello`: "Pad-test default"). Each cycle is
+pad-test value; the fresh-question handshake is planted by the transfer hatches,
+`l_dock_hello`, and named in `a_report`). Each cycle is
 wake, floodlight flare with the hello, then dark while it listens until the next
-tick (`m_reveal`: "nine, ten, eleven, flare"; `l_handshake`: "twelve now");
+tick (`m_reveal`: "nine, ten, eleven, flare");
 the window is boot to reset, and the challenge and failure counter live in RAM.
 The fleet is about 5.4 light-seconds out: knock at 04:10:07, heard about 5.3 s
 later, answered at once; the answer lands a breath before the next tick, under
@@ -131,21 +143,22 @@ the old program key (`dec_signal`, `a_log`: "every one signed, every one late").
 |---|---|---|
 | Earth (comms) | Six weeks of ground hails, no acknowledgement | Every answer arrived minutes late and was discarded; Cargo 2's replies went out only on the old band, which Earth stopped listening to; X-band OVERTEMP, dish jammed (`m_checked`, `a_report`) |
 | Earth (old band) | Flashes every 10.96 s in the first weeks | Attributed to the tumbling relay, written into its catalogue entry as a spin rate (`m_theory`, `a_report`) |
-| Earth (security) | Signed link requests, sequence number 1, an old program key, no spacecraft ID | "Old key, no ID. Nothing we still fly." A parser guard goes up (answers keep going out); the first whole frame had hung the comms computer until a watchdog cleared it (`m_key`, `r_dark`) |
+| Earth (security) | Signed link requests, sequence number 1, an old program key, no spacecraft ID | "Old key, first batch: the relay, the science lander, the early cargo. All dead or crashed." A parser guard goes up (answers keep going out); the first whole frame had hung the comms computer until a watchdog cleared it (`m_key`, `r_dark`) |
 | Orbiter imaging | One coarse afternoon frame: a smudge and a streak | Backup-site maps predate the cargo landings (`dec_name`); from straight above a standing Starship is two pixels and a shadow; day 40 is the first sharp pass since (`m_reveal`) |
 | The fleet, first look | A carrier on the dish, too faint to lock | Decoy 1: an alias of something aboard (`m_carrier`), killed when it lands on two ships' unsynchronised machinery in the same millisecond (`m_alias`) |
 | The fleet, middle | 37-minute drift, out of view half the day | Decoy 2: the spinning relay "lighthouse" (`m_theory`, `m_theory_confirm`) |
 
 **Control clues (the fair test):** `m_alias` shows the bursts are external
 (simultaneous on two ships, drifting on its own crystal); `m_theory_confirm`
-says the relay's orbit data is two years stale and only an orbit of exactly one Mars day would fit; `c_theory` compares the swings (a relay
+says the relay's orbit data is two years stale and no orbit it could have explains a carrier that sleeps half the day and wakes 37 minutes later each time; `c_theory` compares the swings (a relay
 would drag the knocks by most of a tenth of a second each orbit, ±68 ms; these
 swing by a hundredth once a day, ±11 ms: the size of Mars, turning);
 `r_band` is no longer a clue (it carries the clock).
 
 **Plants for the why:** the galley chime and counting to eleven, and the
 screen that logs out again (`l_reboot`); the docking computer that discards a
-ground-relayed hello as stale and locks at once ship to ship (`l_dock_hello`);
+the transfer-hatch code that goes stale relayed via the ground and opens
+ship to ship (`l_dock_hello`);
 the eleven-second gap and the shrinking round trip side by side on a
 whiteboard (`m_count`);
 the galley screen that waits for the ground's hello (`l_handshake`), the
@@ -187,8 +200,8 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 | # | Card | Phase | Core | Surface | Truth |
 |---|---|---|---|---|---|
 | 1 | `l_reboot` | 1 | yes | A galley update, an in-joke about the chime | A boot is eleven seconds |
-| 1b | `l_dock_hello` | 1 | yes | A docking computer bounces a hello relayed through the ground | Late answers are discarded as stale |
-| 2 | `l_manifest` | 1 | yes | Background: the cargo ships and a longer written-off page (drill rig, nitrogen pallet, Cargo 2, weather orbiter, grey relay) | Cargo 2 and its shadow, outside the zone |
+| 1b | `l_dock_hello` (11–12) | 2 | yes | A hatch-code procedure gets a page-two correction | Late answers are discarded as stale |
+| 2 | `l_manifest` | 1 | yes | A shopping list: cargo ships, then write-offs (drill rig, grey relay, an orbiter, an old science lander, Cargo 2, socks) | Cargo 2, one of two surface candidates |
 | 3 | System text `res_open` | all | – | UI copy | One tap is enough |
 | 4 | `m_carrier` | 2 | yes | An old probe's beacon on the old channel | Cargo 2, every 10.96 s |
 | 5 | `m_ripple` | 2 | – | A coolant-pump control loop hunting | The same rhythm in the noise floor |
@@ -196,14 +209,14 @@ has no member fired before the reveal day. Measured: 300/300 seasons, 9 groups.
 | 7 | `m_theory_confirm` | 3 | – | The decoy confirmed | The decoy |
 | 8 | `m_count` (39) | 4 | – | Lightning and thunder | The 11 s gap against the shrinking round trip |
 | 9 | `m_flash1` | 3 | yes | A pixel on the night side | The floodlights at power-up |
-| 10 | key: `m_key` / `r_dark` | 3 | yes | "Old key, no ID. Nothing we still fly." | An old program key: it's one of ours |
+| 10 | key: `m_key` / `r_dark` | 3 | yes | "Old key, first batch … All dead or crashed." | An old program key: it's one of ours |
 | 11 | ground: `flash_answer` / `flash_answer_ground` | 3 | yes | It isn't in orbit | The decoy breaks |
 | 12 | `m_overlay` | 3 | yes | Carrier and flash share a clock | The same machine |
 
 Misdirections: `m_carrier` ("an alias, something of ours"; retracted by
 `m_alias`, not a clue), `m_theory` / `m_theory_confirm` (the relay), `w_phosphene`
 (cosmic-ray pixels), `r_ghost` (a cover plate shed at
-departure, still flying with them), `m_key` / `r_dark` ("Nothing we still fly."),
+departure, still flying with them), `m_key` / `r_dark` ("All dead or crashed."),
 `signal_reply` (cut off before the sender field; it no longer claims a timing
 change, so every branch agrees the averaged beat never moves).
 
@@ -231,7 +244,7 @@ seven astronauts carry exactly one thread and every one gets an epilogue line.
 | garden | `p_garden_plant` (4) | `p_garden_fail` (18), `p_garden_sprout` + `c_garden` (37) or `p_garden_none` (37) |
 | letter | `l_letter` → `dil_letter` (8) | `letter_open` / `letter_worn`, `c_letter` (34), `a_letter` (40) |
 | dose | `l_dose` → `dil_dose` (9) | `dose_swap` / `dose_ok`, `c_dose` (34), `a_last_night` (41) |
-| hail | `m_carrier` (15) → `m_alias` → `dec_signal` (18) | `signal_reply`/`signal_echo` (28), `m_overlay` (36), `c_hail` (39), `a_window_*` + `a_log` (41) |
+| hail | `m_carrier` (15) → `m_alias` → `dec_signal` (18) | `signal_reply`/`signal_echo` (25–27), `m_overlay` (36), `c_hail` (39), `a_window_*` + `a_log` (41) |
 | theory | `m_theory` (22) | `m_theory_confirm` (25), `c_theory` (38), `m_reveal` (40), `a_recall_marker` (42) |
 
 Each owner has one spoken line and one wrong-then-recover moment, usually in
@@ -239,7 +252,7 @@ the `c_*` beat (days 34–39, cat human so the one-mystery-a-day rule holds):
 the hail owner's "Not us. Ignore my last.", the lost-then-found letter, the
 tank argued for then pumped, the missing name added, the fifth bar played
 wrong, the seedling put in the locker then taken back out, the lighthouse
-redrawn. The packer has a setup (`p_packer_note`, day 16–17) before `g_packer`.
+redrawn. The packer has a setup (`p_packer_note`, day 16–17) before `g_packer` (day 28).
 
 **Lasting cost:** the 02:00 thruster hook (`h_thruster` → `r_thruster`) leaves
 the valve isolated: propellant, `valve_later` (24–33), and on day 39
@@ -266,7 +279,7 @@ drilled on taking the landing by hand). `a_descent_hold` (41, answered) / `a_des
 knock for bearing") opens the formation (two minutes between ships) and has
 them fly the take-manual "from memory"; then one entry scene per branch, cast to them,
 printed after the other day-42 beats: `e_entry_hold`
-(blackout, brown cameras, a gust, the take-manual called at a hundred metres
+(answered: Cargo 2's ping holds the bearing; `e_entry_hold_q` unanswered) (blackout, brown cameras, a gust, the take-manual called at a hundred metres
 and the ship put down on the flat), `e_entry_wait`
 (aerocapture, eleven seconds late, a manual corridor correction ready),
 `e_entry_clear` (an engine lights a half second late; the engine-out call
@@ -407,9 +420,24 @@ first sharp pass, two pixels, relay tumble, entry interface, plasma blackout,
 The window after each knock is eleven, half a million, half the day, abort
 call, keeper, Same keeper, Wrong lighthouse, eight and a half degrees, I'll be
 counting, pad-test, lamp test, battery heater, slower to wake, still on time,
-docking lead, last nav fix, weather mast, drill bit, Nothing we still fly,
-Old key, no ID, Item located, Wrong book, Pad-test default, divert called,
+docking lead, last nav fix, weather mast, drill bit, All dead or crashed,
+first batch, Old key, Item located, Wrong book, divert, page two, CODE STALE, Seven down, six to fly,
 parser guard, blind hellos, first whole frame, Every gap explained, harder to
 wake, take-manual, engine-out call, corridor correction, Found the eighth,
 All seven, low-gain antenna, logo, bar, chime, eleven, First one out, say hello,
 fault protection, a suit beside it, one Mars day, transponder.
+
+## Round 8 notes
+
+- Resolvers live in `cards/05_resolvers.lv`, which sorts first, so a resolver is
+  the first due card of its day (only decision/dilemma closings come earlier;
+  that order is the engine's and is not changed here).
+- Endings: `end_through` / `e_entry_hold` are the same ship ("Seven down, six to
+  fly."); `end_friend` sends the rover, drill spares first, no weather mast;
+  `end_patience` powers the box before answering; `end_long_orbit` flies two
+  passes. Epilogue and coda lines match their ending (system.json).
+- A cost carries forward from mid-voyage: the rebuilt water processor tops out
+  at 95% for good (`water_fail`).
+- One respectful disagreement: a signed line of dissent in `dec_signal`.
+- `c_theory`'s keeper is on the page as the Sharpie packer (`a_recall_marker`).
+- `g_packer` moved to day 28 (fills the gap the half-frame retime left).

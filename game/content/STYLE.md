@@ -170,7 +170,8 @@ after its `type` line:
 - The engine spaces hooks at least 4 days apart (about one every 5 days), so they
   never run two days in a row, and never fall in the last two days.
 - Every hook needs a resolver: a `due once` event with `when fired <hook>`, which
-  fires first thing the next day. Bind the same astronaut with
+  fires first thing the next day. Resolvers live in `cards/05_resolvers.lv`, which
+  sorts first, so they lead the day's due cards (after decision closings). Bind the same astronaut with
   `do who hook_who A` on the hook and `when is A hook_who` on the resolver.
   (All hooks share `hook_who`, which is safe because they never overlap.)
 - Resolutions are **mostly satisfying, sometimes ominous, never cheap**. "It was
@@ -225,6 +226,9 @@ after its `type` line:
   "reads it twice", "Slowly." (give a rate), pinning things above bunks (clip
   them inside the logbook). Night scares stay grounded: no "by itself", no
   "it has moved"; give the hardware a cause.
+- Retired tics (round 8): "taped", "pinned up", "the galley wall", "go quiet"
+  and its forms. "Five days" appears once per season in the closing cards, not on
+  every descent beat.
 - Fold lines: none on the final day, printed before a hook, never naming
   anyone who had a scene that day.
 - Epilogue: every astronaut gets a line. Story lines first; fallbacks from
