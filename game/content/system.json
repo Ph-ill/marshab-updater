@@ -79,7 +79,8 @@
       "{who} ran the water rounds. The reclaimer printed its blessing: RECLAIMED. DRINK SPARINGLY.",
       "{who} swapped scrubber cartridges two days early, because the trend lines said so.",
       "{who} answered mail from home: weather, a dog, a fence that needs mending.",
-      "{who} cleaned galley filters and found a missing spoon.",
+      "{who} read the water ledger aloud at shift change and signed it, as the checklist requires.",
+      "{who} ran the pre-sleep checklist with the next ship, call and answer, forty lines.",
       "{who} recalibrated cabin sensors reading half a degree warm.",
       "{who} swept cabins with leak detectors and found nothing, which is the point.",
       "{who} recorded bedtime stories for home, with the delay built into the pauses.",
@@ -290,7 +291,13 @@
       [
         "p_movie",
         "Never picked a submarine film again."
-      ]
+      ],
+      ["r_smoke", "Found the bad fan by counting breakers, in a mask."],
+      ["r_tank", "Signed for every litre of the austerity, every morning."],
+      ["g_ledger", "Read the losses ledger aloud, every line, and signed."],
+      ["r_strike", "Went out to see a crater the size of a fingernail."],
+      ["r_flood", "Found the one real alarm in 214."],
+      ["r_voice", "Sat up till dawn for a message from home."]
     ],
     "coda": {
       "name": "Cargo 2",

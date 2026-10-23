@@ -161,3 +161,32 @@ when home A
 do who hook_who A
 text 23:58. {A}'s ship stops answering on the fleet net in the middle of a sentence. No telemetry, just an empty slot on seven displays. Through the next ship's long lens, its cabin windows are lit as usual.
 
+
+# --- 11. Smoke (round 24) ---------------------------------------------------------
+card h_smoke
+type event
+cat grim
+hook
+once
+days 14 24
+weight 10
+roles A
+when cond A ok
+when home A
+do who hook_who A
+text 03:05. The smoke alarm on {A}'s ship trips, then the one by the bunk. The air tastes of hot plastic. {A} has the mask on before the second alarm stops, and starts pulling breakers, one at a time, counting.
+
+# --- 12. The tank (round 24; late, when the knock hasn't missed) ---------------------
+card h_tank
+type event
+cat grim
+hook
+once
+days 34 36
+weight 30
+roles A
+when cond A ok
+when home A
+when !fired h_band
+do who hook_who A
+text 04:10. The drinking tank on {A}'s ship reads nine litres lower than at midnight, and falling. No droplets drift in the torch beam; the floor is dry. {A} logs the reading, as procedure demands, and opens the first access panel.
