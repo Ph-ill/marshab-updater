@@ -60,7 +60,7 @@ due
 once
 days 5 9
 roles A
-text {A} reads the arrival manifest: habitat on Cargo 1, water on Cargo 3, the rover on Cargo 4. The written-off page runs longer than expected: a drill rig left in Earth orbit, a nitrogen pallet vented on the pad, Cargo 2 "lost on landing", a dead weather orbiter, a grey relay, "thruster stuck open".
+text {A} reads the arrival manifest: water on Cargo 3, the rover on Cargo 4. The written-off page is the fun one: a drill rig left in Earth orbit, a grey relay, "thruster stuck open", a nitrogen pallet vented on the pad, a weather orbiter, Cargo 2, "lost on landing", a pallet of socks, "reason unknown".
 do trait A curious 1
 
 card l_departure
@@ -386,7 +386,7 @@ due
 once
 days 31 31
 roles A
-text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis. The one with the Sharpie signs off: "Packed every cargo ship since the first. Most of them write when they land. Seven of you this time. I'll be counting."
+text A batch of photos from the Starbase loading crew reaches {A}: the bay, the cranes, the team in hi-vis. The one with the Sharpie signs off: "Packed every cargo ship since the first. Seven of you this time. Write when you land. I'll be counting."
 do morale A 2
 
 card sharpie2

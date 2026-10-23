@@ -60,6 +60,7 @@ cat mystery
 clue
 days 16 21
 weight 14
+due
 once
 roles A
 when cond A ok
@@ -72,9 +73,9 @@ cat mystery
 clue core
 due
 once
-days 20 23
+days 24 27
 roles A
-when since t_carrier >= 5
+when since t_theory >= 2
 text {A} plots a week of the old-channel carrier for the anomaly file. It isn't steady: there for half the day, gone for the rest, and back thirty-seven minutes later each morning. {A} blames the dish's scan schedule, re-plots it, and the thirty-seven minutes stay.
 do mark t_dropout
 
@@ -83,16 +84,16 @@ type event
 cat mystery
 due
 once
-days 22 24
+days 21 23
 roles A
-when since t_dropout >= 2
+when since t_carrier >= 5
 when !is A ow_list
 when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
 when !is A ow_hail
-text {A} finds the grey relay from the manifest in the catalog: spinning since its thruster stuck, one turn every 10.96 seconds, going by RF flashes heard in the weeks after it failed. Its beam, eight and a half degrees wide, is 2.4 percent of a circle. A lighthouse, unkept. {A} draws it in blue marker.
+text {A} finds the grey relay from the manifest in the catalog, spinning since its thruster stuck: a turn every 10.96 seconds, a beam eight and a half degrees wide, 2.4 percent of a turn. Both numbers were fitted to RF flashes heard after it failed. A lighthouse, unkept. {A} draws it in blue marker.
 do who ow_theory A
 do mark t_theory
 do morale A 3
@@ -107,7 +108,7 @@ days 25 27
 roles A
 when since t_theory >= 3
 when is A ow_theory
-text Mission Control runs the grey relay's orbit forward for {A}: it comes round thirty-seven minutes later each morning, and slips behind Mars for an hour or so. Not half a day. Close enough, {A} decides. The ground sends a drawing of a lighthouse; {A} adds a keeper in blue and sleeps through the night.
+text Mission Control runs the grey relay's orbit forward for {A}: it comes round thirty-seven minutes later each morning, and slips behind Mars once an orbit. The ground sends a drawing of a lighthouse; {A} adds a keeper in blue and sleeps through the night.
 do morale A 2
 
 card c_theory
