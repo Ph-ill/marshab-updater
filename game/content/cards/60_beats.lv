@@ -124,7 +124,7 @@ weight 8
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Someone at Starbase packed a margin and ticked it in marker. {A} logs a thank-you.
+text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Someone at Starbase packed a margin and ticked it in marker. {A} logs a thank-you: "Found it. {Av}"
 do res spares 1
 
 # --- Quirks: per-crewmate lines from roster.lv `habit "..."` (round 19) -------
