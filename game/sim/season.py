@@ -419,6 +419,30 @@ def main(argv):
     # The raw story bytes, so tests/render_check.mjs can prove web/render.js says the same.
     with open(os.path.join(ROOT, "build", "season_story.bin"), "wb") as f:
         f.write(st.story)
+    # The epilogue fallback (no story lines: everything from the final state) as render.py
+    # gives it, for the reference season's state and two flattened copies (bonds only,
+    # then nothing past the cut), so render_check.mjs can test web/render.js on each path.
+    n = len(text["crew"])
+
+    class Flat:
+        def __init__(self, traits, bonds):
+            self.traits, self.bonds = traits, bonds
+
+        def trait(self, c, a):
+            return self.traits[c][a]
+
+        def bond(self, c, j):
+            return self.bonds[c][j]
+
+    tr = [[st.trait(c, a) for a in range(3)] for c in range(n)]
+    bo = [[st.bond(c, j) for j in range(n)] for c in range(n)]
+    zero = [[0] * 3 for _ in range(n)]
+    cases = []
+    for t_, b_ in ((tr, bo), (zero, bo), (zero, [[0] * n for _ in range(n)])):
+        lines = Renderer(text).epilogue(b"", Flat(t_, b_))
+        cases.append({"traits": t_, "bonds": b_, "lines": {str(c): l for c, l in sorted(lines.items())}})
+    with open(os.path.join(ROOT, "build", "season_end.json"), "w", encoding="utf-8") as f:
+        json.dump(cases, f)
 
     # MicroPython check inputs
     with open(os.path.join(ROOT, "build", "season_log.bin"), "wb") as f:

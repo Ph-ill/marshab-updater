@@ -150,12 +150,15 @@ class Game:
             if R.kind(r) == R.ACTION and R.ship(r) == you and R.day(r) == day:
                 act = [r[5], r[6], r[7]]
         story = b"".join(sh.days.get(d, b"") for d in range(1, day + 1))
+        best = [max((j for j in range(N) if j != c), key=lambda j: st.bond(c, j)) for c in range(N)]
         return {
             "day": day, "season": p.season, "you": you, "here": you, "last": last,
             "loc": list(st.loc), "cond": list(st.cond), "morale": list(st.morale),
             "traits": [[st.trait(c, a) for a in range(3)] for c in range(N)],
             "bonds": [st.bond(you, j) for j in range(N)],
-            "best": [max((j for j in range(N) if j != c), key=lambda j: st.bond(c, j)) for c in range(N)],
+            "best": best,
+            # bond with that closest crewmate: the epilogue fallback (render.js) needs it
+            "bestb": [st.bond(c, best[c]) for c in range(N)],
             "res": list(st.res), "kit": list(st.medkit),
             "open": opens, "act": act, "ending": st.ending,
             "story": base64.b64encode(story).decode(),

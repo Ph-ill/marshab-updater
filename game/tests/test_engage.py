@@ -151,6 +151,14 @@ class TestEightCrew(unittest.TestCase):
         cls.t = E.load_table(TABLE)
         cls.e = E.Engage(cls.t, cls.p.voyage_key, cls.p.season)
 
+    def test_endings_are_the_titled_cards(self):
+        # The shipped text.json has no card ids, so the file screen's story % (engage.js
+        # storyPct) leaves endings out by their title. Every ending has one; nothing else does.
+        dev = json.load(open(os.path.join(ROOT, "build", "text.dev.json"), encoding="utf-8"))
+        ends = [c["id"].startswith("end_") for c in dev["cards"]]
+        self.assertEqual(ends, [bool(c.get("ti")) for c in dev["cards"]])
+        self.assertTrue(any(ends))
+
     def test_n_is_eight_everywhere(self):
         from lv import codes as K
         self.assertEqual((N, K.N, self.e.n, E.Local(42).n), (8, 8, 8, 8))

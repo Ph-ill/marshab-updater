@@ -10,7 +10,7 @@ NONE = 255
 def page_heading(day):
     """Log page heading. Pages 1-6 are one flight day each (launch week); from page 7
     each page covers five flight days: page NN starts on day 7 + 5*(NN-7).
-    web/render.js has no copy yet; tests/render_check.mjs mirrors it (web hand-off)."""
+    web/render.js pageHeading is the phone's copy (tests/render_check.mjs compares them)."""
     if day <= 6:
         a = b = day
     else:
@@ -212,6 +212,7 @@ class Renderer:
         # Epilogue lines for someone who isn't crew (text.json epi.coda: a name and a
         # priority list of [card index, line]); the first card that fired, in any role,
         # picks the line. Kept apart from epilogue() so that stays one line per astronaut.
+    # web/render.js coda() is the phone's copy (tests/render_check.mjs compares them).
         cd = self.t.get("epi", {}).get("coda")
         if not cd:
             return None
@@ -247,7 +248,7 @@ class Renderer:
         # screen always has a line per astronaut: their strongest trait (epi.axis, a
         # [positive, negative] pair per axis) if it is past `cut`, else their closest
         # bond (epi.bond) if past `cut`, else epi.plain. A line already shown is
-        # skipped. The phone needs the same rule; see STYLE.md "Epilogue".
+        # skipped. web/render.js epilogueFallback() is the phone's copy (render_check.mjs).
         n = len(self.t["crew"])
         used = set(lines.values())
         for c in range(n):

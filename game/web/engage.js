@@ -41,7 +41,9 @@ function found(){
   return got;
 }
 function storyPct(){
-  const seen=new Set(),tot=T.cards.filter((c)=>!c.id.startsWith("end_")).length;
+  // Endings don't count. The shipped text.json has no card ids; endings are the cards
+  // with a title ("ti"), which tests/test_engage.py holds lvc to.
+  const seen=new Set(),tot=T.cards.filter((c)=>!c.ti).length;
   for(const e of entries((e)=>[O.EVENT,O.DEC_OPEN,O.DIL_OPEN,O.RES_OPEN].includes(e[1])))seen.add(e[2]);
   return Math.min(100,Math.floor(100*seen.size/Math.max(1,tot)));
 }

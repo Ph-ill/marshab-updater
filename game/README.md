@@ -34,8 +34,11 @@ MICROPYTHON=/path/to/micropython game/tests/run.sh    # also replays the season 
 ```
 
 `season.py` also writes `sim/out/epilogue.txt`: one closing line per crew member,
-from `epi.story` in system.json (lvc turns card ids into indices). The web end
-screen should mirror `Renderer.epilogue` in sim/render.py.
+from `epi.story` in system.json (lvc turns card ids into indices), then the coda
+line. The phone's epilogue screen uses `Renderer.epilogue`/`coda` in web/render.js,
+the same rules as sim/render.py; `tests/render_check.mjs` compares the two on the
+reference season and on three end states that exercise the fallback
+(`build/season_end.json`).
 
 ## Phone UI prototype
 
@@ -46,7 +49,9 @@ python3 game/sim/mockserver.py --day 8                   # mock Pico on http://l
 
 Open it at phone width (360-430 px). Add `?day=N` to jump to another flight day (mock only). The mock runs the real engine on the simulated season. The page sees only what this ship has heard by gossip, and your taps become signed records that take effect the next day. `web/shots.sh OUTDIR` builds the page, starts the mocks and takes chrome-less screenshots of every screen at 390x844 and 360x800. `SIZES=cna web/shots.sh OUTDIR` uses the captive-sheet sizes below instead and writes `OUTDIR/cna-WxH/NAME.png`. Both need `PW` (a playwright-core directory) and `CHROME`.
 
-* **One file.** `web/app.html` holds the CSS, the JS and the SVG. `web/build.py` inlines `web/render.js`, strips comments and gzips the result. It comes to about 13.8 KB gzipped (budget 128 KB), plus `text.json` (about 2.3 KB gzipped, fetched separately so a new story pack doesn't need a page rebuild).
+* **One file.** `web/app.html` holds the CSS, the JS and the SVG. `web/build.py` inlines `web/render.js`, strips comments and gzips the result. It comes to about 20.6 KB gzipped (budget 128 KB) with the engagement screens, plus `text.json` (about 24.8 KB gzipped, fetched separately so a new story pack doesn't need a page rebuild).
+* **Log pages.** The log heads each page `LOG PAGE NN · DAYS a–b` (render.js `pageHeading`, the sim's `page_heading`): pages 1–6 are one day each, then five days a page. Today's and yesterday's pages carry a "may still change" line under the heading. The FD counter in the top bar and the instruction screens is the page number.
+* **Arrival and epilogue.** On day 42 home becomes the mission report (ending, voyage numbers, a manifest of who landed); its button opens the epilogue: one line per astronaut, the coda, then the "Read again" pages. The fallback lines need each astronaut's closest crewmate and that bond, which `/api/state` sends as `best` and `bestb`.
 * **Nothing is stored on the phone.** There's no localStorage and no cookies; the captive sheet would wipe them anyway. You tap your name and enter your 4-digit crew code. The session token lives in page memory.
 * **Crew codes are set by Phill, up front.** The updater's ship setup writes `data/crew.json` (a fleet salt and a salted sha256 per person, the same on all eight ships), so nobody can claim a name by tapping it first. Five wrong codes for a name lock that name for 5 minutes, timed by the board, not the phone. A name with no code shows "Not set up" and can't be picked. See `lv/codes.py`.
 * **The ship remembers your phone for the day.** After a good code, the ship keeps (phone IP + User-Agent, crew, flight day). Reopening the captive sheet the same flight day goes straight to your ship (`GET /api/me`). The next day, or after "Sign out" on your astronaut's page, it asks again. The first sign-in since the board started shows the "Welcome aboard" astronaut card; after that you go straight home.
@@ -105,7 +110,7 @@ The story is a pure function: **story = f(pack, voyage key, choice log)**.
 
 ## Results (build 0.1.0, 15 sample cards)
 
-*Current content pack (217 cards):* pack.bin 6,752 B, text.json 24,777 B gzipped (card ids are left out of the shipped file; `build/text.dev.json` keeps them for sim/ and the tests), peak MicroPython heap 71,104 B on the 64-bit unix port (51,984 B on a 32-bit build, like the Pico's), snapshot 743 B, final reference digest `651a9ce252fb4b8d` (authored and reversed merge order). The reference season authors 274 records from 8 simulated players (2 never play), 60 of them crewmate gifts; without the gift records the digest is `24751f12277fc052`, the content-voice figure, so gifts are the only difference. The choice log packs its records (one bytearray per 8-day shard, lv/chlog.py), which is what keeps the extra records under the 80 KB line. On a 32-bit build the whole check runs in a 92 KB heap from .py (80 KB from .mpy: compiling engine.py is the peak); the 64-bit port needs 136 KB from .py, 96 KB from .mpy. The deepest replay in the four delivery scenarios rewrites 12 days, and a ship cut off for a long stretch can need up to about 30. `python3 -m unittest discover -s tests` runs 163 tests (103 content, 23 core, 37 engagement). The figures below are the original 15-card measurements.
+*Current content pack (217 cards):* pack.bin 6,752 B, text.json 24,777 B gzipped (card ids are left out of the shipped file; `build/text.dev.json` keeps them for sim/ and the tests), peak MicroPython heap 71,104 B on the 64-bit unix port (51,984 B on a 32-bit build, like the Pico's), snapshot 743 B, final reference digest `651a9ce252fb4b8d` (authored and reversed merge order). The reference season authors 274 records from 8 simulated players (2 never play), 60 of them crewmate gifts; without the gift records the digest is `24751f12277fc052`, the content-voice figure, so gifts are the only difference. The choice log packs its records (one bytearray per 8-day shard, lv/chlog.py), which is what keeps the extra records under the 80 KB line. On a 32-bit build the whole check runs in a 92 KB heap from .py (80 KB from .mpy: compiling engine.py is the peak); the 64-bit port needs 136 KB from .py, 96 KB from .mpy. The deepest replay in the four delivery scenarios rewrites 12 days, and a ship cut off for a long stretch can need up to about 30. `python3 -m unittest discover -s tests` runs 164 tests (103 content, 23 core, 38 engagement). The figures below are the original 15-card measurements.
 
 **Determinism.** The reference season authors 170 records from 5 simulated players; 2 never play and one is out of range for days 15-21. Those records are then delivered to 8 independent ships in 4 ways:
 * instant;

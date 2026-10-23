@@ -11,6 +11,18 @@ export const O = {
 };
 const NONE = 255;
 const VOICE_CARDS = 2;
+const STORY = [O.EVENT, O.DEC_OPEN, O.DIL_OPEN, O.RES_OPEN]; // codes that cast a card
+
+// Log page n covers flight days [a, b]: pages 1-6 are one day each (Earth orbit and
+// the departure burn), then five days a page from page 7. sim/render.py page_heading.
+export function pageDays(n) {
+  const a = n <= 6 ? n : 7 + 5 * (n - 7);
+  return [a, n <= 6 ? a : a + 4];
+}
+export function pageHeading(n) {
+  const [a, b] = pageDays(n);
+  return `LOG PAGE ${String(n).padStart(2, "0")} \u00b7 ${a === b ? "DAY " + a : `DAYS ${a}\u2013${b}`}`;
+}
 
 export class Renderer {
   constructor(text, eng = null) {
@@ -127,5 +139,61 @@ export class Renderer {
       if (s) res.push([e[0], s.trim()]);
     }
     return res;
+  }
+
+  // End screen, one line per astronaut: text.json epi.story is a priority list of
+  // [card, line], and each astronaut gets the first line whose card cast them as role A.
+  // With st ({trait(c, a), bond(c, j)}) any gap is filled from the final state, so
+  // everyone has a line. Returns {crew: line}. Same rules as render.py epilogue().
+  epilogue(out, st = null) {
+    const first = new Set();
+    for (let i = 0; i + 8 <= out.length; i += 8) {
+      if (STORY.includes(out[i + 1]) && out[i + 3] !== NONE) first.add(out[i + 2] * 256 + out[i + 3]);
+    }
+    const lines = {}, epi = this.t.epi || {}, n = this.t.crew.length;
+    for (const [card, line] of epi.story || []) {
+      for (let c = 0; c < n; c++) if (!(c in lines) && first.has(card * 256 + c)) lines[c] = line;
+    }
+    if (st) this.epilogueFallback(lines, epi, st);
+    return lines;
+  }
+
+  // Strongest trait past `cut` (epi.axis [positive, negative] per axis), else the
+  // closest bond past `cut` (epi.bond), else epi.plain; a line already shown is skipped.
+  epilogueFallback(lines, epi, st, cut = 20) {
+    const n = this.t.crew.length, ax = epi.axis || [];
+    const used = new Set(Object.values(lines));
+    const by = (f) => (x, y) => f(y) - f(x); // descending; sort is stable, like sorted()
+    for (let c = 0; c < n; c++) {
+      if (c in lines) continue;
+      const picks = [];
+      for (const a of [...ax.keys()].sort(by((a) => Math.abs(st.trait(c, a))))) {
+        const v = st.trait(c, a);
+        if (Math.abs(v) >= cut) picks.push(ax[a][v >= 0 ? 0 : 1]);
+      }
+      if (epi.bond) {
+        const j = [...Array(n).keys()].filter((j) => j !== c).sort(by((j) => st.bond(c, j)))[0];
+        if (j !== undefined && st.bond(c, j) >= cut) picks.push(this.fill(epi.bond, NONE, NONE, { T: this.name(j) }));
+      }
+      picks.push(epi.plain || "");
+      const line = picks.find((p) => p && !used.has(p)) ?? picks[picks.length - 1];
+      if (line) {
+        lines[c] = line;
+        used.add(line);
+      }
+    }
+  }
+
+  // The line for someone who isn't crew (epi.coda {name, lines}): the first card in
+  // its list that fired, in any role. Returns [name, line] or null.
+  coda(out) {
+    const cd = (this.t.epi || {}).coda;
+    if (!cd) return null;
+    const fired = new Set();
+    for (let i = 0; i + 8 <= out.length; i += 8) {
+      if (STORY.includes(out[i + 1]) || out[i + 1] === O.END) fired.add(out[i + 2]);
+    }
+    const hit = cd.lines.find(([card]) => fired.has(card));
+    return hit ? [cd.name, hit[1]] : null;
   }
 }

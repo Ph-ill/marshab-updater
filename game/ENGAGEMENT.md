@@ -83,7 +83,7 @@ the notifier on, the fallback is to blink only between scan windows.
 MicroPython 1.29 unix, 32-bit (`build-m32`, closest to RP2040), eight ships, 274-record
 reference season: story replay (`tests/mp_check.py`) peak 52.0 KB; story + engagement
 (`tests/mp_engage.py`) peak 58.7 KB. 64-bit `build-standard`: 71.1 KB and 86.9 KB.
-The page is 59 KB raw, 19.3 KB gzipped (14.7% of the 128 KB budget).
+The page is 64 KB raw, 20.6 KB gzipped (15.7% of the 128 KB budget) with the epilogue screen.
 
 **Heap fragmentation and the 64-bit OOM (core):** merging a long sync's worth of records
 back to back could raise `MemoryError` on a dict resize with most of the heap free.
@@ -109,7 +109,7 @@ threads, like STORY_BIBLE.md) or lvc's slow-burn vocabulary. Patches show a neut
 ## Tests
 
 `tests/run.sh` (with `MICROPYTHON=...`) runs lvc/lve, the unit and sim tests, the 8-ship
-x 4-delivery-order determinism check, `tests/test_engage.py` (37 tests: merge collection, eight crew (Marco's gifts, drops, crew-file line, local file), content safety, drops, jobs,
+x 4-delivery-order determinism check, `tests/test_engage.py` (38 tests: merge collection, eight crew (Marco's gifts, drops, crew-file line, local file), content safety, drops, jobs,
 streak/cover days, gifts limits, waiting/seen, clock, LED quiet hours/budget/disabled,
 inactive season), render parity, page size, sign-in, and both MicroPython checks.
 `web/shots_engage.sh` writes the 390x844 screenshots.

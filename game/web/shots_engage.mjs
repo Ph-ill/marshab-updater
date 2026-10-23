@@ -84,10 +84,14 @@ await shot(p, "eng-15-file-dark");
 await p.context().close();
 
 p = await page(42, "20:00");
+await p.waitForSelector(".man");
+await shot(p, "eng-16-ending-full", true);
+await p.click('[data-go="epilogue"]');
 await p.waitForSelector(".epi");
-await shot(p, "eng-16-ending-reread-full", true);
+await shot(p, "eng-16b-epilogue-reread-full", true);
 await p.context().close();
 p = await page(42, "20:00");
+await goto(p, "epilogue");
 await p.waitForSelector('[data-go^="log/"]');
 await p.click('[data-go^="log/"]');
 await shot(p, "eng-17-reread-log-day");
