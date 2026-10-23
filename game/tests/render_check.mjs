@@ -8,9 +8,11 @@ import { Renderer } from "../web/render.js";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const text = JSON.parse(readFileSync(join(root, "build/text.json"), "utf8"));
 const story = readFileSync(join(root, "build/season_story.bin"));
+let eng = null; // engagement words (tools/lve.py): gift lines need them
+try { eng = JSON.parse(readFileSync(join(root, "build/engage.json"), "utf8")); } catch {}
 const lines = [];
 let last = -1;
-for (const [day, s] of new Renderer(text).lines(story)) {
+for (const [day, s] of new Renderer(text, eng).lines(story)) {
   if (day !== last) {
     lines.push("", `FLIGHT DAY ${String(day).padStart(2, "0")}`);
     last = day;

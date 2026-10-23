@@ -7,13 +7,14 @@
 
 export const O = {
   EVENT: 1, DEC_OPEN: 2, DEC_CLOSE: 3, DIL_OPEN: 4, DIL_CLOSE: 5, ACT: 6,
-  MOVE: 7, NOTE: 8, END: 9, RES_OPEN: 10, RES_CLOSE: 11, SHORT: 12,
+  MOVE: 7, NOTE: 8, END: 9, RES_OPEN: 10, RES_CLOSE: 11, SHORT: 12, GIFT: 13,
 };
 const NONE = 255;
 
 export class Renderer {
-  constructor(text) {
+  constructor(text, eng = null) {
     this.t = text;
+    this.e = eng; // engage.json, optional: without it gift lines are skipped
     this.roles = new Map(); // card -> [A, B] from the entry that opened it
   }
 
@@ -75,6 +76,11 @@ export class Renderer {
         return this.fill(c === a ? sy.home : sy.move, a, NONE, { S: t.ships[c] });
       case O.NOTE:
         return this.fill(sy.note, a, NONE, { T: this.name(c), line: t.notes[b] });
+      case O.GIFT: {
+        const g = this.e && this.e.gifts;
+        if (!g || b >= g.items.length || d > 2) return null;
+        return this.fill(g.sys[["give", "ask", "answer"][d]], a, NONE, { T: this.name(c), item: g.items[b][0] });
+      }
       case O.SHORT:
         return sy.short;
       case O.END:

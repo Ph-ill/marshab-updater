@@ -8,8 +8,9 @@ NONE = 255
 
 
 class Renderer:
-    def __init__(self, text):
+    def __init__(self, text, eng=None):
         self.t = text
+        self.e = eng     # build/engage.json, optional: without it gift lines are skipped
         self.roles = {}  # card -> (A, B) from the entry that opened it
 
     def name(self, c):
@@ -69,6 +70,11 @@ class Renderer:
             return self.fill(tpl, a, S=t["ships"][c])
         if code == O.O_NOTE:
             return self.fill(sy["note"], a, T=self.name(c), line=t["notes"][b])
+        if code == O.O_GIFT:
+            g = self.e and self.e["gifts"]
+            if not g or b >= len(g["items"]) or d > 2:
+                return None
+            return self.fill(g["sys"][("give", "ask", "answer")[d]], a, T=self.name(c), item=g["items"][b][0])
         if code == O.O_SHORT:
             return sy["short"]
         if code == O.O_END:
