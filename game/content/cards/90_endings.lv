@@ -12,7 +12,7 @@ when is B abort_who
 title Lights On
 when flag signal_answered
 when flag arrive_hold
-text Pre-dawn, the only slot the storm leaves. At midnight, over the link the handshake opened, the flight director clears one command, lights only, and {A} sends it. Two kilometres up, the dust turns white from below: Cargo 2, spending the battery it saved on every floodlight. Seven pilots, blind in their plumes, check radar against one glow. {B} sets down closest. By dawn the glow is one lamp. At noon {B} is at the window when it goes out. The first crate it carried says, in Sharpie: "You'll thank me." To Starbase: "Landed. All seven. The eighth kept the lights on." From a loading bay: "Told them it sulks."
+text Pre-dawn, the only slot the storm leaves. At midnight, over the link the handshake opened, the flight director clears one command, lights only, and {A} sends it. Two kilometres up, the dust turns white from below: Cargo 2, spending the battery it saved on every floodlight. Seven pilots, blind in their plumes, check radar against one glow. {B} sets down closest, well clear. By dawn the glow is one lamp. At noon {B} is at the window when it goes out. The first crate it carried says, in Sharpie: "You'll thank me." To Starbase: "Landed. All seven. The eighth kept the lights on." From a loading bay: "Told them it sulks."
 
 card end_through
 type ending
@@ -22,7 +22,7 @@ when is A ow_hail
 when is B abort_who
 title Through the Dust
 when flag arrive_hold
-text Blind in dust, pilots fly radar for height and Cargo 2's knock for bearing, a fix every eleven seconds. The gust catches {B}'s ship: it stands on the slope on a folded strut and will not fly home. {B} sits on the bottom rung and starts a list of what it can still be: habitat, store, radio mast. Two sols later its battery rides a sled up the rim, and {A}, who wanted to answer all along, clips it to Cargo 2's port, answers inside the tick, then the HOLD off the laminated card. One lamp burns steady. {B} adds a line to the list: neighbour. To Starbase: "Landed. Seven down, six to fly." From a loading bay: "Tell it the bay says hello."
+text Blind in dust, pilots fly radar for height and drift, Cargo 2's knock across two antennas for bearing, a fix every eleven seconds till the rim hides it. The gust catches {B}'s ship: it stands on a folded strut, never to fly home. {B} sits on the bottom rung and lists what it can still be: habitat, store, radio mast. Two sols on, its battery rides a sled up the rim, and {A}, who wanted to answer all along, clips it on, answers inside the tick, then the HOLD off the laminated card. One lamp burns steady. {B} adds to the list: neighbour. To Starbase: "Landed. Seven down, six to fly." From a loading bay: "Tell it the bay says hello."
 
 card end_long_orbit
 type ending
@@ -33,7 +33,7 @@ when is B wait_who
 title The Long Orbit
 when flag signal_answered
 when flag arrive_wait
-text Week three in the long orbit, half rations on seven galley tables. Below, the storm, and one lamp, steady since the handshake; the storm starves the wing. Its manifest comes a line a pass. Tonight: tank liners, a glove, a drill bit. Seven hungry people cheer a drill bit. Next pass: seed stock, frozen in week two. The budget held a lamp or a hold heater, not both, and the fleet asked for the lamp. {B}, who argued to wait, logs it. When the storm clears, {B} flies first, the lamp in the window, calling the numbers for six. To Starbase: "Landed. All seven. The eighth was waiting." From a loading bay: "Thank it for the drill bit."
+text Week three in the long orbit, half rations. Below the storm, one lamp, steady since the handshake, on a starving wing. Its manifest comes a line a pass. Tonight: tank liners, a glove, a drill bit. Seven hungry people cheer a drill bit. Next: seed stock, frozen in week two. The budget held a lamp or a hold heater; the fleet chose the lamp. {B} logs it; six names sign under it. On the last night the lamp skips twice; seven galleys hush till it's back. At dawn {B} flies first, the lamp in the window, calling the numbers for six. To Starbase: "Landed. All seven. The eighth was waiting." From a loading bay: "Thank it for the drill bit."
 
 card end_patience
 type ending
@@ -43,7 +43,7 @@ when is A ow_hail
 when is B ow_theory
 title Patience
 when flag arrive_wait
-text Dawn on the rim, frost on the wing. All seven ships came down last night. For two weeks, past every chart, a battery under that frost has been choosing which knock to skip, and the strobe went dark at midnight. {A} kneels at the service port with a pack and a radio, {B} a step behind, counting. Eleven: nothing. Twenty-two: nothing. {A} clips the pack on anyway. Thirty-three: a click, slow, like something clearing its throat. The answer goes in by hand inside the tick, then the HOLD off the laminated card. Its lamp comes on and stays. To Starbase: "Landed. All seven. The eighth is warm." From a loading bay: "Knew it'd keep."
+text Dawn on the rim, frost on the wing. Two weeks of half rations in orbit; all seven came down last night. Past every chart, a battery under that frost has been choosing which knock to skip, and at midnight the flashes stopped. {A} kneels at the service port with a pack, {B} a step behind, counting. Eleven: nothing. Twenty-two: nothing. {A} clips the pack on anyway. Thirty-three: a click, slow, like something clearing its throat. The answer goes in by hand inside the tick, then the HOLD off the laminated card. Its lamp comes on and stays. To Starbase: "Landed. All seven. The eighth is warm." From a loading bay: "Knew it'd keep."
 
 card end_friend
 type ending
@@ -53,7 +53,7 @@ when is A ow_hail
 when is B ow_theory
 title Sit With It
 when flag signal_answered
-text Second sol, halfway to Cargo 2 for its drill spares, {A} driving, {B} on the battery: forty-eight percent used, and the reserve rule says turn round; there and back ends far under the floor, unless Cargo 2 still charges trucks. The waiver takes eighteen minutes: YOUR CALL. {A} drives on. Cargo 2 hears them and lights its floods and the port at its foot. In marker: "Slow charger. Sit with it." {B} plugs in at four percent. They sit with it all afternoon, on the charge it kept for the cold, and load the spares gently. Its lamp is dimmer that night, for good. To Starbase: "Landed. All eight." From a loading bay: "Told you it was slow."
+text Second sol, halfway to Cargo 2 for the drill spares the water hangs on, {A} driving, {B} on the battery: forty-eight percent used. The reserve rule says turn round: there and back ends under the floor, unless Cargo 2 charges trucks. The waiver takes eighteen minutes: YOUR CALL. {A} drives on. Cargo 2 hears them and lights the port at its foot. In marker: "Slow charger. Sit with it." {B} plugs in at four percent. All afternoon the charge it kept for the cold runs into the rover. Its lamp is dimmer that night; the cold is closer. To Starbase: "Landed. All seven, and the eighth plugged in." From a loading bay: "Told you it was slow."
 
 card end_close
 type ending
@@ -62,5 +62,5 @@ roles A B
 when is A ow_hail
 when is B ow_theory
 title Close Enough
-text Third sol, two hundred metres from Cargo 2, {A} and {B} in the cab. On the first sol Cargo 3's drill snapped its only bit; the spare is in that hold. The rover's spare batteries went to heaters on the second night. {A} counts the dark, nine, ten, eleven, and answers. HELLO RX · OK. The cargo doors unlatch. Cargo 2 obeys its patch, WAKE ALL: every heater at once, no battery check. The HOLD goes out on the next tick. By then it has nothing left to hear it with. They drive back heaters off, the bit in {B}'s lap. To Starbase: "Landed. All seven. Found the eighth. In time for the bit." From a loading bay: "Told them. Thank it for us."
+text Third sol, two hundred metres from Cargo 2. First sol, Cargo 3's drill snapped its only bit; the spare is in that hold. The rover's spare batteries went to heaters on the second night. The ruling says spare power in hand; the drill says now. {A} counts the dark, nine, ten, eleven, and answers anyway. HELLO RX · OK. Cargo 2 obeys its patch: every heater at once, no battery check. The HOLD goes out on the next tick. By then it has nothing left to hear it with. They drive back heaters off, the bit in {B}'s lap. To Starbase: "Landed. All seven. Found the eighth. In time for the bit." From a loading bay: "Told them. Thank it for us."
 
