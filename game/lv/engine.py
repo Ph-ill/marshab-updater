@@ -2,6 +2,7 @@
 # the log records that take effect on day d, and the votes/answers in effect by d).
 # Nothing waits on a player: every vote has a default, every astronaut acts alone.
 from lv import ops as O
+from lv import pack as P
 from lv import record as R
 from lv.prng import Rng, day_seed
 from lv.state import N
@@ -123,7 +124,7 @@ class Engine:
         roles = bytearray([NONE] * 4)
         k = 0
         if preset:
-            while k < card.nroles and k < len(preset) and preset[k] != NONE:
+            while k < self.p.h(card, P.H_NROLES) and k < len(preset) and preset[k] != NONE:
                 roles[k] = preset[k]
                 k += 1
         start = self.rng.below(N)
@@ -132,8 +133,8 @@ class Engine:
         return None
 
     def _bind(self, card, roles, k, start):
-        if k >= card.nroles:
-            return self._check(card.conds, roles)
+        if k >= self.p.h(card, P.H_NROLES):
+            return self._check(self.p.conds(card), roles)
         s = self.s
         for i in range(N):
             c = (start + i) % N
@@ -145,10 +146,10 @@ class Engine:
                     taken = True
             if taken:
                 continue
-            if k == 0 and card.type == O.DILEMMA and not self._can_offer(card, c):
+            if k == 0 and self.p.h(card, P.H_TYPE) == O.DILEMMA and not self._can_offer(card, c):
                 continue
             roles[k] = c
-            if self._check(card.conds, roles) and self._bind(card, roles, k + 1, start):
+            if self._check(self.p.conds(card), roles) and self._bind(card, roles, k + 1, start):
                 return True
         roles[k] = NONE
         return False
@@ -157,7 +158,7 @@ class Engine:
         # At most 2 private dilemmas per player per season, each card once per player,
         # and never two open at once for the same player.
         s = self.s
-        if s.dil_given[c] >= 2 or (s.dil_seen[card.idx] >> c) & 1:
+        if s.dil_given[c] >= 2 or (s.dil_seen[card] >> c) & 1:
             return False
         for it in s.pend:
             if it[0] == O.DILEMMA and it[4] == c:
@@ -167,12 +168,12 @@ class Engine:
     def eligible(self, card):
         s = self.s
         d = s.day
-        if d < card.dmin or d > card.dmax:
+        if d < self.p.h(card, P.H_DMIN) or d > self.p.h(card, P.H_DMAX):
             return None
-        last = s.fired[card.idx]
-        if last and (card.flags & O.F_ONCE):
+        last = s.fired[card]
+        if last and (self.p.h(card, P.H_FLAGS) & O.F_ONCE):
             return None
-        if last and card.cooldown and d - last < card.cooldown:
+        if last and self.p.h(card, P.H_COOL) and d - last < self.p.h(card, P.H_COOL):
             return None
         if last == d:
             return None
@@ -222,7 +223,7 @@ class Engine:
                     s.medkit[src] -= 1
                     s.cond[roles[b]] = O.COND_OK
             elif op == O.E_OPEN:
-                self.open(self.p.cards[a], roles)
+                self.open(a, roles)
 
     def _move(self, c, ship):
         s = self.s
@@ -233,21 +234,21 @@ class Engine:
     # ---- open items: decisions, dilemmas, rescues -------------------------------
     def open(self, card, preset=None):
         s = self.s
-        roles = self.bind(card, preset) if card.nroles else bytearray([NONE] * 4)
+        roles = self.bind(card, preset) if self.p.h(card, P.H_NROLES) else bytearray([NONE] * 4)
         if roles is None:
             return False
-        s.fired[card.idx] = s.day
-        s.pend.append(bytes((card.type, card.idx, s.day, s.day + card.duration,
+        s.fired[card] = s.day
+        s.pend.append(bytes((self.p.h(card, P.H_TYPE), card, s.day, s.day + self.p.h(card, P.H_DUR),
                              roles[0], roles[1], roles[2], roles[3])))
-        if card.type == O.DILEMMA:
+        if self.p.h(card, P.H_TYPE) == O.DILEMMA:
             s.dil_given[roles[0]] += 1
-            s.dil_seen[card.idx] |= 1 << roles[0]
-            s.emit(O.O_DIL_OPEN, card.idx, roles[0])
-        elif card.type == O.RESCUE:
-            s.emit(O.O_RES_OPEN, card.idx, roles[0], roles[1])
+            s.dil_seen[card] |= 1 << roles[0]
+            s.emit(O.O_DIL_OPEN, card, roles[0])
+        elif self.p.h(card, P.H_TYPE) == O.RESCUE:
+            s.emit(O.O_RES_OPEN, card, roles[0], roles[1])
         else:
-            s.emit(O.O_DEC_OPEN, card.idx, roles[0], roles[1])
-        self.apply(card.effects, roles)
+            s.emit(O.O_DEC_OPEN, card, roles[0], roles[1])
+        self.apply(self.p.eff[card], roles)
         return True
 
     def fleet_lean(self, axis):
@@ -262,8 +263,8 @@ class Engine:
         s = self.s
         ctype, idx, opened, close = item[0], item[1], item[2], item[3]
         roles = bytearray(item[4:8])
-        card = self.p.cards[idx]
-        nopt = card.nopt
+        card = idx
+        nopt = self.p.nopt(card)
         if ctype == O.DILEMMA:
             owner = roles[0]
             opt, by = NONE, 1
@@ -271,7 +272,7 @@ class Engine:
                 if ship == owner and o < nopt:
                     opt, by = o, 0
             if opt == NONE:
-                opt = card.lpos if s.trait(owner, card.laxis) >= 0 else card.lneg
+                opt = self.p.h(card, P.H_LPOS) if s.trait(owner, self.p.h(card, P.H_LAXIS)) >= 0 else self.p.h(card, P.H_LNEG)
             self.apply(self.p.opt(card, opt), roles)
             s.emit(O.O_DIL_CLOSE, idx, owner, opt, by)
             return
@@ -291,11 +292,11 @@ class Engine:
                         opt = i
                 defaulted = 0
             else:
-                opt, defaulted = card.lpos, 1
+                opt, defaulted = self.p.h(card, P.H_LPOS), 1
             self.apply(self.p.opt(card, opt), roles)
             s.emit(O.O_RES_CLOSE, idx, opt, n, defaulted)
             return
-        lean = card.lpos if self.fleet_lean(card.laxis) >= 0 else card.lneg
+        lean = self.p.h(card, P.H_LPOS) if self.fleet_lean(self.p.h(card, P.H_LAXIS)) >= 0 else self.p.h(card, P.H_LNEG)
         if n == 0:
             opt, defaulted = lean, 1
         else:
@@ -382,14 +383,14 @@ class Engine:
     # ---- picking events ---------------------------------------------------------
     def _fire(self, card, roles):
         s = self.s
-        s.fired[card.idx] = s.day
+        s.fired[card] = s.day
         opt = NONE
-        if card.nopt:
+        if self.p.nopt(card):
             a = roles[0] if roles[0] != NONE else 0
-            opt = card.lpos if s.trait(a, card.laxis) >= 0 else card.lneg
+            opt = self.p.h(card, P.H_LPOS) if s.trait(a, self.p.h(card, P.H_LAXIS)) >= 0 else self.p.h(card, P.H_LNEG)
         # Emit first so anything the card opens reads after it in the log.
-        s.emit(O.O_EVENT, card.idx, roles[0], roles[1], opt)
-        self.apply(card.effects, roles)
+        s.emit(O.O_EVENT, card, roles[0], roles[1], opt)
+        self.apply(self.p.eff[card], roles)
         if opt != NONE:
             self.apply(self.p.opt(card, opt), roles)
 
@@ -401,7 +402,7 @@ class Engine:
         for c in cards:
             r = self.eligible(c)
             bound.append(r)
-            w.append(c.weight if r is not None else 0)
+            w.append(self.p.h(c, P.H_WEIGHT) if r is not None else 0)
         i = self.rng.weighted(w)
         if i < 0:
             return None, None
@@ -462,28 +463,22 @@ class Engine:
         if before > 20 >= s.res[FOOD]:
             s.emit(O.O_SHORT, NONE, FOOD)
         # Callbacks first, then the day's dice.
-        for c in p.cards:
-            if (c.flags & O.F_DUE) and (c.type == O.EVENT or c.type == O.BEAT):
-                r = self.eligible(c)
-                if r is not None:
-                    self._fire(c, r)
-        events = [c for c in p.cards if c.type == O.EVENT and not (c.flags & (O.F_DUE | O.F_HOOK))]
-        c, r = self._pick(events, 55)
+        for c in p.due:
+            r = self.eligible(c)
+            if r is not None:
+                self._fire(c, r)
+        c, r = self._pick(p.events, 55)
         if c is not None:
             self._fire(c, r)
         if not self._open_types(O.DECISION):
-            c, r = self._pick(p.of_type(O.DECISION), 50)
+            c, r = self._pick(p.decisions, 50)
             if c is not None:
                 self.open(c, r)
-        dils = []
-        for c in p.of_type(O.DILEMMA):
-            dils.append(c)
-        c, r = self._pick(dils, 35)
+        c, r = self._pick(p.dilemmas, 35)
         if c is not None:
             self.open(c, r)
-        beats = [c for c in p.cards if c.type == O.BEAT and not (c.flags & O.F_DUE)]
         for _ in range(2):
-            c, r = self._pick(beats, 60)
+            c, r = self._pick(p.beats, 60)
             if c is not None:
                 self._fire(c, r)
         # Cliffhanger last, so it is the final line of the day. Never on the last two
@@ -498,13 +493,13 @@ class Engine:
         # At most one cliffhanger every HOOK_GAP days. The gap is read from the hook
         # cards' own fired days, so there is no extra state to save or merge.
         s, d = self.s, self.s.day
-        hooks = [c for c in self.p.cards if c.flags & O.F_HOOK]
+        hooks = self.p.hooks
         if not hooks or d < O.HOOK_GAP:
             return
         last = 0
         for c in hooks:
-            if s.fired[c.idx] > last:
-                last = s.fired[c.idx]
+            if s.fired[c] > last:
+                last = s.fired[c]
         if last and d - last < O.HOOK_GAP:
             return
         c, r = self._pick(hooks, O.HOOK_PCT)
@@ -513,9 +508,9 @@ class Engine:
 
     def _ending(self):
         s = self.s
-        for c in self.p.of_type(O.ENDING):
-            if self._check(c.conds, bytearray([NONE] * 4)):
-                s.ending = c.idx
-                s.fired[c.idx] = s.day
-                s.emit(O.O_END, c.idx)
+        for c in self.p.endings:
+            if self._check(self.p.conds(c), bytearray([NONE] * 4)):
+                s.ending = c
+                s.fired[c] = s.day
+                s.emit(O.O_END, c)
                 return

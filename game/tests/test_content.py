@@ -221,5 +221,43 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
                 self.assertIn(i[:-2], ids)
 
 
+class TestCompactPack(unittest.TestCase):
+    """Cards are indices into Pack.data; the decoded Card view and the engine's
+    per-category lists must agree with a straight read of the header bytes."""
+
+    @classmethod
+    def setUpClass(cls):
+        pack, _, _ = lvc.build(CONTENT)
+        cls.p = Pack(pack)
+
+    def test_card_view_matches_header(self):
+        p = self.p
+        for i in range(p.ncards):
+            c = p.cards[i]
+            q = p.hdr[i]
+            self.assertEqual(c.idx, i)
+            self.assertEqual((c.type, c.weight, c.dmin, c.dmax, c.flags, c.cooldown,
+                              c.duration, c.nroles, c.laxis, c.lpos, c.lneg),
+                             tuple(p.data[q:q + 11]))
+            self.assertEqual(c.conds, p.conds(i))
+            self.assertEqual(c.nopt, p.nopt(i))
+            self.assertEqual(p.opt(c, 0), p.opt(i, 0))
+        self.assertEqual(len(list(p.cards)), p.ncards)
+
+    def test_category_lists_partition_cards(self):
+        p = self.p
+        seen = list(p.due) + list(p.events) + list(p.beats) + list(p.hooks) + \
+            list(p.decisions) + list(p.dilemmas) + list(p.endings)
+        rescues = [c.idx for c in p.cards if c.type == O.RESCUE]
+        self.assertEqual(sorted(seen + rescues), list(range(p.ncards)))
+        for i in p.hooks:
+            self.assertTrue(p.cards[i].flags & O.F_HOOK)
+        for i in p.events:
+            self.assertEqual(p.cards[i].type, O.EVENT)
+            self.assertFalse(p.cards[i].flags & (O.F_DUE | O.F_HOOK))
+        for lst in (p.events, p.beats, p.decisions):
+            self.assertEqual(list(lst), sorted(lst))
+
+
 if __name__ == "__main__":
     unittest.main()
