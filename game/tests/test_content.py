@@ -1239,7 +1239,7 @@ class TestRound20(unittest.TestCase):
     def test_engineer_corrections(self):
         self.assertIn("Every crew spent the night", self.t["r_flare"])
         self.assertNotIn("Seven crews", self.blob)
-        self.assertIn("about half the width of the Moon", self.t["beat_watch"])
+        self.assertIn("already smaller than the Moon looks from home", self.t["beat_watch"])
         self.assertIn("half a minute a question", self.o["dil_dose"][0])
         self.assertIn("five days out", self.t["a_descent_clear"])
         self.assertIn("a shade under 10.96 seconds", self.t["m_carrier"])
@@ -1249,7 +1249,7 @@ class TestRound20(unittest.TestCase):
         # Dry seed survives freezing; wet-packed germination trays do not.
         self.assertIn("germination trays", self.t["end_long_orbit"])
         self.assertNotIn("seed stock", self.t["end_long_orbit"])
-        self.assertIn("all eight chose the lamp", self.t["end_long_orbit"])
+        self.assertIn("{B} calls the roll, ship by ship", self.t["end_long_orbit"])
 
     def test_loose_threads_closed(self):
         # The hopper's "intermittent beacon" was the knock, booked to the wrong name.
@@ -1370,7 +1370,7 @@ class TestRound21(unittest.TestCase):
 
     def test_endings_round_21(self):
         self.assertIn("up the old channel", self.t["end_long_orbit"])
-        self.assertIn("all eight chose the lamp", self.t["end_long_orbit"])
+        self.assertIn("{B} calls the roll, ship by ship", self.t["end_long_orbit"])
         self.assertIn("enough to get there, not back", self.t["end_friend"])
         self.assertIn("behind a door on ship power", self.t["end_close"])
         self.assertIn("the folded ship's battery", self.t["end_through"])
@@ -1406,14 +1406,14 @@ class TestRound22(unittest.TestCase):
 
     def test_new_quirks_are_on_their_owners(self):
         want = {"Kim": ("Mango", "Dirt"), "Jai": ("fantasy football", "JetBlue", "wedding"),
-                "Diego": ("three cats", "strangers"), "Dorian": ("The kid at home", "Uncrustables"),
-                "Jacques": ("circuit-board", "chihuahua", "two cats"), "Michelle": ("Disney", "Tesla"),
-                "Marco": ("Elgin", "BMW in Mexico", "cologne")}
+                "Diego": ("three cats", "a stranger"), "Dorian": ("The kid at home", "Uncrustables"),
+                "Jacques": ("circuit board", "career", "chihuahua", "two cats"), "Michelle": ("Disney", "Tesla"),
+                "Marco": ("Elgin", "BMW", "Mexico", "cologne")}
         for name, words in want.items():
             for w in words:
                 self.assertIn(w, self.roster[name], (name, w))
                 for other, line in self.roster.items():
-                    if other != name and w not in ("two cats", "three cats", "strangers", "wedding"):
+                    if other != name and w not in ("two cats", "three cats", "a stranger", "wedding"):
                         self.assertNotIn(w, line, (other, w))
         self.assertNotIn("two cats", self.roster["Diego"])
         self.assertNotIn("both fed", self.roster["Diego"])
@@ -1433,8 +1433,84 @@ class TestRound22(unittest.TestCase):
 
     def test_final_ending_wording(self):
         self.assertIn("every floodlight burning the charge", self.t["end_lights"])
-        self.assertIn("The trays froze in week two", self.t["end_long_orbit"])
+        self.assertIn("By morning the trays are frozen", self.t["end_long_orbit"])
         self.assertIn("rover's spare packs", self.t["end_close"])
+
+
+class TestRound24(unittest.TestCase):
+    """Pass 1: crew voices, shipped text without ids, grim beats, hooks, physics."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.text, cls.pack = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] + " " + " ".join(o[1] for o in c.get("o", [])) for c in cls.text["cards"]}
+
+    def test_every_crewmate_has_a_distinct_voice(self):
+        v = self.text["voice"]
+        self.assertEqual(len(v), len(self.text["crew"]))
+        self.assertEqual(len(set(v)), len(v))
+        for line in v:
+            self.assertTrue(0 < len(line) <= 40, line)
+
+    def test_voice_slot_renders_the_owners_voice(self):
+        from sim.render import Renderer
+        r = Renderer(self.text)
+        for c, name in enumerate(self.text["crew"]):
+            self.assertEqual(r.fill("{A}: {Av}", A=c), name + ": " + self.text["voice"][c])
+        self.assertEqual(r.fill("{Bv}", B=255), "Out.")
+        used = [cid for cid, t in self.t.items() if "{Av}" in t or "{Bv}" in t]
+        self.assertGreaterEqual(len(used), 6, used)
+
+    def test_shipped_text_has_no_ids(self):
+        import contextlib
+        import io
+        tmp = tempfile.mkdtemp()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                lvc.main(["--out", tmp])
+            with open(os.path.join(tmp, "text.json"), encoding="utf-8") as f:
+                ship = json.load(f)
+            with open(os.path.join(tmp, "text.dev.json"), encoding="utf-8") as f:
+                dev = json.load(f)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        self.assertTrue(all("id" not in c for c in ship["cards"]))
+        self.assertEqual([c["id"] for c in dev["cards"]], [c["id"] for c in self.text["cards"]])
+        self.assertEqual([c["t"] for c in ship["cards"]], [c["t"] for c in dev["cards"]])
+
+    def test_grim_cards_and_hooks(self):
+        for cid in ("g_ledger", "h_smoke", "h_tank", "r_smoke", "r_tank", "m_hopper"):
+            self.assertIn(cid, self.t)
+        self.assertIn("Tolerance has a column for crew", self.t["g_ledger"])
+        self.assertIn("spare fans now reads zero", self.t["r_smoke"])
+        self.assertIn("austerity", self.t["r_tank"])
+        pool = self.text["sys"]["fold_pool"]
+        self.assertEqual([x for x in pool if "spoon" in x], [])
+        self.assertTrue(any("water ledger" in x for x in pool))
+
+    def test_physics_round_24(self):
+        self.assertNotIn("hundred million", " ".join(self.t.values()))
+        with open(os.path.join(CONTENT, "roster.lv"), encoding="utf-8") as f:
+            roster = f.read()
+        self.assertNotIn("hundred million", roster)
+        self.assertIn("tens of millions of kilometres", roster)
+        self.assertNotIn("eight minutes late", roster)
+        self.assertIn("already smaller than the Moon looks from home", self.t["beat_watch"])
+
+    def test_endings_round_24(self):
+        self.assertIn("Thirty-three: a click", self.t["end_patience"])
+        self.assertIn("NO GO", self.t["end_through"])
+        self.assertIn("{B} votes last", self.t["end_long_orbit"])
+
+    def test_fold_lines_never_repeat_in_a_season(self):
+        from sim.render import Renderer
+        import collections
+        pool = [p.split("}", 1)[1] for p in self.text["sys"]["fold_pool"]]
+        if not hasattr(TestRound19, "pack"):
+            TestRound19.setUpClass()
+        for out in TestRound19.runs()[:60]:
+            c = collections.Counter(p for _, s in Renderer(self.text).reader(out) for p in pool if s.endswith(p))
+            self.assertTrue(all(n == 1 for n in c.values()), c)
 
 
 if __name__ == "__main__":
