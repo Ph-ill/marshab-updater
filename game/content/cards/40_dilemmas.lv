@@ -30,7 +30,7 @@ roles A
 when !fired dil_dose
 lean warm report keep
 text Moving the bunk means telling the flight surgeon, who will want a meeting, and a meeting with the ground gets slower every week.
-option report | Tell the surgeon | The meeting runs on a small pause per question, and everyone learns to ask two at once. {A}'s bunk moves in beside the water tanks, and the reading drops by a third.
+option report | Tell the surgeon | The meeting runs on most of a minute per question, and everyone learns to ask two at once. {A}'s bunk moves in beside the water tanks, and the reading drops by a fifth.
   set dose_told
   morale A -2
   trait A warm 2
@@ -140,7 +140,7 @@ once
 days 34 35
 roles A
 when is A ow_letter
-text In the restow for entry the letter isn't in the left chest pocket. {A} empties the locker, the sleeping bag, the bin of wipes, then the restow list. It's in the checklist binder at the entry page, where step fourteen of the ground's procedure files personal papers. "Item located," {A} logs.
+text In the restow for entry, item fourteen of the ground's procedure moves personal papers to the checklist binder, letter included. {A} finds the left chest pocket empty and turns out the locker, sleeping bag and wipes bin before the restow list explains it. Entry page. "Item located," {A} logs.
 do morale A 2
 
 card a_letter
@@ -182,9 +182,10 @@ once
 days 18 39
 roles A
 when flag gains_tuned
+when flag trim_done
 when is A gains_who
 when cond A ok
-text On the big correction burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all seven.
+text On the corridor burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all seven.
 do morale A 5
 do res fuel 1
 

@@ -15,7 +15,7 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
-text {A}'s arrival-test dish, trained on Mars, scans the old common channel, which nothing on Earth has heard since the relay died. It logs a carrier too faint to lock. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
+text {A}'s arrival-test dish scans the old common channel toward Mars; no one on Earth has listened there since the relay was written off. A week of integration shows a faint carrier. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
 do who ow_hail A
 do mark t_carrier
 
@@ -43,7 +43,7 @@ roles A B
 lean curious open log
 when fired m_alias
 when is A ow_hail
-text If the carrier is something of ours, it will know a standard hello. {A} wants to answer every burst with one, signed with the old program key the fleet still carries, blind until someone can read what it sends. {B} points out that every reply ties up the comms computer, and the letters wait.
+text If it's anything we ever flew, it will know a standard hello. {A} wants to answer every burst with one, signed with the old program key the fleet still carries, blind until someone can read what it sends. {B} points out that every reply ties up the comms computer, and the letters wait.
 option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, standard hello, until someone says stop. The first goes out at 14:02, and {A} logs every answer to the millisecond. {B} logs one line of dissent, signed, and leaves it there.
   set signal_answered
   mark t_signal

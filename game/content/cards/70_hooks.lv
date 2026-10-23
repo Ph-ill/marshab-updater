@@ -15,7 +15,7 @@ weight 24
 roles A
 when cond A ok
 do who hook_who A
-text 23:40. The old-channel carrier on {A}'s dish misses a knock, the first miss in weeks. {A} watches the clock run past eleven seconds, then twelve, then thirty.
+text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} watches the clock run past eleven seconds, then twelve, then thirty.
 
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure

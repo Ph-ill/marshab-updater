@@ -145,9 +145,11 @@ lean brave now wait
 text Navigation shows the fleet drifting toward the edge of the arrival corridor. {A} wants a small correction burn now. {B} wants to wait for the scheduled burn, which costs more but leaves time to check the solution three times.
 option now | Burn now | A short, clean burn. {A} watches the residuals come in under a tenth of a meter per second and allows a single fist pump.
   set trim_early
+  set trim_done
   res fuel -1
 option wait | Wait and check | The solution gets checked three times, then a fourth. The scheduled burn goes off on time and on target, and {B} lets the computer fly it.
   set trim_late
+  set trim_done
   res fuel -3
 
 card trim_callback
@@ -159,7 +161,7 @@ days 29 33
 roles A
 when flag trim_early
 when cond A ok
-text The latest navigation fix comes in: the fleet sits within a few kilometres of the centre of the arrival corridor, still riding that small early burn. {A} writes the number up beside Earth's last decent photo.
+text The latest navigation fix comes in: the fleet sits well inside the arrival corridor, a few tens of kilometres off centre, still riding that small early burn. {A} writes the number up beside Earth's last decent photo.
 do morale A 3
 
 card trim_callback_late
@@ -177,7 +179,7 @@ do morale A 2
 # --- Arrival: dust storm over the landing region -------------------------------
 card dust_report
 type event
-cat arrival
+cat mission
 days 29 35
 weight 4
 once
@@ -189,7 +191,7 @@ do mark t_dust
 
 card dust_worse
 type event
-cat arrival
+cat mission
 due
 once
 days 32 38
