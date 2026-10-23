@@ -9,14 +9,14 @@ cat ending
 title Lights On
 when flag signal_answered
 when flag arrive_hold
-text The storm took the prime zone overnight, so the fleet goes down at the backup site, into the brown, with radar for height and nothing yet for place. Then Cargo 2, answered four days out, turns on every floodlight it has: a white smudge right where the terrain map says it should be. Seven ships land three kilometres off. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text The storm took the prime zone overnight, so the fleet goes down at the backup site, into the brown, radar for height and Cargo 2's transponder for place, answered five days out and pinging on time. Then it turns on every floodlight it has: a white smudge right where the terrain map says it should be. Seven ships land three kilometres off. Unloading starts at dawn. The first crate out of the hold says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_through
 type ending
 cat ending
 title Through the Dust
 when flag arrive_hold
-text Holding the plan means flying the last kilometres blind. The radar ranges on fifty metres of steel; out of the brown, every eleven seconds, a light, still asking. Seven ships land three kilometres off. Two sols later the first suit out climbs the crater rim, the first line of sight to Cargo 2's antenna, and answers from two hundred metres. The recorder scrolls up the visor, two years of REPLAY · DISCARD too fast to read, and stops on HELLO RX · OK. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Holding the plan means flying the last kilometres blind. Radar gives height; place comes from a light in the brown, every eleven seconds, still asking. Six ships land three kilometres off. The seventh comes down long, on the slope below the rim, and a leg folds under it: crew fine, ship done, it will not fly home. Two sols later the first suit out, the one who argued to answer, climbs the rim and answers from two hundred metres. The recorder stops on HELLO RX · OK. The message to the loading bay at Starbase is short: "Landed. All seven, one for good. Found the eighth."
 
 card end_long_orbit
 type ending
@@ -24,24 +24,24 @@ cat ending
 title The Long Orbit
 when flag signal_answered
 when flag arrive_wait
-text Aerocapture, as voted, and the long orbit. Week three, night pass: seven tablets on seven galley tables, ration bars cut in half, and Cargo 2's manifest coming down a line a pass, read aloud in turn. Tonight's line is a spare drill bit, and seven people cheer a drill bit. Below, the storm's edge finally shows ground. A week later seven ships land, and the rover drives out to a ship whose floodlights hold steady. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Aerocapture, as voted, and the long orbit. Week three, night pass: seven tablets on seven galley tables, ration bars cut in half, and Cargo 2's manifest coming down a line a pass, read aloud in turn. Tonight's line is a spare drill bit, and seven people cheer a drill bit. Below, the storm's edge finally shows ground. A week later seven ships land, and the rover drives out to floodlights that hold steady. In Cargo 2's hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_patience
 type ending
 cat ending
 title Patience
 when flag arrive_wait
-text Aerocapture, as voted. Week two in orbit, on half portions; the knock is due at 03:14:22. Seven people watch the clock pass eleven seconds, then twelve, then a minute. At 03:15:40 it is back, faint in the dust, on the beat. When the sky clears the fleet lands, and the first suit out answers from the crater rim. The recorder plays aloud on the fleet channel, REPLAY · DISCARD at speed, then OK. Two of its floodlights never come back on. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Aerocapture, as voted. The ground's hold stands, no first handshake without a suit beside it, and from low orbit the crater rim hides it most of each pass. Week two, half portions: the knock comes later every night, and every night it is back. The night before the fleet lands, it isn't. The first suit out, the one who argued to answer, reaches it at dawn: floodlights dark, frost on the wing, the recorder still readable. Two years of REPLAY · DISCARD, and no OK. The answer goes in by hand, from two metres. The message to Starbase: "Landed. All seven. Found the eighth."
 
 card end_friend
 type ending
 cat ending
 title Old Friend
 when flag signal_answered
-text Seven ships come down in clear air, one landing burn a long half second late, on a wind forecast cross-checked against the weather mast of Cargo 2, thirty kilometres off. Answered four days ago, it has been reporting surface wind ever since, like something that has been rehearsing. On the first drive out, two sols later, it holds its floodlights steady and sends its whole manifest. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Seven ships come down in clear air on a wind forecast cross-checked against the weather mast of Cargo 2, thirty kilometres off. Answered five days ago, it has been reporting surface wind ever since, like something that has been rehearsing. On the first drive out, two sols later, it holds its floodlights steady and sends its whole manifest. In Cargo 2's hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
 
 card end_close
 type ending
 cat ending
 title Close Enough
-text Seven ships land in clear air. On the first sol Cargo 3's ice drill snaps its only bit; the spare is on a written-off manifest, thirty kilometres off. On the third sol the rover drives out with a retuned radio and answers the next knock from two hundred metres, the first answer in two years to arrive while it's listening. The rover's screen shows one line, the last of two years of them: HELLO RX · OK. The bit is where the manifest said. In the hold, the first crate says, in Sharpie: "You'll thank me." The first message off the surface goes to a loading bay at Starbase: "Landed. All eight."
+text Seven ships land in clear air. On the first sol Cargo 3's ice drill snaps its only bit, and the fleet's water margin starts going down a day at a time; the spare is on a written-off manifest, thirty kilometres off. On the third sol the rover drives out, the one who argued to answer at the wheel, and answers the next knock from two hundred metres. The screen shows one line: HELLO RX · OK. Then the floodlights go out, and stay out: two years of asking, and the battery had one answer left. The bit is where the manifest said. To Starbase: "Landed. All seven. Found the eighth, in time."
