@@ -11,15 +11,24 @@
 # 80 KB (80,000 B): the peak, less the fake radio module and the peer at its largest
 # (see below). The LED stays off.
 # With a directory of .mpy files first on the path (tools/board_build.sh makes one),
-# the code comes precompiled, as on the board.
+# the code comes precompiled, as on the board. With "frozen" instead, the interpreter
+# must have the game frozen in (tools/build_firmware.sh unix32, the same manifest as the
+# Pico firmware): nothing of the game is loaded from files, the pack included.
 import sys
 import gc
 
-if len(sys.argv) > 1:
-    sys.path.insert(0, sys.argv[1])
-sys.path.insert(1 if len(sys.argv) > 1 else 0, "tests/fakeble")
-sys.path.append("board")
-sys.path.append(".")
+FROZEN = len(sys.argv) > 1 and sys.argv[1] == "frozen"
+if FROZEN:
+    for p in ("", "."):
+        while p in sys.path:
+            sys.path.remove(p)
+    sys.path.insert(0, "tests/fakeble")
+else:
+    if len(sys.argv) > 1:
+        sys.path.insert(0, sys.argv[1])
+    sys.path.insert(1 if len(sys.argv) > 1 else 0, "tests/fakeble")
+    sys.path.append("board")
+    sys.path.append(".")
 gc.collect()
 base = gc.mem_alloc() if hasattr(gc, "mem_alloc") else 0
 peak = [0]
@@ -149,7 +158,11 @@ BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # The cap is the Pico's: a 32-bit build. The 64-bit port's figure is printed for comparison.
 ok = (synced and http_ok[0] and not ship.led.enabled and ship.led.writes == 0 and
       (base == 0 or BITS == 64 or (0 < board < 80000)))
-print("impl %s %d-bit" % (sys.implementation.name, BITS))
+if FROZEN:
+    # a frozen module's __file__ has no directory part (from board/ it would be board/...)
+    ok = ok and ship.pack_src == "frozen" and "/" not in getattr(lvship, "__file__", "")
+print("impl %s %d-bit; code from %s, pack from %s" % (sys.implementation.name, BITS,
+      getattr(lvship, "__file__", "frozen"), ship.pack_src))
 print("heap: fake radio module %d, code (lvship + lv incl. sync, ble) %d, peer %d, ship with the whole season "
       "and the story at day 42 %d" % (m_fake, m_code - m_fake, m_peer - m_code, m_ship - m_peer))
 print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio time); peer and fake world at the end %d; "

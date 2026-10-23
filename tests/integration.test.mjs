@@ -149,4 +149,27 @@ await t('a tampered release is rejected before touching the board', async () => 
   assert.equal(dev.execs, execs, 'no device command ran');
 });
 
+await t('the test build installs by hand over a coex board, and the coex release brings it back', async () => {
+  const entry = index.releases.find(r => r.channel === 'test');
+  assert.ok(entry, 'a test release is listed');
+  assert.notEqual(index.latest, entry.version, 'the test build is not latest');
+  const test = JSON.parse(readFileSync(join(repo, entry.path.slice(1)), 'utf8'));
+  assert.equal(test.hotspot?.prefix, 'LV-');
+  assert.ok(!test.files.some(f => /(^|\/)(ship\.json|season_log\.bin)$/.test(f.path)), 'no device-local or test-only files');
+  await installRelease(dev, test, { onLog: log });
+  assert.ok(!existsSync(join(root, 'config.py')) && !existsSync(join(root, 'index.html')), 'coex files removed');
+  for(const f of test.files){
+    const got = createHash('sha256').update(readFileSync(join(root, f.path))).digest('hex');
+    assert.equal(got, f.sha256, f.path);
+  }
+  const v = JSON.parse(readFileSync(join(root, 'version.json'), 'utf8'));
+  assert.equal(v.version, entry.version); assert.equal(v.channel, 'test');
+  assert.equal(JSON.parse(readFileSync(join(root, 'data/ship.json'), 'utf8')).ship_id, 3, 'ship settings kept');
+  assert.deepEqual(readFileSync(join(root, 'coex_log.csv')), csv, 'bench log kept');
+  await installRelease(dev, voyage, { onLog: log });
+  assert.equal(JSON.parse(readFileSync(join(root, 'version.json'), 'utf8')).version, index.latest, 'rolled back to latest');
+  const main = voyage.files.find(f => f.path === 'main.py');
+  assert.equal(createHash('sha256').update(readFileSync(join(root, 'main.py'))).digest('hex'), main.sha256);
+});
+
 console.log(`\n${pass} integration checks passed (board dir ${root})`);
