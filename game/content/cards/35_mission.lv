@@ -212,6 +212,18 @@ text An email reaches {A} from someone on the orbiter team who slipped the fast 
 do set flash_ground
 do trait A curious 3
 
+card c2_cold
+type event
+cat grim
+due
+once
+days 36 37
+roles A
+when is A flash_who
+when !fired h_band
+text The night frames of the lit pixel have gaps in them now, longest in the hour before dawn, the coldest there. {A} lines them up night by night: each gap a little longer than the last. Whenever it comes back, it is on the beat. Midwinter at the landing region is three weeks off.
+do morale A -2
+
 card m_overlay
 type event
 cat mystery
