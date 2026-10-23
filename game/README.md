@@ -39,15 +39,32 @@ python3 game/tools/lvc.py && python3 game/web/build.py   # build/app.html.gz: th
 python3 game/sim/mockserver.py --day 8                   # mock Pico on http://localhost:8042/
 ```
 
-Open it at phone width (360-430 px). Add `?day=N` to jump to another flight day (mock only). The mock runs the real engine on the simulated season. The page sees only what this ship has heard by gossip, and your taps become signed records that take effect the next day. `web/shots.mjs` takes chrome-less screenshots of every screen at 390x844 and 360x800.
+Open it at phone width (360-430 px). Add `?day=N` to jump to another flight day (mock only). The mock runs the real engine on the simulated season. The page sees only what this ship has heard by gossip, and your taps become signed records that take effect the next day. `web/shots.sh OUTDIR` builds the page, starts the mocks and takes chrome-less screenshots of every screen at 390x844 and 360x800. `SIZES=cna web/shots.sh OUTDIR` uses the captive-sheet sizes below instead and writes `OUTDIR/cna-WxH/NAME.png`. Both need `PW` (a playwright-core directory) and `CHROME`.
 
-* **One file.** `web/app.html` holds the CSS, the JS and the SVG. `web/build.py` inlines `web/render.js`, strips comments and gzips the result. It comes to about 12.5 KB gzipped, plus `text.json` (about 2.3 KB gzipped, fetched separately so a new story pack doesn't need a page rebuild).
+* **One file.** `web/app.html` holds the CSS, the JS and the SVG. `web/build.py` inlines `web/render.js`, strips comments and gzips the result. It comes to about 13.8 KB gzipped (budget 128 KB), plus `text.json` (about 2.3 KB gzipped, fetched separately so a new story pack doesn't need a page rebuild).
 * **Nothing is stored on the phone.** There's no localStorage and no cookies; the captive sheet would wipe them anyway. You tap your name and enter your 4-digit crew code. The session token lives in page memory.
 * **Crew codes are set by Phill, up front.** The updater's ship setup writes `data/crew.json` (a fleet salt and a salted sha256 per person, the same on all seven ships), so nobody can claim a name by tapping it first. Five wrong codes for a name lock that name for 5 minutes, timed by the board, not the phone. A name with no code shows "Not set up" and can't be picked. See `lv/codes.py`.
 * **The ship remembers your phone for the day.** After a good code, the ship keeps (phone IP + User-Agent, crew, flight day). Reopening the captive sheet the same flight day goes straight to your ship (`GET /api/me`). The next day, or after "Sign out" on your astronaut's page, it asks again. The first sign-in since the board started shows the "Welcome aboard" astronaut card; after that you go straight home.
 * **Live updates.** The page opens a WebSocket at `/ws` that announces a new version. If it can't connect, the page polls `/api/v` every 15 s and says so in a one-line banner.
 * **Privacy.** A private dilemma's text is shown only to the person who looks after that astronaut. Everyone else's log just says a private message arrived.
+* **Dark mode is automatic.** `prefers-color-scheme: dark` swaps the paper and ink colours. There's no switch on the page; it follows the phone. `shots.mjs` renders `13-home-dark` and `14-log-dark` at every size.
 * **Late signals.** Nearly every day is re-run once, the next day, as yesterday's taps arrive. The page treats that as normal ("Today · may still change", "Yesterday · may still change"). It only adds a one-line "Log updated FD xx · a late signal re-ran this day" note when a day changed two or more days later.
+
+### Captive sheet sizes
+
+On an iPhone, the page opens in the captive network assistant (the "Log in" sheet that pops up when you join the hotspot), not in Safari. It's smaller than a Safari page. It's a sheet with its own Cancel/Done bar and no Safari toolbars, has no persistent cookies, and gives `alert()`/`confirm()` no reliable dialog. Apple doesn't publish the sheet's size, so the layout is checked at these estimated CSS viewports (`SIZES=cna`):
+
+| Size | Stands in for |
+|---|---|
+| 320x480 | iPhone SE with Display Zoom: the worst case |
+| 375x580 | iPhone SE 2nd/3rd gen |
+| 375x700 | iPhone 12/13 mini |
+| 390x730 | iPhone 12-16 |
+| 360x600 | Android, captive portal login under its 56 dp header |
+
+Each is the screen, less the status bar, the gap above the sheet and a ~56 px Cancel/Done bar. These are estimates, not measurements. To measure a real phone, open the sheet with `?probe` on the URL. A strip shows `innerWidth x innerHeight`, the visual viewport, the safe-area insets, the device pixel ratio, and whether the page thinks it's in the iOS sheet (a User-Agent without `Safari/`), Safari or an Android WebView.
+
+Below 640 px of height the page uses a tighter layout: 52 px keys and buttons (above Apple's 44 pt minimum), a 44 px top bar, and a slimmer dock. Below 520 px it also drops the sign-in help line. The keypad is on the page, so the iOS keyboard never opens and never covers anything. Send errors appear as a strip in the dock, not an `alert()`.
 
 The `game/` folder is not part of the updater image. The Dockerfile copies only the web app and `firmware/`.
 

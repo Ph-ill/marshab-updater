@@ -26,9 +26,9 @@ if (cna) for (const s of CNA) mkdirSync(`${out}/cna-${s.tag}`, { recursive: true
 const browser = await chromium.launch({ executablePath: process.env.CHROME });
 
 let ua = 0;  // a distinct User-Agent per context, so the ship doesn't "remember" an earlier one
-async function page(size) {
+async function page(size, colorScheme = "light") {
   const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 shot/${ua++}`, viewport: { width: size.width, height: size.height }, deviceScaleFactor: 2,
-    isMobile: true, hasTouch: true, colorScheme: "light" });
+    isMobile: true, hasTouch: true, colorScheme });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => { console.error("pageerror", e.message); process.exitCode = 1; });
   return p;
@@ -116,6 +116,14 @@ for (const [n, size] of SIZES.entries()) {
   await signIn(p, size, 42);
   await shot(p, size, "11-ending");
   if (size.width === 390 && !cna) await shot(p, size, "11-ending-full", true);
+  await p.context().close();
+
+  // Automatic dark mode (prefers-color-scheme): the phone's setting, nothing to switch on the page.
+  p = await page(size, "dark");
+  await signIn(p, size, 8);
+  await shot(p, size, "13-home-dark");
+  await goto(p, "log");
+  await shot(p, size, "14-log-dark");
   await p.context().close();
 }
 await browser.close();
