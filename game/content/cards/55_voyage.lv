@@ -80,12 +80,12 @@ do trait A curious 3
 card w_phosphene
 type beat
 cat grim
-days 8 40
+days 14 40
 weight 6
 cooldown 14
 roles A
 when cond A ok
-text {A} closes their eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light. {A} counts eleven before sleep and is careful not to count the ones that aren't there.
+text {A} closes their eyes in the bunk and sees a white spark, then another. Cosmic rays, passing straight through the eye, fast enough to make light. {A} counts eleven of them before sleep.
 do trait A curious 2
 do morale A -1
 

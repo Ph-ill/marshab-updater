@@ -3,13 +3,13 @@
 card dec_signal
 type decision
 cat mystery
-days 5 14
+days 11 18
 weight 10
 once
 duration 2
 roles A B
 lean curious open log
-text The high-gain antenna picks up a weak carrier on an old deep-space frequency, repeating every 11 seconds. {A} wants to turn a dish and answer it. {B} points out that turning the dish costs propellant the fleet hasn't got to spare.
+text The high-gain antenna logs a weak carrier on an old deep-space frequency, coming and going every 11 seconds: some retired probe's beacon, probably. {A} wants to turn a dish and answer it. {B} points out that turning the dish costs propellant the fleet hasn't got to spare.
 option open | Answer it | {A} spends the propellant, and the whole fleet listens to static for an hour. Then the carrier changes pitch.
   set signal_answered
   mark t_signal
@@ -26,7 +26,7 @@ type event
 cat mystery
 due
 once
-days 15 41
+days 25 41
 roles A
 when flag signal_answered
 when since t_signal >= 14
@@ -39,7 +39,7 @@ type event
 cat mystery
 due
 once
-days 15 41
+days 25 41
 roles A
 when flag signal_ignored
 when since t_signal >= 14

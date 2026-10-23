@@ -10,19 +10,19 @@ type event
 cat mystery
 hook
 once
-days 4 40
+days 25 38
 weight 10
 roles A
 when cond A ok
 do who hook_who A
-text At 23:40 the dish on {A}'s ship picks up something on the emergency band. It's not from Earth.
+text At 23:40 the dish on {A}'s ship logs a burst on the emergency band. The bearing is Mars.
 
 card r_band
 type event
 cat mystery
 due
 once
-days 5 42
+days 26 42
 roles A
 when fired h_band
 when is A hook_who
@@ -197,19 +197,19 @@ type event
 cat mystery
 hook
 once
-days 8 40
+days 25 38
 weight 8
 roles A
 when cond A ok
 do who hook_who A
-text {A}'s star tracker reports a star where no star should be. Between frames, it moves.
+text {A}'s star tracker flags a catalog mismatch: one star too many in the field. On the next frame, it has moved.
 
 card r_ghost
 type event
 cat mystery
 due
 once
-days 9 42
+days 26 42
 roles A
 when fired h_ghost
 when is A hook_who
@@ -224,7 +224,7 @@ type event
 cat mystery
 hook
 once
-days 8 38
+days 25 36
 weight 10
 roles A
 when cond A ok
@@ -236,7 +236,7 @@ type event
 cat human
 due
 once
-days 9 42
+days 26 42
 roles A
 when fired h_voice
 when is A hook_who
@@ -250,7 +250,7 @@ type event
 cat mystery
 hook
 once
-days 12 38
+days 27 38
 weight 8
 roles A
 when cond A ok
@@ -262,7 +262,7 @@ type event
 cat mystery
 due
 once
-days 13 42
+days 28 42
 roles A
 when fired h_dark
 when is A hook_who

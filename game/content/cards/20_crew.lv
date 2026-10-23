@@ -65,8 +65,8 @@ do bond A B -4
 # Trait-driven reaction: what happens depends on how brave A is.
 card glint
 type event
-cat mystery
-days 4 38
+cat wonder
+days 6 38
 weight 8
 cooldown 9
 roles A

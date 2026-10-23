@@ -55,12 +55,12 @@ option save | Keep the propellant | The fleet passes. Ground telescopes get the 
 card m_flash1
 type event
 cat mystery
-days 27 33
+days 27 32
 weight 14
 once
 roles A
 when cond A ok
-text On the dark limb of Mars, through the window scope, {A} sees a pinprick of light. Gone. Then again. {A} times it without meaning to, and the number makes the hair on their arms stand up.
+text On the dark limb of Mars, through the window scope, {A} sees a pinprick of light. Gone. Then again. {A} times it out of habit, writes the number down, and doesn't go back to bed.
 do set flash_seen
 do mark t_flash
 do trait A curious 2
@@ -68,7 +68,7 @@ do trait A curious 2
 card m_flash2
 type event
 cat mystery
-days 30 37
+days 30 35
 weight 30
 once
 roles A
@@ -81,7 +81,7 @@ do set flash_twice
 card dec_flash
 type decision
 cat mystery
-days 31 39
+days 32 38
 weight 40
 once
 duration 1
@@ -101,7 +101,7 @@ type event
 cat mystery
 due
 once
-days 32 41
+days 34 41
 roles A
 when flag flash_looked
 when since t_flash >= 4
@@ -109,3 +109,28 @@ when cond A ok
 text The exposure comes back. It's not on the ground. It's above it: a flat, bright edge turning end over end, catching the sun on every turn. {A} looks at the timestamp column for a long time before saying anything.
 do trait A curious 4
 do morale A 2
+
+card m_overlay
+type event
+cat mystery
+due
+once
+days 37 41
+roles A
+when fired m_flash2
+when fired dec_signal
+when cond A ok
+text {A} lays the old dish log over the scope video, frame by frame, because nobody else has had time. The carrier peaks on the exact frame the flash does. Every time. {A} prints both traces and pins them up side by side.
+do trait A curious 3
+
+# --- Middle-dark plant (a careful reader's detail; ordinary explanations exist) ---
+card m_ripple
+type event
+cat mystery
+days 13 24
+weight 6
+once
+roles A
+when cond A ok
+text {A} cleans up the dish noise floor for the weekly report and finds a faint ripple in it, period about eleven seconds. Reaction wheel harmonic, most likely. {A} notes it in the margin and moves on to the propellant tables.
+do trait A curious 1
