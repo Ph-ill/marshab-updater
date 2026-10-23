@@ -2,7 +2,7 @@
 """Mock Pico for the phone UI. Serves the real gzipped page and an API backed by the
 real engine and the simulated season, so the prototype shows engine-made story.
 
-  python3 web/build.py && python3 sim/mockserver.py [--port 8042] [--day 23]
+  python3 web/build.py && python3 sim/mockserver.py [--port 8042] [--day 23] [codes=1234,,5555,...]
 
 Open http://localhost:8042/ (add ?day=8 to look at another flight day; mock only).
 
@@ -11,6 +11,11 @@ it by gossip (sim/season.py's "gossip" delivery), so late records replay days an
 page can mark "log updated". Your own taps become real signed records that take
 effect tomorrow. The simulated player for your seat is silenced from today on.
 Nothing is stored on the phone: the session token lives in page memory.
+
+Crew codes work as on the board (lv/codes.py): set up front (here every code is 1234
+unless codes= lists them; an empty entry means "not set up"), five wrong tries lock that
+name for five minutes, and a phone that signed in is remembered, by IP and User-Agent,
+for the rest of the flight day it signed in on (the ?day=N it used).
 """
 import base64
 import gzip
@@ -22,6 +27,7 @@ import socket
 import struct
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -31,6 +37,7 @@ sys.path.insert(0, ROOT)
 
 from lv import ops as O                       # noqa: E402
 from lv import record as R                    # noqa: E402
+from lv import codes as K                     # noqa: E402
 from lv.engine import Engine                  # noqa: E402
 from lv.pack import load as load_pack         # noqa: E402
 from lv.state import State, N                 # noqa: E402
@@ -79,7 +86,7 @@ class Game:
         self.text = json.load(open(os.path.join(BUILD, "text.json"), encoding="utf-8"))
         _, self.authored, _, _ = reference_season(self.pack, seed=1)
         self.day = day
-        self.pins = {}            # crew -> pin   (the real Pico keeps a salted hash)
+        self.book = K.CodeBook(K.make_config(["1234"] * N, b"mock-fleet-salt!"))
         self.tokens = {}          # token -> crew
         self.mine = []            # (day, record) tapped on this mock
         self.seq = [1000] * N
@@ -151,6 +158,11 @@ class Game:
             self.mine.append((day, rec))
         self.bump()
 
+    def token(self, crew):
+        t = secrets.token_hex(8)
+        self.tokens[t] = crew
+        return t
+
     def bump(self):
         with self.changed:
             self.version += 1
@@ -194,6 +206,9 @@ class H(BaseHTTPRequestHandler):
     def who(self):
         return G.tokens.get(self.headers.get("X-Crew-Token", ""))
 
+    def phone(self):
+        return "%s|%s" % (self.client_address[0], self.headers.get("User-Agent", ""))
+
     def day(self, q):
         try:
             return max(1, min(G.pack.season, int(q.get("day", [G.day])[0])))
@@ -210,7 +225,13 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, gzip.compress(json.dumps(G.text, ensure_ascii=False).encode()),
                              gz=True)
         if u.path == "/api/crew":
-            return self.send(200, {"claimed": [c in G.pins for c in range(N)], "day": self.day(q)})
+            return self.send(200, {"set": [G.book.is_set(c) for c in range(N)], "day": self.day(q)})
+        if u.path == "/api/me":     # remembered phone: sign straight back in
+            with G.lock:
+                c = G.book.recall(self.phone(), self.day(q))
+                if c is None:
+                    return self.send(401, {"err": "signed out"})
+                return self.send(200, {"token": G.token(c), "crew": c, "first": False})
         if u.path == "/api/v":
             return self.send(200, {"v": G.version})
         if u.path == "/api/state":
@@ -264,16 +285,25 @@ class H(BaseHTTPRequestHandler):
                 c, pin = int(b.get("crew")), str(b.get("pin", ""))
             except (TypeError, ValueError):
                 return self.send(400, {"err": "bad request"})
-            if not (0 <= c < N and len(pin) == 4 and pin.isdigit()):
-                return self.send(400, {"err": "bad request"})
-            if c not in G.pins:
-                G.pins[c] = pin
-                G.bump()
-            elif G.pins[c] != pin:
-                return self.send(403, {"err": "That code doesn't match."})
-            t = secrets.token_hex(8)
-            G.tokens[t] = c
-            return self.send(200, {"token": t, "crew": c})
+            with G.lock:
+                st, v = G.book.check(c, pin, int(time.monotonic() * 1000))
+                if st == K.OK:
+                    first = not G.book.seen[c]
+                    G.book.seen[c] = True
+                    G.book.remember(self.phone(), c, self.day(q))
+                    return self.send(200, {"token": G.token(c), "crew": c, "first": first})
+            if st == K.WRONG:
+                return self.send(403, {"err": "That code doesn't match.", "left": v})
+            if st == K.LOCKED:
+                return self.send(429, {"err": "Too many tries.", "wait": v})
+            if st == K.NO_CODE:
+                return self.send(409, {"err": "No code set up for this name yet."})
+            return self.send(400, {"err": "bad request"})
+        if u.path == "/api/logout":
+            with G.lock:
+                G.book.forget(self.phone())
+                G.tokens.pop(self.headers.get("X-Crew-Token", ""), None)
+            return self.send(200, {"ok": True})
         you = self.who()
         if you is None:
             return self.send(401, {"err": "signed out"})
@@ -297,10 +327,10 @@ def main(argv):
     port = int(argv[argv.index("--port") + 1]) if "--port" in argv else 8042
     day = int(argv[argv.index("--day") + 1]) if "--day" in argv else 23
     G = Game(day)
-    for a in argv:   # --claim 0:1234 pre-registers a seat (for screenshots/tests)
-        if a.startswith("claim="):
-            c, pin = a[6:].split(":")
-            G.pins[int(c)] = pin
+    for a in argv:   # codes=1234,,5555,... sets the crew codes; an empty one is "not set up"
+        if a.startswith("codes="):
+            got = [k or None for k in a[6:].split(",")]
+            G.book = K.CodeBook(K.make_config((got + [None] * N)[:N], b"mock-fleet-salt!"))
     srv = ThreadingHTTPServer(("0.0.0.0", port), H)
     srv.daemon_threads = True
     print("mock Pico on http://localhost:%d/  (flight day %d)" % (port, day), flush=True)

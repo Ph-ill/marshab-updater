@@ -10,9 +10,9 @@ OUT="$(cd "$(dirname "${1:-shots}")" && pwd)/$(basename "${1:-shots}")"
 mkdir -p "$OUT"
 python3 web/build.py
 PIDS=""
-python3 sim/mockserver.py --port 8042 claim=0:1234 >/dev/null 2>&1 & PIDS="$PIDS $!"
+python3 sim/mockserver.py --port 8042 codes=1234,1234,1234,1234,1234,1234, >/dev/null 2>&1 & PIDS="$PIDS $!"
 for p in 8043 8044 8045 8046 8047; do
-  python3 sim/mockserver.py --port $p >/dev/null 2>&1 & PIDS="$PIDS $!"
+  python3 sim/mockserver.py --port $p codes=1234,1234,1234,1234,1234,1234, >/dev/null 2>&1 & PIDS="$PIDS $!"
 done
 trap 'kill $PIDS 2>/dev/null' EXIT
 sleep 2

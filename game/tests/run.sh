@@ -18,6 +18,7 @@ sys.exit(1 if bad else 0)
 PY
 node tests/render_check.mjs
 python3 web/build.py
+python3 tests/mock_check.py
 MP="${MICROPYTHON:-$(command -v micropython || true)}"
 if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py

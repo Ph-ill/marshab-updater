@@ -1,5 +1,6 @@
 // Screenshots of every screen in a chrome-less viewport (like the captive-portal sheet).
-//   python3 sim/mockserver.py --port 8042 claim=0:1234 &   python3 sim/mockserver.py --port 8043 &  (and 8044)
+//   (shots.sh starts the mock Picos: 8042 for the signed-in screens, 8043-8047 fresh for onboarding;
+//    every crew code is 1234 and Dorian is "not set up")
 //   PW=/path/to/node_modules/playwright-core CHROME=/usr/bin/google-chrome node web/shots.mjs OUTDIR
 // SIZES=cna picks the captive-sheet viewports below and writes OUTDIR/cna-WxH/NAME.png instead.
 import { createRequire } from "module";
@@ -24,8 +25,9 @@ import { mkdirSync } from "fs";
 if (cna) for (const s of CNA) mkdirSync(`${out}/cna-${s.tag}`, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME });
 
+let ua = 0;  // a distinct User-Agent per context, so the ship doesn't "remember" an earlier one
 async function page(size) {
-  const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 2,
+  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 shot/${ua++}`, viewport: { width: size.width, height: size.height }, deviceScaleFactor: 2,
     isMobile: true, hasTouch: true, colorScheme: "light" });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => { console.error("pageerror", e.message); process.exitCode = 1; });
@@ -44,7 +46,8 @@ async function signIn(p, size, day) {
   await inset(p, size);
   await p.click('[data-who="0"]');
   for (const k of "1234") await p.click(`[data-key="${k}"]`);
-  await p.waitForSelector("#dock nav, .tbl");
+  await p.waitForSelector("#dock nav, .tbl, .big");
+  if (await p.$(".big")) { await p.click('[data-go="home"]'); await p.waitForSelector("#dock nav, .tbl"); }
 }
 const goto = (p, r) => p.evaluate((r) => go(r), r);
 
@@ -54,10 +57,20 @@ for (const [n, size] of SIZES.entries()) {
   await inset(p, size);
   await p.waitForSelector("[data-who]");
   await shot(p, size, "01-onboard-name");
-  await p.click('[data-who="0"]');
-  for (const k of "47") await p.click(`[data-key="${k}"]`);
+  await p.click('[data-who="1"]');
+  for (const k of "0000") await p.click(`[data-key="${k}"]`);
+  await p.waitForFunction(() => document.querySelector(".err").textContent.includes("4 tries"));
+  for (const k of "12") await p.click(`[data-key="${k}"]`);
   await shot(p, size, "02-onboard-code");
-  for (const k of "11") await p.click(`[data-key="${k}"]`);
+  for (const k of ["DEL", "DEL"]) await p.click(`[data-key="${k}"]`);
+  for (const want of ["3 tries", "2 tries", "1 try", "Too many"]) {
+    for (const k of "0000") await p.click(`[data-key="${k}"]`);
+    await p.waitForFunction((w) => document.querySelector(".err").textContent.includes(w), want);
+  }
+  await shot(p, size, "12-locked");
+  await p.click('[data-key="BACK"]');
+  await p.click('[data-who="0"]');
+  for (const k of "1234") await p.click(`[data-key="${k}"]`);
   await p.waitForSelector(".big");
   await shot(p, size, "03-onboard-meet");
   await p.context().close();

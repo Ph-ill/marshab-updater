@@ -102,6 +102,7 @@ nav button+button{border-left:1px solid var(--rule)}
 .keys button:not(:nth-child(3n)){border-right:1px solid var(--ink)}
 .keys button:nth-last-child(-n+3){border-bottom:0}
 .keys button:active{background:var(--ink);color:var(--paper)}
+.keys button[disabled]{color:var(--rule);background:none}
 .err{color:var(--rust-t);font:600 15px var(--mono);min-height:24px;margin-top:16px}
 .traj{width:100%;height:40px;display:block;margin-top:16px}
 .tl{position:relative;height:16px;font:13px var(--mono);color:var(--ink2)}
@@ -144,7 +145,7 @@ const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];
 const KIND={3:"Fleet vote",4:"Private",5:"Anyone can answer"};
 const Q=new URLSearchParams(location.search),DQ=Q.get("day")?"?day="+encodeURIComponent(Q.get("day")):"";
-let T=null,S=null,R=null,tok="",me=-1,claimed=[],pin="",draft=null,pick={},net="live",ws=null,poll=0,lines=null;
+let T=null,S=null,R=null,tok="",me=-1,codeSet=[],lockUntil={},pin="",draft=null,pick={},net="live",ws=null,poll=0,lines=null;
 const $=(id)=>document.getElementById(id);
 const h=(s)=>String(s).replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const nm=(c)=>c<N?T.crew[c]:"someone";
@@ -156,10 +157,10 @@ const first=(s)=>{const m=s.match(/^.*?[.!?](\s|$)/);return m?m[0].trim():s};
 async function api(path,body){
   const o={headers:{"X-Crew-Token":tok}};
   if(body){o.method="POST";o.body=JSON.stringify(body);o.headers["Content-Type"]="application/json"}
-  const r=await fetch(path+(path.startsWith("/api/")&&path!=="/api/login"?DQ:""),o);
+  const r=await fetch(path+(path.startsWith("/api/")?DQ:""),o);
   const j=await r.json().catch(()=>({}));
-  if(r.status===401){tok="";me=-1;go("hello");throw new Error("signed out")}
-  if(!r.ok)throw new Error(j.err||"The ship didn't answer. Try again.");
+  if(r.status===401&&path!=="/api/me"){tok="";me=-1;go("hello");throw new Error("signed out")}
+  if(!r.ok)throw Object.assign(new Error(j.err||"The ship didn't answer. Try again."),{j,status:r.status});
   return j;
 }
 
@@ -335,6 +336,7 @@ function crew(c){
   const mentions=[];
   for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if(x.s.includes(nm(c))&&mentions.length<3)mentions.push([d,x.s]);
   o+=`<section><div class=lab><span>Lately</span></div><ul class=log>${mentions.map(([d,s])=>`<li><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(s)}</li>`).join("")||"<li class=fold>Nothing logged yet.</li>"}</ul></section>`;
+  if(mine)o+=`<section><button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
   $("v").innerHTML=o;
   dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to ${h(nm(S.you))}</span><i>←</i></button>`,"crew");
 }
@@ -422,22 +424,23 @@ function ending(){
 function hello(){
   bar("THE LONG VOYAGE","7 SHIPS");
   let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Seven ships, 42 flight days. Each of you looks after one astronaut. Tap your name.</p></div><section>`;
-  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span><span class="lab">${claimed[c]?"Code":"New"}</span></button>`).join("");
+  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"${codeSet[c]===false?" disabled":""}><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span>${codeSet[c]===false?"<span class=lab>Not set up</span>":""}</button>`).join("");
   $("v").innerHTML=o+`</section>`;
   dock("","");
 }
 function portraitBare(c){const s=S;S=null;const r=portrait(c);S=s;return r}
 function pinScreen(err){
-  const isNew=!claimed[me];
-  bar(h(ship(me).toUpperCase()),isNew?"STEP 2 OF 3":"SIGN IN");
-  let o=`<div class=kick><div class=lab>${h(nm(me))}</div><h2>${isNew?"Choose a 4-digit crew code":"Your crew code"}</h2><p class="dim help">${isNew?"You'll type it each time you open the ship. It stays on this ship; no email, no account.":"The 4 digits you picked the first time."}</p>`;
+  const wait=lockLeft();
+  if(wait&&!err)err=`Too many tries. Try again in ${wait>59?Math.ceil(wait/60)+" min":wait+" s"}.`;
+  bar(h(ship(me).toUpperCase()),"SIGN IN");
+  let o=`<div class=kick><div class=lab>${h(nm(me))}</div><h2>Your crew code</h2><p class="dim help">The 4 digits that came with your ship. This phone stays signed in until the next flight day.</p>`;
   o+=`<div class=pin aria-live=polite>${[0,1,2,3].map((i)=>`<span class="${i===pin.length?"cur":""}">${pin[i]?"•":""}</span>`).join("")}</div><div class=err>${err?h(err):""}</div></div>`;
   $("v").innerHTML=o;
-  dock(`<div class=keys style="margin:-8px -16px">${["1","2","3","4","5","6","7","8","9","BACK","0","DEL"].map((k)=>`<button class="${k.length>1?"fn":""}" data-key="${k}" aria-label="${k}">${k}</button>`).join("")}</div>`,"");
+  dock(`<div class=keys style="margin:-8px -16px">${["1","2","3","4","5","6","7","8","9","BACK","0","DEL"].map((k)=>`<button class="${k.length>1?"fn":""}" data-key="${k}" aria-label="${k}"${wait&&k!=="BACK"?" disabled":""}>${k}</button>`).join("")}</div>`,"");
   $("v").className="pinpad";
 }
 function meet(){
-  bar(h(ship(S.you).toUpperCase()),"STEP 3 OF 3");
+  bar(h(ship(S.you).toUpperCase()),"WELCOME ABOARD");
   const A=nm(S.you);
   let o=`<div class="kick big"><div class=lab>Your astronaut</div><div style="display:flex;gap:16px;align-items:flex-end;margin-top:8px"><span class=port style="width:152px;height:152px">${portrait(S.you)}</span><div><h1>${h(A)}</h1><p class=dim style="margin-top:0">${h(ship(S.you))}${S.you===T.flagship?" · flagship":""}</p></div></div>`;
   o+=`<p>Once a day you can give ${h(A)} one instruction. Everything else, ${h(A)} decides. The voyage carries on while you're away.</p></div>`;
@@ -465,26 +468,42 @@ function view(){
     return home();
   }finally{if(net==="poll"&&tok)$("v").insertAdjacentHTML("afterbegin","<div class=off>Live link down · checking every 15 s</div>")}
 }
+// Lockout countdown: the ship decides when it ends; the phone's clock only draws the minutes.
+function lockLeft(){const u=lockUntil[me];return u?Math.max(0,Math.ceil((u-Date.now())/1000)):0}
+let lockT=0;
+function lockTick(){clearInterval(lockT);lockT=setInterval(()=>{if(route!=="pin"){clearInterval(lockT);return}if(!lockLeft()){clearInterval(lockT);delete lockUntil[me]}pinScreen()},1000)}
+let busy=false;
 async function key(k){
-  if(k==="BACK"){pin="";return go("hello")}
+  if(k==="BACK"){pin="";busy=false;return go("hello")}
+  if(busy)return;   // a code is on its way to the ship: don't start the next one
   if(k==="DEL")pin=pin.slice(0,-1);
   else if(pin.length<4)pin+=k;
   pinScreen();
   if(pin.length===4){
-    const isNew=!claimed[me];
+    busy=true;
     try{
       const j=await api("/api/login",{crew:me,pin});
-      tok=j.token;pin="";claimed[me]=true;
+      tok=j.token;pin="";busy=false;
       await refresh();live();
-      go(isNew?"meet":"home");
-    }catch(e){pin="";pinScreen(e.message)}
+      go(j.first?"meet":"home");
+    }catch(e){
+      pin="";const j=e.j||{};
+      if(j.wait){lockUntil[me]=Date.now()+j.wait*1000;lockTick()}
+      busy=false;
+      pinScreen(j.wait?"":j.left!=null?`That code doesn't match. ${j.left} ${j.left===1?"try":"tries"} left.`:e.message);
+    }
   }
 }
 document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button");if(!el||el.disabled)return;
   const D=el.dataset;
   if(D.go){if(D.go==="act")draft=null;return go(D.go)}
-  if(D.who){me=+D.who;pin="";return go("pin")}
+  if(D.who){me=+D.who;pin="";if(lockLeft())lockTick();return go("pin")}
+  if(D.out){
+    try{await api("/api/logout",{})}catch(e){}
+    if(ws){ws.onclose=ws.onerror=null;ws.close();ws=null}
+    clearInterval(poll);poll=0;net="live";tok="";me=-1;S=null;return go("hello");
+  }
   if(D.key)return key(D.key);
   if(D.pick){const [c,i]=D.pick.split(":").map(Number);pick[c]=i;return view()}
   if(D.act){draft={a:D.act==="x"?null:+D.act,p:null,t:null};return view()}
@@ -513,7 +532,9 @@ if(/[?&]probe\b/.test(location.search)){
 (async()=>{
   T=await (await fetch("/text.json")).json();
   R=new Renderer(T);
-  try{claimed=(await (await fetch("/api/crew"+DQ)).json()).claimed}catch(e){}
+  try{codeSet=(await (await fetch("/api/crew"+DQ)).json()).set}catch(e){}
+  // Signed in on this phone earlier today? The ship remembers it (by IP and browser) until the next flight day.
+  try{const j=await api("/api/me");tok=j.token;me=j.crew;await refresh();live();route="home"}catch(e){}
   view();
 })();
 </script>
