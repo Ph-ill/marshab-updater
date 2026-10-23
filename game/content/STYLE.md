@@ -160,7 +160,10 @@ Bad, and why:
 
 ## Before you commit
 
-1. `python3 tools/lvc.py`: it must compile, with no pronoun errors.
+1. `python3 tools/lvc.py`: it must compile with no pronoun errors and no
+   `style:` warnings. The lint flags hard-coded crew names, name-checked jobs,
+   words that make someone the joke, cheap resolutions, calendar pins, and
+   over-long text. It's a safety net, not a substitute for reading the lines.
 2. `python3 sim/season.py` and read `sim/out/narrative.txt` with real names in
    it. Ask, for every line: would this person be glad to read it?
 3. `sh tests/run.sh`: all 7 ships must produce identical digests.
