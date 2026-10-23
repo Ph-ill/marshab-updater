@@ -8,7 +8,7 @@
 //
 // This browser keeps the plain codes and the salt in localStorage, so the next board gets the
 // same ones and the list can be copied out to hand round. Clear it with "Forget codes".
-export const CREW = ['Phill', 'Jacques', 'Kim', 'Jai', 'Michelle', 'Diego', 'Dorian'];  // = game/content/roster.lv
+export const CREW = ['Phill', 'Jacques', 'Kim', 'Jai', 'Michelle', 'Diego', 'Dorian', 'Marco'];  // = game/content/roster.lv
 export const CREW_CONFIG_PATH = 'data/crew.json';
 export const CODES_MEMORY_KEY = 'lv.crewCodes.v1';
 
@@ -24,7 +24,7 @@ export function randomCode(){
   return String(b[0] % 10000).padStart(4, '0');
 }
 
-// codes: 7 strings, each '' (not set up) or exactly 4 digits. At least one has to be set.
+// codes: 8 strings, each '' (not set up) or exactly 4 digits. At least one has to be set.
 export function validateCodes(codes){
   if(!Array.isArray(codes) || codes.length !== CREW.length) throw new Error(`need ${CREW.length} codes`);
   const out = codes.map((c, i) => {
@@ -97,7 +97,7 @@ except ImportError:
 import json
 payload = ${JSON.stringify(payload)}
 d = json.loads(payload)
-assert len(d['codes']) == 7
+assert len(d['codes']) == 8
 try:
     os.mkdir('data')
 except OSError:

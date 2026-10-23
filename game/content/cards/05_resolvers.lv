@@ -1,0 +1,189 @@
+# Cliffhanger resolvers. They live in their own file, sorted ahead of every other
+# deck file, so a resolver is the first callback of its day. Hooks: 70_hooks.lv.
+
+card r_band
+type event
+cat grim
+due
+once
+days 34 36
+roles A
+when fired h_band
+when is A hook_who
+text {A} counted to sixty-six before it came back, five knocks missed and still on the beat. {A} lays the gap on the temperature maps: the night side's coldest hour. Each cold night the gap is a knock or two longer. {A} runs the line forward. It runs past entry week, to a week or two after landing.
+do morale A -2
+
+card r_pressure
+type event
+cat repair
+due
+once
+days 5 36
+roles A
+when fired h_pressure
+when is A hook_who
+text {A} spent four hours panel by panel with a leak detector. The culprit was a cable feedthrough whose seal shrank in the shaded-side cold. The trend goes in the logbook like a fish someone caught; under it, the reserve line, which won't recover before Mars.
+do res spares -1
+do morale A 5
+
+card r_flare
+type event
+cat grim
+due
+once
+days 8 34
+roles A
+when fired h_flare
+when is A hook_who
+text Every crew spent the night in its shelter between the water tanks, listening to the dosimeters tick. By morning: a month's dose in six hours. {A} wrote down the peak and slept till noon. The dose model now gives each of them a number for later, in a column headed "lifetime".
+do var storms 1
+do morale A 3
+
+card r_thruster
+type event
+cat repair skill
+due
+once
+days 5 36
+roles A
+when fired h_thruster
+when is A hook_who
+lean brave manual watch
+text Fourteen minutes of the control loop fighting a roll nothing had commanded. Fault detection flagged a jet failed-on in forty seconds and isolated a healthy one; the leak sat downstream of a valve that swore it was shut.
+option manual | Hand control | {A} took attitude into manual and held it while the valve telemetry scrolled past. One valve read "closed" while it leaked. Isolated now; that axis flies one thruster short to Mars.
+  trait A brave 2
+  morale A 4
+  set valve_out
+  who valve_who A
+  mark t_valve
+  res fuel -1
+option watch | Isolate and watch | {A} let the control loop fight it and watched the pulses, counting. Every one traced to one valve that read "closed" while it leaked. Isolated now; that axis flies one thruster short to Mars.
+  trait A curious 2
+  morale A 4
+  set valve_out
+  who valve_who A
+  mark t_valve
+  res fuel -1
+
+card r_flood
+type event
+cat repair skill
+due
+once
+days 5 36
+roles A
+when fired h_flood
+when is A hook_who
+text The night's record: {A} found it buried on page nine, a coolant pump drawing too much current, minutes from tripping. {A} swapped to the backup before the primary died. By morning the alarm list was a page. The backup is the only pump now. Log: "{Av}"
+do morale A 5
+do res spares -1
+
+card r_silence
+type event
+cat grim
+due
+once
+days 11 36
+roles A
+when fired h_silence
+when is A hook_who
+text Eight hours of nothing, the one-page checklist open on every console. Before breakfast the reply arrives: a ground station lost to a storm, the backup waiting for Earth to turn. The message ends: "All good here. How are you?" {A} starts with the weather.
+do morale A 6
+do trait A warm 2
+
+card r_strike
+type event
+cat grim
+due
+once
+days 5 36
+roles A B
+when fired h_strike
+when is A hook_who
+when cond B ok
+when !is B eva_who
+when home A
+when !is A eva_who
+text {A}'s morning EVA, {B} suited at the next ship's hatch, found a fingernail crater in a heat-shield tile, short of the bondline. The entry team clears it on one condition: {A}'s ship flies entry a few tenths of a degree steeper, for a sharper peak and a shorter soak.
+do trait A brave 2
+do morale A 3
+
+card r_ghost
+type event
+cat mystery
+due
+once
+days 26 34
+roles A
+when fired h_ghost
+when is A hook_who
+text Six hours on the backup tracker. By morning the extra star has a name: a launch cover plate shed at departure, on nearly the fleet's orbit, gaining fifteen metres an hour. Tonight it slides past forty kilometres off the bow; Starbase starts counting cover plates.
+do trait A curious 3
+do morale A -2
+
+card r_voice
+type event
+cat human
+due
+once
+days 26 34
+roles A
+when fired h_voice
+when is A hook_who
+text {A} sat up till dawn with the intercom logs: a message from home, recorded before launch and queued for this day. Last week's update reset its clock, so it fired in the night and cut out when the buffer ran dry. The rest plays at breakfast. The first minute is gone for good.
+do morale A 6
+do trait A warm 3
+
+card r_dark
+type event
+cat grim
+due
+once
+days 27 32
+roles A
+when fired h_dark
+when is A hook_who
+when !flag signal_answered
+text Three hours of an empty slot; the next ship's lens showed lights on. Then {A}, from the avionics bay: an old-channel frame had asked for a key update the new stack never knew. Main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The old channel drops to receive only.
+do trait A brave 3
+do morale A -2
+
+card r_dark_a
+type event
+cat grim
+due
+once
+days 27 32
+roles A
+when fired h_dark
+when is A hook_who
+when flag signal_answered
+text Three hours of an empty slot; the next ship's lens showed lights on. Then {A}, from the avionics bay: an old-channel frame had asked for a key update the new stack never knew. Main and backup hung, still feeding the watchdog, until {A} pulled power by hand. The hellos move to a sandbox.
+do trait A brave 3
+do morale A -2
+
+
+card r_smoke
+type event
+cat repair
+due
+once
+days 15 25
+roles A
+when fired h_smoke
+when is A hook_who
+text Nine breakers in, the smell stopped: the fan behind the bunk, bearing seized, cooking its own wiring. Four hours of scrubbers to clear the air; {A} slept in the mask. The spare fan went in. The fleet's count of spare fans now reads zero.
+do res spares -1
+do morale A -2
+
+card r_tank
+type event
+cat grim
+due
+once
+days 35 37
+roles A
+when fired h_tank
+when is A hook_who
+text Behind the heat exchanger, a cracked fitting had fed a blanket of insulation all night. Eleven litres went into the foam; the wringer gave four back. {A}'s ship flies the rest of the way on austerity: a litre less a day, measured each morning, signed for, read back by the next ship.
+do morale A -3

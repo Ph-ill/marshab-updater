@@ -1,7 +1,7 @@
 # Engagement layer (branch `engagement`)
 
 Small, optional reasons to open the page each day. None of it can block the fleet or
-punish anyone who doesn't play: three of seven crews can never play and the season still
+punish anyone who doesn't play: three of eight crews can never play and the season still
 runs (`tests/test_engage.py`, inactive season). Nothing is stored on the phone.
 
 | Piece | Where | Shared via BLE? | Affects story/digest? |
@@ -80,18 +80,23 @@ the notifier on, the fallback is to blink only between scan windows.
 
 ## Memory and size
 
-MicroPython 1.29 unix, 32-bit (`build-m32`, closest to RP2040):
-story replay (`tests/mp_check.py`) peak 51.3 KB; story + engagement
-(`tests/mp_engage.py`) peak 58.4 KB, engagement adding about 4.6 KB in that run.
-64-bit `build-standard`: 81.7 KB and 95.2 KB. The page is 59 KB raw, 19.0 KB gzipped
-(14.5% of the 128 KB budget; was 13.9 KB before engagement).
+MicroPython 1.29 unix, 32-bit (`build-m32`, closest to RP2040), eight ships, 274-record
+reference season: story replay (`tests/mp_check.py`) peak 52.0 KB; story + engagement
+(`tests/mp_engage.py`) peak 58.7 KB. 64-bit `build-standard`: 71.1 KB and 86.9 KB.
+The page is 59 KB raw, 19.3 KB gzipped (14.7% of the 128 KB budget).
 
-**Heap fragmentation (core, not engagement):** merging a long sync's worth of records
-back to back can raise `MemoryError` on a dict resize with most of the heap free
-(MicroPython 1.29, 32-bit unix port: the 287-record season fails at every heap from 96 to
-192 KB). `ChoiceLog.merge` (lv/chlog.py) now calls `gc.collect()` every 32 new records on
-MicroPython, so the firmware sync path gets it without extra code
-(`tests/mp_merge.py`; `nogc` reproduces the failure). Not yet confirmed on hardware.
+**Heap fragmentation and the 64-bit OOM (core):** merging a long sync's worth of records
+back to back could raise `MemoryError` on a dict resize with most of the heap free.
+`ChoiceLog.merge` (lv/chlog.py) calls `gc.collect()` every 32 new records on MicroPython,
+which fixed the 32-bit port, but `tests/mp_engage.py` still failed on the 64-bit port at
+160 KB (one log-wide dict needing a ~3.5 KB contiguous block; it passed only from 192 KB).
+The log is now sharded (one table per 8 authored days, from content-voice) and packed
+(each shard's records sit back to back in one bytearray, the table maps key to offset), so
+no table grows with the season and a record costs 13 bytes instead of its own heap object.
+`mp_engage` now passes on 64-bit from 144 KB (run at 160 KB) and on 32-bit from 96 KB;
+`tests/mp_merge.py nogc` no longer fails either, and the collection stays as a margin.
+Heaps from .py include compiling `engine.py`; from .mpy (mpy-cross 1.29) the story check
+runs in 80 KB (32-bit). Not yet confirmed on hardware.
 
 ## Content safety
 
@@ -103,8 +108,8 @@ threads, like STORY_BIBLE.md) or lvc's slow-burn vocabulary. Patches show a neut
 
 ## Tests
 
-`tests/run.sh` (with `MICROPYTHON=...`) runs lvc/lve, the unit and sim tests, the 7-ship
-x 4-delivery-order determinism check, `tests/test_engage.py` (32 tests: merge collection, content safety, drops, jobs,
+`tests/run.sh` (with `MICROPYTHON=...`) runs lvc/lve, the unit and sim tests, the 8-ship
+x 4-delivery-order determinism check, `tests/test_engage.py` (37 tests: merge collection, eight crew (Marco's gifts, drops, crew-file line, local file), content safety, drops, jobs,
 streak/cover days, gifts limits, waiting/seen, clock, LED quiet hours/budget/disabled,
 inactive season), render parity, page size, sign-in, and both MicroPython checks.
 `web/shots_engage.sh` writes the 390x844 screenshots.

@@ -15,6 +15,7 @@
 from lv import record as R
 from lv.prng import Rng, day_seed
 from lv.pack import H_TYPE
+from lv.state import N   # ships = crew (8)
 
 S_DROP = 0x20    # day_seed salts (+ ship). 0 is the story tick, 1 the setup.
 S_OFF = 0x28
@@ -68,7 +69,7 @@ def load_table(path):
 
 
 class Engage:
-    def __init__(self, table, voyage_key, season, n=7):
+    def __init__(self, table, voyage_key, season, n=N):
         self.t = table
         self.vk = bytes(voyage_key)
         self.season = season
@@ -133,7 +134,7 @@ class Engage:
 def active_days(log, ship, season):
     """bytearray(season + 2): 1 on every flight day this ship authored any record."""
     a = bytearray(season + 2)
-    for r in log.recs.values():
+    for r in log.values():
         if R.ship(r) == ship:
             d = R.day(r)
             if 1 <= d <= season:
@@ -174,8 +175,7 @@ def gifts(log, you, today, ask_days):
     (gave today, asked today)."""
     inbox, outbox, answered = [], [], []
     gave = asked = False
-    for k in sorted(log.recs):
-        r = log.recs[k]
+    for _, r in log.in_order():
         if R.kind(r) != R.GIFT:
             continue
         frm, d, item, to, mode = R.ship(r), R.day(r), r[5], r[6], r[7]
@@ -208,7 +208,7 @@ class Local:
     """What only this ship knows: drops opened here, and the waiting list as it was at each
     crew member's last visit (so the LED and the NEW tags only flag what's changed)."""
 
-    def __init__(self, season, n=7):
+    def __init__(self, season, n=N):
         self.season = season
         self.n = n
         self.nb = (season + 8) // 8
@@ -251,13 +251,15 @@ class Local:
         return bytes(b)
 
     @classmethod
-    def load(cls, data, n=7):
+    def load(cls, data, n=N):
         data = bytes(data)
         if data[:4] != b"LVL1":
             raise ValueError("bad local file")
         s = cls(data[4], n)
         p = 5
         for c in range(n):
+            if p >= len(data):
+                break      # a file written for fewer crew (seven-ship builds): the rest start empty
             s.opened[c] = bytearray(data[p:p + s.nb])
             p += s.nb
             m = data[p]
@@ -301,7 +303,7 @@ def waiting(eng, local, pack, st, log, you, minute):
         if gd + eng.t.ask_days > d:
             keys.append(W_GIFT * 65536 + (gd * 8 + frm) * 4 + mode)
     mine = {}    # (kind, card) -> latest day you answered it (any delivery delay)
-    for r in log.recs.values():
+    for r in log.values():
         k = R.kind(r)
         if (k == R.VOTE or k == R.DILEMMA) and R.ship(r) == you:
             t = (k, r[5])
@@ -348,7 +350,7 @@ def view(eng, local, pack, st, log, you, minute, visit=True):
     cur, best, covered = streak(act, d)
     inbox, outbox, asks, sent = gifts(log, you, d, eng.t.ask_days)
     votes = rescues = given = 0
-    for r in log.recs.values():
+    for r in log.values():
         if R.ship(r) != you:
             continue
         k = R.kind(r)

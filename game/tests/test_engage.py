@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Engagement layer tests (CPython): gifts in the engine, drops, jobs, streaks, the
-waiting list, the clock, the LED notifier, and a season where 3 of 7 never play."""
+waiting list, the clock, the LED notifier, and a season where 3 of 8 never play."""
 import json
 import os
 import re
@@ -139,6 +139,59 @@ class TestGiftRecord(unittest.TestCase):
         log.merge(rec(R.GIFT, 0, 2, 0, 1, 9, R.GIFT_ANSWER))  # no such crew
         Engine(p, st, log).tick()
         self.assertFalse(any(st.out[i + 1] == O.O_GIFT for i in range(0, len(st.out), 8)))
+
+
+class TestEightCrew(unittest.TestCase):
+    """Marco (crew 7, ship 8) gets everything the other seven get: gifts both ways over the
+    radio record, drops, jobs, a crew-file line and a slot in the ship-local file."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.p = load(PACK)
+        cls.t = E.load_table(TABLE)
+        cls.e = E.Engage(cls.t, cls.p.voyage_key, cls.p.season)
+
+    def test_n_is_eight_everywhere(self):
+        from lv import codes as K
+        self.assertEqual((N, K.N, self.e.n, E.Local(42).n), (8, 8, 8, 8))
+        self.assertGreater(R.ADMIN_SHIP, N - 1)
+
+    def test_gifts_to_and_from_marco(self):
+        st = State(self.p)
+        log = ChoiceLog(FK)
+        log.merge(rec(R.GIFT, 7, 1, 0, 1, 0, R.GIFT_GIVE))    # Marco -> Phill
+        log.merge(rec(R.GIFT, 5, 1, 0, 2, 7, R.GIFT_GIVE))    # Diego -> Marco
+        log.merge(rec(R.GIFT, 2, 1, 0, 4, 7, R.GIFT_ASK))     # Kim asks Marco
+        Engine(self.p, st, log).tick()
+        out = [list(st.out[i + 3:i + 7]) for i in range(0, len(st.out), 8) if st.out[i + 1] == O.O_GIFT]
+        self.assertIn([7, 1, 0, R.GIFT_GIVE], out)
+        self.assertIn([5, 2, 7, R.GIFT_GIVE], out)
+        inbox, outbox, asks, (gave, asked) = E.gifts(log, 7, 1, self.t.ask_days)
+        self.assertEqual([g[1] for g in inbox], [2, 5])
+        self.assertEqual(outbox, [(0, 0, 1, R.GIFT_GIVE)])
+        self.assertEqual([a[1] for a in asks], [2])
+        v = E.view(self.e, E.Local(self.p.season), self.p, st, log, 7, 600)
+        self.assertEqual(v["stats"]["gifts"], 1)
+
+    def test_marco_drops_and_jobs(self):
+        d7 = self.e.drops(7)
+        self.assertEqual(len(d7), len(self.e.drops(0)))
+        self.assertNotEqual(d7, self.e.drops(6))
+        self.assertTrue(any(self.e.job(7, d) for d in range(1, self.p.season + 1)))
+
+    def test_local_file_has_eight_slots_and_reads_old_seven(self):
+        loc = E.Local(42)
+        loc.open(7, 3)
+        self.assertEqual(E.Local.load(loc.dump()).is_open(7, 3), 1)
+        old = E.Local(42, 7)
+        old.open(6, 5)
+        back = E.Local.load(old.dump())
+        self.assertEqual((back.n, back.is_open(6, 5), back.is_open(7, 5)), (8, 1, 0))
+
+    def test_crew_file_line_for_everyone(self):
+        with open(os.path.join(ROOT, "build", "engage.json"), encoding="utf-8") as f:
+            tr = json.load(f)["file"]["traded"]
+        self.assertEqual(len(set(tr)), N)
 
 
 class TestDropsJobs(unittest.TestCase):
@@ -329,7 +382,7 @@ class TestClockLed(unittest.TestCase):
 
 
 class TestInactiveSeason(unittest.TestCase):
-    """3 of 7 never play: nothing waits for them, nobody is punished, every ship agrees."""
+    """3 of 8 never play: nothing waits for them, nobody is punished, every ship agrees."""
 
     @classmethod
     def setUpClass(cls):

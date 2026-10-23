@@ -125,6 +125,12 @@ def build(content):
                 m = rx.search(s)
                 if m:
                     errs.append("%s: %r is %s; engagement text can show on any day" % (w, m.group(0), why))
+    # The crew file shows traded[crewmate]: one line each, so all eight (Marco too) differ.
+    sys.path.insert(0, ROOT)
+    from lv.state import N
+    tr = coll["file"].get("traded", [])
+    if len(tr) != N or len(set(tr)) != N:
+        errs.append("collections.json file.traded: need %d different lines, one per crew member (have %d)" % (N, len(tr)))
     if errs:
         raise Err("\n".join(errs))
     b = bytearray(b"LVE1")

@@ -2,9 +2,24 @@
   "_doc": "SPOILERS for maintainers only (like content/STORY_BIBLE.md). Engagement text (drops, jobs, gifts, patches, artifacts, crew file) can show on any flight day and in any order, so it must not touch the story's mystery threads or motifs. tools/lve.py fails the build if any engagement text matches one of these patterns (case-insensitive, whole words), or the story's slow-burn vocabulary from tools/lvc.py (SPOOKY). Add to this list when the story gains a thread.",
   "patterns": [
     "carrier", "beacons?", "probes?", "signals?", "eleven", "flash\\w*", "blink\\w*", "points? of light",
-    "manifest", "sharpie", "marker", "in pen", "cargo ?\\d+", "cargo ships?", "written off",
-    "earlier missions?", "previous missions?", "tumbl\\w*", "orbiter", "lander", "ripple", "noise floor",
-    "harmonic", "re?boot\\w*", "chime", "header format", "overlay", "landing zone", "thumb\\w*",
-    "voice on the loop", "off the net", "unknown object", "can't match", "nobody on the"
+    "manifest", "sharpie", "marker", "in pen", "cargo ?\\d+", "cargo ships?", "written off", "earlier missions?",
+    "previous missions?", "tumbl\\w*", "orbiter", "lander", "ripple", "noise floor", "harmonic", "re?boot\\w*",
+    "chime", "header format", "overlay", "landing zone", "thumb\\w*", "voice on the loop", "off the net", "unknown object",
+    "can't match", "nobody on the", "smudge", "streak", "shadow", "fingers crossed", "self\\-test", "safe mode",
+    "safe\\-mode", "pixel", "night frame", "fast sequence", "spin", "turns a minute", "between boots", "old channel",
+    "retired channel", "old common channel", "aim for the light", "11 seconds", "10\\.96", "twelve now", "pad\\-test", "fault table",
+    "you'll thank me", "lost on landing", "landing lights", "light\\-seconds", "sol", "Mars day", "thirty\\-seven minutes", "37 minutes",
+    "interlock", "transfer line", "crater rim", "solar wing", "sequence number", "trusted key", "program key", "backup site",
+    "lighthouse", "blue marker", "galley chime", "count to eleven", "offline mode", "replay", "not ours", "say again",
+    "keeps time", "watchdog", "nonce", "challenge", "ranging tone", "hail box", "event recorder", "DISCARD",
+    "HELLO RX", "Landed\\. All eight", "thruster stuck open", "against the stars", "alias", "Not us", "afternoon orbit", "key rotation",
+    "auto\\-answer", "fleet time", "lost\\-link timer", "boot ROM", "OVERTEMP", "ground hails", "standard handshake", "floodlights",
+    "dish jammed", "first sharp pass", "two pixels", "relay tumble", "entry interface", "plasma blackout", "The window after each knock is eleven", "half a million",
+    "half the day", "abort call", "keeper", "question mark", "eight and a half degrees", "I'll be counting", "lamp test", "battery heater",
+    "slower to wake", "still on time", "docking lead", "last nav fix", "weather mast", "drill bit", "All dead or crashed", "first batch",
+    "Old key", "Item located", "Wrong book", "divert", "page two", "CODE STALE", "Eight down", "seven to fly",
+    "parser guard", "blind hellos", "first whole frame", "Every gap explained", "harder to wake", "manual takeover", "engine\\-out call", "corridor correction",
+    "Found the ninth", "All eight", "low\\-gain antenna", "logo", "bar", "First one out", "say hello", "fault protection",
+    "line of sight", "one Mars day", "transponder", "ON HELLO: WAKE ALL", "The ninth was waiting"
   ]
 }

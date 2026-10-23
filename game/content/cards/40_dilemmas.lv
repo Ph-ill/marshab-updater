@@ -1,54 +1,179 @@
 # Private dilemmas: only the owner of {A} sees the choice; the astronaut decides in
 # character if nobody answers. Both options are decent; the cost is the point.
+# The letter and dose dilemmas open personal threads (ow_letter, ow_dose).
 # House style: content/STYLE.md.
+
+# --- Thread: the dose ----------------------------------------------------------
+card l_dose
+type event
+cat grim
+due
+once
+days 9 9
+roles A
+when !is A ow_list
+when !is A ow_song
+when !is A ow_garden
+when !is A ow_letter
+when home A
+text The weekly radiation summary puts {A}'s dosimeter at the top of the fleet's list, higher every week; the bunk sits on bare hull. The dose model issues {A} a "career remaining" figure. The form has a box for questions. It is very small.
+do who ow_dose A
+do open dil_dose
 
 card dil_dose
 type dilemma
+once
 cat grim
-days 6 30
-weight 8
+days 9 9
+weight 1
 duration 3
 roles A
-when cond A ok
+when !fired dil_dose
 lean warm report keep
-text {A}'s dosimeter reads higher than anyone else's, probably because the bunk sits close to the hull. Moving it means telling the flight surgeon, who will want a meeting.
-option report | Tell the surgeon | The meeting has a 40-minute round trip on every question. {A}'s bunk moves two meters closer to the water tanks, and the reading drops by a third.
+text Moving the bunk means telling the flight surgeon, who will want a meeting, and a meeting with the ground gets slower every week.
+option report | Tell the surgeon | At half a minute a question, everyone learns to ask two at once. {A}'s bunk moves in beside the water tanks, and the reading drops by a fifth.
+  set dose_told
   morale A -2
   trait A warm 2
-option keep | Keep it quiet | {A} logs it privately and moves the sleeping bag to the other wall. It isn't nothing. It isn't a meeting either.
+option keep | Keep it quiet | {A} notes it privately and moves the sleeping bag to the other wall. It isn't nothing. It isn't a meeting either.
   set dose_hidden
-  who dose_who A
 
 card dose_swap
 type beat
 cat human
 due
 once
-days 14 40
+days 17 24
 roles A B
 when flag dose_hidden
-when is A dose_who
-when same A B
+when is A ow_dose
 when cond B ok
-text {B} reads the dosimeter logs the way other people read the news, and notices {A}'s numbers. Without a word, {B} swaps bunks with {A} that night. By morning the readings are even.
+text {B} reads the fleet's dose charts like the news, notices {A}'s numbers, and calls. {B}'s dosimeter has the newer calibration, and the two of them redo {A}'s week with it. That night {A} moves the bunk in beside the water tanks, and {B} stays on the line until it's done.
 do bond A B 10
 do bond B A 6
 
+card dose_ok
+type beat
+cat human
+due
+once
+days 17 24
+roles A
+when flag dose_told
+when is A ow_dose
+text The flight surgeon sends {A} a chart with one line on it, going down. Under it, by hand: "Thank you for telling me." "Fair," {A} writes back, and clips it beside the bunk.
+do morale A 4
+
+card c_dose
+type beat
+cat human
+due
+once
+days 33 38
+roles A
+when is A ow_dose
+when home A
+text The entry mass budget wants the tank beside {A}'s bunk pumped down. {A} argues to keep it and runs the dose numbers to prove it. With this little cruise left, they don't. "Fine," {A} tells the ground. "Pump it on entry morning." Then, because someone once checked on {A}: "Thanks for checking."
+do trait A warm 1
+
+# --- Thread: the letter ---------------------------------------------------------
+card l_letter
+type event
+cat human
+due
+once
+days 8 8
+roles A
+when !is A ow_list
+when !is A ow_song
+when !is A ow_garden
+text The data drop brings {A} one file flagged personal, from the one person at home who never sends files.
+do who ow_letter A
+do open dil_letter
+
+card dil_letter
+type dilemma
+once
+cat human
+days 8 8
+weight 1
+duration 3
+roles A
+when !fired dil_letter
+lean warm now save
+text The airlock is the one place aboard with no camera feed to the ground, so reading it now means reading it there. Saving it means carrying it unread until a quiet moment.
+option now | Read it now | {A} reads it in the airlock and comes out ten minutes later without saying what it said. That evening {A} calls the other ships one by one, about nothing in particular.
+  set letter_read
+  morale A 6
+option save | Save it | {A} saves it for a bad day. Every mission has one.
+  set letter_saved
+  mark t_letter
+
+card letter_open
+type beat
+cat human
+due
+once
+days 26 34
+roles A
+when flag letter_saved
+when is A ow_letter
+when since t_letter >= 18
+text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock, once, and comes out with the last line by heart. {A} logs the airlock cycle and nothing else.
+do morale A 12
+
+card letter_worn
+type beat
+cat human
+due
+once
+days 26 34
+roles A
+when flag letter_read
+when is A ow_letter
+text {A} has read the letter so often that the fold has worn through. {A} mends it along the crease and keeps it in the flight-suit pocket over the heart, which the checklist calls the "left chest pocket".
+do morale A 4
+
+card c_letter
+type beat
+cat human
+due
+once
+days 34 35
+roles A
+when is A ow_letter
+text In the restow for entry, item fourteen moves personal papers to the checklist binder. {A} reaches for the left chest pocket, where the letter has ridden since the data drop, finds it empty, and turns out the locker before the list explains it. "Item located," {A} logs.
+do morale A 2
+
+card a_letter
+type beat
+cat arrival
+due
+once
+days 39 39
+roles A
+when is A ow_letter
+text The entry checklist has a line for "personal items stowed". {A} reads the last line of the letter once more, aloud, then folds it into the left chest pocket, seals the flap, and ticks the box in ink.
+do morale A 3
+
+# --- Others ---------------------------------------------------------------------
 card dil_gains
 type dilemma
+once
 cat repair skill
 days 5 32
 weight 9
 duration 3
 roles A
 when cond A ok
+when home A
 lean brave tune wait
-text The attitude control on {A}'s ship has a slow wobble, and {A} seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs ground sign-off, and the ground is 20 minutes away and asleep.
-option tune | Adjust it now | {A} makes the change, watches the wobble die away over six cycles, and writes it down before anyone can ask. The ground signs off in the morning with a single word: "Nice."
+text The attitude control on {A}'s ship has a slow wobble only {A} seems to notice. A switch to the alternate gain set would probably settle it. Procedure says the guidance team signs off any switch.
+option tune | Adjust it now | {A} selects the alternate set and watches the wobble die over six cycles, and signs off first: "{Av}"
   set gains_tuned
   who gains_who A
   trait A brave 2
-option wait | Wait for sign-off | {A} files the request and lives with the wobble overnight. The ground approves the exact change {A} proposed, word for word, 14 hours later.
+option wait | Wait for sign-off | {A} files the request and lives with the wobble overnight. The ground approves {A}'s change, word for word, the next afternoon.
   trait A brave -2
   morale A 2
 
@@ -57,17 +182,20 @@ type event
 cat repair skill
 due
 once
-days 18 40
+days 19 39
 roles A
 when flag gains_tuned
+when flag trim_done
 when is A gains_who
 when cond A ok
-text On the big correction burn, the attitude trace from {A}'s ship is a flat line. Every other ship shows the same slow wobble {A} found. By the next burn, {A}'s numbers are running on all seven.
+when home A
+text On the corridor burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all eight, the report stapled to them.
 do morale A 5
 do res fuel 1
 
 card dil_bracket
 type dilemma
+once
 cat repair skill
 days 8 36
 weight 8
@@ -76,71 +204,44 @@ roles A
 when cond A ok
 lean brave zip ticket
 text {A} finds a hairline crack in a bracket holding a stowage rack, at a corner the model said would carry no stress. A proper fix means opening a ticket with Earth. A zip-tie fix takes five minutes.
-option ticket | Open a ticket | Earth wants photos, measurements, and a part number nobody can find. {A} supplies all three. The approved repair arrives a few days later and is, in every way that matters, a zip tie.
+option ticket | Open a ticket | Earth wants photos, measurements, and a part number that isn't on any drawing. {A} sends all three. The approved repair arrives days later and is, in every way that matters, a zip tie.
   morale A -1
-option zip | Zip-tie it | {A} redesigns the mount on the spot with zip ties and spite. It is ugly, and it will outlast the ship.
+option zip | Zip-tie it | {A} lashes the rack in a pattern no review would pass. The anomaly report calls it "interim". It is not.
   set zip_fix
+  who zip_who A
   res spares -1
   morale A 3
 
-card dil_letter
-type dilemma
-cat human
-days 10 38
-weight 7
-duration 3
-roles A
-when cond A ok
-lean warm now save
-text A data packet from home arrives for {A}, flagged personal. Reading it now means reading it on a cramped ship with no privacy. Saving it means carrying it unread until a quiet moment that may never come.
-option now | Read it now | {A} reads it in the airlock, the only place aboard with a door. {A} comes out ten minutes later, doesn't say what it said, and makes everyone coffee.
-  morale A 6
-option save | Save it | {A} saves it for a bad day. Every mission has one, and now {A} has something set aside for it.
-  set letter_saved
-  who letter_who A
-  mark t_letter
-
-card letter_open
+card zip_back
 type beat
-cat human
+cat repair
 due
 once
-days 20 41
+days 30 39
 roles A
-when flag letter_saved
-when is A letter_who
-when since t_letter >= 8
-text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock and goes back to work. Whatever it said, it was enough.
-do morale A 12
+when flag zip_fix
+when is A zip_who
+when home A
+text The stowage rack on {A}'s ship has carried its zip ties through every burn since. Before arrival {A} checks them all, adds one more for luck, and updates the anomaly report: "still interim".
 
 card dil_eva_cam
 type dilemma
+once
 cat repair
 days 7 33
 weight 7
 duration 3
 roles A
 when cond A ok
+when home A
+when !is A eva_who
 lean brave go wait
-text An external camera on {A}'s ship has frosted over. Clearing it means an unscheduled EVA. Nobody would blame {A} for waiting for the planned one.
-option go | Go out now | {A} clears the lens in twenty minutes and, before coming in, takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
+text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end.
+do who cam_who A
+option go | Close up and go out | With the next ship closed up and a suit at its hatch, {A} clears the lens in twenty minutes. On the way in, {A} photographs the fleet strung out against the dark. It becomes everyone's wallpaper.
+  res fuel -1
   trait A brave 3
   morale A 4
-option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which is exactly what the risk assessment called acceptable. {A} has read the risk assessment twice.
+option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which the risk assessment calls acceptable.
   trait A brave -2
 
-card dil_interlock
-type dilemma
-cat repair skill
-days 4 36
-weight 8
-duration 3
-roles A
-when cond A ok
-lean brave override vote
-text The airlock on {A}'s ship won't cycle. One door sensor says "closed". The other says "ajar". The door is obviously closed, and {A} has the override code.
-option override | Use the override | {A} overrides, cycles the lock, and opens a ticket straight away. The sensor was right: a seal had crept a millimeter. {A} reseats it before anyone needs that airlock in a hurry.
-  trait A brave 2
-option vote | Find a third opinion | {A} pulls the lock's pressure trace as a tiebreaker. The door is sealed, and the "ajar" sensor is lying. {A} swaps it, the interlock is satisfied, and nobody overrode anything.
-  trait A curious 2
-  res spares -1

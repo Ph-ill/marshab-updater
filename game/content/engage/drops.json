@@ -17,7 +17,7 @@
     {"tier": "priority", "kind": "Recorded message", "t": "A recording from the launch-day control room. Fourteen people talking at once, all saying the same thing: go."},
     {"tier": "priority", "kind": "Mission Control memo", "t": "Mission Control approves 40 extra minutes of bandwidth for personal calls this week. The approval took six signatures and a meeting."},
     {"tier": "rare", "kind": "Parcel from home", "art": "class_patch", "t": "A scan from home, printed in the galley: {A}'s training-class patch, frayed at one corner, with a family photo taken the day it was sewn on."},
-    {"tier": "rare", "kind": "Data card", "art": "pad_photo", "t": "A data card from the ground team: all seven ships on the pad the night before launch, lit from below, steam curling off the tanks."},
+    {"tier": "rare", "kind": "Data card", "art": "pad_photo", "t": "A data card from the ground team: the whole fleet on the pad the night before launch, lit from below, steam curling off the tanks."},
     {"tier": "rare", "kind": "Keepsake", "art": "stopwatch", "t": "The launch director sends up a photo of the wind-up stopwatch that sat beside the console on launch day. It's {A}'s now, waiting at home."}
   ]
 }

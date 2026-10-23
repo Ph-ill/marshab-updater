@@ -1,6 +1,7 @@
 # MicroPython: a long sync's worth of records merged back to back must not fragment the
-# heap into a MemoryError. ChoiceLog collects every GC_EVERY new records (lv/chlog.py);
-# run with "nogc" to see the failure it prevents.
+# heap into a MemoryError. ChoiceLog collects every GC_EVERY new records (lv/chlog.py).
+# "nogc" turns that off: before the log was sharded and packed it failed here at 192k;
+# now it passes without it too, and the collection stays as a margin for longer syncs.
 #   micropython -X heapsize=192k tests/mp_merge.py [nogc]
 import gc
 import sys

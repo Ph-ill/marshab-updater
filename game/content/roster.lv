@@ -2,6 +2,7 @@
 # Edit names here and re-run tools/lvc.py; no code changes needed.
 #
 #   crew <name> ship <ship name> [quirk <quirk from fleet.lv>] [tag <word>]... [flagship]
+#        [voice "<short sign-off>"] [habit "<one sentence about {A}>"]
 #
 # Tags are optional flavour hooks for cards: `when tag A mech` only binds role A to crew
 # carrying that tag. Use them to let a card *prefer* someone (pair it with an untagged
@@ -10,11 +11,26 @@
 # With no quirk, the astronaut's starting traits are seeded from the voyage key and
 # their name, so they are stable from build to build but nobody picked them.
 # Card text never assumes anyone's gender: use {A}/{B} or "they".
+#
+# Voice: one short sign-off in that astronaut's own rhythm, drawn from their habits
+# (never invented). Cards print it with {Av}/{Bv}, so a crewmate sounds like
+# themselves whatever role the season gives them.
+#
+# Habits: one small, harmless, real detail per astronaut, sent in by that player and
+# dropped in here. It is a whole sentence about {A}, e.g.
+#   habit "{A} keeps one small thing from home within reach of the console."
+# Cards marked `each crew` print the first habit (one clone per astronaut, compiled in;
+# the phone never sees a new slot). Up to four habits per line: `each habit N` cards
+# clone only for astronauts with a real Nth habit, so a quirk line only ever renders
+# for its owner. Never invent a habit for a real person: leave it out (or leave the
+# placeholder), and no clone is made. To add a ship, add one line here; the
+# engine's crew count (lv/state.N, tools/lvc.py N_CREW) must match.
 
-crew Phill     ship Ship 01   tag controls  flagship
-crew Jacques   ship Ship 02   tag controls
-crew Kim       ship Ship 03   tag controls
-crew Jai       ship Ship 04   tag controls
-crew Michelle  ship Ship 05   tag controls
-crew Diego     ship Ship 06   tag mech
-crew Dorian    ship Ship 07   tag controls
+crew Phill     ship Ship 01   tag controls  flagship  voice "Saving here."  habit "{A} keeps a pot of galley herbs alive under a spare lamp, pinching it back like the beds at home." habit "{A} fixes a loose locker hinge on the first try, then adds \"hinges\" to the house to-do list waiting on Earth." habit "Before every burn {A} writes one line on where everything stands, like a save before a hard level, in case anyone has to load from it."
+crew Jacques   ship Ship 02   tag controls  voice "Copy. Done. Next."  habit "{A}'s kit is squared away past any inspection, every strap folded to the same length." habit "{A} still checks a stock portfolio, on prices minutes old by the time they reach the ship. \"Long position,\" {A} says, and means the ship." habit "Every night now {A} lays the suit out in donning order and runs the fleet's radio check in ninety crisp seconds." habit "{A} tilts a spare circuit board to the lamp and reads it like a letter, a career's habit: the maker's mark, the solder, one rework someone was proud of. Video from home: the chihuahua on patrol, the two cats allowing it."
+crew Kim       ship Ship 03   tag controls  voice "And scene."  habit "{A} rations the episodes queued for the trip, one a week, and the fleet has learned not to call during one." habit "The water processor has a name, a rival and a tragic backstory now, courtesy of {A}, and the ground uses the name in tickets." habit "On each corridor burn {A} allows the countdown one line of dramatic narration, then flies it dead straight." habit "Video from home: Mango asleep in {A}'s chair, as ever, and Dirt, the new one, asleep on Mango. {A} narrates it for the fleet like a nature film."
+crew Jai       ship Ship 04   tag controls  voice "Clear. Next mark."  habit "{A} runs the hatch drill against a stopwatch, calling it short: \"Two, clear. Three, clear. Seal.\" Half a beat ahead of the checklist, never off it." habit "On the flyby plot {A} draws the trajectory as a racing line, apex marked. The nav team keeps the word." habit "{A} walks the entry timeline like a qualifying lap: the same marks, called aloud, every night, until the times stop changing." habit "{A} sets the fantasy football lineup a week early and talks trash to the league, two minutes late. Dad answers in full JetBlue gate voice, \"We apologise for the delay,\" and saves {A} the first song on the next wedding dance floor."
+crew Michelle  ship Ship 05   tag controls  voice "Story first. Numbers next."  habit "{A}'s mail from home carries a kitten count in the subject line, eleven one week, thirteen the next, one always out of frame." habit "{A} keeps a lint roller in the flight kit, tens of millions of kilometres from any fur, and uses it before every call home." habit "Near Mars now, word reaches {A}: the last of the spring litter has gone to a home, and the house is briefly, suspiciously quiet." habit "{A} runs the burn briefing like a Disney queue: a story to keep the line moving. Then the Tesla half takes over: the numbers, to the decimal."
+crew Diego     ship Ship 06   tag mech  voice "Now you: how's your day?"  habit "{A} measures the galley latch twice, finds it was drawn for a lighter door, and fixes it with one washer." habit "Mail from whoever is minding {A}'s three cats: all fed, all offended, one asleep in the bag {A} meant to pack." habit "{A} redraws a sagging locker bracket on a ration wrapper, lighter and stiffer; the ground files it as a drawing." habit "The ground has a new trainee, a stranger for about a minute. {A} opens with a question; by sign-off, two-minute lag and all, {A} knows where the trainee grew up, and the trainee knows all three cats by name."
+crew Dorian    ship Ship 07   tag controls  voice "Checked. Every line."  habit "Wesley, at home, keeps {A} in drawings: the ship, Mars and a dog, all the same size. {A} keeps every one." habit "{A} asks the ship's assistant to summarise the fault log. It answers in one confident paragraph; {A} checks every line." habit "As Mars fills the cameras, a video: a Boston terrier at the front window, and a small voice telling it {A} is nearly there." habit "{A} rations the Uncrustables, one a week, logged like fuel, and sends the count home so Wesley can cross the week off."
+crew Marco     ship Ship 08   tag controls  voice "Capacity: one."  habit "Saturday nights {A} dims the galley to one light and calls it the club. Capacity: one. The door policy is strict." habit "{A} finds the coolant pump cycling in four-four and writes it a bass line. The ground's acoustic survey comes back marked allegro." habit "A photo reaches {A} from a dark, loud room: friends holding up a sign that says SAVING YOUR SPOT." habit "Before the Saturday club {A} allows one spray of cologne, a ritual older than the BMW years in Mexico, older than leaving Elgin. In a sealed cabin it lasts all week; the ground's air sample comes back marked \"notes of citrus\"."
