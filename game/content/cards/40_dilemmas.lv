@@ -166,7 +166,7 @@ roles A
 when cond A ok
 lean brave tune wait
 text The attitude control on {A}'s ship has a slow wobble, and {A} seems to be the only one who notices it. A small adjustment would probably settle it. Procedure says any change needs ground sign-off, and the ground is asleep.
-option tune | Adjust it now | {A} makes the change, watches the wobble die away over six cycles, and writes it down before anyone can ask. The ground signs off in the morning with one word, "Nice", and one attachment: the procedure for next time.
+option tune | Adjust it now | {A} makes the change and watches the wobble die over six cycles. The ground signs off in the morning with one word, "Nice", and one attachment: the procedure for next time.
   set gains_tuned
   who gains_who A
   trait A brave 2
@@ -228,12 +228,12 @@ duration 3
 roles A
 when cond A ok
 lean brave go wait
-text An external camera on {A}'s ship has iced over, and its lens heater can't shift it. Clearing it now means asking the next ship to close up for an unscheduled window, so someone is suited on the other end of the line. Nobody would blame {A} for waiting for the planned EVA.
+text An external camera on {A}'s ship has iced over, and its heater can't shift it. Clearing it now means the next ship closing up for an unscheduled window, someone suited on the other end. Nobody would blame {A} for waiting for the planned EVA.
 option go | Close up and go out | The next ship closes up, its astronaut suited at the hatch, and {A} clears the lens in twenty minutes. Before coming in, {A} takes a photo of the fleet strung out against the dark. It becomes everyone's wallpaper.
   res fuel -1
   trait A brave 3
   morale A 4
-option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which is exactly what the risk assessment called acceptable. {A} has read the risk assessment, all of it, including the appendix.
+option wait | Wait for the planned EVA | {A} waits. The camera stays blind for a few days, which the risk assessment calls acceptable. {A} has read all of it, appendix included.
   trait A brave -2
 
 card dil_interlock

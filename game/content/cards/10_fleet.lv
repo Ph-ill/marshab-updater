@@ -42,8 +42,8 @@ duration 2
 roles A B
 lean curious open log
 when fired m_alias
-text Whatever the carrier is, it isn't the fleet's. {A} wants to answer it: set the receiver to reply to every burst, automatically, quoting each one's header back. {B} points out that every reply ties up the comms computer, and the letters from home queue behind a conversation with a machine.
-option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst on the old channel, quote it back, until someone says stop. The first answer goes out at 14:02. Then static. The carrier comes and goes as before, and {A} logs every answer to the millisecond, out of habit.
+text Whatever the carrier is, it isn't the fleet's. {A} wants to answer it: reply to every burst automatically, quoting its header back. {B} points out that every reply ties up the comms computer, and the letters from home queue behind a machine.
+option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, quote it back, until someone says stop. The first answer goes out at 14:02. The carrier comes and goes as before, and {A} logs every answer to the millisecond.
   set signal_answered
   mark t_signal
   morale B -3

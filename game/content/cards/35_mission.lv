@@ -46,7 +46,7 @@ duration 2
 roles A B
 lean curious record save
 text A gamma-ray burst goes off somewhere past the galaxy, and the fleet's dose monitors catch it. Timed against detectors near Earth, the full-rate data could pin the source, but sending it home costs a day of the dish, and every letter waits. {A} wants the data sent. {B} wants the letters.
-option record | Send the data | The fleet sends it. Timed against Earth's detectors, a minute or two of light away, the burst's source shrinks from a smear of sky to a point. {A} reads the confirmation and lets out a breath nobody else hears.
+option record | Send the data | The fleet sends it. The burst's source shrinks from a smear of sky to a point. {A} reads the confirmation and lets out a breath nobody else hears.
   morale B -2
   trait A curious 3
   morale A 3
