@@ -1,0 +1,80 @@
+# Fleet votes and their callbacks.
+
+card dec_signal
+type decision
+days 5 14
+weight 10
+once
+duration 2
+roles A B
+lean curious open log
+when trait A curious >= 10
+when trait B curious <= 5
+text The asteroid off the port bow is repeating a pattern. {A} wants to answer it. {B} wants to log it and keep going.
+option open | Open the channel | {A} keys the transmitter and the whole fleet listens to static for an hour.
+  set signal_answered
+  mark t_signal
+  res fuel -3
+  trait A curious 5
+option log | Log it, move on | The pattern is filed under "later". {A} sulks for a day.
+  set signal_ignored
+  mark t_signal
+  morale A -5
+
+# Weeks later: the callback for whichever way the fleet voted.
+card signal_reply
+type event
+due
+once
+days 15 41
+roles A
+when flag signal_answered
+when since t_signal >= 14
+when trait A curious >= 0
+text At 03:12 the dish picks up a reply. It's the fleet's own message, played back slowly. {A} is the first one awake.
+do set signal_contact
+do trait A curious 4
+
+card signal_echo
+type event
+due
+once
+days 15 41
+roles A
+when flag signal_ignored
+when since t_signal >= 14
+text {A} notices the asteroid's pattern in the dish logs again. It is closer than it was. Nobody says "following".
+do set echo_heard
+do morale A -3
+
+# Injury and rescue: needs supplies from another ship.
+card crisis_eva
+type event
+once
+days 10 34
+weight 6
+roles A
+when cond A ok
+when trait A brave >= 0
+when kit_elsewhere A
+text A micrometeoroid nicks {A}'s suit during an EVA. {A} makes it back inside, but the hand is bad.
+do cond A injured
+do morale A -10
+do open rescue_kit
+
+card rescue_kit
+type rescue
+duration 1
+roles A B
+default volunteer
+when cond A injured
+when bestbond B A
+text {A} needs a med kit from another ship.
+option send | Send a med kit | A med kit goes over on the next shuttle. {A}'s hand is strapped up by lunch.
+  kit A
+  morale A 6
+option volunteer | Let {B} go | {B} doesn't wait to be asked and flies a kit over personally.
+  kitfrom B A
+  move B A
+  bond A B 12
+  morale B 4
