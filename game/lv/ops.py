@@ -93,7 +93,7 @@ O_DIL_CLOSE = 5   # card, A, option, by (0 = owner, 1 = astronaut in character)
 O_ACT = 6         # crew, action, target, auto (1 = astronaut chose), param
 O_MOVE = 7        # crew, from ship, to ship
 O_NOTE = 8        # crew, line, target
-O_END = 9         # card
+O_END = 9         # card, A, B (crew named by the ending's `is` conditions)
 O_RES_OPEN = 10   # card, A, B
 O_RES_CLOSE = 11  # card, option, ballots, defaulted
 O_SHORT = 12      # resource running low

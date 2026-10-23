@@ -72,7 +72,7 @@ class Renderer:
         if code == O.O_SHORT:
             return sy["short"]
         if code == O.O_END:
-            return sy["end"] + " " + cd["t"]
+            return sy["end"] + " " + self.fill(cd["t"], a, b)
         return None
 
     def lines(self, out, routine=False):

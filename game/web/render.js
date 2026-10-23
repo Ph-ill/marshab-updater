@@ -78,7 +78,7 @@ export class Renderer {
       case O.SHORT:
         return sy.short;
       case O.END:
-        return sy.end + " " + cd.t;
+        return sy.end + " " + this.fill(cd.t, a, b);
       default:
         return null; // unknown code from a newer pack: skip, don't break the page
     }

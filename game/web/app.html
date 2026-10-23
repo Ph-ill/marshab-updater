@@ -399,11 +399,11 @@ function actSheet(){
 function ending(){
   bar("ARRIVAL",`FD ${S.season}/${S.season}`);
   const c=T.cards[S.ending],E=T.epi||{};
-  let dec=0,res=0,notes=0,acts=0;
+  let dec=0,res=0,notes=0,acts=0,ea=NONE,eb=NONE;
   const b=Uint8Array.from(atob(S.story),(ch)=>ch.charCodeAt(0));
-  for(let i=0;i<b.length;i+=8){const k=b[i+1];dec+=k===O.DEC_CLOSE;res+=k===O.RES_CLOSE;notes+=k===O.NOTE;acts+=k===O.ACT&&b[i+6]===0}
+  for(let i=0;i<b.length;i+=8){const k=b[i+1];dec+=k===O.DEC_CLOSE;res+=k===O.RES_CLOSE;notes+=k===O.NOTE;acts+=k===O.ACT&&b[i+6]===0;if(k===O.END){ea=b[i+3];eb=b[i+4]}}
   const rw=Object.keys(S.updated).filter((d)=>rewritten(+d)).length;
-  const ttl=first(c.t),rest=c.t.slice(ttl.length).trim();
+  const ct=R.fill(c.t,ea,eb),ttl=first(ct),rest=ct.slice(ttl.length).trim();
   let o=`<div class=kick><div class=lab>Mission report · ${h(ship(S.you))}</div><h1>${h(ttl.replace(/\.$/,""))}</h1><p class=lead>${h(rest)}</p></div>`;
   o+=`<section><div class=lab><span>The voyage</span><span>${S.season} days</span></div><div class=tbl><div>Fleet votes settled</div><div>${dec}</div><div>Calls for help answered</div><div>${res}</div><div>Instructions followed</div><div>${acts}</div><div>Notes passed</div><div>${notes}</div><div>Days re-run by late signals</div><div>${rw}</div></div></section>`;
   const lost=S.cond.filter((x)=>x===2).length;

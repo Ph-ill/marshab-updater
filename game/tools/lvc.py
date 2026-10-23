@@ -471,6 +471,9 @@ CHEAP = re.compile(r"\b(it was nothing|just a glitch|false alarm|all a dream)\b"
 CALENDAR = re.compile(r"\b(months|month (one|two|three|four|five|six|\d))\b", re.I)
 MAX_TEXT, MAX_LABEL = 300, 28
 MAX_PAYOFF = 420   # reveal cards and the arrival-day cards (days 40+) may run longer
+ROLE_CONDS = (O.C_TRAIT_GE, O.C_TRAIT_LE, O.C_BOND_GE, O.C_BOND_LE, O.C_SAME, O.C_APART,
+              O.C_COND, O.C_IDLE_GE, O.C_MORALE_LE, O.C_MORALE_GE, O.C_KIT_ELSE,
+              O.C_BESTBOND, O.C_HOME, O.C_AWAY, O.C_CREW, O.C_ISNT)
 MAX_ENDING = 640   # an ending is a landing scene, the recorder line on unanswered branches, and the coda
 PAYOFF_FROM = 40
 
@@ -645,8 +648,16 @@ def validate(cards, ctx, fleet, system):
     endings = [c for c in cards if c["type"] == O.ENDING]
     if not endings:
         ctx.errors.append("no ending cards")
-    elif endings[-1]["conds"]:
-        ctx.errors.append("%s: the last ending must have no conditions (the fallback)" % endings[-1]["where"])
+    elif [k for k, _ in endings[-1]["conds"] if k[0] != O.C_IS]:
+        ctx.errors.append("%s: the last ending (the fallback) may only name crew (`is`), "
+                          "nothing that could fail" % endings[-1]["where"])
+    # An ending is chosen before anyone is cast, so a role there can only be named
+    # through `is X var` (the engine reads the var); any other role test would pass
+    # unchecked.
+    for c in endings:
+        for k, _ in c["conds"]:
+            if k[0] in ROLE_CONDS:
+                ctx.errors.append("%s: an ending can name crew only with `is`" % c["where"])
     for f in ctx.flags:
         if f not in ctx.flag_set:
             ctx.errors.append("%s: flag %s is checked but never set" % (ctx.flag_read[f], f))

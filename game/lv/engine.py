@@ -536,10 +536,20 @@ class Engine:
             self._fire(c, r)
 
     def _ending(self):
+        # The ending is chosen on flags alone (role conditions pass while unbound).
+        # It may then name crew: each `is X var` condition puts that var's holder in
+        # role X. No casting and no dice, so the choice never changes, and one person
+        # may fill both roles; an unset var leaves the role empty.
         s = self.s
+        ops = self.p.data
         for c in self.p.endings:
-            if self._check(self.p.conds(c), bytearray([NONE] * 4)):
+            off = self.p.conds(c)
+            roles = bytearray([NONE] * 4)
+            if self._check(off, roles):
+                for i in range(off + 1, off + 1 + 4 * ops[off], 4):
+                    if ops[i] == O.C_IS and s.vars[ops[i + 2]]:
+                        roles[ops[i + 1]] = s.vars[ops[i + 2]] - 1
                 s.ending = c
                 s.fired[c] = s.day
-                s.emit(O.O_END, c)
+                s.emit(O.O_END, c, roles[0], roles[1])
                 return

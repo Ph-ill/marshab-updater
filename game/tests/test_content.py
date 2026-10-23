@@ -462,6 +462,46 @@ class TestRound2Language(unittest.TestCase):
         self.assertEqual(len(b), 1)
         self.assertNotEqual(a[0], b[0])
 
+    def test_ending_names_crew_through_is(self):
+        # The ending entry carries two roles, read straight from the `is` vars: no
+        # casting, so one astronaut may fill both, and the choice of ending is unchanged.
+        src = ("card pick\ntype event\ndue\nonce\ndays 1 1\nroles A\ntext {A} is picked.\ndo who own A\n\n"
+               "card other\ntype event\ndue\nonce\ndays 2 2\nroles A\nwhen !is A own\ntext {A} is not.\n"
+               "do who two A\n\n"
+               "card fin\ntype ending\nroles A B\nwhen fired other\nwhen is A own\nwhen is B two\n"
+               "text {A} and {B} land.\n\n"
+               "card fin2\ntype ending\nroles A B\nwhen is A own\nwhen is B own\ntext {A} lands; {B} waves.\n")
+        pack, text, ctx = lvc.build(mini_content(src))
+        self.assertEqual(ctx.errors, [])
+        from sim.render import Renderer
+        ids = [c["id"] for c in text["cards"]]
+        st, days = season(Pack(pack))
+        story = b"".join(days)
+        a = [e[3] for e in events(story, ids.index("pick"))][0]
+        b = [e[3] for e in events(story, ids.index("other"))][0]
+        end = [story[i:i + 8] for i in range(0, len(story), 8) if story[i + 1] == O.O_END]
+        self.assertEqual(len(end), 1)
+        self.assertEqual((end[0][2], end[0][3], end[0][4]), (ids.index("fin"), a, b))
+        line = Renderer(text).entry(end[0])
+        self.assertIn("%s and %s land." % (text["crew"][a], text["crew"][b]), line)
+        # Same var twice: one person in both roles, not a failed cast.
+        src2 = src.replace("when fired other\n", "when fired nothing_here\n").replace(
+            "card other\n", "card nothing_here\ntype event\ndays 40 40\nroles A\nwhen !fired pick\ntext {A}.\n\ncard other\n")
+        pack, text, ctx = lvc.build(mini_content(src2))
+        self.assertEqual(ctx.errors, [])
+        st, days = season(Pack(pack))
+        story = b"".join(days)
+        end = [story[i:i + 8] for i in range(0, len(story), 8) if story[i + 1] == O.O_END][0]
+        self.assertEqual(text["cards"][end[2]]["id"], "fin2")
+        self.assertEqual(end[3], end[4])
+        self.assertNotEqual(end[3], O.NONE)
+
+    def test_ending_role_tests_are_limited(self):
+        src = ("card pick\ntype event\ndue\nonce\ndays 1 1\nroles A\ntext {A}.\ndo who own A\n\n"
+               "card fin\ntype ending\nroles A B\nwhen same A B\ntext {A} and {B}.\n")
+        _, _, ctx = lvc.build(mini_content(src))
+        self.assertTrue(any("only with `is`" in e for e in ctx.errors), ctx.errors)
+
     def test_core_groups_and_titles(self):
         src = ("card c1\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} sees one.\n\n"
                "card c2\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} sees two.\n\n"
