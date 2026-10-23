@@ -6,6 +6,7 @@ import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
 import { boardFromRuntime, firmwareKind, summarizeDeviceInfo } from '../src/device-info.js';
 import { findRelease } from '../src/installer.js';
+import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, ROLE_MEMORY_KEY } from '../src/role-memory.js';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok -', name); };
 const read = p => JSON.parse(readFileSync(new URL(`../${p}`, import.meta.url)));
@@ -74,5 +75,28 @@ t('hotspot name follows the role like the firmware (A -> COEX-0, B -> COEX-1, no
   assert.equal(hotspotForRole('b'), 'COEX-1');
   assert.equal(hotspotForRole(''), 'COEX-0');
   assert.equal(hotspotForRole(null, ['A', 'B']), 'COEX-0');
+});
+t('role memory: suggest the other role, warn on a repeat, tell boards apart by unique id', () => {
+  const mem = new Map(); const storage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)) };
+  const roles = ['A', 'B'];
+  assert.deepEqual(loadRoleHistory(storage), []);
+  assert.equal(suggestRole([], 'b1', roles), null, 'nothing to go on');
+  recordRole({ uid: 'b1', role: 'A', ship_id: 1, ship_name: 'Starship-01', at: '2026-10-22T23:00:00Z' }, storage);
+  let h = loadRoleHistory(storage);
+  assert.equal(suggestRole(h, 'b2', roles), 'B', 'next board gets the other role');
+  assert.equal(suggestRole(h, 'b1', roles), null, 'same board: no suggestion');
+  assert.equal(roleClash(h, 'b2', 'A', roles)?.uid, 'b1', 'same role on another board warns');
+  assert.equal(roleClash(h, 'b2', '', roles)?.uid, 'b1', 'no role is COEX-0 too, so it warns');
+  assert.equal(roleClash(h, 'b2', 'B', roles), null);
+  assert.equal(roleClash(h, 'b1', 'A', roles), null, 're-saving the same board never warns');
+  recordRole({ uid: 'b2', role: 'B', ship_id: 2 }, storage);
+  recordRole({ uid: 'b1', role: 'A', ship_id: 1 }, storage);
+  h = loadRoleHistory(storage);
+  assert.deepEqual(h.map(e => e.uid), ['b1', 'b2'], 'one entry per board, newest first');
+  assert.equal(lastOtherBoard(h, 'b1').uid, 'b2');
+  assert.equal(suggestRole(h, 'b3', roles), 'B');
+  assert.equal(roleClash(h, null, 'A', roles)?.uid, 'b1', 'without a unique id every board counts as another');
+  mem.set(ROLE_MEMORY_KEY, '{broken'); assert.deepEqual(loadRoleHistory(storage), [], 'corrupt storage is ignored');
+  assert.deepEqual(loadRoleHistory(null), [], 'no storage at all');
 });
 console.log(`\n${n} unit checks passed`);
