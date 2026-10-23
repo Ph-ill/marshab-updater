@@ -107,6 +107,7 @@ option now | Read it now | {A} reads it in the airlock, the only place aboard wi
 option save | Save it | {A} saves it for a bad day. Every mission has one, and now {A} has something set aside for it.
   set letter_saved
   who letter_who A
+  mark t_letter
 
 card letter_open
 type beat
@@ -116,8 +117,8 @@ days 20 41
 roles A
 when flag letter_saved
 when is A letter_who
-when morale A <= 52
-text It's a bad day, the kind {A} saved the letter for. {A} reads it in the airlock and then goes back to work. Whatever it said, it was enough.
+when since t_letter >= 8
+text It's a hard day, the kind {A} saved the letter for. {A} reads it in the airlock and goes back to work. Whatever it said, it was enough.
 do morale A 12
 
 card dil_eva_cam
