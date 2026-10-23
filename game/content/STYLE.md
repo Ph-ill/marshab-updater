@@ -196,6 +196,19 @@ after its `type` line:
   `test_climax_is_clear` enforces it.
 - Endings are checked in deck order on day 42. Combine every big choice into
   the endings rather than letting an earlier ending hide a later vote.
+- Retired tics (round 4): "nobody" as a beat ("Nobody laughs", "nobody
+  asked"), taping or pinning things to walls, "the channel goes quiet" and
+  other hush endings. One of each in the whole deck at most; prefer an action.
+- The climax happens on the page: day 42 has an entry scene per arrival branch
+  (`e_entry_*`), cast to whoever was drilled on the manual abort, and each
+  ending is a landing scene, not a summary. Every branch shows the event
+  recorder (`a_log` when answered; the unanswered endings otherwise).
+- Voices belong to arcs, not people (casting is random). See STORY_BIBLE.md
+  "Voices". Keep the register different per arc: a talker, a musician who never
+  explains, a procedural letter-keeper, a hopeful failure-logger, a proud one
+  who has to be asked twice, a drawer, a timer.
+- Epilogue: every astronaut gets a line. Story lines first; fallbacks from
+  `epi.axis` / `epi.bond` / `epi.plain` (sim `Renderer.epilogue(out, st)`).
 
 ## Clue keywords
 
