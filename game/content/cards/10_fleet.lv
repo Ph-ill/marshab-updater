@@ -29,7 +29,7 @@ roles A B
 when is A ow_hail
 when since t_carrier >= 4
 when fired m_theory
-text {A} asks {B} to point a second dish at the carrier. The bursts land on both in the same millisecond and slide against a fixed 10.96-second clock by over a second and a half a day this week, the fleet's closing rate on Mars. No two-hour orbit in the residuals. "Booked again. Out," {A} logs.
+text {B} aims a second dish at the carrier for {A}. Bursts hit both the same millisecond and slip a fixed 10.96-second clock by 1.5 seconds a day this week: the fleet's closing rate on Mars. A two-hour orbit would show; a week of residuals is too sparse to tell. "Booked again. {Av}"
 do bond A B 3
 do open dec_signal
 
@@ -63,7 +63,7 @@ roles A
 when flag signal_answered
 when is A ow_hail
 do mark t_frame
-text Stacked over a week of bursts, the receiver pulls out half a frame of housekeeping on the old channel, cut off partway. One field is a counter, up twenty-seven thousand and change in a week. {A} logs the figure under the date of the first hello, no remark beside it. "Counter noted. Out."
+text Stacked over a week of bursts, the receiver pulls out half a frame of housekeeping on the old channel, cut off. One field is a counter, up twenty-seven thousand and change in a week. {A} logs the figure under the date of the first hello, no remark. "Counter logged. {Av}"
 do trait A curious 4
 
 card signal_echo
@@ -88,7 +88,7 @@ once
 days 39 39
 roles A
 when is A ow_hail
-text Close to half a million knocks heard since the first, every gap explained: Mars in the way, a cold night. Last night's cold gap ran forty, and the knock after it came in a decibel weaker. {A} adds the point and the line steepens: the beat runs out a few nights after landing, not weeks. "Noted. Out."
+text Nearly half a million knocks heard since the first, every gap explained: Mars in the way, a cold night. Last night's cold gap ran forty; the next knock came a decibel weaker. {A} adds the point; the line steepens: the beat runs out a few nights after landing, not weeks. "{Av}"
 do trait A curious 1
 
 card crisis_eva

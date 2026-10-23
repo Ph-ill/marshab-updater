@@ -91,7 +91,7 @@ due
 once
 days 2 2
 roles A
-text Ships fly a few kilometres apart, one seat a ship, so no single failure takes two people; a visit bends the rule and is logged. Votes advise; the flight director decides. Every few weeks ships close up for a tethered crossing. {A} goes first, and logs it: "Recommended. Hold on."
+text Ships fly a few kilometres apart, one seat a ship: no single failure takes two people. A visit bends the rule. Votes advise; the flight director decides. Every few weeks ships close up for a crossing: a tether, a closed-up window. {A} tries the line first, and logs it: "Recommended. Hold on."
 do trait A brave 2
 
 card l_handshake
@@ -615,7 +615,7 @@ roles A
 when flag arrive_hold
 when !flag c2_answered
 when is A abort_who
-text Entry interface. Three minutes of blackout, eight ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres a slope comes up out of the brown; {A} calls the manual takeover before the plume takes the view, and fights it level. It comes down hard, upright.
+text Entry interface. Three minutes of blackout, eight ships silent in turn. Below twenty kilometres the cameras see only brown. {A}'s ship slews in a gust the model never had. The radar has had the ground since eight kilometres. At three hundred metres a slope comes up out of the brown; {A} calls the manual takeover before the plume takes the view, and the brown closes over the window.
 do morale A 3
 
 card e_entry_wait
@@ -685,4 +685,4 @@ weight 6
 once
 roles A
 when cond A ok
-text The ground's weekly losses ledger comes up for {A}'s signature: two seed trays, one filter, eleven percent of spares, all within tolerance. Procedure says read it aloud before signing. {A} reads it to the cabin fan and signs. Tolerance has a column for crew. It is not blank.
+text The ground's losses ledger comes up for {A}'s signature: two seed trays, one filter, eleven percent of spares, all within tolerance. {A} reads it aloud to the cabin fan, as procedure says, and signs. Carried forward: a relay, a hopper, Cargo 2. Tolerance has a column for crew. It is not blank.
