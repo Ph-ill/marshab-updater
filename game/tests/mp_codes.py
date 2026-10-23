@@ -17,3 +17,11 @@ assert b.check(0, "1234", 5 + K.LOCK_MS)[0] == K.OK
 b.remember("ip|ua", 0, 3)
 assert b.recall("ip|ua", 3) == 0 and b.recall("ip|ua", 4) is None
 print("codes: ok on", sys.implementation.name)
+
+# load(): the file the updater writes, and a missing one.
+import json as _j
+with open("/tmp/mp_crew.json", "w") as _f:
+    _f.write(_j.dumps(K.make_config(["1234"] + [None] * 6, bytes(range(16)))))
+assert K.load("/tmp/mp_crew.json").check(0, "1234", 0)[0] == K.OK
+assert K.load("/tmp/no-such-crew.json").check(0, "1234", 0)[0] == K.NO_CODE
+print("load ok")

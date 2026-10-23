@@ -152,6 +152,25 @@ class TestCodes(unittest.TestCase):
     def book(self):
         return K.CodeBook(K.make_config(["1234", "0000", None, "9999", "4711", "2024", "0420"], self.SALT))
 
+    def test_load_file_from_updater(self):
+        import json, os, tempfile
+        d = tempfile.mkdtemp()
+        good = os.path.join(d, "crew.json")
+        with open(good, "w") as f:
+            json.dump(K.make_config(["1234"] + [None] * 6, self.SALT), f)
+        b = K.load(good)
+        self.assertEqual(b.check(0, "1234", 0)[0], K.OK)
+        self.assertFalse(b.is_set(1))
+        # Missing or damaged: nobody is set up, nothing crashes.
+        for bad in (os.path.join(d, "nope.json"), "{broken", '{"salt": "zz", "codes": []}', '{"salt": "%s", "codes": ["short"]}' % ("00" * 16)):
+            if bad.startswith("{"):
+                with open(good, "w") as f:
+                    f.write(bad)
+                bad = good
+            b = K.load(bad)
+            self.assertFalse(any(b.is_set(c) for c in range(K.N)))
+            self.assertEqual(b.check(0, "1234", 0)[0], K.NO_CODE)
+
     def test_known_digest(self):
         # The same vector is checked on the updater side (tests/unit.test.mjs), so the
         # browser and the board agree on how a code is hashed.

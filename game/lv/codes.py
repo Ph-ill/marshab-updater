@@ -112,3 +112,19 @@ def make_config(codes, salt):
     """codes: list of 7 '0000'-'9999' strings or None. For tests, the mock and tools."""
     return {"schema": 1, "salt": hexlify(salt).decode(),
             "codes": [digest(salt, c, k) if k else None for c, k in enumerate(codes)]}
+
+
+def load(path="data/crew.json"):
+    """The board's CodeBook from the file the updater writes. A missing or damaged file
+    gives a book where nobody is set up yet: the page then says "Not set up" on every
+    name instead of the game refusing to start."""
+    try:
+        import json
+        with open(path) as f:
+            cfg = json.load(f)
+        book = CodeBook(cfg)
+        if len(book.salt) < 8 or not all(c is None or (isinstance(c, str) and len(c) == 64) for c in book.codes):
+            raise ValueError("bad crew.json")
+        return book
+    except Exception:
+        return CodeBook({"salt": "00" * 16, "codes": []})
