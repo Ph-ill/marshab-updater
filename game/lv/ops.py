@@ -23,6 +23,9 @@ TRANSFER_FROM = 7
 TRANSFER_EVERY = 5
 TRANSFER_OUT = 7     # base percent chance an astronaut at home crosses in a window
 TRANSFER_BACK = 60   # percent chance a visitor crosses back in a window
+TRANSFER_LAST_OUT = 32  # last window anyone may cross out in (entry prep follows)
+TRANSFER_HOME = 37   # from this day every visitor goes home (the day-37 window is
+                     # return-only); no crossings at all in the last days before entry
 
 # Conditions
 C_FLAG = 1        # a = flag

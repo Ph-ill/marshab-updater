@@ -373,6 +373,13 @@ class Engine:
         # and only to a ship that holds just its own astronaut (so at most 2 aboard).
         s, rng = self.s, self.rng
         d = s.day
+        if d >= O.TRANSFER_HOME:
+            # Entry prep: everyone flies home on day 37, and anyone a late rescue
+            # carried across goes back the next morning. Nobody crosses out.
+            for c in range(N):
+                if s.loc[c] != c and s.cond[c] != O.COND_HOME:
+                    self._move(c, c)
+            return
         if d < O.TRANSFER_FROM or (d - O.TRANSFER_FROM) % O.TRANSFER_EVERY:
             return
         for c in range(N):
@@ -381,6 +388,8 @@ class Engine:
             if s.loc[c] != c:
                 if rng.chance(O.TRANSFER_BACK):
                     self._move(c, c)
+                continue
+            if d > O.TRANSFER_LAST_OUT:
                 continue
             cur = s.trait(c, 1)
             if not rng.chance(O.TRANSFER_OUT + (cur // 8 if cur > 0 else 0)):

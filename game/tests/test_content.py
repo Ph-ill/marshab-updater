@@ -401,6 +401,17 @@ class TestFairCasting(unittest.TestCase):
             self.assertEqual(len(Renderer(text).epilogue(out)), 7, "season %d" % i)
             self.assertEqual(len(fired & entry), 1, "entry scene, season %d" % i)
             self.assertIsNotNone(Renderer(text).coda(out), "season %d" % i)
+            # Entry prep: no window crossings out after day 32 (a late rescue can still
+            # carry someone across until 38), nobody crosses at all on
+            # days 40-42, and every astronaut still flying is home for entry.
+            for k in range(0, len(out), 8):
+                if out[k + 1] == O.O_MOVE:
+                    self.assertLess(out[k], 40, "crossing on day %d, season %d" % (out[k], i))
+                    if out[k] > 38:
+                        self.assertEqual(out[k + 3], out[k + 5], "outbound on day %d, season %d" % (out[k], i))
+            for c in range(7):
+                if st.cond[c] != O.COND_HOME:
+                    self.assertEqual(st.loc[c], c, "astronaut %d away at entry, season %d" % (c, i))
         n_end = sum(1 for c in text["cards"] if c["id"].startswith("end_"))
         self.assertEqual(len(ends), n_end)
         self.assertGreaterEqual(min(ends.values()), 15, ends)

@@ -71,7 +71,7 @@ type event
 cat repair
 due
 once
-days 18 39
+days 18 36
 roles A B
 when flag water_rationed
 when is A water_who
