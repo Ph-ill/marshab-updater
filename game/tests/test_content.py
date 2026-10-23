@@ -1051,7 +1051,8 @@ class TestRound19(unittest.TestCase):
 
     def test_hopper_stays_alive_on_day_37(self):
         for cid in ("m_checked", "m_checked_g"):
-            self.assertIn("two years old and good to ninety kilometres", self.t[cid], cid)
+            self.assertIn("Nearest is the hopper", self.t[cid], cid)
+            self.assertIn("Cargo 2's landing ellipse is closer", self.t[cid], cid)
 
     def test_who_plant_and_silent_lighthouse_beat(self):
         self.assertIn("the next frame brings a new one", self.t["m_key"])
@@ -1084,7 +1085,7 @@ class TestRound19(unittest.TestCase):
         self.assertIn("and answers anyway", self.t["end_close"])
         self.assertIn("spare power in hand", self.t["end_close"])
         self.assertNotIn("argued to wait", self.t["end_long_orbit"])
-        self.assertIn("All eight. The ninth shared its night.", self.t["end_friend"])
+        self.assertIn("All eight. The ninth gave us its night.", self.t["end_friend"])
         for cid in ("end_through", "a_descent_hold", "a_descent_hold_q"):
             self.assertIn("two antennas", self.t[cid], cid)
             self.assertIn("rim", self.t[cid], cid)
@@ -1248,7 +1249,7 @@ class TestRound20(unittest.TestCase):
         # Dry seed survives freezing; wet-packed germination trays do not.
         self.assertIn("germination trays", self.t["end_long_orbit"])
         self.assertNotIn("seed stock", self.t["end_long_orbit"])
-        self.assertIn("eight hands chose the lamp", self.t["end_long_orbit"])
+        self.assertIn("all eight chose the lamp", self.t["end_long_orbit"])
 
     def test_loose_threads_closed(self):
         # The hopper's "intermittent beacon" was the knock, booked to the wrong name.
@@ -1317,7 +1318,7 @@ class TestRound20(unittest.TestCase):
                        "like a breach", "no cutscenes"):
             self.assertNotIn(banned, joined, banned)
         # Habit lines never touch life-support settings for a joke.
-        self.assertIn("builds the week's playlist around it", joined)
+        self.assertIn("writes it a bass line", joined)
         # Kittens stay at home: any habit line about them arrives as mail.
         for h in habits:
             if "kitten" in h or "litter" in h:
@@ -1328,7 +1329,7 @@ class TestRound20(unittest.TestCase):
         self.assertNotIn("sulks", self.t["end_lights"])
         self.assertTrue(self.t["end_through"].startswith("Dust to the windows."))
         self.assertNotIn("wanted to answer all along", self.t["end_through"])
-        self.assertIn("none for the way back", self.t["end_friend"])
+        self.assertIn("none to come back", self.t["end_friend"])
         self.assertIn("forklift photo", self.t["end_friend"])
         self.assertIn("puts a glove flat on the cold hull", self.t["end_close"])
         self.assertIn("By then it has nothing left to hear it with.", self.t["end_close"])
@@ -1337,6 +1338,55 @@ class TestRound20(unittest.TestCase):
         pool = self.text["sys"]["fold_pool"]
         self.assertFalse([x for x in pool if "spare fuses" in x])
         self.assertTrue([x for x in pool if "bedtime stories" in x])
+
+
+
+class TestRound21(unittest.TestCase):
+    """Round 21: galley-screen owner, light-time wording, occupancy, endings, plants, voice."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.text, _ = lvc.build(CONTENT)
+        cls.t = {c["id"]: c["t"] + " " + " ".join(o[1] for o in c.get("o", [])) for c in cls.text["cards"]}
+
+    def test_galley_screen_has_one_owner(self):
+        with open(os.path.join(CONTENT, "cards", "55_voyage.lv")) as f:
+            src = f.read()
+        block = src[src.index("card l_handshake"):]
+        block = block[:block.index("\ncard ", 1)]
+        self.assertIn("when is A abort_who", block)
+        self.assertIn("sulking galley screen boots to ONLINE", self.t["a_window_hail"])
+
+    def test_light_time_says_what_it_measures(self):
+        self.assertIn("a day this week", self.t["m_alias"])
+        self.assertIn("one-way light time from Mars, thirty seconds now", self.t["m_overlay"])
+
+    def test_no_one_name_on_many_ships(self):
+        blob = json.dumps(self.text)
+        self.assertNotIn("walked hulls", blob)
+        self.assertIn("RECLAIMED. DRINK SPARINGLY.", blob)
+        self.assertIn("over the link", self.t["p_movie"])
+        self.assertIn("over the link", self.t["beat_coffee"])
+
+    def test_endings_round_21(self):
+        self.assertIn("up the old channel", self.t["end_long_orbit"])
+        self.assertIn("all eight chose the lamp", self.t["end_long_orbit"])
+        self.assertIn("none to come back", self.t["end_friend"])
+        self.assertIn("opens on ship power", self.t["end_close"])
+        self.assertIn("the folded ship's battery", self.t["end_through"])
+        self.assertIn("panels, a mast, a winch", self.t["end_through"])
+        blob = json.dumps(self.text)
+        for gone in ("clearing its throat", "Slow, not stingy", "In time for the bit", "Then {A}, hoarse"):
+            self.assertNotIn(gone, blob, gone)
+
+    def test_tick_planted_before_the_patch(self):
+        self.assertIn("INSIDE ONE TICK", self.t["sharpie2"])
+        self.assertIn("beacon, dead since the week it tipped", self.t["a_report"])
+
+    def test_cat_lines_are_separate(self):
+        joined = " ".join(self.text["habits"]) if "habits" in self.text else json.dumps(self.text)
+        self.assertNotIn("cat-proofs", joined)
+        self.assertIn("Copy. Done. Next.", joined)
 
 
 if __name__ == "__main__":
