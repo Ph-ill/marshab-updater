@@ -11,8 +11,8 @@ once
 duration 2
 roles A B
 lean warm fly decline
-text Public affairs wants a fleet portrait: seven ships in one frame, with Earth filling the sky behind them. That means seven ships a hundred metres apart, and the propellant to get there. The request says "iconic" four times.
-option fly | Fly the formation | Seven ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: six ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
+text Public affairs wants a fleet portrait: eight ships in one frame, with Earth filling the sky behind them. That means eight ships a hundred metres apart, and the propellant to get there. The request says "iconic" four times.
+option fly | Fly the formation | Eight ships close to a hundred metres for twelve minutes. {A} takes it from the end of the line: seven ships, Earth, and the edge of {A}'s own hull. {A} holds a breath until the ships are apart again.
   set photo_taken
   res fuel -2
   morale A 4
@@ -27,7 +27,7 @@ days 20 39
 roles A
 when flag photo_taken
 when cond A ok
-text The clippings arrive: the fleet portrait made every front page on Earth. {A} zooms in past six ships and the edge of the seventh to the blue behind them and finds, just, the coastline where one of those papers was printed.
+text The clippings arrive: the fleet portrait made every front page on Earth. {A} zooms in past seven ships and the edge of the eighth to the blue behind them and finds, just, the coastline where one of those papers was printed.
 do morale A 5
 
 # --- Water recovery -------------------------------------------------------
@@ -49,7 +49,7 @@ option strip | Strip it now | The processor spends nine hours in pieces on the d
   mark t_water
   res spares -1
   trait A curious 3
-option degrade | Run it degraded | {A}'s ship goes on water rationing, and the other six trim theirs a notch so there's a bag to send at the next window. {A} logs the rate hourly; it slips a tenth at a time.
+option degrade | Run it degraded | {A}'s ship goes on water rationing, and the other seven trim theirs a notch so there's a bag to send at the next window. {A} logs the rate hourly; it slips a tenth at a time.
   set water_rationed
   who water_who A
   morale A -3

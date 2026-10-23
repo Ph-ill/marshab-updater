@@ -11,7 +11,7 @@ duration 1
 roles A B
 lean warm feast quiet
 text Halfway, by the flight plan's clock. {A} wants to break out the good rations and mark it properly. {B} would rather not count yet.
-option feast | Mark it | The fleet eats the good rations on seven screens at once. {A}'s toast to halfway turns into a toast to the people who packed the food.
+option feast | Mark it | The fleet eats the good rations on eight screens at once. {A}'s toast to halfway turns into a toast to the people who packed the food.
   res food -2
   morale A 4
   morale B 2
@@ -161,7 +161,7 @@ roles A B
 when flag flash_twice
 lean curious look leave
 text {A} wants to ask the ground to task an orbiter for a fast sequence over the lit pixel, at the cost of the fleet's next deep-space pass: every letter from home waits. {B} would leave it for the people who'll be down there with time to look.
-option look | Ask for the sequence | The request goes up. {A} writes the apology to six inboxes personally, and means each one.
+option look | Ask for the sequence | The request goes up. {A} writes the apology to seven inboxes personally, and means each one.
   set flash_looked
   morale A -2
   morale B -2
@@ -368,7 +368,7 @@ when !is A ow_hail
 when !is A ow_dose
 when !is A abort_who
 when !is A ow_theory
-text Then Cargo 2 sends its event-recorder summary down the old channel. KEY UPDATE: NONE RECEIVED. Hails from Earth: thirty-one thousand, all late. Hellos from the fleet: three hundred and fifty thousand, late or unasked. At the bottom, one new line: HELLO RX · OK. {A} copies it into the logbook in capitals.
+text Then Cargo 2 sends its event-recorder summary down the old channel. KEY UPDATE: NONE RECEIVED. Hails from Earth: thirty-one thousand, all late. Hellos from the fleet: four hundred thousand, late or unasked. At the bottom, one new line: HELLO RX · OK. {A} copies it into the logbook in capitals.
 do morale A 2
 
 card a_window_quiet

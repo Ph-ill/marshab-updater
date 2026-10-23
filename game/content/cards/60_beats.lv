@@ -14,24 +14,14 @@ when same A B
 text {A} and {B} try to bake bread in the galley oven. Without gravity it rises in every direction at once and comes out shaped like a lung. They eat all of it, warm, with the lights down, and agree not to describe it to anyone at home.
 do bond A B 5
 
-card beat_window
-type beat
-cat wonder
-days 7 9
-weight 12
-once
-roles A B
-text {A} and {B} keep a channel open, each at their own porthole, as Earth and the Moon draw together night by night. For a long time the link carries only the hum of two sets of fans. At the shift change {B} sends one photo: two crescents, one blue, one grey.
-do bond A B 6
-
 card beat_zipties
 type beat
 cat life skill
-days 10 39
+days 11 39
 weight 6
 once
 roles A B
-text After a long debate, {A} and {B} get all seven ships to agree on which drawer the zip ties live in. It has taken the whole flight so far, and it may be the most important engineering decision made out here.
+text {A} and {B} get all eight ships to agree on which drawer the zip ties live in. It takes forty-one emails. It may be the best engineering done out here.
 do bond A B 4
 
 card beat_haircut
@@ -50,18 +40,6 @@ when cond A ok
 when !is A eva_who
 text {A}, aboard on a visit, cuts {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} pays in coffee.
 do bond A B 5
-
-card beat_home_msg
-type beat
-cat human
-days 8 22
-weight 6
-once
-roles A
-when cond A ok
-text {A} records a message for a school group back home that's been following the fleet. The kids send back forty questions, mostly about the toilet. {A} answers every one.
-do morale A 4
-do trait A warm 2
 
 card beat_home_msg2
 type beat
@@ -117,7 +95,7 @@ once
 roles A
 when idle A >= 3
 when cond A ok
-text {A} stands the night watch for the whole fleet so the other six can sleep. Unasked. The watch report is two lines long and perfectly neat.
+text {A} stands the night watch for the whole fleet so the other seven can sleep. Unasked. The watch report is two lines long and perfectly neat.
 do morale A 2
 do trait A warm 2
 
@@ -145,7 +123,7 @@ weight 8
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Somebody at Starbase packed a margin and ticked the bag in marker. {A} logs a thank-you.
+text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Someone at Starbase packed a margin and ticked it in marker. {A} logs a thank-you.
 do res spares 1
 
 # --- Quirks: per-crewmate lines from roster.lv `habit "..."` (round 19) -------

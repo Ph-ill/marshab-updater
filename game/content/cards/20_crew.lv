@@ -59,19 +59,8 @@ days 8 11
 weight 10
 roles A B
 when bond A B >= -20
-text {A} and {B} stand the night watch over the fleet link, each in a dark cabin. Earth is a thin bright crescent now, low beside the Sun's glare, less than half the width of the Moon from home. They each make a coffee at the same minute, as if that counted as sharing one.
+text {A} and {B} stand the night watch over the fleet link, each in a dark cabin. Earth is a thin bright crescent now, low beside the Sun's glare, less than half the width of the Moon from home. They make coffee at the same minute, as if that counted.
 do bond A B 6
-
-card beat_argue
-type beat
-cat life
-once
-days 9 39
-weight 5
-roles A B
-when trait A warm <= 10
-text {A} and {B} spend a whole shift arguing on the fleet channel about what plays during the next burn. {A} wants silence, so every noise means something. {B} wants anything with a chorus. They settle on a song the ground picks, sight unseen. It's worse than either.
-do bond A B -4
 
 # Trait-driven reaction: what happens depends on how brave A is.
 card glint

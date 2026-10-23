@@ -15,9 +15,12 @@
 # Habits: one small, harmless, real detail per astronaut, sent in by that player and
 # dropped in here. It is a whole sentence about {A}, e.g.
 #   habit "{A} keeps one small thing from home within reach of the console."
-# Cards marked `each crew` print it (one clone per astronaut, compiled in; the phone
-# never sees a new slot). Until a real one arrives, everyone has the same generic
-# placeholder below. Never invent a habit for a real person: leave the placeholder.
+# Cards marked `each crew` print the first habit (one clone per astronaut, compiled in;
+# the phone never sees a new slot). Up to four habits per line: `each habit N` cards
+# clone only for astronauts with a real Nth habit, so a quirk line only ever renders
+# for its owner. Never invent a habit for a real person: leave it out (or leave the
+# placeholder), and no clone is made. To add a ship, add one line here; the
+# engine's crew count (lv/state.N, tools/lvc.py N_CREW) must match.
 
 crew Phill     ship Ship 01   tag controls  flagship  habit "{A} keeps a pot of galley herbs alive under a spare lamp, pinching it back like the beds at home." habit "{A} measures twice and drills once on a loose locker hinge, then adds \"hinges\" to the house to-do list waiting on Earth." habit "{A} plays the long cruise like a long grind: one daily list, small wins ticked off, no cutscenes skipped."
 crew Jacques   ship Ship 02   tag controls  habit "{A}'s kit is squared away past any inspection: straps dressed, pens taped, every call answered \"copy\" first." habit "{A} checks a stock portfolio on prices fifteen minutes stale before they leave Earth. \"Long position,\" {A} says." habit "On entry eve {A} lays the suit out in donning order and runs the fleet's radio check in ninety crisp seconds."
@@ -26,3 +29,4 @@ crew Jai       ship Ship 04   tag controls  habit "{A} runs the hatch drill like
 crew Michelle  ship Ship 05   tag controls  habit "Every data drop brings {A} a photo of the foster litter at home, counted for the record, one always out of frame." habit "{A} runs a crossing like a head count at feeding time: heads at the hatch, heads at the far side, no strays." habit "Last mail before entry: the litter {A} saw born has gone to homes, and the house is briefly, suspiciously quiet."
 crew Diego     ship Ship 06   tag mech  habit "{A} cat-proofs the cabin out of habit: cables clipped, nothing on a ledge, latches double-thrown. No cats aboard." habit "Mail from whoever is minding {A}'s two cats: both fed, both offended, one asleep in the bag {A} meant to pack." habit "{A} redraws a sagging locker bracket on a ration wrapper, lighter and stiffer; the ground files it as a drawing."
 crew Dorian    ship Ship 07   tag controls  habit "Every data drop brings {A} a drawing from a small boy at home: the ship, Mars and a dog, all the same size." habit "{A} asks the ship's assistant to summarise the fault log. It answers in one confident paragraph; {A} checks every line." habit "Last video before entry: a Boston terrier at the front window, and a small voice telling it {A} is nearly there."
+crew Marco     ship Ship 08   tag controls  habit "{A} builds the galley playlist for the week and times the coffee to land on the drop." habit "{A} retunes the pump timer so its cycle lands on the beat. The ground asks, politely, why the log is in four-four." habit "Last mail before entry: {A}'s friends in a dark, loud room, holding up a sign: SAVING YOUR SPOT."

@@ -120,7 +120,7 @@ option send | Send the kit | The kit rides the line across alone. {A}'s wrist is
   kit A
   res fuel -1
   morale A 6
-option volunteer | {B} brings it over | {B} rides the line across with the kit and splints the wrist personally. The report calls it "nominal". Six ships read it, and every one of them knows better.
+option volunteer | {B} brings it over | {B} rides the line across with the kit and splints the wrist personally. The report calls it "nominal". Seven ships read it, and every one of them knows better.
   kitfrom B A
   move B A
   res fuel -1

@@ -107,8 +107,8 @@
     "bond": "Closest to {T} by the end.",
     "plain": "Kept the ship running, quietly and well. The checklists say so, in small handwriting.",
     "head": [
-      "Seven ships, seven crews, every one accounted for.",
-      "Seven ships, one planet, and every seal held."
+      "Eight ships, eight crews, every one accounted for.",
+      "Eight ships, one planet, and every seal held."
     ],
     "story": [
       [
@@ -161,7 +161,7 @@
       ],
       [
         "a_song",
-        "Taught the fifth bar to six people who had guessed it wrong."
+        "Taught the fifth bar to seven people who had guessed it wrong."
       ],
       [
         "p_music",
@@ -230,6 +230,46 @@
       [
         "crisis_eva",
         "Landed with a wrist that bends again."
+      ],
+      [
+        "a_log",
+        "Copied Cargo 2's last line by hand, in capitals."
+      ],
+      [
+        "idle_spares",
+        "Found the margin Starbase packed, and said thanks."
+      ],
+      [
+        "h_thruster",
+        "Was at the console before the second thruster fired."
+      ],
+      [
+        "w_mars_disc_q",
+        "Held a thumb up to Mars until Mars won."
+      ],
+      [
+        "p_birthday",
+        "Made a ration-bar cake for a birthday no calendar agreed on."
+      ],
+      [
+        "crisis_air",
+        "Had the backup scrubber running in nine minutes."
+      ],
+      [
+        "idle_mentor",
+        "Taught the landing by hand, one step at a time."
+      ],
+      [
+        "a_drill_plan",
+        "Read out the drill plan, and was gentle with it."
+      ],
+      [
+        "zip_back",
+        "Kept the zip ties interim all the way to Mars."
+      ],
+      [
+        "dil_gains",
+        "Saw the wobble first."
       ]
     ],
     "coda": {
@@ -237,11 +277,11 @@
       "lines": [
         [
           "end_lights",
-          "Wrote when it landed. Kept writing. Spent its lights bringing seven down."
+          "Wrote when it landed. Kept writing. Spent its lights bringing eight down."
         ],
         [
           "end_through",
-          "Kept the beat for seven blind pilots, and was answered on the rim."
+          "Kept the beat for eight blind pilots, and was answered on the rim."
         ],
         [
           "end_long_orbit",

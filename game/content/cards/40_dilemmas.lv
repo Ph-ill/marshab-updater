@@ -189,7 +189,7 @@ when flag trim_done
 when is A gains_who
 when cond A ok
 when home A
-text On the corridor burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all seven, the report stapled to them.
+text On the corridor burn, the attitude trace from {A}'s ship is a flat line, and every other ship shows the wobble {A} found. After the ground runs the fix through the simulator twice, {A}'s numbers go out to all eight, the report stapled to them.
 do morale A 5
 do res fuel 1
 

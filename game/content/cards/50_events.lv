@@ -24,7 +24,7 @@ once
 roles A
 when cond A ok
 when var storms >= 1
-text Another flare, another forty minutes between the water tanks, cards dealt for seven screens. The ground's acknowledgement lands as the dosimeters settle: next-of-kin forms, to be re-signed every ninety days "for currency". {A} signs between hands, dates it in both calendars, and deals.
+text Another flare, another forty minutes between the water tanks, cards dealt for eight screens. The ground's acknowledgement lands as the dosimeters settle: next-of-kin forms, to be re-signed every ninety days "for currency". {A} signs between hands, dates it in both calendars, and deals.
 do morale A 2
 do var storms 1
 
@@ -133,7 +133,7 @@ roles A
 when cond A ok
 when res spares >= 1
 when home A
-text The CO₂ scrubber on {A}'s ship fails outright. With one person aboard, the CO₂ climbs about a twentieth of a percent a day: not an emergency yet, which is the best time to fix one. {A} has the backup running in nine minutes, and it is already complaining.
+text The CO₂ scrubber on {A}'s ship fails outright. With one person aboard, the CO₂ climbs about a twentieth of a percent a day: not an emergency yet, the best time to fix one. {A} has the backup running in nine minutes, and it is already complaining.
 do morale A -4
 do open rescue_air
 
