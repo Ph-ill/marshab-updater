@@ -91,50 +91,61 @@ class Renderer:
     def reader(self, out):
         # The reading view (sim/out/reader.txt; a hand-off for web/render.js): story
         # lines in full, and each day's system echoes (actions, crossings, notes) folded
-        # into one closing "around the fleet" line. Self-chosen chores (what an astronaut
-        # does when nobody at home said anything) are left out, so a day where nobody at
-        # home acted has no fold line at all. sys.fold_pool varies the wording by day;
-        # sys.fold is the fallback. The ending gets its title as a heading.
-        day, folded = None, []
+        # into one "around the fleet" line. Self-chosen chores are left out, and so is
+        # anyone who had a scene of their own that day, so a quiet day may have no fold
+        # line at all. The fold goes before the day's hook (a cliffhanger stays last)
+        # and never on the final day. sys.fold_pool varies the wording by day; sys.fold
+        # is the fallback. The ending gets its title as a heading.
         pool = self.t["sys"].get("fold_pool") or [self.t["sys"].get("fold", "Around the fleet: {who}.")]
+        cards = self.t["cards"]
+        crew = len(self.t["crew"])
+        last = out[len(out) - 8] if out else 0
+        STORY = (O.O_EVENT, O.O_DEC_OPEN, O.O_DIL_OPEN, O.O_RES_OPEN)
 
-        def fold():
+        def fold(day, folded, seen):
             names = []
             for c in folded:
-                if c not in names:
+                if c not in names and c not in seen and c < crew:
                     names.append(c)
-            if not names:
+            if not names or day >= last:
                 return None
             who = [self.name(c) for c in names]
-            if len(names) >= len(self.t["crew"]):
+            if len(names) >= crew:
                 who = [self.t["sys"].get("fold_all", "everyone")]
             who = who[0] if len(who) == 1 else ", ".join(who[:-1]) + " and " + who[-1]
-            return self.fill(pool[day % len(pool)], who=who, n=len(folded))
+            return self.fill(pool[day % len(pool)], who=who, n=len(names))
 
+        def flush(day, lines, folded, seen, hook_at):
+            f = fold(day, folded, seen)
+            if f:
+                lines.insert(len(lines) if hook_at is None else hook_at, f)
+            for s in lines:
+                yield day, s
+
+        day, lines, folded, seen, hook_at = None, [], [], set(), None
         for i in range(0, len(out), 8):
             e = out[i:i + 8]
             if e[0] != day:
-                if folded:
-                    yield day, fold()
-                day, folded = e[0], []
+                if day is not None:
+                    yield from flush(day, lines, folded, seen, hook_at)
+                day, lines, folded, seen, hook_at = e[0], [], [], set(), None
             if e[1] in self.ECHO:
                 if not (e[1] == O.O_ACT and e[6] == 1 and e[4] != 0):
                     folded.append(e[3])
                 continue
+            if e[1] in STORY:
+                seen.update(c for c in (e[3], e[4]) if c < crew)
             if e[1] == O.O_END:
-                if folded:
-                    yield day, fold()
-                    folded = []
-                ti = self.t["cards"][e[2]].get("ti")
+                ti = cards[e[2]].get("ti")
                 if ti:
-                    yield day, ti.upper()
+                    lines.append(ti.upper())
             s = self.entry(e)
             if s:
-                yield day, s.strip()
-        if folded:
-            f = fold()
-            if f:
-                yield day, f
+                if e[1] == O.O_EVENT and cards[e[2]].get("h") and hook_at is None:
+                    hook_at = len(lines)
+                lines.append(s.strip())
+        if day is not None:
+            yield from flush(day, lines, folded, seen, hook_at)
 
     def coda(self, out):
         # Epilogue lines for someone who isn't crew (text.json epi.coda: a name and a

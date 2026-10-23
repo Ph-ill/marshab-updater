@@ -75,7 +75,12 @@
       "{who} logged a quiet day: filters, pumps, sleep.",
       "{who} took the routine watches and wrote home.",
       "{who} swapped a scrubber cartridge and called it a day.",
-      "{who} kept the fans turning and the logs current."
+      "{who} kept the fans turning and the logs current.",
+      "{who} ran the pump checks and cleaned the galley.",
+      "{who} spent the shift on maintenance, and logged it in full.",
+      "{who} did the water rounds and answered mail from home.",
+      "{who} worked through the inventory, one locker at a time.",
+      "{who} checked the seals, then the seals again."
     ]
   },
   "epi": {
@@ -106,7 +111,7 @@
       ],
       [
         "a_window_quiet",
-        "Waited until close enough, then went to say hello in person."
+        "Lost the vote to answer, then went to say hello in person."
       ],
       [
         "m_carrier",
@@ -166,7 +171,7 @@
       ],
       [
         "dose_swap",
-        "Slept between the water tanks, because someone had better numbers."
+        "Slept between the water tanks, because someone had a better dosimeter."
       ],
       [
         "dose_ok",
@@ -222,7 +227,7 @@
         ],
         [
           "end_patience",
-          "Wrote when it landed. Kept writing through the cold, two lights short."
+          "Wrote when it landed. Kept writing through the cold. Was answered by hand, after."
         ],
         [
           "end_friend",
@@ -230,7 +235,7 @@
         ],
         [
           "end_close",
-          "Wrote when it landed. Kept writing, and kept the spare."
+          "Wrote when it landed. Kept writing. Heard back once, and kept the spare."
         ]
       ]
     }
