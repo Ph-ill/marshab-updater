@@ -201,33 +201,12 @@ card hb_watch
 type beat
 cat life
 once
-days 12 17
+days 12 20
 weight 1
 roles A
 when cond A ok
-text {A}'s wristwatch is still on home time. At fleet midnight {A} glances at it and tells the net, "Breakfast at home." Nobody asks whose. Somebody always says "Enjoy."
-do morale A 1
-
-card hb_pebble
-type beat
-cat life
-once
-days 14 20
-weight 1
-roles A
-when cond A ok
-text A flat beach pebble rides in {A}'s cup holder. During every burn {A} turns it once, the same way, and puts it back. It keeps the engine honest, {A} says, and after this many clean burns nobody argues.
-do morale A 1
-
-card hb_key
-type beat
-cat life
-once
-days 17 23
-weight 1
-roles A
-when cond A ok
-text {A} carries a house key on a cord and taps it once on the hatch rim before closing out each page. The ground calls it the end-of-page tone.
+when is A ow_dose
+text {A}'s wristwatch is still on home time. At fleet midnight {A} glances at it and tells the net, "Breakfast at home." The answer comes back the same, from a different ship each time: "Enjoy."
 do morale A 1
 
 card hb_card
@@ -238,18 +217,8 @@ days 20 26
 weight 1
 roles A
 when cond A ok
-text {A} tapes a new blank postcard by the window every page, a different city each time, nothing on the back. The fleet guesses where from. {A} has confirmed one, and won't say which.
-do morale A 1
-
-card hb_pick
-type beat
-cat life
-once
-days 23 29
-weight 1
-roles A
-when cond A ok
-text {A}'s flight-plan binder is bookmarked with a guitar pick, worn pale at one corner. The mass budget left the guitar at home. When the plan changes, {A} moves the pick and hums.
+when is A ow_list
+text {A} clips a new blank postcard inside the flight-plan binder every page, a different city each time, nothing on the back. The fleet guesses where from. {A} has confirmed one, and won't say which.
 do morale A 1
 
 card hb_leaf
@@ -260,16 +229,7 @@ days 26 32
 weight 1
 roles A
 when cond A ok
-text A dried leaf in a sleeve is clipped above {A}'s bunk, picked up on the walk to the pad. Every few days {A} turns it over and reports to the net: "Still green on one side." Nobody disputes it.
+when is A ow_letter
+text A dried leaf in a sleeve rides in {A}'s sleeve pocket, picked up on the walk to the pad. Every few days {A} checks it and reports to the net: "Still green on one side." The ground files it as a status.
 do morale A 1
 
-card hb_stub
-type beat
-cat life
-once
-days 29 36
-weight 1
-roles A
-when cond A ok
-text {A} scrapes the food trays with an old ticket stub from a game nobody else remembers. Before each meal: "Still a draw." Down the fleet net, a few seconds later: "Copy, still a draw."
-do morale A 1
