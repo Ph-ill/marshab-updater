@@ -289,6 +289,6 @@ days 26 34
 roles A
 when fired h_dark
 when is A hook_who
-text {A}'s voice came back at 05:40. The comms computer had taken a link request from Mars, signed with a program key the fleet trusts, and sat blocked on it until a watchdog kicked it. Its sequence number is years old. Mission Control: "Not ours. Checked." A key-rotation ticket opens, marked urgent.
+text {A} came back at 05:58. The comms computer had hung on a link request from Mars, signed with an old program key the fleet trusts, until the six-hour lost-link timer rebooted it. Sequence number 1, as if the sender were new; the challenge, new too. "Not ours," says the ground. A key ticket opens.
 do trait A brave 3
 do morale A -2

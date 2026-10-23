@@ -15,7 +15,7 @@ when !is A ow_song
 when !is A ow_garden
 when !is A ow_letter
 when !is A ow_dose
-text {A}'s ship-to-ship receiver still scans the old common channel, which nothing on Earth listens to. It logs a carrier too faint to lock: power in a channel, no Doppler to read. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
+text {A}'s spare dish, parked on Mars for the arrival tests, still scans the old common channel, which nothing on Earth listens to. It logs a carrier too faint to lock. Folded at 10.96 seconds, 2.4 percent duty, it stands up like a fence post. "An alias," {A} says. "Something of ours."
 do who ow_hail A
 do mark t_carrier
 
@@ -28,7 +28,7 @@ days 18 19
 roles A B
 when is A ow_hail
 when since t_carrier >= 3
-text {A} asks {B} to fold the same channel on {B}'s own receiver, against {B}'s own clock. An alias of something aboard would come out at a different period on a different ship. It comes out at 10.96 seconds, to the millisecond. "Not us," {A} tells the fleet channel. "Ignore my last."
+text {A} asks {B} to watch the same channel on {B}'s own dish and clock. Two ships' pumps and fans keep no time with each other; an alias would land whenever each ship's machinery said. The bursts land on both in the same millisecond, every time. "Not us," {A} tells the fleet. "Ignore my last."
 do bond A B 3
 do open dec_signal
 
@@ -42,13 +42,13 @@ duration 2
 roles A B
 lean curious open log
 when fired m_alias
-text Whatever the carrier is, it isn't the fleet's. {A} wants to answer it: reply to every burst automatically, quoting its header back. {B} points out that every reply ties up the comms computer, and the letters from home queue behind a machine.
-option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, quote it back, until someone says stop. The first answer goes out at 14:02. The carrier comes and goes as before, and {A} logs every answer to the millisecond.
+text Whatever the carrier is, it isn't the fleet's. {A} wants to answer every burst with the standard handshake, signed with the old program key the fleet still carries. {B} points out that every reply ties up the comms computer, and the letters from home queue behind a machine.
+option open | Answer every burst | {A} adds one line to the comms schedule: answer every burst, standard handshake, until someone says stop. The first answer goes out at 14:02. The carrier comes and goes as before, and {A} logs every answer to the millisecond.
   set signal_answered
   mark t_signal
   morale B -3
   trait A curious 5
-option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} tapes a printout of the folded trace above the bunk, just in case, and the comms computer stays on the letters.
+option log | Log it, keep going | The carrier goes into the anomaly log under "later". {A} pins the folded trace above the bunk, just in case, and the comms computer stays on the letters.
   set signal_ignored
   mark t_signal
   morale A -5

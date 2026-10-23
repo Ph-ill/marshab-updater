@@ -178,7 +178,7 @@ once
 days 34 34
 roles A
 when !fired h_dark
-text In the log {A} finds a link request from Mars, signed with a program key the fleet still trusts. Its sequence number matches one from years ago, as if the counter never moves; the challenge in it is new. Mission Control: "Not ours. Checked." An hour later a key-rotation ticket opens, marked urgent.
+text {A} finds a link request from Mars in the log, signed with an old program key the fleet trusts. Sequence number 1, as if the sender had just been switched on; the challenge, new. The comms computer hung on it until a watchdog cleared it. Mission Control: "Not ours." A key-rotation ticket opens.
 do trait A curious 2
 
 card flash_answer
