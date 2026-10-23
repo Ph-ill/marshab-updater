@@ -57,7 +57,7 @@ function patchGot(p){
 
 // ---- home: the cliffhanger, then everything waiting, then the watch line -------------
 function engTop(){
-  if(!EG||!S.eng)return S.open.length?`<section><div class=lab><span>Needs you</span><span>${S.open.length}</span></div>${S.open.map(openRow).join("")}</section>`:"";
+  if(!EG||!S.eng)return S.open.length?`<section><div class=lab><span>Needs you</span><span>${S.open.length}</span></div>${S.open.map(openRow).join("")}</section>`:allClear();
   const E=S.eng,rows=[];
   const dr=E.drops[E.drops.length-1];
   if(dr&&!dr[3])rows.push(`<button class=go data-go="drop/${dr[0]}"><span class=lab><span>Daily drop</span>${tag(wk(W.DROP,dr[0]),EG.tiers[dr[1]])}</span><b>Something came up with the cargo. Sealed.</b></button>`);
@@ -68,11 +68,14 @@ function engTop(){
   if(inn.length)rows.push(`<button class=go data-go="gifts"><span class=lab><span>Cargo in</span>${tag(wk(W.GIFT,(inn[0][0]*8+inn[0][1])*4+inn[0][3]),"FD "+pad(inn[0][0]))}</span><b>${inn.map((g)=>`${h(nm(g[1]))} sent ${h(EG.gifts.items[g[2]][0])}.`).join(" ")}</b></button>`);
   let o=hookBlock();
   const n=rows.length+S.open.length;
-  if(n)o+=`<section><div class=lab><span>Needs you</span><span>${n}</span></div>${rows.join("")}${S.open.map(openRow).join("")}</section>`;
+  o+=n?`<section><div class=lab><span>Needs you</span><span>${n}</span></div>${rows.join("")}${S.open.map(openRow).join("")}</section>`:allClear();
   const s=E.streak;
   o+=`<section style="padding-top:16px"><button class=wline data-go="streak"><span>Watch duty</span><span><b>${s.cur}</b> ${s.cur===1?"day":"days"}${s.today?" · logged today":""}</span></button>${E.gifts.gave?"":`<button class=wline data-go="gifts"><span>Cargo run</span><span>send a crewmate something</span></button>`}</section>`;
   return o;
 }
+
+// Nothing waiting is a state too: say so, rather than leave a gap where the list was.
+function allClear(){return `<section><div class=lab><span>Needs you</span><span>0</span></div><p class=empty><b>All clear</b><span>Nothing needs an answer today. The voyage carries on.</span></p></section>`}
 
 // ---- drop -----------------------------------------------------------------------------
 function dropScreen(d){
@@ -150,6 +153,7 @@ function fileScreen(){
   shipTop();
   const E=S.eng,pct=storyPct(),got=found(),Y=S.you;
   let o=`<div class=kick><div class=lab>Crew file · ${h(ship(Y))}</div><div class=pct>${pct}%</div><p class=dim style="margin-top:0">of this voyage's story discovered</p><div class=gauge style="padding-top:0">${meter(pct)}</div></div>`;
+  o+=`<section><button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button></section>`;
   const P=EG.patches.map((p)=>[p,patchGot(p)]);
   o+=`<section><div class=lab><span>Mission patches</span><span>${P.filter((x)=>x[1]).length}/${P.length}</span></div><div class=patches>${P.map(([p,on])=>`<div class="patch ${on?"":"no"}">${patchArt(p,on)}<div><b>${h(p.n)}</b><small>${h(on?p.t:p.l||"Not yet")}</small></div></div>`).join("")}</div></section>`;
   o+=`<section><div class=lab><span>Artifacts</span><span>${got.size}/${EG.arts.length}</span></div>${EG.arts.map((a)=>`<div class=row><span class=t>${got.has(a.id)?h(a.n):"<span class=dim>Unknown item</span>"}<small>${got.has(a.id)?h(a.t):"Turns up in a drop or on a job."}</small></span></div>`).join("")}</section>`;
