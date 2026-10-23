@@ -1,10 +1,10 @@
 import { MicroPythonSerial } from './webserial-micropython.js';
 import { readDeviceInfo, summarizeDeviceInfo } from './device-info.js';
 import { installRelease, loadReleaseManifest } from './installer.js';
-import { loadReleaseIndex, compareVersions } from './releases.js';
+import { loadReleaseIndex, compareVersions, latestVersion, isTestRelease } from './releases.js';
 import { loadRuntimeSpec } from './releases.js';
 import { runtimeStatus, boardSupported, rebootToBootsel, verifyCommands } from './runtime.js';
-import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, hotspotForRole, shipNumberForRole } from './ship-config.js';
+import { validateShipConfig, writeShipConfig, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from './ship-config.js';
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, describeBoard } from './role-memory.js';
 import { CREW, validateCodes, sharedCodes, crewConfig, writeCrewConfig, randomCode, codeList, newSalt, loadCodes, saveCodes, forgetCodes } from './crew-codes.js';
 import { statFiles, readFileBytes, logFileName, saveBytes } from './device-logs.js';
@@ -116,6 +116,10 @@ function resetProgress(status = 'Standing by.', visible = false){
   setProgress(0, status, '');
 }
 function hotspotName(){
+  // A release that names its hotspot itself (the game: prefix + ship number) wins over the coex roles.
+  const installed = state.deviceInfo?.version?.version;
+  const named = hotspotForRelease(state.releaseCache.get(installed) || state.releaseCache.get(state.selectedVersion), state.deviceInfo?.ship);
+  if(named) return named;
   const role = state.deviceInfo?.ship?.role;
   return role ? hotspotForRole(role) : 'the ship hotspot (COEX-0 or COEX-1)';
 }
@@ -129,7 +133,8 @@ function hidePowerCycleModal(){ els.powerCycleModal.hidden = true; }
 function releaseLabel(release){
   const parts = [release.version];
   if(release.label && release.label !== release.version) parts.push(`· ${release.label}`);
-  if(release.channel && release.channel !== 'stable') parts.push(`[${release.channel}]`);
+  if(isTestRelease(release)) parts.push('[TEST BUILD]');
+  else if(release.channel && release.channel !== 'stable') parts.push(`[${release.channel}]`);
   if(release.date) parts.push(`(${release.date})`);
   return parts.join(' ');
 }
@@ -192,6 +197,8 @@ async function describeSelected(){
 }
 
 function renderIndex(index){
+  // A test build is never "latest", whatever the index says (see releases.js).
+  index = { ...index, latest: latestVersion(index) };
   state.index = index;
   state.releaseCache.clear();
   setText(els.latestVersion, index.latest || 'none published');
@@ -711,7 +718,8 @@ async function installVersion(version){
         log('install cancelled'); resetProgress(); return;
       }
     }
-    if(version !== state.index.latest && !confirm(`Install ${version}? Ship settings in data/ and the bench logs are kept.`)){
+    const testNote = isTestRelease(release) ? ' This is a TEST BUILD for the bench, not a stable release; install the latest release again to go back.' : '';
+    if(version !== state.index.latest && !confirm(`Install ${version}?${testNote} Ship settings in data/ and the bench logs are kept.`)){
       log('install cancelled'); resetProgress(); return;
     }
     log(`installing ${version}${clean ? ' (clean: removing old files first)' : ''}`);

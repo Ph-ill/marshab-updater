@@ -57,8 +57,24 @@ git add firmware && git commit -m "firmware: package Long Voyage 0.0.2-coex" && 
 - The builder refuses to package `secrets.py`, `secrets.json`, `ship.json`, `crew.json` or `device.json`.
 - `data/` and every `--log` file are preserved on install.
 - `--build-time` makes a rebuild byte-for-byte reproducible.
-- Channels are `stable`, `beta` and `bench`. `latest` follows the newest build unless
-  `--no-latest` is given.
+- Channels are `stable`, `beta`, `bench` and `test`. `latest` is the `stable` release if
+  there is one, else the newest build outside `test`, unless `--no-latest` is given.
+- A `test` build is listed as **[TEST BUILD]** for a hand-picked install only: it is never
+  `latest`, so "Install latest" and the update notice skip it (the page enforces that even
+  if an index says otherwise), and installing it asks first. Nothing installs on its own.
+- `--hotspot-prefix LV-` tells the page the release's hotspot name (prefix + ship number).
+- The Long Voyage test build, from `game/` after `MPY_CROSS=... sh tools/board_build.sh`:
+
+  ```bash
+  python3 tools/build_release.py --version 0.1.0-lv-test --channel test \
+    --label "Long Voyage test: game core, BLE sync, status page" \
+    --source game/build/board --exclude season_log.bin --hotspot-prefix LV- \
+    --delete lv --delete lvship.py --delete selftest.py --delete lvwifi.py \
+    --delete config.py --delete index.html --notes "..." --mpy-cross "$(command -v mpy-cross)"
+  ```
+
+  The updater writes files over USB only; the `.uf2` game firmware
+  (`game/tools/build_firmware.sh`) is flashed by hand (BOOTSEL), see `game/docs/BENCH_TEST.md`.
 
 To move to a newer MicroPython, update `firmware/runtime.json`: URL, size and sha256 from
 micropython.org. Then run `python3 tools/validate_firmware.py --online` to download both

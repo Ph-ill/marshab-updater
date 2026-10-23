@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { compareVersions } from '../src/releases.js';
-import { validateShipConfig, defaultShipName, hotspotSummary, hotspotForRole, shipNumberForRole } from '../src/ship-config.js';
+import { compareVersions, latestVersion, isTestRelease } from '../src/releases.js';
+import { validateShipConfig, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from '../src/ship-config.js';
 import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
 import { boardFromRuntime, firmwareKind, summarizeDeviceInfo } from '../src/device-info.js';
@@ -143,5 +143,22 @@ t('crew codes: validation, shared codes, random codes, list, browser memory', ()
   mem.set(CODES_MEMORY_KEY, '{broken'); assert.equal(loadCodes(storage), null, 'corrupt storage is ignored');
   saveCodes({ salt: SALT, codes: ['1234', '', '', '', '', '', '', ''] }, storage); forgetCodes(storage);
   assert.equal(loadCodes(storage), null);
+});
+t('test channel: listed, never latest; stable untouched', () => {
+  const rel = (version, channel) => ({ version, channel, path: `/firmware/releases/${version}/release.json` });
+  const idx = { latest: '0.1.0-lv-test', releases: [rel('0.1.0-lv-test', 'test'), rel('0.0.2-coex', 'bench')] };
+  assert.equal(latestVersion(idx), '0.0.2-coex', 'an index naming a test build as latest is overruled');
+  assert.equal(latestVersion({ ...idx, releases: [...idx.releases, rel('0.0.1', 'stable')] }), '0.0.1', 'stable wins');
+  assert.equal(latestVersion({ latest: null, releases: [rel('0.1.0-lv-test', 'test')] }), null, 'only test builds: no latest');
+  assert.equal(latestVersion(index), index.latest, 'the published index already agrees');
+  assert.ok(isTestRelease({ channel: 'test' }) && !isTestRelease({ channel: 'bench' }));
+  for(const r of index.releases) if(r.channel === 'test') assert.notEqual(index.latest, r.version);
+  assert.ok(compareVersions('0.1.0-lv-test', '0.0.2-coex') > 0, 'newer number, still not latest');
+});
+t('hotspot name from the release (game firmware) or the coex roles', () => {
+  assert.equal(hotspotForRelease({ hotspot: { prefix: 'LV-' } }, { ship_id: 3 }), 'LV-3');
+  assert.equal(hotspotForRelease({ hotspot: { prefix: 'LV-' } }, null), 'LV-1', 'no settings: ship 1');
+  assert.equal(hotspotForRelease({}, { ship_id: 3 }), null);
+  assert.equal(hotspotForRelease(undefined, { ship_id: 3 }), null);
 });
 console.log(`\n${n} unit checks passed`);

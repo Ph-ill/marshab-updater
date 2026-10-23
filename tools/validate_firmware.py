@@ -14,7 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SERVED = ["index.html", "styles.css", "favicon.svg", "src", "firmware"]  # what the Dockerfile copies
 NEVER_SERVE = {"secrets.py", "secrets.json", "ship.json", "crew.json", "device.json"}
 SAFE = re.compile(r"^(?!/)(?!.*\.\.)[A-Za-z0-9_./-]+$")
-SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
+SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
+CHANNELS = ("stable", "beta", "bench", "test")
+NOT_LATEST = ("test",)  # listed for hand-picked installs only, never "latest"
 SHA = re.compile(r"^[0-9a-f]{64}$")
 errors, notes = [], []
 
@@ -88,7 +90,12 @@ def check_index():
     for ch, v in (idx.get("channels") or {}).items():
         if v not in versions:
             err(f"index.json: channel {ch} -> {v} not in releases")
+    by_version = {r.get("version"): r for r in idx.get("releases", [])}
+    if idx.get("latest") in by_version and by_version[idx["latest"]].get("channel") in NOT_LATEST:
+        err(f"index.json: latest {idx['latest']} is a {by_version[idx['latest']].get('channel')} release")
     for r in idx.get("releases", []):
+        if r.get("channel") not in CHANNELS:
+            err(f"index.json {r.get('version')}: unknown channel {r.get('channel')!r}")
         if not SEMVER.match(r.get("version", "")):
             err(f"index.json: bad version {r.get('version')!r}")
         rp = web_path(r.get("path"))
