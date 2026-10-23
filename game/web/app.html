@@ -65,9 +65,10 @@ nav button+button{border-left:1px solid var(--rule)}
 .log li.you::before{background:var(--rust);border-color:var(--rust)}
 .log li.fold{color:var(--ink2);font-size:16px}
 .day{padding-top:24px}
-.day>.lab{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:8px;color:var(--ink)}
-.upd{border-left:4px solid var(--rust);padding:4px 0 4px 12px;margin:8px 0;font-size:16px;line-height:22px}
-.upd .lab{color:var(--rust-t);margin-bottom:4px}
+.day>.lab{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:8px;color:var(--ink)}
+.day>.lab span{white-space:nowrap}.day>.lab .dim{margin-left:auto}
+.upd{border-left:2px solid var(--rust);padding:0 0 0 8px;margin:4px 0 8px;font-size:14px;line-height:20px;color:var(--ink2)}
+.upd b{color:var(--rust-t);font-weight:600}
 .gauge{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:0 8px;padding:8px 0}
 .gauge svg{grid-column:1/4;width:100%;height:24px;display:block;margin-top:4px}
 .gauge .lo{font-size:15px;color:var(--ink2)}
@@ -315,7 +316,7 @@ function home(){
   if(since.length){
     o+=`<section><div class=lab><span>Since your last visit</span><span>FD ${pad(since[0])}–${pad(since[since.length-1])}</span></div><ul class=log>`;
     for(const d of since.slice().reverse())o+=dayList(d,2);
-    o+=`</ul>${rw.length?`<p class=upd><span class=lab style="display:block">Log updated</span>Late signals re-ran ${rw.length===1?"FD "+pad(rw[0]):rw.length+" days"}. Marked in the log.</p>`:""}<button class="btn sec" style="margin-top:16px" data-go="log"><span>Full log</span><i>${S.day} days</i></button></section>`;
+    o+=`</ul>${rw.length?`<p class=upd style="margin-top:12px"><b>Log updated</b> · late signals re-ran ${rw.length===1?"FD "+pad(rw[0]):rw.length+" days"}</p>`:""}<button class="btn sec" style="margin-top:16px" data-go="log"><span>Full log</span><i>${S.day} days</i></button></section>`;
   }
   o+=`<section><div class=lab><span>Fleet stores</span><span>shared</span></div><div class=stores>${T.res.map((r,i)=>`<div><span class=lab>${r}</span><b>${S.res[i]}</b></div>`).join("")}</div></section>`;
   $("v").innerHTML=o;
@@ -345,8 +346,8 @@ function log(){
   let o=`<div class=kick><div class=lab>Voyage log · ${h(ship(S.you))}</div><h2>${S.day} days, newest first</h2></div>`;
   for(let d=S.day;d>=1;d--){
     const a=rewritten(d);
-    o+=`<div class=day id="d${d}"><div class=lab><span>Flight day ${pad(d)}</span>${d>=S.day-1?`<span class=dim>${d===S.day?"Today · ":""}may still change</span>`:""}</div>`;
-    if(a)o+=`<div class=upd><div class=lab>Log updated FD ${pad(a)}</div>A late signal reached this ship and the day was re-run. Below is what happened.</div>`;
+    o+=`<div class=day id="d${d}"><div class=lab><span>Flight day ${pad(d)}</span>${d>=S.day-1?`<span class=dim>${d===S.day?"Today":"Yesterday"} · may still change</span>`:""}</div>`;
+    if(a)o+=`<p class=upd><b>Log updated</b> FD ${pad(a)} · a late signal re-ran this day</p>`;
     o+=`<ul class=log>${dayList(d)}</ul></div>`;
   }
   $("v").innerHTML=o;

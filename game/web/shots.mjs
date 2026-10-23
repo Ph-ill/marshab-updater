@@ -106,6 +106,7 @@ for (const [n, size] of SIZES.entries()) {
   p = await page(size);
   await signIn(p, size, 23);
   await goto(p, "log");
+  await shot(p, size, "10-log-top");   // today and yesterday: "may still change"
   await p.evaluate(() => document.getElementById("d21").scrollIntoView());
   await p.evaluate(() => scrollBy(0, -56));
   await shot(p, size, "10-log");

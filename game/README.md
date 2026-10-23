@@ -47,7 +47,7 @@ Open it at phone width (360-430 px). Add `?day=N` to jump to another flight day 
 * **The ship remembers your phone for the day.** After a good code, the ship keeps (phone IP + User-Agent, crew, flight day). Reopening the captive sheet the same flight day goes straight to your ship (`GET /api/me`). The next day, or after "Sign out" on your astronaut's page, it asks again. The first sign-in since the board started shows the "Welcome aboard" astronaut card; after that you go straight home.
 * **Live updates.** The page opens a WebSocket at `/ws` that announces a new version. If it can't connect, the page polls `/api/v` every 15 s and says so in a one-line banner.
 * **Privacy.** A private dilemma's text is shown only to the person who looks after that astronaut. Everyone else's log just says a private message arrived.
-* **Late signals.** Nearly every day is re-run once, the next day, as yesterday's taps arrive. The page treats that as normal ("may still change" on today and yesterday). It only marks "Log updated" when a day changed two or more days later.
+* **Late signals.** Nearly every day is re-run once, the next day, as yesterday's taps arrive. The page treats that as normal ("Today · may still change", "Yesterday · may still change"). It only adds a one-line "Log updated FD xx · a late signal re-ran this day" note when a day changed two or more days later.
 
 The `game/` folder is not part of the updater image. The Dockerfile copies only the web app and `firmware/`.
 
