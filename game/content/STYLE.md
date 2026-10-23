@@ -230,6 +230,13 @@ after its `type` line:
 - Retired tics (round 8): "taped", "pinned up", "the galley wall", "go quiet"
   and its forms. "Five days" appears once per season in the closing cards, not on
   every descent beat.
+- The retired-tic list is enforced by `test_retired_tics_stay_retired`
+  (tests/test_content.py); add to its list when a tic is retired.
+- One seat a ship: critical commands are read back by the next ship (planted in
+  `l_transfer`). Overrides and one-off commands say who read them back. Crew
+  "votes" on trajectory are recommendations the flight director takes.
+- Light-time numbers follow the table above on the card's fixed day; check
+  any new number against it (one closing rate, everywhere).
 - Fold lines: none on the final day, printed before a hook, never naming
   anyone who had a scene that day.
 - Epilogue: every astronaut gets a line. Story lines first; fallbacks from

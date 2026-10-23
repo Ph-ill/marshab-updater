@@ -321,11 +321,14 @@ Endings cite the votes. The packer's loss is on the page (`g_packer`).
 
 Checked in deck order on day 42; first match wins. Titles come from `title`
 (text.json `ti`). Every ending closes on the first crate ("You'll thank me.")
-and the first message off the surface, to a loading bay at Starbase. Answered
-endings close on the crate and "Landed. All eight." (the packer's count: seven
-ships and Cargo 2). Unanswered endings pay a cost and close differently:
-"All seven, one for good. Found the eighth." / "All seven. Found the eighth." /
-"All seven. Found the eighth, in time." Endings may run to 640 characters (lint MAX_ENDING).
+and the first message off the surface, to a loading bay at Starbase. Since
+round 14 every ending pays a price, answered or not. Answered endings: *Lights
+On* spends Cargo 2's floodlights ("All seven. The eighth kept the lights on."),
+*The Long Orbit* loses the seed stock in Cargo 2's hold (the lamp stayed lit,
+the heater didn't; "All eight."), *Old Friend* ruins the rover's pack (half
+range for the mission; "All eight."). Unanswered endings close "All seven, one
+for good. Found the eighth." / "All seven. Found the eighth." / "All seven.
+Found the eighth, in time." Endings may run to 640 characters (lint MAX_ENDING).
 
 **Geometry:** day 41 is about four days before atmospheric entry (at an arrival v∞ of about 4.2 km/s that is about 1.45 million km, 4.8 s one-way, 9.7 s round trip, inside the 10.96 s tick; five days would be about 12 s and miss it). Hold the plan
 = retarget to the backup site, about three kilometres from Cargo 2, with radar
@@ -336,9 +339,9 @@ the prime zone and a rover drive (Cargo 4's rover). Clear air = prime zone,
 Cargo 2 thirty kilometres past it. Unanswered endings answer in person.
 
 Cargo 2 has a job in every ending: floodlights as the place marker (`end_lights`),
-answered from the crater rim by the one who argued to answer, one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame (`end_through`); `end_lights` gets one extra granted command (lights), a manifest line read by pass and
-a spare drill bit (`end_long_orbit`), found dead after the cold, answered by hand
-(`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), a rover drive with a real risk and every lamp flaring once as the rover's lights touch it (`end_friend`), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
+answered from the crater rim by the one who argued to answer, one ship lost to a rim downdraft and an overloaded leg strut, no pilot blame (`end_through`); `end_lights` gets one extra granted command (lights), a manifest line read by pass, a
+spare drill bit and the frozen seed stock (`end_long_orbit`; no tile line, since an ending can't bind the r_strike astronaut), found dead after the cold, answered by hand
+(`end_patience`; from the long orbit the site rises minutes a day, low behind the crater rim), a rover drive past the point of return, judged by Cargo 2's knock on the rover radio (the lamp is below the horizon at 30 km), rescued by the leg charge port planted in `g_packer`'s forklift photo, paid for with the rover's pack (`end_friend`), the spare drill bit Cargo 3 needs for the water margin, and one OK before its battery dies (`end_close`). The
 two storm endings open differently; the two orbit endings are scenes (week
 three, week two), not summaries. The recorder paragraph is worded differently
 in each.
@@ -357,12 +360,12 @@ ending, and any role test on the fallback.
 
 | # | Ending | Condition | Measured |
 |---|---|---|---|
-| 1 | *Lights On* (`end_lights`) | answered + held the plan | 12.3% (1000: 16.6%) |
-| 2 | *Through the Dust* (`end_through`) | held the plan | 16.0% (1000: 17.8%) |
-| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 16.7% (1000: 15.5%) |
-| 4 | *Patience* (`end_patience`) | aerocapture and wait | 20.0% (1000: 16.3%) |
-| 5 | *Old Friend* (`end_friend`) | answered, clear air | 17.3% (1000: 17.9%) |
-| 6 | *Close Enough* (`end_close`) | clear air, not answered | 17.7% (1000: 15.9%) |
+| 1 | *Lights On* (`end_lights`) | answered + held the plan | 16.0% (1000: 16.4%) |
+| 2 | *Through the Dust* (`end_through`) | held the plan | 17.3% (1000: 15.3%) |
+| 3 | *The Long Orbit* (`end_long_orbit`) | answered + aerocapture and wait | 18.7% (1000: 17.3%) |
+| 4 | *Patience* (`end_patience`) | aerocapture and wait | 17.0% (1000: 16.2%) |
+| 5 | *Old Friend* (`end_friend`) | answered, clear air | 15.3% (1000: 18.7%) |
+| 6 | *Close Enough* (`end_close`) | clear air, not answered | 15.7% (1000: 16.1%) |
 
 ## Epilogue
 
@@ -721,3 +724,70 @@ fault protection, a suit beside it, one Mars day, transponder.
   "anyway"; `dil_interlock` override "Both sensors had a point".
   `g_news` names the neighbour as one of the first call's list, so `c_list`
   on day 42 still lands.
+
+## Round 14 notes
+
+- **Bugs.** `end_long_orbit` no longer mentions the struck tile (it named the
+  wrong astronaut in most seasons and appeared when no tile was hit) or uses
+  "nobody". New test `test_tile_and_eva_casting_over_300_seasons`: endings may
+  not mention a tile or hinge line; any card naming one particular tile must
+  cast the astronaut `r_strike` found it on; nobody injured by `crisis_eva` is
+  sent outside afterwards (`dil_eva_cam` and `h_strike`/`r_strike` gate
+  `!is A eva_who`). `when home A` on `c_dose` (now days 33–38), `l_crystals`,
+  `h_band`, `h_flood`, `r_strike`; the presence test no longer exempts
+  `r_strike`. `l_transfer` no longer crosses on day 2; `p_birthday` from day 8;
+  `a_recall_shared` drops its EVA guard (the last pack always resolves);
+  `dil_eva_cam` grammar.
+- **Mechanism (fair, all seasons).** `a_report` is now an object: Cargo 2's own
+  patch note (SURVEYED SITE = PAD · OBEY PAD CREW · KNOCK, LISTEN 1 TICK, KNOCK ·
+  TIMEOUT: NONE) with the board's margin: divert, down whole, written off before
+  the re-key, no orbiter but the dead relay ever had the channel, Earth fifteen
+  minutes, tick eleven seconds. `m_reveal` ends "Ten point nine six: the
+  lighthouse's number" (the old passes heard Cargo 2). `a_log` adds KEY UPDATE:
+  NONE RECEIVED and counts ×350,000 hellos, eighteen ticks late at first.
+  `a_window_quiet` ends on the ruling as one screen line. `m_alias` plants flat
+  hour-to-hour residuals on day 20.
+- **One light-time ladder (engineer's transfer model, matches STYLE).** Mars
+  slide ~1.5 s/day at day 20; first hello round trip ~198 s (18 ticks) at day
+  22; one-way just under half a minute at day 36 (`m_overlay`); round trip
+  thirty-odd seconds at day 39 (`m_count`); 10 s round trip at day 41; Earth
+  round trip fifteen minutes at day 40. `storm_dose` is "past fifty" (it can
+  fire before any flare). `h_band` uses the orbiter's next pass, an hour later.
+  `comm_delay` days 16–17.
+- **Quieter.** `m_alias` loses "Anything aboard…/Not aboard, then";
+  `c_theory` is the data only; `p_packer_note` "say hello to the hardware. Ours
+  won't start till you do."; `h_voice` ends on the intercom clock reading
+  tomorrow (r_voice's cause); `m_flash2` and `r_band` lose their nudges.
+- **Flight rules.** `l_transfer` plants the read-back convention (the next ship
+  reads back every critical command), reused in `dil_interlock`'s override and
+  `end_lights`. `dec_arrival` is the crew's recommendation, which the flight
+  director takes. `a_recall_wrist` gets the surgeon's clearance for the seat.
+  `dil_gains` asks for the responsible engineer's signature.
+- **Tics.** `a_log`, `g_packer`, `m_theory_confirm`, `hb_leaf`, `stash_found`
+  fixed. `test_retired_tics_stay_retired` lints every card, option and system
+  string for the STYLE retired list ("nobody", "reads it twice", taping or
+  pinning things up, "galley wall", "go quiet", "since Starbase", "slowly",
+  "doesn't mention", "Neither of them", "by itself", "it has moved", and a
+  repeated "sleeve").
+- **Small.** `m_listen` pays off `p_dream` ("like rain starting on a car
+  roof"); `beat_haircut` aims the joke at the clippers; `zip_back` 30–39 and
+  `c_dose` 33 thin day 34. Coda lines for the three answered endings, and the
+  coda list now checks endings before `a_window_hail`.
+
+## Replay: the mystery spine reads the same every season (note, not built)
+
+Casting changes per season, but the spine (carrier → alias → relay → dropout →
+flash → key → overlay → reveal) is the same text, so a second season reads as
+a rerun. Options, cheapest first:
+1. **Phrasing variants.** Two or three texts per spine beat, picked by a voyage
+   key bit (`when is`/flag set at day 1 from the key). Same facts, same days,
+   different objects and voices. Costs text bytes (roughly +3–5 KB gzip for
+   the twelve core beats), no engine change.
+2. **Season-2 decoy swap.** Keep the truth, rotate the decoy (hopper one season,
+   a second write-off another) and which camera or instrument first sees the
+   light. Needs a few alternate cards and fair-play test cases per variant.
+3. **Season-2 truth variant.** A different first-batch vehicle or a different
+   escaped requirement with the same tick mechanic. Biggest payoff, biggest
+   cost: new plants, new reveal, new endings, a fresh blind review.
+Recommendation: (1) for season 2, keyed so a returning player never gets the
+same phrasing twice in a row; leave (3) for a sequel.
