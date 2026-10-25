@@ -11,6 +11,7 @@
 # DEFAULTS. Nothing secret lives in this file: the hotspot password is per board, and
 # the fleet key below is the public test key the simulator uses.
 import gc
+import os
 import sys
 
 try:
@@ -18,7 +19,7 @@ try:
 except ImportError:  # pragma: no cover
     import uasyncio as asyncio
 
-from lv.pack import load
+from lv.pack import Pack, load
 from lv.chlog import ChoiceLog
 from lv.state import State, N
 from lv.engine import Engine
@@ -33,7 +34,7 @@ except AttributeError:     # CPython (the tests)
     def sleep_ms(ms):
         return asyncio.sleep(ms / 1000)
 
-VERSION = "0.1.0-lv-test"
+VERSION = "0.2.0-lv-test"
 
 DEFAULTS = {
     "ship_id": 1,                  # 1-8 (ship 1 = crew 0)
@@ -114,7 +115,17 @@ def used():
 
 
 def pack_for(root=""):
-    # The story pack is content: always a file the updater can replace (pack.bin).
+    """(Pack, where): a pack.bin file if there is one (stock MicroPython, or a story update
+    on the game firmware), else the pack frozen into the game firmware (lv-core 0.2.0+,
+    lvpackdata: a bytes object read in place from flash, so the pack costs no heap)."""
+    try:
+        os.stat(root + "pack.bin")
+    except OSError:
+        try:
+            import lvpackdata
+        except ImportError:
+            raise OSError("no pack.bin and no pack frozen in the firmware")
+        return Pack(lvpackdata.DATA), "frozen"
     return load(root + "pack.bin"), "file"
 
 

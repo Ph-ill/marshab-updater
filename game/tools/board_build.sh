@@ -6,15 +6,20 @@
 #   LAYOUT=fw sh tools/board_build.sh PORT   copy build/board-fw/ instead (game firmware)
 #                                         (PORT: /dev/ttyACM0, COM5, ... or "auto")
 #
-#   build/board/     stock MicroPython 1.29 (Variant A): the game core lv/*.mpy too
-#   build/board-fw/  the game firmware (tools/build_firmware.sh, the core lv/ frozen in):
-#                    only what stays updatable: main.py, the glue (lvship, lvreport, lvcal, lvled, lvledcfg, lvbatt, lvdays, lvweb, lvphone, lvstat,
-#                    lvwifi, selftest), the pack, engage.bin and the phone page www/*.gz.
-#                    Never put lv/ on a game-firmware board: it hides the frozen core. A
-#                    fixed core module goes in lvx/<name>.mpy instead (lv/__init__.py):
-#                    FROZEN_CORE=tools/fw/cores/lv-core-<ver>-<core>.json (what the flashed
-#                    .uf2 froze, written by tools/build_firmware.sh) puts every lv module
-#                    that changed since that core into build/board-fw/lvx/, and only those.
+#   build/board/     stock MicroPython 1.29 (Variant A): everything as files, the game
+#                    core lv/*.mpy too: main.py, the board modules (tools/fw/gen_lvfrozen.py
+#                    BOARD: lvship, lvreport, lvcal, lvled, lvledcfg, lvbatt, lvdays, lvweb,
+#                    lvphone, lvstat, lvwifi, selftest), the pack, engage.bin, www/*.gz.
+#   build/board-fw/  the game firmware (tools/build_firmware.sh): only what the flashed
+#                    core doesn't already have frozen in, i.e. what a release on it ships:
+#                    main.py, engage.bin and the phone page www/*.gz always; a board module
+#                    as <name>.mpy and the pack as pack.bin only if they changed since that
+#                    core (lv-core 0.1.0 froze neither: then all of them); a changed core
+#                    module as lvx/<name>.mpy (lv/__init__.py). Files are found before the
+#                    frozen modules on the board, so each one replaces its frozen copy.
+#                    Never put lv/ on a game-firmware board: it hides the frozen core.
+#                    FROZEN_CORE=tools/fw/cores/lv-core-<ver>-<core>.json says which core
+#                    (what the flashed .uf2 froze, written by tools/build_firmware.sh).
 #                    Default: the newest core in tools/fw/cores/.
 #
 # Needs python3, mpy-cross 1.29 (pip install mpy-cross==1.29.0, or MPY_CROSS=/path) and,
@@ -32,37 +37,44 @@ MPREMOTE="${MPREMOTE:-mpremote}"
 MPY_OPT="${MPY_OPT--O3}"
 OUT=build/board
 FW=build/board-fw
-GLUE="lvship lvreport lvcal lvled lvledcfg lvbatt lvdays lvweb lvphone lvstat lvwifi selftest"
+GLUE=$(python3 tools/fw/gen_lvfrozen.py --print-board)
 
 python3 tools/lvc.py > /dev/null
 python3 tools/lve.py > /dev/null
 python3 web/build.py > /dev/null
 rm -rf "$OUT" "$FW"
-mkdir -p "$OUT/lv" "$FW/www"
+mkdir -p "$OUT/lv" "$OUT/www" "$FW/www"
 for f in lv/*.py; do
   "$MPY_CROSS" -o "$OUT/lv/$(basename "$f" .py).mpy" "$f"
 done
 for f in $GLUE; do
-  "$MPY_CROSS" $MPY_OPT -o "$FW/$f.mpy" "board/$f.py"
+  "$MPY_CROSS" $MPY_OPT -o "$OUT/$f.mpy" "board/$f.py"
 done
-cp board/main.py "$FW/main.py"       # the boot file stays .py (it is tiny)
-# Core modules changed since the frozen core the boards run: ship only those, as overrides.
+cp board/main.py "$OUT/main.py"      # the boot file stays .py (it is tiny)
+cp build/pack.bin build/engage.bin "$OUT/"
+cp build/app.html.gz build/text.json.gz build/engage.json.gz "$OUT/www/"
+# The game firmware's set: what the frozen core the boards run doesn't have as it is now.
 FROZEN_CORE="${FROZEN_CORE:-$(ls tools/fw/cores/lv-core-*.json 2>/dev/null | sort -V | tail -1)}"
+cp "$OUT/main.py" "$OUT/engage.bin" "$FW/"
+cp "$OUT"/www/*.gz "$FW/www/"
 LVX=""
 if [ -n "$FROZEN_CORE" ]; then
   LVX=$(python3 tools/fw/changed_modules.py "$FROZEN_CORE")
+  TOP=$(python3 tools/fw/changed_modules.py --files "$FROZEN_CORE")
   mkdir -p "$FW/lvx"
   for m in $LVX; do
     "$MPY_CROSS" -o "$FW/lvx/$m.mpy" "lv/$m.py"
   done
   rmdir "$FW/lvx" 2>/dev/null || true
+  for f in $TOP; do
+    cp "$OUT/$f" "$FW/$f"
+  done
   cp "$FROZEN_CORE" build/frozen-core.json
-  echo "frozen core $(basename "$FROZEN_CORE"): overrides for [${LVX}]"
+  echo "frozen core $(basename "$FROZEN_CORE"): overrides for [${LVX}], files for [${TOP}]"
+else
+  for f in $GLUE; do cp "$OUT/$f.mpy" "$FW/"; done
+  cp "$OUT/pack.bin" "$FW/"
 fi
-cp build/pack.bin build/engage.bin "$FW/"
-cp build/app.html.gz build/text.json.gz build/engage.json.gz "$FW/www/"
-cp -r "$FW"/. "$OUT"/
-rm -rf "$OUT/lvx"                    # stock MicroPython has the whole lv/ as files
 fwtotal=$(find "$FW" -type f -exec cat {} + | wc -c)
 total=$(find "$OUT" -type f -exec cat {} + | wc -c)
 cp build/season_log.bin "$OUT/season_log.bin"   # optional preload for the bulk test (not copied)
@@ -77,14 +89,15 @@ for i in range(0, len(raw), R.LEN):
 print('bulk test preload: build/board/season_log.bin, %d records, digest %s' % (len(log), log.digest().hex()))
 "
 echo "built $OUT (stock MicroPython): $(ls "$OUT"/lv | wc -l) lv modules + $GLUE, main.py, pack, engage.bin, www/ = $total bytes of flash"
-echo "built $FW (game firmware): $GLUE, main.py, pack, engage.bin, www/ = $fwtotal bytes of flash"
+echo "built $FW (game firmware): $(cd "$FW" && find . -type f | sed 's|^\./||' | sort | tr '\n' ' ')= $fwtotal bytes of flash"
 
 [ -z "$1" ] && exit 0
 if [ "$1" = auto ]; then C=""; else C="connect $1"; fi
 SRC="$OUT"
 [ "$LAYOUT" = fw ] && SRC="$FW"
 # Stop whatever is running, clear old copies (a .py next to a .mpy would win; a /lv next to
-# the game firmware hides its frozen core), copy, reset.
+# the game firmware hides its frozen core; a board module or pack.bin the game firmware has
+# frozen in would replace the frozen one), copy, reset. /data is never touched.
 $MPREMOTE $C exec "
 import os
 def rm(p):
@@ -97,7 +110,7 @@ def rm(p):
             os.remove(p)
     except OSError:
         pass
-for p in ('/lv', '/lvx', '/www', '/lvship.py', '/selftest.py', '/lvwifi.py', '/lvweb.py', '/lvphone.py', '/lvstat.py', '/lvdays.py', '/lvcal.py', '/lvled.py', '/lvledcfg.py', '/lvbatt.py', '/lvreport.py'):
+for p in ['/lv', '/lvx', '/www', '/pack.bin'] + ['/%s.%s' % (m, e) for m in '$GLUE'.split() for e in ('py', 'mpy')]:
     rm(p)
 for d in ('/data', '/www'$( [ "$SRC" = "$OUT" ] && echo ", '/lv'")):
     try:
@@ -107,6 +120,10 @@ for d in ('/data', '/www'$( [ "$SRC" = "$OUT" ] && echo ", '/lv'")):
 "
 [ "$SRC" = "$OUT" ] && $MPREMOTE $C cp "$OUT"/lv/*.mpy :lv/
 $MPREMOTE $C cp "$SRC"/www/*.gz :www/
-$MPREMOTE $C cp "$SRC"/*.mpy "$SRC"/pack.bin "$SRC"/engage.bin "$SRC"/main.py :
+$MPREMOTE $C cp $(ls "$SRC"/*.mpy "$SRC"/pack.bin 2>/dev/null) "$SRC"/engage.bin "$SRC"/main.py :
+if [ -d "$SRC/lvx" ]; then
+  $MPREMOTE $C mkdir :lvx || true
+  $MPREMOTE $C cp "$SRC"/lvx/*.mpy :lvx/
+fi
 $MPREMOTE $C exec "import os, gc; s = os.statvfs('/'); gc.collect(); print('board: flash free %d KB, heap free %d B' % (s[0] * s[3] // 1024, gc.mem_free()))"
 echo "copied $SRC to ${1}. Reset the board (mpremote $C reset) to start main.py."
