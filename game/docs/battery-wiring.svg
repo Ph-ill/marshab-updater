@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1060" viewBox="0 0 1600 1060">
+<rect width="1600" height="1060" fill="#f4efe3"/>
+<text x="40" y="44" font-size="26" text-anchor="start" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">Ship battery: UPS-Lite v1.3 -&gt; Raspberry Pi Pico W</text>
+<text x="40" y="72" font-size="16" text-anchor="start" font-weight="normal" fill="#555" font-family="DejaVu Sans">Both boards seen from the top. 5 wires, 1 Schottky diode, 2 resistors. Steps, checks and what is unverified: game/docs/BATTERY.md</text>
+<rect x="60" y="200" width="400" height="800" rx="22" fill="#1f1f1f"/>
+<rect x="210" y="192" width="84" height="42" rx="5" fill="#bbb" stroke="#666" stroke-width="2"/>
+<text x="252" y="258" font-size="15" text-anchor="middle" font-weight="bold" fill="#f4efe3" font-family="DejaVu Sans">micro-USB: CHARGE HERE</text>
+<text x="252" y="278" font-size="13" text-anchor="middle" font-weight="normal" fill="#ddd" font-family="DejaVu Sans">(5 V 2 A adapter recommended)</text>
+<rect x="80" y="600" width="360" height="300" rx="10" fill="#e8b923" stroke="#a07c10" stroke-width="3"/>
+<text x="260.0" y="760" font-size="22" text-anchor="middle" font-weight="bold" fill="#3a2c00" font-family="DejaVu Sans">1000 mAh LiPo</text>
+<text x="260.0" y="788" font-size="15" text-anchor="middle" font-weight="normal" fill="#3a2c00" font-family="DejaVu Sans">no heat on the cell, ever</text>
+<rect x="210" y="926" width="100" height="34" rx="4" fill="#444" stroke="#999" stroke-width="2"/>
+<rect x="218" y="932" width="40" height="22" rx="3" fill="#ddd"/>
+<text x="260" y="984" font-size="14" text-anchor="middle" font-weight="normal" fill="#ddd" font-family="DejaVu Sans">power switch (output on/off)</text>
+<text x="260.0" y="1040" font-size="20" text-anchor="middle" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">UPS-Lite v1.3 (top view)</text>
+<rect x="80" y="300" width="170" height="64" rx="6" fill="#3a1d12" stroke="#d2552a" stroke-width="2"/>
+<text x="165" y="324" font-size="14" text-anchor="middle" font-weight="bold" fill="#ffb08c" font-family="DejaVu Sans">ON THE BACK:</text>
+<text x="165" y="346" font-size="14" text-anchor="middle" font-weight="bold" fill="#ffd2bd" font-family="DejaVu Sans">short PAD1 (2 pads)</text>
+<rect x="334" y="360" width="104" height="184" rx="8" fill="#2c2c2c" stroke="#888" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="386" y="350" font-size="14" text-anchor="middle" font-weight="normal" fill="#ddd" font-family="DejaVu Sans">pogo pins</text>
+<text x="338" y="395" font-size="14" text-anchor="end" font-weight="bold" fill="#fff" font-family="DejaVu Sans">SDA (Pi 3)</text>
+<text x="338" y="457" font-size="14" text-anchor="end" font-weight="bold" fill="#fff" font-family="DejaVu Sans">SCL (Pi 5)</text>
+<text x="338" y="510" font-size="14" text-anchor="end" font-weight="bold" fill="#fff" font-family="DejaVu Sans">charge detect</text>
+<text x="338" y="528" font-size="13" text-anchor="end" font-weight="normal" fill="#ddd" font-family="DejaVu Sans">(Pi 7, GPIO4)</text>
+<text x="416" y="519" font-size="11" text-anchor="start" font-weight="normal" fill="#aaa" font-family="DejaVu Sans">no pin</text>
+<rect x="1100" y="200" width="240" height="800" rx="10" fill="#1b6b3a"/>
+<rect x="1185" y="186" width="70" height="44" rx="5" fill="#bbb" stroke="#666" stroke-width="2"/>
+<text x="1220.0" y="630" font-size="13" text-anchor="middle" font-weight="bold" fill="#e8f5ec" font-family="DejaVu Sans">Pico USB (top end):</text>
+<text x="1220.0" y="648" font-size="13" text-anchor="middle" font-weight="normal" fill="#e8f5ec" font-family="DejaVu Sans">updates and bench;</text>
+<text x="1220.0" y="666" font-size="13" text-anchor="middle" font-weight="normal" fill="#e8f5ec" font-family="DejaVu Sans">it does not charge</text>
+<text x="1220.0" y="684" font-size="13" text-anchor="middle" font-weight="normal" fill="#e8f5ec" font-family="DejaVu Sans">the battery</text>
+<rect x="1175" y="880" width="90" height="100" rx="4" fill="#cfd8d3" stroke="#9aa" stroke-width="2"/>
+<text x="1220" y="930" font-size="13" text-anchor="middle" font-weight="normal" fill="#333" font-family="DejaVu Sans">antenna:</text>
+<text x="1220" y="948" font-size="12" text-anchor="middle" font-weight="normal" fill="#333" font-family="DejaVu Sans">no wires here</text>
+<text x="1220.0" y="1040" font-size="20" text-anchor="middle" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">Raspberry Pi Pico W (top view)</text>
+<circle cx="1115" cy="230.0" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<text x="1131" y="235.0" font-size="12" text-anchor="start" font-weight="normal" fill="#cfe" font-family="DejaVu Sans">1 GP0</text>
+<circle cx="1115" cy="268.9473684210526" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="307.89473684210526" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<text x="1131" y="312.89473684210526" font-size="12" text-anchor="start" font-weight="normal" fill="#cfe" font-family="DejaVu Sans">3 GND</text>
+<circle cx="1115" cy="346.8421052631579" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="385.7894736842105" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="424.7368421052631" r="7.5" fill="#f2c94c" stroke="#123" stroke-width="1.5"/>
+<text x="1131" y="429.7368421052631" font-size="14" text-anchor="start" font-weight="bold" fill="#fff" font-family="DejaVu Sans">6 GP4</text>
+<circle cx="1115" cy="463.6842105263158" r="7.5" fill="#f2c94c" stroke="#123" stroke-width="1.5"/>
+<text x="1131" y="468.6842105263158" font-size="14" text-anchor="start" font-weight="bold" fill="#fff" font-family="DejaVu Sans">7 GP5</text>
+<circle cx="1115" cy="502.63157894736844" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<text x="1131" y="507.63157894736844" font-size="12" text-anchor="start" font-weight="normal" fill="#cfe" font-family="DejaVu Sans">8 GND</text>
+<circle cx="1115" cy="541.578947368421" r="7.5" fill="#f2c94c" stroke="#123" stroke-width="1.5"/>
+<text x="1131" y="546.578947368421" font-size="14" text-anchor="start" font-weight="bold" fill="#fff" font-family="DejaVu Sans">9 GP6</text>
+<circle cx="1115" cy="580.5263157894736" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="619.4736842105262" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="658.421052631579" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="697.3684210526316" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="736.3157894736842" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="775.2631578947369" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="814.2105263157895" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="853.1578947368421" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="892.1052631578947" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="931.0526315789473" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1115" cy="970.0" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="970.0" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="931.0526315789473" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="892.1052631578947" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="853.1578947368421" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="814.2105263157895" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="775.2631578947369" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="736.3157894736842" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="697.3684210526316" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="658.421052631579" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="619.4736842105262" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="580.5263157894736" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="541.578947368421" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="502.63157894736844" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="463.6842105263158" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="424.7368421052631" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="385.7894736842105" r="7.5" fill="#f2c94c" stroke="#123" stroke-width="1.5"/>
+<text x="1309" y="390.7894736842105" font-size="14" text-anchor="end" font-weight="bold" fill="#fff" font-family="DejaVu Sans">3V3(OUT) 36</text>
+<circle cx="1325" cy="346.8421052631579" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<circle cx="1325" cy="307.89473684210526" r="7.5" fill="#f2c94c" stroke="#123" stroke-width="1.5"/>
+<text x="1309" y="312.89473684210526" font-size="14" text-anchor="end" font-weight="bold" fill="#fff" font-family="DejaVu Sans">GND 38</text>
+<circle cx="1325" cy="268.9473684210526" r="7.5" fill="#f2c94c" stroke="#123" stroke-width="1.5"/>
+<text x="1309" y="273.9473684210526" font-size="14" text-anchor="end" font-weight="bold" fill="#fff" font-family="DejaVu Sans">VSYS 39</text>
+<circle cx="1325" cy="230.0" r="7.5" fill="#9fb8a8" stroke="#123" stroke-width="1.5"/>
+<text x="1309" y="235.0" font-size="12" text-anchor="end" font-weight="normal" fill="#cfe" font-family="DejaVu Sans">VBUS 40</text>
+<polyline points="360,390 382,421.0 840,421.0 840,424.7368421052631 1115,424.7368421052631" fill="none" stroke="#111" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="360,390 382,421.0 840,421.0 840,424.7368421052631 1115,424.7368421052631" fill="none" stroke="#2f6fd6" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="360,452 382,483.0 880,483.0 880,463.6842105263158 1115,463.6842105263158" fill="none" stroke="#111" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="360,452 382,483.0 880,483.0 880,463.6842105263158 1115,463.6842105263158" fill="none" stroke="#e0a800" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="360,514 382,545.0 920,545.0 920,541.578947368421 1115,541.578947368421" fill="none" stroke="#111" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="360,514 382,545.0 920,545.0 920,541.578947368421 1115,541.578947368421" fill="none" stroke="#2e9b4f" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="546.4" y="402.0" width="187.20000000000002" height="27" rx="5" fill="#fff" stroke="#2f6fd6" stroke-width="3"/>
+<text x="640.0" y="422.0" font-size="15.5" text-anchor="middle" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">SDA -&gt; GP4 (pin 6)</text>
+<rect x="546.4" y="464.0" width="187.20000000000002" height="27" rx="5" fill="#fff" stroke="#e0a800" stroke-width="3"/>
+<text x="640.0" y="484.0" font-size="15.5" text-anchor="middle" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">SCL -&gt; GP5 (pin 7)</text>
+<rect x="499.4" y="526.0" width="281.2" height="27" rx="5" fill="#fff" stroke="#2e9b4f" stroke-width="3"/>
+<text x="640.0" y="546.0" font-size="15.5" text-anchor="middle" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">charge detect -&gt; GP6 (pin 9)</text>
+<polyline points="412,390 474,390 474,112 1460,112 1460,268.9473684210526 1325,268.9473684210526" fill="none" stroke="#111" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="412,390 474,390 474,112 1460,112 1460,268.9473684210526 1325,268.9473684210526" fill="none" stroke="#d93a2b" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="412,452 504,452 504,140 1420,140 1420,307.89473684210526 1325,307.89473684210526" fill="none" stroke="#111" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="412,452 504,452 504,140 1420,140 1420,307.89473684210526 1325,307.89473684210526" fill="none" stroke="#2b2b2b" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="608.9" y="93" width="422.2" height="27" rx="5" fill="#fff" stroke="#d93a2b" stroke-width="3"/>
+<text x="820.0" y="113" font-size="15.5" text-anchor="middle" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">5V-OUT (Pi pin 4) -&gt; diode -&gt; VSYS (pin 39)</text>
+<rect x="670.0" y="153" width="300.0" height="27" rx="5" fill="#fff" stroke="#2b2b2b" stroke-width="3"/>
+<text x="820.0" y="173" font-size="15.5" text-anchor="middle" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">GND (Pi pin 6) -&gt; GND (pin 38)</text>
+<text x="425" y="380" font-size="14" text-anchor="start" font-weight="bold" fill="#fff" font-family="DejaVu Sans">5V</text>
+<text x="425" y="412" font-size="11" text-anchor="start" font-weight="normal" fill="#ddd" font-family="DejaVu Sans">(Pi 4)</text>
+<text x="425" y="442" font-size="14" text-anchor="start" font-weight="bold" fill="#fff" font-family="DejaVu Sans">GND</text>
+<text x="425" y="474" font-size="11" text-anchor="start" font-weight="normal" fill="#ddd" font-family="DejaVu Sans">(Pi 6)</text>
+<circle cx="360" cy="390" r="9" fill="#d4a017" stroke="#111" stroke-width="2"/>
+<circle cx="360" cy="452" r="9" fill="#d4a017" stroke="#111" stroke-width="2"/>
+<circle cx="360" cy="514" r="9" fill="#d4a017" stroke="#111" stroke-width="2"/>
+<circle cx="412" cy="390" r="9" fill="#d4a017" stroke="#111" stroke-width="2"/>
+<circle cx="412" cy="452" r="9" fill="#d4a017" stroke="#111" stroke-width="2"/>
+<g transform="translate(1460,190.4736842105263)"><rect x="-15" y="-34" width="30" height="68" rx="6" fill="#222" stroke="#000" stroke-width="2"/><rect x="-15" y="18" width="30" height="10" fill="#e6e6e6"/></g>
+<text x="1484" y="182.4736842105263" font-size="16" text-anchor="start" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">1N5817</text>
+<text x="1484" y="202.4736842105263" font-size="14" text-anchor="start" font-weight="normal" fill="#1d1d1b" font-family="DejaVu Sans">Schottky</text>
+<text x="1484" y="220.4736842105263" font-size="14" text-anchor="start" font-weight="normal" fill="#1d1d1b" font-family="DejaVu Sans">band down,</text>
+<text x="1484" y="238.4736842105263" font-size="14" text-anchor="start" font-weight="normal" fill="#1d1d1b" font-family="DejaVu Sans">toward VSYS</text>
+<rect x="560" y="640" width="440" height="250" rx="10" fill="#fff" stroke="#f08a24" stroke-width="3"/>
+<text x="580" y="672" font-size="18" text-anchor="start" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">Pull-ups: two 4.7 kOhm resistors</text>
+<text x="580" y="696" font-size="14" text-anchor="start" font-weight="normal" fill="#555" font-family="DejaVu Sans">(solder on the Pico side)</text>
+<polyline points="600,740 600,820" fill="none" stroke="#111" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="600,740 600,820" fill="none" stroke="#f08a24" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="600" cy="740" r="6" fill="#fff" stroke="#111" stroke-width="2"/>
+<circle cx="600" cy="820" r="6" fill="#fff" stroke="#111" stroke-width="2"/>
+<polyline points="600,740 660,740" fill="none" stroke="#111" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="600,740 660,740" fill="none" stroke="#f08a24" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="660" y="728" width="90" height="24" rx="6" fill="#e9d8b4" stroke="#6b4f1d" stroke-width="2"/>
+<rect x="676" y="728" width="7" height="24" fill="#ffeb3b"/>
+<rect x="692" y="728" width="7" height="24" fill="#7b1fa2"/>
+<rect x="708" y="728" width="7" height="24" fill="#d32f2f"/>
+<polyline points="750,740 810,740" fill="none" stroke="#111" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="750,740 810,740" fill="none" stroke="#f08a24" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="820" y="745" font-size="15" text-anchor="start" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">GP4 / SDA (pin 6)</text>
+<polyline points="600,820 660,820" fill="none" stroke="#111" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="600,820 660,820" fill="none" stroke="#f08a24" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="660" y="808" width="90" height="24" rx="6" fill="#e9d8b4" stroke="#6b4f1d" stroke-width="2"/>
+<rect x="676" y="808" width="7" height="24" fill="#ffeb3b"/>
+<rect x="692" y="808" width="7" height="24" fill="#7b1fa2"/>
+<rect x="708" y="808" width="7" height="24" fill="#d32f2f"/>
+<polyline points="750,820 810,820" fill="none" stroke="#111" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="750,820 810,820" fill="none" stroke="#f08a24" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="820" y="825" font-size="15" text-anchor="start" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">GP5 / SCL (pin 7)</text>
+<text x="590" y="780" font-size="14" text-anchor="end" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">3V3(OUT)</text>
+<text x="590" y="798" font-size="14" text-anchor="end" font-weight="bold" fill="#1d1d1b" font-family="DejaVu Sans">pin 36</text>
+<text x="580" y="868" font-size="15" text-anchor="start" font-weight="bold" fill="#b23" font-family="DejaVu Sans">3V3(OUT) only: never VSYS or 5 V.</text>
+</svg>
