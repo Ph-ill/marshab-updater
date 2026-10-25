@@ -5,8 +5,8 @@
 #   wifi=True       also the hotspot, the phone server (or the status page on stock
 #                   MicroPython) and the captive DNS, as main.py runs them
 #   epoch=ms, tz=m  the time, as a phone would bring it (the flight day, the LED's quiet hours)
-#   led=True/False  the LED notifier on/off for this run; led_test=True plays 3 slow blinks
-#                   to watch for (lvled.py)
+#   led=True/False  the LED notifier on/off for this run; led_test=True plays 3 slow breaths
+#                   (the LED fades up and down 3 times, about 7 s) to watch for (lvled.py)
 # docs/BENCH_TEST.md has the full checklist and what to send back when something fails;
 # tools/bench.py runs all of it with one command and reads these lines.
 import os
@@ -95,7 +95,7 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None, led_t
         print("SELFTEST gift out: ship %d -> ship %d, record %s" % (ship.me + 1, int(gift_to), r.hex()))
     if led_test and ship.led_on(True):
         ship._led("test")
-        print("SELFTEST led test: watch the board's LED now: 3 slow blinks (1 s on, 1 s off)")
+        print("SELFTEST led test: watch the board's LED now: 3 slow breaths (fades up and down, 2 s each)")
     elif led_test:
         print("SELFTEST led test: skipped, the notifier needs the game firmware")
     print("SELFTEST led: notifier %s (led_notify %s), time known %s, waiting %s" % (
@@ -161,8 +161,9 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None, led_t
         n["sent"], n["got"], n["new"], n["ok"], n["fail"], n["retries"]))
     print("SELFTEST gifts in: %s" % (", ".join(["from ship %d item %d day %d" % (g[0] + 1, g[1], g[2])
                                                 for g in ship.gifts_in]) or "none"))
-    print("SELFTEST led: notifier %s, waiting %s, pin writes %d, now %s" % (
-        "ON" if ship.led.enabled else "off", ship.led.waiting, ship.led.writes, st["led"]["why"]))
+    print("SELFTEST led: notifier %s, waiting %s, pin writes %d, now %s, write cost %d us%s" % (
+        "ON" if ship.led.enabled else "off", ship.led.waiting, ship.led.writes, st["led"]["why"],
+        getattr(ship.led, "wus", 0), ", plain blinks (slow radio)" if getattr(ship.led, "wus", 0) > 2000 else ""))
     print("SELFTEST day: flight day %d (%s) at the end" % (ship.day, st["day_src"]))
     print("SELFTEST heap: used %d, peak %d, free now %d, lowest free %d" % (
         st["heap_used"], ship.mem_peak, st["heap_free"], low[0]))
