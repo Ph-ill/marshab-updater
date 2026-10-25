@@ -30,9 +30,12 @@ class Gauge:
         self.chg = False
         self.chg_fail = False
         self.made = 0
+        self.khz = []                 # the I2C speed of each bus made
+        self.max_khz = 0              # >0: the lines only work up to this speed (weak pull-ups)
 
-    def bus(self):
+    def bus(self, k):
         self.made += 1
+        self.khz.append(k)
         return self
 
     def charging(self):
@@ -41,7 +44,7 @@ class Gauge:
         return self.chg
 
     def readfrom_mem(self, addr, reg, n):
-        if self.fail or addr != 0x62:
+        if self.fail or addr != 0x62 or (self.max_khz and self.khz[-1] > self.max_khz):
             raise OSError(19)
         self.reads += 1
         raw = (self.mv * 1000 // 305) & 0x3FFF
@@ -75,7 +78,7 @@ g.fail = True
 s = Ship(g)
 check("absent start", lvbatt.start(s) == 60000 and s.bat is None)
 check("absent quiet", s.said == [], s.said)
-check("absent poll no-op", lvbatt.poll(s) == 60000 and s.bat is None and g.made == 1)
+check("absent poll no-op", lvbatt.poll(s) == 60000 and s.bat is None and g.made == 2 and g.khz == [50, 10], g.khz)
 check("absent line", lvbatt.line(s).startswith("none detected"))
 
 # -- switched off in ship.json: not even a look
@@ -89,10 +92,11 @@ g = Gauge(72, 3950)
 s = Ship(g)
 nxt = lvbatt.start(s)
 check("woken", g.writes == [(10, b"\x30")], g.writes)
-check("woken said", "battery: gauge woken (quick start)" in s.said and "battery: gauge found at 0x62" in s.said, s.said)
+check("woken said", "battery: gauge woken (quick start)" in s.said and "battery: gauge found at 0x62, I2C 50 kHz" in s.said, s.said)
 check("present", s.bat is not None and s.bat[0] == 72 and s.bat[2] is False, s.bat)
 check("mV", s.bat[1] in (3949, 3950), s.bat)
 check("every 60 s", nxt == 60000, nxt)
+check("50 kHz, one bus", g.khz == [50] and s.bat[8] == 50, (g.khz, s.bat))
 check("line", lvbatt.line(s) == "detected, 72%%, %d mV, charging no" % s.bat[1], lvbatt.line(s))
 
 # -- already awake (a Pico restart while the UPS stayed on): no quick start, estimate kept
@@ -173,12 +177,35 @@ s = Ship(Gauge(50, 3800, mode=0), bat_every_s=1)
 check("min every", lvbatt.start(s) == 5000)
 
 # -- a bus that can't even be made (bad pins in ship.json): absent
-def nobus():
+def nobus(k):
     raise ValueError("bad pin")
 
 
 s = Ship(None)
 s.bat_hw = (nobus, lambda: False)
 check("no bus", lvbatt.start(s) == 60000 and s.bat is None)
+
+# -- weak pull-ups: no answer at 50 kHz, found at 10 kHz, and the readings stay at 10
+g = Gauge(70, 3900, mode=0)
+g.max_khz = 10
+s = Ship(g)
+check("slow: found at 10 kHz", lvbatt.start(s) == 60000 and s.bat[0] == 70 and s.bat[8] == 10, (g.khz, s.bat))
+check("slow said", "battery: gauge found at 0x62, I2C 10 kHz" in s.said, s.said)
+lvbatt.poll(s)
+check("slow: polls at 10 kHz", g.khz[-1] == 10, g.khz)
+# bat_khz pins the speed: one try only
+g = Gauge(70, 3900, mode=0)
+s = Ship(g, bat_khz=100)
+lvbatt.start(s)
+check("bat_khz", g.khz == [100] and s.bat[8] == 100, g.khz)
+g.max_khz = 10                                # the lines get worse: three misses drop to 10 kHz
+for i in range(3):
+    lvbatt.poll(s)
+check("misses drop to 10 kHz", s.bat[0] is None and s.bat[8] == 10, s.bat)
+check("back at 10 kHz", lvbatt.poll(s) == 60000 and s.bat[0] == 70 and g.khz[-1] == 10, (g.khz, s.bat))
+g = Gauge()
+g.max_khz = 5                                 # nothing works: absent, both speeds tried
+s = Ship(g)
+check("too weak: absent", lvbatt.start(s) == 60000 and s.bat is None and g.khz == [50, 10], g.khz)
 
 print("test_batt: %d checks ok" % ok[0])
