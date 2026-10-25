@@ -165,6 +165,7 @@ if WEB:
 else:
     handler = lvstat.server(ship)
 during = [0]
+air = [None]
 
 
 def done_flag():
@@ -212,6 +213,17 @@ async def heap_run():
         if phones_done and peer.node.digest() == ship.node.digest() and ship.ble.state == "idle" \
                 and peer.state == "idle":
             break
+    if PHONE:
+        # A few more scans, so the ship hears the peer's advert after the sync (in sync now).
+        for i in range(6000):
+            w.step(10)
+            ship.ble.poll(w.now)
+            peer.poll(w.now)
+            if i % 5 == 0:
+                sample()
+        # (not sampled: the phones' own /api/state calls during the sync are, above)
+        air[0] = web.phone.state_body(0, 39, ship.clock.minute())["air"]
+        gc.collect()
     if LED:
         # the patterns in real time (the sync above runs on the fake radio's clock): the
         # test blinks, then the gift's double blink, polled as lvship's loop does
@@ -271,6 +283,12 @@ print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
+    # Bluetooth contact for the phones (lvphone.air): ship 2 heard seconds ago and in sync,
+    # nobody else heard; ship 1 is this one.
+    A = air[0]
+    air_ok = A is not None and len(A) == 1 and A[0][0] == 1 and 0 <= A[0][1] <= 30 and A[0][2] is True
+    ok = ok and air_ok
+    print("air: %s (ship 2 heard seconds ago, in sync): %s" % (A, "ok" if air_ok else "FAIL"))
     ok = ok and ship.cal is not None and ship.day == 42
     print("calendar: launch %s, flight day %d from the %s" % (ship.cal.date if ship.cal else None, ship.day,
                                                           ship.cal.src if ship.cal else "manual day"))

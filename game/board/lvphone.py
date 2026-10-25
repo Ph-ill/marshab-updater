@@ -274,6 +274,12 @@ class Phone:
             "eng": EN.view(self.eng, self.local, p, st, log, you, minute),
             "v": sh.v, "start": sh.cal.start if sh.cal is not None else None,
             "led": sh.led.enabled,
+            # Bluetooth contact, for the crew list and the gift picker: [ship index, seconds
+            # since this ship last heard it, its log matched ours then] per ship heard in the
+            # last day (lvship keeps lv/ble's peers that long); null with no radio. Ages count
+            # to lv/ble's last peer sweep (every 10 s), so no clock of our own. Not in the log.
+            "air": [[k, max(0, sh.ble._swept - q.seen) // 1000, q.diff_since is None]
+                    for k, q in sh.ble.peers.items()] if sh.ble else None,
         }
 
 

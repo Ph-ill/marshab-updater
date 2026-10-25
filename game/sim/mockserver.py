@@ -167,7 +167,15 @@ class Game:
             "eng": EN.view(self.eng, self.local, p, st, sh.log, you, minute),
             "led": self.led,       # the Ship light switch (board: lvled.py, off by default)
             "start": 360,          # a flight day starts at 06:00 (the board: lvcal.py; None on a fixed bench day)
+            "air": self.air(you),  # Bluetooth contact per ship (the board: lvphone.air)
         }
+
+    def air(self, you):
+        """A made-up picture of who is in Bluetooth range, as lvphone sends it: [ship index,
+        seconds since heard, in sync]. The mock has no radio, so this is a fixed sample: two
+        ships nearby (one still syncing), others heard minutes to hours ago, one never."""
+        ago = [(20, True), (75, False), (900, True), (5400, True), (30000, True), (300, True)]
+        return [[(you + 1 + i) % N, a, f] for i, (a, f) in enumerate(ago)]
 
     def gift(self, you, day, item, to, mode):
         """The board's rules for a gift tap. Returns an error string or None."""
