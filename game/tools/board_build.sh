@@ -21,10 +21,15 @@
 # to copy, mpremote (pip install mpremote). Every module is precompiled to .mpy: nothing
 # is compiled on the board, which is what keeps the heap low (docs/BENCH_TEST.md).
 # The board's own settings (/data/ship.json, /data/crew.json) are never touched.
+# The board modules are compiled with -O3 (MPY_OPT to change it): no line numbers in their
+# bytecode, about 1 KB less heap with the game loaded; a traceback from them names the
+# function but shows line 1 (build with MPY_OPT= to get line numbers back when debugging).
+# The board code has no asserts, so -O3 changes nothing else. The core lv/ keeps its lines.
 set -e
 cd "$(dirname "$0")/.."
 MPY_CROSS="${MPY_CROSS:-mpy-cross}"
 MPREMOTE="${MPREMOTE:-mpremote}"
+MPY_OPT="${MPY_OPT--O3}"
 OUT=build/board
 FW=build/board-fw
 GLUE="lvship lvreport lvcal lvled lvledcfg lvbatt lvdays lvweb lvphone lvstat lvwifi selftest"
@@ -38,7 +43,7 @@ for f in lv/*.py; do
   "$MPY_CROSS" -o "$OUT/lv/$(basename "$f" .py).mpy" "$f"
 done
 for f in $GLUE; do
-  "$MPY_CROSS" -o "$FW/$f.mpy" "board/$f.py"
+  "$MPY_CROSS" $MPY_OPT -o "$FW/$f.mpy" "board/$f.py"
 done
 cp board/main.py "$FW/main.py"       # the boot file stays .py (it is tiny)
 # Core modules changed since the frozen core the boards run: ship only those, as overrides.
