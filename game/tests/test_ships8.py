@@ -38,6 +38,11 @@ try:
 except ImportError:  # pragma: no cover
     import uasyncio as asyncio
 
+
+async def nap():
+    await lvship.sleep_ms(20)
+
+
 TODAY = "2026-10-25"
 PHONE_MS = 1792936800000         # 2026-10-25 09:00 CDT (14:00 UTC): flight day 1
 TZ = -300
@@ -129,6 +134,11 @@ for sid in range(1, 9):
                 s = ship.status()
                 check(tag + ": status", s["ship"] == sid and s["day"] == want, s)
                 check(tag + ": old keys don't change the game", ship.cfg.get("hotspot_open") is (True if old else False))
+                if ship.led.enabled:
+                    # the light breathed in its own task (lvled.Led.run); it ends with the loop, dark
+                    asyncio.run(nap())
+                    check(tag + ": light task ends with the loop", ship.led.task is None and not ship.led.lit
+                          and ship.led.writes > 0, (ship.led.task, ship.led.lit, ship.led.writes))
                 ship = None
                 gc.collect()
 rm_tree(TMP)

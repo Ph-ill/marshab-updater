@@ -12,8 +12,8 @@
 # 80 KB (80,000 B): the peak, less the fake radio module and the peer at its largest
 # (see below). The LED stays off, unless:
 #   --led    the LED notifier on (led_notify: board/lvled.py loaded, a fake pin from
-#            tests/fakeboard): it blinks through the sync (no quiet hours, a test pattern
-#            first), polled from the loop as lvship does. On stock MicroPython the
+#            tests/fakeboard): it breathes through the sync (no quiet hours, a test pattern
+#            first), polled frame by frame as its asyncio task (lvled.Led.run) does. On stock MicroPython the
 #            notifier stays dark (game firmware only); --led --force measures it anyway.
 #   dir      a directory of .mpy files first on the path (tools/board_build.sh build/board:
 #            stock MicroPython, Variant A): the code comes precompiled, as on the board.
@@ -226,7 +226,8 @@ async def heap_run():
         gc.collect()
     if LED:
         # the patterns in real time (the sync above runs on the fake radio's clock): the
-        # test blinks, then the gift's double blink, polled as lvship's loop does
+        # test breaths, then the gift's double pulse, polled frame by frame as the light's
+        # own task (lvled.Led.run) does
         n = 0
         while n < 9000:
             d = min(100, max(1, ship.led.poll(False)))

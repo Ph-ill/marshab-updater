@@ -1,5 +1,7 @@
-# machine for the unix port: Pin("LED") records its writes (tests/fakeboard/fakeboard.py).
-writes = []
+# machine for the unix port: Pin("LED") counts its writes (tests/fakeboard/fakeboard.py).
+# A count, not a list: the breathing light writes ~50 times a second while a pattern plays,
+# and a list of them would grow into the heap the tests measure (tests/mp_sync_heap.py --led).
+writes = [0]
 
 
 class Pin:
@@ -14,7 +16,7 @@ class Pin:
         if v is None:
             return self.v
         self.v = 1 if v else 0
-        writes.append(self.v)
+        writes[0] += 1
 
 
 def reset():
