@@ -193,6 +193,7 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 .bl{list-style:none;margin:var(--s4) 0 0;padding:0;border-top:1px solid var(--ink)}
 .bl li{display:grid;grid-template-columns:104px 1fr;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--rule);font-size:16px;line-height:22px}
 .bl b{font:600 12px/22px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.near{font-weight:600;color:var(--ink)}.near::before{content:"";display:inline-block;width:7px;height:7px;background:var(--rust);margin-right:6px;vertical-align:1px}
 .fine{margin-top:var(--s4);font:13px/18px var(--mono);letter-spacing:.04em;color:var(--ink2)}
 .tnav{display:grid;grid-template-columns:2fr 3fr;gap:var(--s2)}
 .tnav .btn+.btn{margin-top:0}
@@ -442,6 +443,17 @@ function home(){
   $("v").innerHTML=o;
   dock(actDock(),"home");
 }
+// Bluetooth contact for crewmate j's ship (S.air from the board: [ship, seconds since this
+// ship heard it, in sync]). Nearby = heard in the last 3 minutes: a gift lands in a minute
+// or so. Otherwise when it was last in range; sending never needs it.
+function air(j,short){
+  if(!S.air||j===S.here)return "";
+  const a=S.air.find((x)=>x[0]===j),s=a?a[1]:-1;
+  if(!a)return short?"Not lately":"Not in range lately";
+  if(s<=180)return `<b class=near>Nearby${short?"":a[2]?" · in sync":" · syncing"}</b>`;
+  const t=s<3600?Math.round(s/60)+" min":s<86400?Math.round(s/3600)+" h":"a day";
+  return short?t+" ago":`In range ${t} ago`;
+}
 function bondWord(b){return b>=40?"Close":b>=15?"Friendly":b>-15?"Neutral":b>-40?"Prickly":"At odds"}
 function crew(c){
   const mine=c===S.you||c==null;c=mine?S.you:c;
@@ -452,7 +464,7 @@ function crew(c){
   o+=`<section><div class=lab><span>Morale</span><span>${S.morale[c]}</span></div><div class=gauge style="padding-top:0"><span class=lo>Low</span><span></span><span class=hi>High</span>${meter(S.morale[c])}</div></section>`;
   if(mine){
     const ord=[...Array(N).keys()].filter((j)=>j!==c).sort((a,b)=>S.bonds[b]-S.bonds[a]);
-    o+=`<section><div class=lab><span>Crewmates</span><span>bond</span></div>`+ord.map((j)=>`<button class=row data-go="crew/${j}"><span class=pt>${portrait(j)}</span><span class=t>${h(nm(j))}<small>${bondWord(S.bonds[j])}${S.cond[j]===2?" · sent home":""}</small></span><span class=m style="width:88px;height:24px">${ticks(S.bonds[j],5)}</span></button>`).join("")+`</section>`;
+    o+=`<section><div class=lab><span>Crewmates</span><span>bond</span></div>`+ord.map((j)=>`<button class=row data-go="crew/${j}"><span class=pt>${portrait(j)}</span><span class=t>${h(nm(j))}<small>${bondWord(S.bonds[j])}${S.cond[j]===2?" · sent home":""}</small>${S.cond[j]!==2&&air(j)?`<small>${air(j)}</small>`:""}</span><span class=m style="width:88px;height:24px">${ticks(S.bonds[j],5)}</span></button>`).join("")+`${S.air?`<p class=fine>Nearby: their ship is in Bluetooth range, so what you send lands in a minute or so. Otherwise it waits for the next time ships meet. Sending never needs it.</p>`:""}</section>`;
   }
   const mentions=[];
   for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if(x.s.includes(nm(c))&&mentions.length<3)mentions.push([d,x.s]);
@@ -515,7 +527,7 @@ function actSheet(){
   o+=`</section>`;
   if(d.a===0){
     const mates=[...Array(N).keys()].filter((j)=>j!==S.you&&S.cond[j]!==2);
-    o+=`<section><div class=lab><span>To whom</span></div><div class=grid2>${mates.map((j)=>`<button class=opt data-sub="t:${j}" aria-pressed="${d.t===j}"><span class=k>${pad(j+1)}</span><span class=t>${h(nm(j))}</span></button>`).join("")}</div></section>`;
+    o+=`<section><div class=lab><span>To whom</span></div><div class=grid2>${mates.map((j)=>`<button class=opt data-sub="t:${j}" aria-pressed="${d.t===j}"><span class=k>${pad(j+1)}</span><span class=t>${h(nm(j))}${air(j)?`<small>${air(j,1)}</small>`:""}</span></button>`).join("")}</div>${S.air?`<p class=fine>Nearby: it reaches their ship in a minute or so. Otherwise it travels the next time ships meet.</p>`:""}</section>`;
   }else if(d.a===1){
     o+=`<section><div class=lab><span>Try to be</span></div><div class=grid2>${[0,1,2].flatMap((p)=>[1,0].map((dir)=>`<button class=opt data-sub="p:${p}:${dir}" aria-pressed="${d.p===p&&d.t===dir}"><span class=k>${dir?"+":"−"}</span><span class=t>${h(T.axis_words[p][dir?0:1])}</span></button>`)).join("")}</div></section>`;
   }else if(d.a===2){
@@ -610,7 +622,7 @@ function meet(){
   o+=`<p>Once a day you can give ${h(A)} one instruction. Everything else, ${h(A)} decides. The voyage carries on while you're away.</p></div>`;
   o+=`<section><div class=lab><span>Starting character</span></div>${[0,1,2].map((a)=>gauge(S.you,a)).join("")}</section>`;
   $("v").innerHTML=o;
-  dock(tutDue?`<button class="btn pri" data-go="how"><span>Crew briefing</span><i>${EG?6:4} cards</i></button>`:`<button class="btn pri" data-go="home"><span>Go aboard</span><i>FD ${pad(S.day)}</i></button>`,"");
+  dock(tutDue?`<button class="btn pri" data-go="how"><span>Crew briefing</span><i>${TUT().length} cards</i></button>`:`<button class="btn pri" data-go="home"><span>Go aboard</span><i>FD ${pad(S.day)}</i></button>`,"");
 }
 
 // ---- crew briefing (how to play) -------------------------------------------------------
@@ -624,34 +636,46 @@ function briefDone(){try{localStorage.setItem(TK,"1")}catch(e){}tutDue=false;go(
 function tFig(kind){
   if(kind===1){let t="";const Q=S.season;for(let i=1;i<=Q;i++){const x=(i-.5)*100/Q,on=S&&i<=S.day,now=S&&i===S.day;t+=`<line x1="${x}" x2="${x}" y1="${now?2:i%7?10:6}" y2="22" stroke="${now?PR:on?PI:"var(--rule)"}" stroke-width="${now?2:1}" vector-effect="non-scaling-stroke"/>`}
     return `<div class=fig><svg viewBox="0 0 100 24" preserveAspectRatio="none" style="height:24px">${t}</svg><div class=lab><span>FD 01</span><span>Today FD ${pad(S.day)}</span><span>FD ${pad(Q)}</span></div></div>`}
-  if(kind===3){let t="";for(let i=0;i<8;i++){const x=1+i*12.4;t+=`<rect x="${x}" y="1" width="9" height="9" fill="${[0,1,3,4,6].includes(i)?PI:"none"}" stroke="${PI}" stroke-width="1"/>`;if(i<7)t+=`<path d="M${x+9.5} 5.5H${x+12.4}" stroke="${PI}" stroke-dasharray="1 1" stroke-width=".75"/>`}
-    return `<div class=fig><svg viewBox="0 0 100 11">${t}</svg><div class=lab><span>8 ships</span><span>5 ballots heard here</span></div></div>`}
+  if(kind===2){const sp=(x)=>`<path d="M${x} 19V7Q${x+3} 0 ${x+6} 7V19Z" fill="none" stroke="${PI}" stroke-width="1"/>`,dl=(a,b)=>`<path d="M${a} 13H${b}" stroke="${PI}" stroke-dasharray="1.5 1.5" stroke-width=".75"/>`;
+    return `<div class=fig><svg viewBox="0 0 100 20"><rect x="2" y="5" width="8" height="14" rx="1.5" fill="none" stroke="${PI}" stroke-width="1"/>${dl(12,33)}${sp(36)}${dl(45,82)}${sp(86)}<rect x="38" y="10" width="2" height="2" fill="${PR}"/></svg><div class=lab><span>Phone</span><span>Wi-Fi</span><span>Ship</span><span>Bluetooth</span><span>Ship</span></div></div>`}
   let t="";["w","w","c","w","w","w","t"].forEach((k,i)=>{t+=`<rect x="${1+i*14}" y="1" width="12" height="12" fill="${k==="w"?PI:"none"}" stroke="${k==="t"?PR:PI}" stroke-width="${k==="t"?2:1}"${k==="c"?' stroke-dasharray="2 1.5"':""}/>`});
   return `<div class=fig><svg viewBox="0 0 100 14">${t}</svg><div class=lab><span>Solid: watch</span><span>Dashed: covered</span><span>Rust: today</span></div></div>`;
 }
 function TUT(){
-  const A=h(nm(S.you)),file=EG?"FILE":"CREW",st0=S.start!=null?S.start:DSTART;
+  const A=h(nm(S.you)),file=EG?"FILE":"CREW",st0=S.start!=null?S.start:DSTART,Q=S.season,
+    wk=Q%7?Q+" days":(["one week","two weeks","three weeks","four weeks","five weeks","six weeks","seven weeks","eight weeks"][Q/7-1]||Q/7+" weeks");
   const st=[
-    ["The voyage","One page a day",`The voyage runs ${S.season} flight days, from Earth orbit to Mars orbit. A new flight day starts every ${st0<720?"morning":"day"} at ${hm(st0)}. The voyage takes ${S.season%7?S.season+" days":(["one week","two weeks","three weeks","four weeks","five weeks","six weeks","seven weeks","eight weeks"][S.season/7-1]||S.season/7+" weeks")}. Each flight day adds one page to the log.`,tFig(1),
-      [["Your astronaut",`You look after ${A}. Once a flight day you may give ${A} one instruction: a gift, some advice, a task, or rest.`],["Everything else",`${A} decides. Instructions and answers take effect on the next flight day.`]]],
-    ["Needs you","Things waiting on you",`Home lists only what is waiting on you. Each item shows the flight day it closes. New ones carry a rust mark.`,"",
-      [["Private",`A question only you are asked. Nobody else is told what you picked.`],["Anyone",`Any ship can answer. One tap from anywhere is enough.`],["Fleet vote","Every ship gets a ballot. See next card."]].concat(EG?[["Timed job",`${A}'s job for the day. The result posts at the time shown.`]]:[]).concat([["Left alone",`It settles itself: the crew's lean, or ${A}'s own judgement.`]])],
-    ["Fleet votes","One ship, one ballot",`A fleet vote goes to all eight ships. The most ballots by the closing day wins. A tie, or no ballots at all, goes the way the crew leans.`,tFig(3),
-      [["Ballots travel","Ships pass ballots along whenever they are in range of each other. Your count is what your ship has heard so far, so it may lag. It catches up."],["Second thoughts","You can change your ballot until the vote closes."]]]];
+    ["The goal","Get to Mars, together",`Eight crews fly eight Starships from Earth orbit to Mars orbit: ${Q} flight days. You look after one astronaut, ${A}. Your job is to see ${A} through it, steady and on good terms with the crew.`,"",
+      [["Your part",`Once a day, tell ${A} what to do. ${A} decides the rest, in character.`],["The fleet","Seven other crews make their own calls. Theirs touch yours, and yours touch theirs."],["Easy pace","A few minutes a day is plenty. Busy days happen; the voyage keeps going."]]],
+    ["How it works","A ship on the shelf",`Each ship is a tiny computer, a Pico W, inside a 3D-printed Starship. It runs its own Wi-Fi, LV-${S.here+1} for this one. Join it and this page opens. No internet, no app.`,tFig(2),
+      [["Wi-Fi","Your phone talks to the ship it's next to. Your crew code works on every ship."],["Bluetooth","Ships near each other swap news by themselves: instructions, answers, ballots, gifts."],["Out of range","A ship keeps everything and catches up the next time it meets another."]]],
+    ["Your day","One flight day a day",`A new flight day starts every ${st0<720?"morning":"day"} at ${hm(st0)}, real time, for ${wk}. Each one adds a page to the log and brings something new to do.`,tFig(1),
+      [["Each day",`Read the page, give ${A} today's instruction, answer what's waiting. That's the rhythm.`],["Why daily","Instructions land on the next flight day and questions close on set days. Checking in is how you steer."],["Nobody waits",`If you're away, ${A} carries on alone. Nothing holds up anyone else.`]]],
+    ["Instructions","One instruction a day",`Pick one thing for ${A} each flight day. It takes effect when the next flight day starts. Once sent, it's set. Skip a day and ${A} acts on their own character.`,"",
+      [["Gift",`${A} warms to one crewmate, and their morale lifts.`],["Advice",`Nudges one side of ${A}'s character a little.`],["Task",`Tops up a fleet store, at a small cost to ${A}'s morale.`],["Rest",`${A}'s morale comes back up.`]]],
+    ["Needs you","What's waiting on you",`Home lists only what's waiting on you, each with the flight day it closes. New ones carry a rust mark. Answer in time, or it settles itself.`,"",
+      [["Private",`Only you are asked, and nobody sees your pick. Leave it, and ${A} decides in character.`],["Anyone","Any ship can answer it. One tap from anywhere is enough."],["Fleet vote","One ballot per ship. Most ballots by the closing day wins; a tie or none goes the crew's way. You can change yours until it closes."]].concat(EG?[["Timed job",`${A}'s job for the day. The result posts at the time shown.`]]:[])]];
   if(EG)st.push(
-    ["Deliveries","Drops and cargo",`Small extras. None of them are required.`,"",
-      [["Daily drop","One sealed item for your ship each flight day. It keeps. Open it whenever you like."],["Gifts","Send one crewmate one gift a flight day. It warms the bond and lifts their morale a little."],["Asks","Ask for one thing a flight day. Anyone may answer it for 3 days, after which it lapses quietly."],["Cargo in","Anything sent to you waits on Home."]]],
-    ["Watch duty","Keeping watch",`Anything you send on a flight day counts as a watch: an instruction, a ballot, an answer, a gift or an ask.`,tFig(5),
-      [["Grace days",`Miss a day and ${A} covers it, up to twice a flight week. Today never counts against you.`],["Badges",`Awarded at ${EG.badges.map((b)=>b[0]).join(", ").replace(/, (\d+)$/," and $1")} days.`],["Broken run","A new watch starts with your next tap. No paperwork."]]]);
-  st.push(["The log","At your own pace",`The log reads newest page first. Pages new since your last visit carry a rust square.`,"",
-    [["Late signals","Today's and yesterday's pages may still change as word arrives from other ships. That is normal."],["Days off",`Miss a day, or a week. ${A} carries on in character, votes close with whoever voted, and nothing waits on anyone.`],["Filed under",`${file} › How to play, for when you need it again.`]]]);
+    ["Deliveries","Drops and cargo",`Small extras on top of your instruction. None are required, all are nice.`,"",
+      [["Daily drop","One sealed item for your ship each flight day. It keeps until you open it."],["Gift",`Send one crewmate one gift a flight day. It warms the bond and lifts their morale.`],["Ask",`Ask one crewmate for something. They have ${EG.gifts.ask_days} days to send it, then it lapses quietly.`],["Cargo in","Anything sent to you waits on Home."]]]);
+  st.push(
+    ["Bluetooth","How things travel",`Everything you send leaves right away. Your ship keeps it and hands it on by Bluetooth to any ship in range. Ships pass things along for each other, too.`,"",
+      [["Nearby","Their ship is in range now, so it lands within a minute or so."],["Not nearby","It waits, then travels the next time ships meet, directly or by way of another ship."],["Who's near",`CREW and the gift list show who's nearby, and when each ship was last in range.`],["Counts lag","Vote counts show what your ship has heard so far. They catch up."]]]);
+  if(EG)st.push(
+    ["Watch duty","Keeping watch",`Anything you send on a flight day counts as a watch: an instruction, a ballot, an answer, a gift or an ask. Days in a row make a run.`,tFig(5),
+      [["Grace days",`Miss a day and ${A} covers it, up to twice a flight week. Today never counts against you.`],["Badges",`Awarded at ${EG.badges.map((b)=>b[0]).join(", ").replace(/, (\d+)$/," and $1")} days.`],["Broken run","A new run starts with your next tap. No harm done."]]]);
+  if(S.led!=null)st.push(
+    ["Ship light","A light on the ship",`Your ship's light can blink to say something's waiting, no phone needed. It's off until someone turns it on: CREW › Ship light.`,"",
+      [["One blink","Every few seconds: today's page hasn't been opened here yet."],["Double","A crewmate's gift has reached this ship."],["Three quick","A new flight day has begun."],["Off again","Opening the game here clears it. Dark at night, 22:00 to 07:00."]]]);
+  st.push(["The log","Missed a few days?",`No problem. The log reads newest page first, and pages new since your last visit carry a rust square. Catch up whenever you like.`,"",
+    [["While away",`${A} carries on in character and votes close with whoever voted.`],["Late signals","Today's and yesterday's pages can still change as word arrives from other ships. That's normal."],["Filed under",`${file} › How to play, for when you need it again.`]]]);
   return st;
 }
 function how(n){
   const L=TUT();n=Math.min(Math.max(0,n|0),L.length-1);
   const [k,t,p,fig,li]=L[n],last=n===L.length-1;
   $("top").hidden=false;$("top").innerHTML=`<b>CREW BRIEFING</b>${last?`<span>${pad(n+1)}/${pad(L.length)}</span>`:`<button data-tut=skip class=m style="height:48px;padding:0 0 0 16px;font-size:15px;text-decoration:underline">Skip</button>`}`;
-  let o=`<section class="kick tut" aria-labelledby=th aria-roledescription="briefing card"><div class=lab style="display:flex;justify-content:space-between;gap:var(--s3)"><span>Briefing ${pad(n+1)}/${pad(L.length)}</span><span>${k}</span></div>`;
+  let o=`<section class="kick tut" aria-labelledby=th aria-roledescription="briefing card"><div class=lab style="display:flex;justify-content:space-between;gap:var(--s3)"><span>${n<3?"Intro":"Briefing"} ${pad(n+1)}/${pad(L.length)}</span><span>${k}</span></div>`;
   o+=`<ol class=tsteps aria-hidden=true>${L.map((_,i)=>`<li class="${i<n?"d":i===n?"c":""}"></li>`).join("")}</ol>`;
   o+=`<h1 id=th tabindex=-1><span class=sr>Step ${n+1} of ${L.length}: </span>${t}</h1><p class=lead>${p}</p>${fig?fig.replace("<svg",'<svg aria-hidden="true"'):""}`;
   o+=`<ul class=bl>${li.map(([a,b])=>`<li><b>${a}</b><span>${b}</span></li>`).join("")}</ul>`;

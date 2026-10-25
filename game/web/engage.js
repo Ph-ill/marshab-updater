@@ -114,7 +114,7 @@ function giftsScreen(){
   const mode=gd.mode,can=mode?!E.asked:!E.gave;
   o+=`<section><div class=lab><span>Send</span><span>${can?"1 today":"done today"}</span></div><div class=grid2><button class=opt data-eng="mode:0" aria-pressed="${mode===0}"><span class=k>G</span><span class=t>Give</span></button><button class=opt data-eng="mode:1" aria-pressed="${mode===1}"><span class=k>A</span><span class=t>Ask</span></button></div>`;
   if(can){
-    o+=`<div class=lab style="margin-top:16px">${mode?"Ask whom":"To whom"}</div><div class=grid2>${mates.map((j)=>`<button class=opt data-eng="to:${j}" aria-pressed="${gd.to===j}"><span class=k>${pad(j+1)}</span><span class=t>${h(nm(j))}</span></button>`).join("")}</div>`;
+    o+=`<div class=lab style="margin-top:16px">${mode?"Ask whom":"To whom"}</div><div class=grid2>${mates.map((j)=>`<button class=opt data-eng="to:${j}" aria-pressed="${gd.to===j}"><span class=k>${pad(j+1)}</span><span class=t>${h(nm(j))}${air(j)?`<small>${air(j,1)}</small>`:""}</span></button>`).join("")}</div>${S.air?`<p class="dim fine" style="margin-top:8px">It always sends. Nearby means their ship is in range and it lands in a minute or so; otherwise it travels the next time ships meet.</p>`:""}`;
     o+=`<div class=lab style="margin-top:16px">${mode?"For":"What"}</div><div class=items>${G.items.map((x,i)=>x[mode?2:1]?`<button class=opt data-eng="item:${i}" aria-pressed="${gd.item===i}"><span class=k>${pad(i+1)}</span><span class=t><b>${h(x[0])}</b></span></button>`:"").join("")}</div>`;
   }else o+=`<p class=dim style="margin-top:8px">${mode?"Your ask for today is on its way.":"Today's gift is on the cargo run."} Tomorrow there's room for another.</p>`;
   o+=`</section>`;
