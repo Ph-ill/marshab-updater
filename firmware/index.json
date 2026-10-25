@@ -3,10 +3,20 @@
   "project": "LongVoyage",
   "latest": "0.0.2-coex",
   "channels": {
-    "test": "0.1.0-lv-test",
+    "test": "0.2.0-lv-test",
     "bench": "0.0.2-coex"
   },
   "releases": [
+    {
+      "version": "0.2.0-lv-test",
+      "channel": "test",
+      "date": "2026-10-25",
+      "label": "Long Voyage test: the phone game on the board, BLE sync (game firmware 0.2.0)",
+      "path": "/firmware/releases/0.2.0-lv-test/release.json",
+      "bytes": 62389,
+      "files": 6,
+      "frozen": "2661c2144844"
+    },
     {
       "version": "0.1.0-lv-test",
       "channel": "test",
