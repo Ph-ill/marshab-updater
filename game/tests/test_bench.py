@@ -48,12 +48,14 @@ SELFTEST day: flight day 9 (phone), launch date 2026-10-15, time known True
 SELFTEST ble: active True, advert 0201
 SELFTEST led test: watch the board's LED now: 3 slow breaths (fades up and down, 2 s each)
 SELFTEST led: notifier ON (led_notify True), time known True, waiting False
+SELFTEST battery: detected, reading unknown, charging no
 SELFTEST server: phone game listening on port 80
 SELFTEST t=10s STAT ship=2 recs=3 digest=aa ble=idle peers=1 ok=1 fail=0 sent=1 got=2 new=2 gifts_in=0 led=test/6 heap_used=70000 heap_free=100 day=9/phone
 SELFTEST t=20s STAT ship=2 recs=3 digest=aa ble=idle peers=1 ok=2 fail=0 sent=1 got=2 new=2 gifts_in=1 led=gift/10 heap_used=71000 heap_free=100 day=9/phone
 SELFTEST dns: every name -> 192.168.4.1 on port 53
 SELFTEST peers seen: 1 (ship 3)
 SELFTEST led: notifier ON, waiting False, pin writes 10, now gift
+SELFTEST battery: detected, 72%, 3950 mV, charging yes at the end
 SELFTEST day: flight day 9 (phone) at the end
 SELFTEST heap: used 70500, peak 71234, free now 1, lowest free 1
 SELFTEST ble active             PASS
@@ -79,6 +81,7 @@ check("parse: stats", [(s["t"], s["led"], s["day"], s["src"]) for s in st["stats
 check("parse: day lines", st["days"][0] == (9, "phone"), st["days"])
 check("parse: wifi/server/dns", "LV-2" in st["wifi"] and "port 80" in st["server"] and "every name" in st["dns"])
 check("parse: led end line", st["led"].startswith("notifier ON, waiting False, pin writes 10"), st["led"])
+check("parse: battery (the last line)", st["battery"] == "detected, 72%, 3950 mV, charging yes at the end", st)
 check("parse: ignores noise", bench.parse_selftest("hello\nSELFTESTX y PASS\n")["checks"] == {})
 
 rep = bench.Report()
@@ -87,7 +90,11 @@ txt = rep.text()
 for row in ("selftest ran", "heap used < 80 KB", "BLE up", "Wi-Fi hotspot up", "phone server listening", "captive DNS up",
             "flight day", "LED path", "LED pulse test", "peers"):
     check("report row " + row, row in txt, txt)
+check("report: battery INFO", re.search(r"battery\s+INFO\s+detected, 72%", txt), txt)
 check("report: CHECK in sync fails with --peers", not rep.ok(), txt)
+rep = bench.Report()
+bench.selftest_checks(rep, bench.parse_selftest(CANNED.replace("SELFTEST battery:", "SELFTEST (no) battery:")))
+check("report: no battery line is INFO", re.search(r"battery\s+INFO\s+not reported", rep.text()), rep.text())
 rep = bench.Report()
 st2 = bench.parse_selftest(CANNED.replace("in sync with a peer    CHECK", "in sync with a peer    PASS")
                            .replace("RESULT CHECK", "RESULT PASS"))
@@ -198,10 +205,15 @@ FW = os.environ.get("LV_FROZEN_MP")
 logs = tempfile.mkdtemp()
 
 
-def bench_run(root, mp, *extra):
+def bench_run(root, mp, *extra, bat=None):
+    """bat="PERCENT,MV,CHARGING": the fake board has a UPS-Lite (tests/fakeboard/fake_machine.py)."""
+    env = dict(os.environ)
+    env.pop("LV_FAKE_BAT", None)
+    if bat:
+        env["LV_FAKE_BAT"] = bat
     p = subprocess.run([sys.executable, os.path.join(GAME, "tools", "bench.py"), "--fake-board", root,
                         "--micropython", mp, "--no-ask", "--log-dir", logs, "--quiet"] + list(extra),
-                       capture_output=True, text=True, timeout=600)
+                       capture_output=True, text=True, timeout=600, env=env)
     return p.returncode, p.stdout + p.stderr
 
 
@@ -227,6 +239,7 @@ if FW:
                 "captive DNS up          PASS", "flight day              PASS", "LED path                PASS",
                 "LED pulse test          INFO"):
         check("fw row " + row.split()[0], row in o, o)
+    check("fw: no battery is INFO", re.search(r"battery\s+INFO\s+none detected", o), o)
     check("fw: codes not printed", "1234" not in o and "4321" not in o)
     check("fw: fleet key not printed", "fleet-placeholder" not in o)
     cfg = json.load(open(os.path.join(root, "data", "ship.json")))
@@ -241,8 +254,10 @@ if FW:
     log = open(os.path.join(logs, sorted(x for x in logs_now if x.startswith("ship3-"))[-1])).read()
     check("fw: log has no codes", "1234" not in log and "4321" not in log)
     # again: nothing to write, one more code, the others kept (same salt), the LED switched off
-    rc, o = bench_run(root, FW, "--ship", "3", "--led", "off", "--code", "Jai=5555", "--seconds", "5")
+    rc, o = bench_run(root, FW, "--ship", "3", "--led", "off", "--code", "Jai=5555", "--seconds", "5",
+                      bat="12,3610,0")
     check("fw again: PASS", rc == 0, o)
+    check("fw again: low battery is INFO", re.search(r"battery\s+INFO\s+detected, 12%, 36\d\d mV, charging no", o), o)
     check("fw again: no files written", "install: nothing to write" in o or "0 of" in o, o)
     crew2 = json.load(open(os.path.join(root, "data", "crew.json")))
     book = lvcodes.CodeBook(crew2)
