@@ -13,7 +13,7 @@
       "date": "2026-10-25",
       "label": "Long Voyage test: the phone game on the board, BLE sync (game firmware)",
       "path": "/firmware/releases/0.1.0-lv-test/release.json",
-      "bytes": 96616,
+      "bytes": 97434,
       "files": 17,
       "frozen": "f1b383588e79"
     },
