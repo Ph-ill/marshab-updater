@@ -33,8 +33,8 @@ It:
    with all 8 in roster order; the others keep theirs);
 4. runs the self-test for 60 s (`--seconds`) with the hotspot, the phone server, the captive
    DNS and BLE up, and this computer's time given to the board as a phone would;
-5. with `--led-test`, plays 3 slow blinks (1 s on, 1 s off) and asks whether you saw them
-   (section 12 for seeing the LED through the case);
+5. with `--led-test`, plays 3 slow breaths (the LED fading up and back down 3 times, about
+   7 s) and asks whether you saw it pulse (section 12 for seeing the LED through the case);
 6. prints the report and saves it with the whole console to `game/build/bench-logs/`
    (codes and the password are never printed or logged), then resets the board into the game.
 
@@ -52,7 +52,7 @@ phone server listening  PASS  phone game listening on port 80
 captive DNS up          PASS  every name -> 192.168.4.1 on port 53
 flight day              PASS  day=9/phone (expected day=9/phone)
 LED path                PASS  notifier ON, waiting …
-LED blink test          PASS  you saw the 3 blinks
+LED pulse test          PASS  you saw the 3 slow breaths (fading up and down)
 peers                   INFO  none
 OVERALL PASS
 ```
@@ -70,7 +70,7 @@ check with `--peers`. Exit code 0 = all PASS, 1 = something failed: send the log
 - `--dry-run` shows what it would do; `--no-install`, `--no-selftest`, `--no-reset`,
   `--quiet`, `--no-clock`. `python3 game/tools/bench.py --help` lists them all.
 
-What it can't see: whether the LED blinked (it asks you), a phone joining the hotspot and
+What it can't see: whether the LED pulsed (it asks you), a phone joining the hotspot and
 the captive sheet opening (section 10), range. The manual steps below are unchanged.
 
 ### A board that hangs, or a sealed board you need back at the REPL
@@ -230,7 +230,7 @@ Tick each one; the expected output is what a pass looks like.
 | 3 | First sync | 4, A and B | within ~60 s: `ble: synced with ship …`, `ok=1`+, both `digest=` equal, `peers=2=` / `1=` |
 | 4 | Gift path | 4, `gift_to` | the target prints `gift: from ship …`; `gifts in:` lists it |
 | 5 | Bulk transfer | preload A (section 3), run A and B | B reaches 274 records plus the gifts, and A's digest, in under 2 min; `retries` small |
-| 6 | LED path (game firmware) | `selftest.run(120, gift_to=2, led=True, led_test=True, epoch=<UNIX_TIME>, tz=<MINUTES_EAST_OF_UTC>)` on A, gift from B; or `bench.py --led on --led-test` | A: 3 slow blinks first, then `led=gift/…` in STAT and a double blink every ~3 s (outside 22:00–07:00). Without `led=True`: `pin writes 0`, `led=off/0`, dark. Section 12 |
+| 6 | LED path (game firmware) | `selftest.run(120, gift_to=2, led=True, led_test=True, epoch=<UNIX_TIME>, tz=<MINUTES_EAST_OF_UTC>)` on A, gift from B; or `bench.py --led on --led-test` | A: 3 slow breaths first, then `led=gift/…` in STAT and a double pulse every ~4 s (outside 22:00–07:00). Without `led=True`: `pin writes 0`, `led=off/0`, dark. Section 12 |
 | 7 | Coexistence with Wi-Fi | `wifi=True` on A; join `LV-1` from a phone, open `http://192.168.4.1/status` and `/api/sync` | hotspot stays up and pages load during and after a sync; the sync still completes. (On the game firmware `/` is the phone game: section 10) |
 | 8 | Relay (3 boards) | keep A and C apart (another room, or C off until A–B synced), then bring C near B only | C gets A's records through B |
 | 9 | Off / out of range | power B off mid-test, back on after a minute | A shows `fail=` going up at most once or twice, then quiet (backoff), and syncs again within ~1 min of B returning; nothing stuck in `ble=connecting`/`sync` |
@@ -287,9 +287,10 @@ reordering, mid-transfer disconnects, power-off, out-of-date and wedged peers; 3
   `SELFTEST heap:`. The Wi-Fi driver's and lwIP's buffers live outside the MicroPython
   heap and aren't in these numbers.
 - **Range** and how often boards actually meet in practice.
-- **The ship light**: that the blinks are visible (section 12) and that the LED writes
-  (commands to the CYW43 chip) don't disturb BLE or the hotspot: compare `ok`/`fail` in
-  the STAT lines with the light on and off.
+- **The ship light**: that the breathing is visible (section 12) and that the LED writes
+  (commands to the CYW43 chip, about 50 a second while a pattern plays) don't disturb BLE
+  or the hotspot: compare `ok`/`fail` in the STAT lines with the light on and off, and
+  phone page loads while it pulses.
 - **`tools/bench.py` on a real board**: finding the port, stopping `main.py` to get the
   REPL, the `--uf2` BOOTSEL copy. Tested only against fake boards; if it misbehaves, the
   manual steps in this file still work.
@@ -502,42 +503,58 @@ time T a few minutes from now (e.g. `21:30`).
 
 The Pico W's onboard LED as a quiet "something is waiting" light (`board/lvled.py`). Game
 firmware only (on stock MicroPython its code would push the heap past the cap, so it stays
-dark there). **Off unless switched on**, three ways: tick "Blink the onboard light…" in
+dark there). **Off unless switched on**, three ways: tick "Pulse the onboard light…" in
 section 4 of the updater page and Save; the **Ship light** button on your own astronaut's
 page on the phone (CREW → you; kept in `ship.json` too); or `bench.py --led on`.
+
+Every pattern **breathes**: the LED has no dimmer (it is a pin on the radio chip, on or
+off), so the board flicks it 100 times a second, lit for part of each 10 ms frame, the lit
+part following a squared ramp up and back down. The eye sees a soft glow swelling and
+fading, not a blink (tried on a real board first, and it looked right).
 
 What it shows (most important first):
 
 | Pattern | Means | Rhythm |
 |---------|-------|--------|
-| 3 slow blinks, once | the bench test (`--led-test`, `selftest.run(..., led_test=True)`) | 1 s on, 1 s off |
-| 3 quick flashes, once | a new flight day's page is ready (06:00) | 70 ms flashes |
-| double blink | a crewmate sent a gift | every ~3 s |
-| one short blink | today's page hasn't been opened here yet | 90 ms every ~4 s |
+| 3 slow breaths, once | the bench test (`--led-test`, `selftest.run(..., led_test=True)`) | 1 s up, 1 s down, 0.5 s dark between |
+| 3 quick breaths, once | a new flight day's page is ready (06:00) | 0.2 s up, 0.3 s down |
+| double pulse | a crewmate sent a gift | 2 quick pulses (0.4 s) every ~4 s |
+| one slow breath | today's page hasn't been opened here yet | 0.6 s up, 0.8 s down, every ~5 s |
 
 - **Clears** as soon as a signed-in phone opens the game on this board.
 - **Quiet hours** 22:00–07:00 local time (the phones' clock, so daylight saving follows the
-  phones); the 06:00 flash falls inside them and shows at 07:00 instead. `"led_quiet":
+  phones); the 06:00 breaths fall inside them and show at 07:00 instead. `"led_quiet":
   "HH:MM-HH:MM"` in `ship.json` changes them, `""` turns them off.
 - **No time, no light**: until a phone has brought the time since boot it stays dark
-  (`"led_unknown_time": true` to blink anyway).
-- **Budget**: at most 240 s lit a day (`"led_budget_s"`), about 3 hours of the slow blink;
-  resets at local midnight.
-- **Radio**: the LED hangs off the CYW43 Wi-Fi/BT chip, so each on/off is a command to it.
-  A pattern is a few writes (the slow blink: 2 every 4 s), never starts during a BLE sync or
-  an HTTP request, and comes from the main loop, not an interrupt.
+  (`"led_unknown_time": true` to light anyway).
+- **Budget**: at most 900 s lit a day (`"led_budget_s"`), counted by brightness (a breath
+  averages a third of full), about 2.5 hours of the waiting breath; resets at local midnight.
+- **Radio and CPU**: the LED hangs off the CYW43 Wi-Fi/BT chip, so each on/off is a command
+  to it over SPI: about 0.3-0.4 ms each, measured on a Pico W with the hotspot up. The
+  light runs as its own asyncio task and yields after every edge, so the web server, the
+  DNS and the BLE sync keep running between frames; only the dim end of a ramp (lit under
+  1.5 ms) is a short busy-wait. While a pattern plays that is up to 2 writes per 10 ms frame
+  and about 10% of the CPU (measured on ship 1: 12% during the slow test breaths, 8-10%
+  over the waiting and gift rhythms); between patterns it sleeps and sends nothing. No memory is
+  allocated per frame.
+- **Fallbacks**: a pattern never starts during a BLE sync or an HTTP request; if one starts
+  while a pattern is playing, the rest of it is a plain blink (lit through the bright middle
+  of each breath, 2 writes a breath). The light times its own writes (a running average): if
+  the radio chip gets slow (over 2 ms a write) it plays plain blinks until the writes are
+  fast again. The selftest's end line shows `write cost … us`.
 - STAT lines show it as `led=<state>/<pin writes>`: `off`, `idle`, `test`, `day`, `gift`,
   `waiting`, or why it is dark: `quiet`, `no clock`, `budget`.
 
 **Seeing it tonight through the current (opaque) case**: the LED sits on the top of the
 board next to the USB socket. Take the lid off for the test (or look in at the USB opening
-from the side, in a dim room). `--led-test` gives 6 s of slow blinks right after the
-self-test starts; the bench asks "Did you see 3 slow blinks?". The transparent PLA case is
-what it's for later.
+from the side, in a dim room). `--led-test` gives about 7 s of slow breaths right after the
+self-test starts; the bench asks "Did you see the LED pulse: fade up and back down 3 times
+(not hard blinks)?" (a board still on an older build blinks instead, and the bench asks
+about blinks). The transparent PLA case is what it's for later.
 
-Check at the bench: `bench.py --led on --led-test` → `LED path PASS` and `LED blink test
+Check at the bench: `bench.py --led on --led-test` → `LED path PASS` and `LED pulse test
 PASS` (you saw it). To watch the real schedule: leave it on with a launch date, power-cycle,
 open the game on a phone once (the board learns the time), close it: nothing until the next
-gift or 06:00 page; send a gift from another board's phone and the double blink starts
+gift or 06:00 page; send a gift from another board's phone and the double pulse starts
 within a few seconds (outside quiet hours), and stops when you open the game on this board.
 Off again: `bench.py --led off --no-selftest` or the Ship light button.
