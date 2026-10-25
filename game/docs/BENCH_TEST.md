@@ -10,7 +10,7 @@ needs a server: the boards only talk to each other and to a phone or laptop on t
 
 ## Fast path: one command per board (`tools/bench.py`)
 
-For the game firmware and the 0.1.0-lv-test build, one command per board does sections 9,
+For the game firmware (lv-core 0.2.0) and the 0.2.0-lv-test build, one command per board does sections 9,
 4 and 5's basics and prints a report. On the computer, once: `pip install mpremote`. Then,
 from the repo, with **one** board plugged in:
 
@@ -22,11 +22,14 @@ python3 game/tools/bench.py --ship 1 --launch <LAUNCH_DATE> --led on --led-test 
 It:
 
 1. finds the Pico W on USB (or `--port <PORT>`) and checks it runs the game firmware
-   `lv-core 0.1.0`, core `f1b383588e79`. Stock MicroPython or another core: **FAIL**, naming
-   `lv-core-0.1.0-f1b383588e79-RPI_PICO_W.uf2` to flash first (BOOTSEL, drag it on the
-   `RPI-RP2` drive; or add `--uf2 <PATH>` and it does that);
-2. installs 0.1.0-lv-test (the updater page's files and deletes; files already right are
-   skipped) and checks every file's sha256 on the board;
+   `lv-core 0.2.0`, core `2661c2144844`. Stock MicroPython or another core (a board still
+   on lv-core 0.1.0 included): **FAIL**, naming `lv-core-0.2.0-2661c2144844-RPI_PICO_W.uf2`
+   to flash first (BOOTSEL, drag it on the `RPI-RP2` drive; or add `--uf2 <PATH>` and it
+   does that);
+2. installs 0.2.0-lv-test (the updater page's files and deletes; files already right are
+   skipped) and checks every file's sha256 on the board. It also removes the copies of the
+   now-frozen modules a 0.1.0 install left (`lvship.mpy` … `selftest.mpy`, `pack.bin`):
+   a file is found before a frozen module, so they would run instead of the firmware's;
 3. writes only the settings given into `/data/ship.json` (`--ship`, `--launch` or `--day`,
    `--led on|off`, `--password`/`LV_HOTSPOT_PASSWORD`; everything else in the file stays) and
    the crew codes given into `/data/crew.json` (`--code Name=1234`, repeatable, or `--codes`
@@ -40,8 +43,9 @@ It:
 
 ```
 REPORT ship 1 (2026-10-23 20:15 CDT)
-firmware/core           PASS  lv-core 0.1.0 core f1b383588e79
-files hash-match        PASS  17 files, sha256 as in 0.1.0-lv-test
+firmware/core           PASS  lv-core 0.2.0 core 2661c2144844
+files hash-match        PASS  6 files, sha256 as in 0.2.0-lv-test
+no stale frozen copies  PASS  none of the 12 frozen board modules or pack.bin left as files
 settings saved          PASS  set launch_date, led_notify, ship_id; kept the rest
 crew codes              PASS  written; set for Phill
 selftest ran            PASS  CHECK (see docs/BENCH_TEST.md)
@@ -187,7 +191,7 @@ check 6, and `epoch=<UNIX_TIME>` to give the board the time (otherwise only a ph
 Every 10 s a board prints a `STAT` line; at the end, a summary and one line per check:
 
 ```
-SELFTEST lvship 0.1.0-lv-test on rp2, MicroPython 3.4.0; MicroPython v1.29.0 …
+SELFTEST lvship 0.2.0-lv-test on rp2, MicroPython 3.4.0; MicroPython v1.29.0 …
 SELFTEST config: ship 1, day 3, story True, hotspot False, led_notify False
 SELFTEST heap before start: free <N>
 SELFTEST firmware: no frozen core (stock MicroPython: every module from the filesystem)
@@ -281,9 +285,9 @@ reordering, mid-transfer disconnects, power-off, out-of-date and wedged peers; 3
 - **IRQ timing**: the IRQ handler only queues; work happens in `poll()` from the asyncio
   loop. Long blocking work elsewhere would delay acks (the retry timer allows 1.5 s).
 - **Real heap.** The unix-port measurements (32-bit, `.mpy`, the whole season and the
-  story at day 42, a sync running) are in section 8: 79 KB on Variant A, 52 KB on the game
-  firmware, 75–77 KB on the game firmware with two phones playing (about 79 KB with the ship
-  light on too). The board number is in
+  story at day 42, a sync running) are in section 8: 79 KB on Variant A, 35 KB on the game
+  firmware (lv-core 0.2.0; 52 KB on 0.1.0), 46–49 KB with two phones playing, the ship light
+  and the battery (78–80 KB on 0.1.0). The board number is in
   `SELFTEST heap:`. The Wi-Fi driver's and lwIP's buffers live outside the MicroPython
   heap and aren't in these numbers.
 - **Range** and how often boards actually meet in practice.
@@ -295,22 +299,29 @@ reordering, mid-transfer disconnects, power-off, out-of-date and wedged peers; 3
   REPL, the `--uf2` BOOTSEL copy. Tested only against fake boards; if it misbehaves, the
   manual steps in this file still work.
 
-## 8. Variant B: the game firmware (the core frozen in, the rest updatable)
+## 8. Variant B: the game firmware (the game frozen in, every part still updatable)
 
 Variant A (sections 1–2) is stock MicroPython plus the whole game copied over as `.mpy`
-files. Variant B is one `.uf2`: MicroPython v1.29.0 with the game's **core** frozen in
-(`lv/`: engine, state, pack reader, record log, BLE sync and the other stable libraries,
-plus `lvfrozen`, its version manifest). Frozen code runs from flash, not the heap, which
-is what makes room for the phone game. Everything likely to change stays a file the
-updater page can replace: `main.py`, the glue (`lvship`, `lvdays`, `lvweb`, `lvphone`,
-`lvstat`, `lvwifi`, `selftest`), the story pack `pack.bin`, `engage.bin` and the phone
-page `www/app.html.gz`, `www/text.json.gz`, `www/engage.json.gz`.
+files. Variant B is one `.uf2`: MicroPython v1.29.0 with the game frozen in. Frozen code
+and data run from flash, not the heap, which is what makes room for the phone game.
 
-| Heap peak, unix 32-bit (whole season, story at day 42, sync running) | Variant A | Variant B |
-|---|---|---|
-| Sync only (status page) | about 79 KB (ship light: stays dark) | about 52 KB |
-| Sync + two phones playing the game | about 114 KB (so: off) | about 75–77 KB; about 79 KB with the ship light on (section 12) |
-| Code in the heap | about 51 KB | about 23 KB (31 KB with the phone server) |
+- **lv-core 0.2.0** (current) freezes the core `lv/` (engine, state, pack reader, record
+  log, BLE sync and the other stable libraries), `lvfrozen` (its version manifest), the
+  12 board modules (`lvship`, `lvreport`, `lvcal`, `lvled`, `lvledcfg`, `lvbatt`, `lvdays`,
+  `lvweb`, `lvphone`, `lvstat`, `lvwifi`, `selftest`) and the story pack (as `lvpackdata`,
+  a bytes object read in place). Files on the board: `main.py`, `engage.bin` and the
+  phone page `www/app.html.gz`, `www/text.json.gz`, `www/engage.json.gz`.
+- **lv-core 0.1.0** froze only `lv/` and `lvfrozen`; the board modules and `pack.bin` were
+  files. Its releases (`0.1.0-lv-test`) don't install on 0.2.0 and the other way round.
+
+Every frozen part can still be replaced without reflashing: a file is found before the
+frozen module (see "Fixing … without reflashing" below).
+
+| Heap peak, unix 32-bit (whole season, story at day 42, sync running) | Variant A | Variant B, lv-core 0.1.0 | Variant B, lv-core 0.2.0 |
+|---|---|---|---|
+| Sync only (status page) | about 79 KB (ship light: stays dark) | about 52 KB | about 35 KB |
+| Sync + two phones playing the game | about 114 KB (so: off) | about 75–78 KB; about 78–80 KB with the ship light and battery | about 46–49 KB, ship light and battery included |
+| Code in the heap | about 51 KB | about 23 KB (31 KB with the phone server) | about 14 KB (16 KB with the phone server) |
 
 **Build** (on the computer, from `game/`; the first run downloads MicroPython and the Pico
 SDK, about 10 minutes): `sh tools/build_firmware.sh`. It needs `gcc-arm-none-eabi`,
@@ -338,13 +349,15 @@ you were given.
 **Self-test**: same commands as section 4. The extra lines should read
 
 ```
-SELFTEST firmware: frozen lv-core 0.1.0 (core <12 hex>), overrides: []
-SELFTEST code: lvship.mpy (filesystem), engine frozen, pack: file
+SELFTEST firmware: frozen lv-core 0.2.0 (core <12 hex>), overrides: [], board files: []
+SELFTEST code: lvship.py (frozen), engine frozen, pack: frozen
 SELFTEST phone game: on, files all there
 ```
 
 `HIDDEN by a /lv directory` means step 1 is needed; `engine filesystem` without an
-override means the same.
+override means the same. `board files: [lvship, …]` (or `lvship.mpy (filesystem)`,
+`pack: file`) without a hotfix release means copies from an older install are left:
+install the release again (it removes them) or run step 1.
 
 **Compare with Variant A** (same board, same `ship.json`, same day):
 
@@ -352,6 +365,14 @@ override means the same.
 - `SELFTEST heap: … peak …` and `heap_used=`: B about 25 KB **lower** with Wi-Fi off;
   with `wifi=True` and phones playing, still under 80 KB.
 - Checks 1–10 in section 5 behave the same, sync times included.
+
+**Fixing a board module or the story without reflashing** (lv-core 0.2.0). Put
+`/<module>.mpy` (e.g. `/lvweb.mpy`) or `/pack.bin` on the board: it is found before the
+frozen copy, and `SELFTEST firmware:` lists it under `board files`. `tools/board_build.sh`
+does this by itself: it compares `board/` and `build/pack.bin` with the core's manifest
+and puts only what changed into `build/board-fw/`; `tools/build_release.py` then lists
+those under `"replaces"` and deletes every other copy, so a hotfix never outlives the
+release that shipped it.
 
 **Fixing a core module without reflashing.** Put `lvx/<module>.mpy` on the board (e.g.
 `lvx/engine.mpy`): `lv/__init__` loads it over the frozen `lv.<module>` at boot, and
@@ -367,24 +388,29 @@ its sha256). `/data` is kept. Then copy Variant A (section 2), or install `0.0.2
 
 ## 9. The test build on the updater page
 
-The updater lists `0.1.0-lv-test` as **[TEST BUILD]** in section 2. It's a **partial
-release for the game firmware**: only the updatable files above (no `lv/`), built against
-one frozen core (`release.json` `"frozen": {"requires": "<core>"}`, plus `lvx/`
-overrides if any core module changed since). The page reads the board's frozen core
+The updater lists `0.2.0-lv-test` (lv-core 0.2.0) and `0.1.0-lv-test` (lv-core 0.1.0) as
+**[TEST BUILD]** in section 2. Each is a **partial release for the game firmware**: only
+the files above (no `lv/`), built against one frozen core (`release.json` `"frozen":
+{"requires": "<core>"}`, plus `lvx/` overrides if any core module changed since, and on
+0.2.0 `/<module>.mpy` or `/pack.bin` hotfixes listed in `"replaces"`). The page reads the board's frozen core
 (section 1 shows `MicroPython 1.29.0 · game firmware: frozen lv-core … overrides: […]`)
 and refuses to install on stock MicroPython or another core, before writing anything,
-naming the `.uf2` to flash. Installing removes `/lv` and old `lvx/` overrides first. It
+naming the `.uf2` to flash. Installing removes `/lv` and old `lvx/` overrides first and,
+on 0.2.0, every file copy of a frozen board module or the pack it doesn't ship. It
 is never "latest": "Install latest" and the update notice ignore it, and installing it
-asks first. Ship settings and crew codes in `data/` are kept. To go back, install
-`0.0.2-coex` (it runs on the game firmware too).
+asks first. Ship settings and crew codes in `data/` are kept. To go back, flash the older
+`.uf2` and install its release (`0.1.0-lv-test` on lv-core 0.1.0), or install `0.0.2-coex`
+(it runs on the game firmware too).
 
 ## 10. Play it on your phone
 
 One board is enough. Tick each step.
 
-1. **Flash** `lv-core-0.1.0-<core>-RPI_PICO_W.uf2` (section 8, step 2).
+1. **Flash** `lv-core-0.2.0-<core>-RPI_PICO_W.uf2` (section 8, step 2).
 2. **Updater page**, connect the board. Section 1 shows
-   `game firmware: frozen lv-core 0.1.0 (core <core>), overrides: []`.
+   `game firmware: frozen lv-core 0.2.0 (core <core>), overrides: [], board files: []`
+   (board files listed before the install are a 0.1.0 install's leftovers; step 4
+   removes them).
 3. **Section 4**: set the ship number (the hotspot is `LV-<ship number>`), the hotspot
    password, and the **crew codes** (4 digits per crew member; a blank one shows "Not set
    up" and can't sign in). For the real calendar also set **Launch date** (see step 5 and
@@ -392,10 +418,9 @@ One board is enough. Tick each step.
    `python3 -m http.server 8140`, open http://localhost:8140 in Chrome); the deployed page
    is older: it has no launch date field and its Save overwrites the whole `ship.json`, which
    clears `launch_date` and a bench `day`.
-4. **Section 2**: pick `0.1.0-lv-test [TEST BUILD]`, Install, confirm. Expect it to finish
-   with every file verified. (If an earlier `0.1.0-lv-test` is already on the board,
-   install it again anyway: the version number is the same but `www/app.html.gz` is new;
-   the board's core and `.uf2` are unchanged.) (On a board without the game firmware it stops here with
+4. **Section 2**: pick `0.2.0-lv-test [TEST BUILD]`, Install, confirm. Expect it to finish
+   with every file verified. (If an earlier `0.2.0-lv-test` is already on the board,
+   install it again anyway: the version number can stay the same while files change.) (On a board without the game firmware it stops here with
    "needs the game firmware …": go back to step 1.)
 5. **Flight day**. Two ways:
    - **Calendar** (how the voyage runs): with a **Launch date** set in step 3, flight day 1
@@ -409,7 +434,7 @@ One board is enough. Tick each step.
      `mpremote connect <PORT> exec "import json; p='/data/ship.json'; c=json.load(open(p)); c['day']=9; open(p,'w').write(json.dumps(c))"`.
      Saving section 4 on this branch's page keeps it.
 6. **Power-cycle** the board. On the console (`mpremote connect <PORT>`), expect
-   `firmware: frozen lv-core 0.1.0 …`, then `web: phone game on http://192.168.4.1/`.
+   `firmware: frozen lv-core 0.2.0 …`, then `web: phone game on http://192.168.4.1/`.
 7. **Join `LV-<ship number>`** on the phone with the password. Expect the sign-in sheet
    to open by itself (iPhone "Log in" sheet, Android "Sign in to network"): the board
    answers every DNS name with itself and sends the phones' connectivity probes to the
