@@ -30,6 +30,12 @@ def check(name, cond, extra=""):
     n[0] += 1
 
 
+def leaked(text, *codes):
+    """A crew code printed as itself, not as four digits inside a sha256 or a heap figure
+    (the log lists every file's hash, and one of them can contain 1234)."""
+    return any(re.search(r"(?<![0-9A-Za-z])%s(?![0-9A-Za-z])" % c, text) for c in codes)
+
+
 # ---- the port list (mpremote connect list)
 ports = bench.parse_ports("""/dev/ttyS0 None 0000:0000 None None
 /dev/ttyACM0 e66141040396 2e8a:0005 MicroPython Board in FS mode
@@ -173,7 +179,7 @@ try:
 finally:
     sys.stdout = old
 o = out.getvalue()
-check("dry run", rc == 0 and "ship 1:" in o and "ship 2:" in o and "1234" not in o and "set for Phill" in o, o)
+check("dry run", rc == 0 and "ship 1:" in o and "ship 2:" in o and not leaked(o, "1234") and "set for Phill" in o, o)
 
 # ---- a real deadline on every mpremote call (2026-10-25: a silent board held bench forever,
 # because the old loop only looked at the clock when a line arrived)
@@ -240,7 +246,7 @@ if FW:
                 "LED pulse test          INFO"):
         check("fw row " + row.split()[0], row in o, o)
     check("fw: no battery is INFO", re.search(r"battery\s+INFO\s+none detected", o), o)
-    check("fw: codes not printed", "1234" not in o and "4321" not in o)
+    check("fw: codes not printed", not leaked(o, "1234", "4321"))
     check("fw: fleet key not printed", "fleet-placeholder" not in o)
     cfg = json.load(open(os.path.join(root, "data", "ship.json")))
     check("fw: no clobber", cfg == {"http_port": 18081, "fleet_key": "fleet-placeholder", "day": 4, "story": True,
@@ -252,7 +258,7 @@ if FW:
     logs_now = os.listdir(logs)
     check("fw: log saved", any(x.startswith("ship3-") for x in logs_now), logs_now)
     log = open(os.path.join(logs, sorted(x for x in logs_now if x.startswith("ship3-"))[-1])).read()
-    check("fw: log has no codes", "1234" not in log and "4321" not in log)
+    check("fw: log has no codes", not leaked(log, "1234", "4321"), [m.group(0) for m in re.finditer(r".{40}(?:1234|4321).{20}", log)])
     # again: nothing to write, one more code, the others kept (same salt), the LED switched off
     rc, o = bench_run(root, FW, "--ship", "3", "--led", "off", "--code", "Jai=5555", "--seconds", "5",
                       bat="12,3610,0")
