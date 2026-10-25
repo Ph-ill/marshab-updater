@@ -73,6 +73,29 @@ check with `--peers`. Exit code 0 = all PASS, 1 = something failed: send the log
 What it can't see: whether the LED blinked (it asks you), a phone joining the hotspot and
 the captive sheet opening (section 10), range. The manual steps below are unchanged.
 
+### A board that hangs, or a sealed board you need back at the REPL
+
+- Before the self-test, bench.py **hard-resets** the board into the REPL (`machine.reset()`
+  with `/data/maint`, so the game doesn't start), so the CYW43 radio chip starts clean.
+  mpremote's own soft reset leaves the radio chip as the previous program left it, and on
+  2026-10-25 one board (ship 2, which had an older project on it) never came back from
+  switching Bluetooth on after one: `bluetooth.BLE().active(True)` waited forever, so
+  `Ship(...)` never returned. A hard reset cleared it at once (BLE up in under a second).
+  `--no-fresh-boot` skips the reset.
+- Every mpremote call has a real deadline. A board that stops answering is cut off and
+  reported as `selftest ran FAIL TIMEOUT ...`: unplug it, plug it back in (a power cycle
+  restarts the radio chip too) and run bench.py again for that ship.
+- **Getting a sealed board (no BOOTSEL) to the REPL**: `main.py` waits 2 s after power-up
+  before it touches the radio. Plug the board in and within those 2 s run
+  `mpremote connect <PORT> exec "print('stopped')"` (any mpremote command sends Ctrl-C);
+  Ctrl-C also stops the game at any later point in its Python code. An empty
+  `/data/maint` skips the game once (`mpremote connect <PORT> touch :/data/maint`, then
+  reset); an empty `/data/safe` skips it on every boot until you remove it
+  (`mpremote connect <PORT> rm :/data/safe`). `mpremote connect <PORT> bootloader` reaches
+  BOOTSEL (the RPI-RP2 drive) without the button.
+- If mpremote says the port is "in use by another program", close whatever else has it
+  open (another mpremote, a serial monitor, Thonny, ModemManager) before blaming the board.
+
 ## 0. What you need
 
 - 2 or 3 Raspberry Pi Pico W (or Pico 2 W) boards and USB data cables.
