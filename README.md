@@ -68,13 +68,21 @@ git add firmware && git commit -m "firmware: package Long Voyage 0.0.2-coex" && 
   `MPY_CROSS=... sh tools/board_build.sh`), then from the repository root:
 
   ```bash
-  python3 tools/build_release.py --version 0.1.0-lv-test --channel test \
-    --label "Long Voyage test: the phone game on the board, BLE sync (game firmware)" \
+  python3 tools/build_release.py --version 0.2.0-lv-test --channel test \
+    --label "Long Voyage test: the phone game on the board, BLE sync (game firmware 0.2.0)" \
     --source game/build/board-fw \
-    --frozen game/tools/fw/cores/lv-core-0.1.0-<core>.json --hotspot-prefix LV- \
-    --delete lvship.py --delete selftest.py --delete lvwifi.py \
+    --frozen game/tools/fw/cores/lv-core-0.2.0-<core>.json --hotspot-prefix LV- \
     --delete config.py --delete index.html --notes "..." --mpy-cross "$(command -v mpy-cross)"
   ```
+
+  lv-core 0.2.0 freezes the board modules and the story pack too, so `0.2.0-lv-test` ships
+  only `main.py`, `engage.bin` and the phone page. For such a core the builder adds every
+  file copy of a frozen board module (`<module>.py`, `<module>.mpy`) and `pack.bin` that
+  the release doesn't ship to `delete` (a file is found before the frozen module, so a 0.1.0
+  install's leftovers would run instead), and lists the ones it does ship, hotfixes built
+  by `board_build.sh` when a board module or the pack changed since the core, in
+  `"replaces"`. The page removes those stale copies too, even for a release that doesn't
+  list them. Boards still on lv-core 0.1.0 keep `0.1.0-lv-test`.
 
   `--frozen` names the frozen core the release runs on (`tools/fw/cores/` keeps one
   manifest per core). The release then has no `lv/` files; `lvx/<module>.mpy` overrides
