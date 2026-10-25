@@ -72,6 +72,21 @@ export function frozenMismatch(releaseManifest, runtime){
   return null;
 }
 
+// lv-core 0.2.0+ froze the board modules and the story pack too (release.frozen.board,
+// .pack). On the board a file is found before a frozen module, so every copy the release
+// doesn't ship (<module>.py, <module>.mpy, pack.bin, e.g. left by a 0.1.0 install) has to
+// go, or it would run instead of the firmware's. tools/build_release.py lists these in
+// "delete" as well; this keeps older or hand-made releases safe too.
+export function frozenStale(releaseManifest){
+  const fz = releaseManifest?.frozen;
+  if(!fz) return [];
+  const ship = new Set((releaseManifest.files || []).map(f => f.path));
+  const out = [];
+  for(const m of fz.board || []) for(const ext of ['.py', '.mpy']) if(!ship.has(m + ext)) out.push(m + ext);
+  if(fz.pack && !ship.has('pack.bin')) out.push('pack.bin');
+  return out;
+}
+
 export async function readRuntime(device){
   const { stdout } = await device.exec(runtimeSnippet(), { timeoutMs: 8000 });
   return JSON.parse(stdout.trim());
@@ -95,9 +110,10 @@ export async function installRelease(device, releaseManifest, { clean = false, o
     onLog(`clean install: removing old files (keeping ${preserve.join(', ')})`);
     onLog(await wipeExcept(device, preserve));
   }
-  if(releaseManifest.delete?.length){
-    onLog(`removing ${releaseManifest.delete.length} obsolete path(s)`);
-    await removePaths(device, releaseManifest.delete, preserve);
+  const gone = [...new Set([...(releaseManifest.delete || []), ...frozenStale(releaseManifest)])];
+  if(gone.length){
+    onLog(`removing ${gone.length} obsolete path(s)`);
+    await removePaths(device, gone, preserve);
   }
 
   for(let i = 0; i < prepared.length; i++){

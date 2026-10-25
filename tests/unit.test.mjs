@@ -4,8 +4,8 @@ import { compareVersions, latestVersion, isTestRelease } from '../src/releases.j
 import { validateShipConfig, SHIP_CONFIG_KEYS, defaultShipName, hotspotSummary, hotspotForRole, hotspotForRelease, shipNumberForRole } from '../src/ship-config.js';
 import { logFileName } from '../src/device-logs.js';
 import { runtimeStatus, boardSupported, verifyCommands } from '../src/runtime.js';
-import { boardFromRuntime, firmwareKind, summarizeDeviceInfo, describeFirmware, overridesOf } from '../src/device-info.js';
-import { findRelease, frozenMismatch } from '../src/installer.js';
+import { boardFromRuntime, firmwareKind, summarizeDeviceInfo, describeFirmware, overridesOf, boardFilesOf } from '../src/device-info.js';
+import { findRelease, frozenMismatch, frozenStale } from '../src/installer.js';
 import { CREW, validateCodes, sharedCodes, crewConfig, digest, randomCode, codeList, loadCodes, saveCodes, forgetCodes, CODES_MEMORY_KEY } from '../src/crew-codes.js';
 import { loadRoleHistory, recordRole, suggestRole, roleClash, lastOtherBoard, ROLE_MEMORY_KEY } from '../src/role-memory.js';
 
@@ -186,5 +186,17 @@ t('hotspot name from the release (game firmware) or the coex roles', () => {
   assert.equal(hotspotForRelease({ hotspot: { prefix: 'LV-' } }, null), 'LV-1', 'no settings: ship 1');
   assert.equal(hotspotForRelease({}, { ship_id: 3 }), null);
   assert.equal(hotspotForRelease(undefined, { ship_id: 3 }), null);
+});
+t('lv-core 0.2.0: frozen board modules and pack, hotfix files and stale copies', () => {
+  const fz = { id: 'lv-core', version: '0.2.0', core: 'abcdef012345', board: ['lvship', 'lvweb'], pack: '0123456789ab' };
+  const rt = { frozen: fz, root: ['lvship.mpy', 'main.py', 'pack.bin', 'lvweb.txt'], lvx: [] };
+  assert.deepEqual(boardFilesOf(rt), ['lvship', 'pack.bin']);
+  assert.equal(describeFirmware(rt), 'frozen lv-core 0.2.0 (core abcdef012345), overrides: [], board files: [lvship, pack.bin]');
+  assert.equal(describeFirmware({ ...rt, root: ['main.py'] }), 'frozen lv-core 0.2.0 (core abcdef012345), overrides: [], board files: []');
+  assert.deepEqual(boardFilesOf({ frozen: { ...fz, board: [], pack: null }, root: ['lvship.py', 'pack.bin'] }), []);
+  const rel = { frozen: { requires: 'abcdef012345', board: ['lvship', 'lvweb'], pack: true }, files: [{ path: 'main.py' }, { path: 'lvweb.mpy' }] };
+  assert.deepEqual(frozenStale(rel), ['lvship.py', 'lvship.mpy', 'lvweb.py', 'pack.bin']);
+  assert.deepEqual(frozenStale({ frozen: { requires: 'abcdef012345' }, files: [] }), [], 'a 0.1.0 core freezes no board modules');
+  assert.deepEqual(frozenStale({ files: [] }), [], 'a full release');
 });
 console.log(`\n${n} unit checks passed`);
