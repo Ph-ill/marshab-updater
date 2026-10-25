@@ -77,8 +77,9 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None, led_t
         import lvdays
         days = lvdays.Days(data + "/days.bin")
     ship = lvship.Ship(cfg, data=data, days=days)
-    # Game firmware: the core lv/ is frozen (lvfrozen.py says which), the glue and content
-    # are files; /lvx/ can override frozen modules. Stock MicroPython: everything is files.
+    # Game firmware: the core lv/ is frozen (lvfrozen.py says which) and, since lv-core
+    # 0.2.0, the board modules and the pack too; /lvx/<m>.mpy overrides a core module and
+    # /<m>.mpy or /pack.bin a board one (the "board files"). Stock MicroPython: all files.
     import lv
     print("SELFTEST firmware: " + lv.describe())
     src = getattr(lvship, "__file__", "?")
