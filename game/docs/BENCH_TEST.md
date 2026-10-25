@@ -415,8 +415,11 @@ One board is enough. Tick each step.
    game. If nothing opens, browse to `http://192.168.4.1/` (or any `http://` address).
 8. **Sign in**: tap your name, enter a wrong code once (expect "That code doesn't match. 4 tries left."), then the
    right one. The first time this crew member signs in since the board booted, expect the
-   welcome card (your astronaut's portrait) with **Crew briefing · 6 cards** where "Go
-   aboard" usually is: tap it, step through the six cards with Next (Skip works too), and
+   welcome card (your astronaut's portrait) with **Crew briefing · 10 cards** where "Go
+   aboard" usually is: tap it, step through the cards with Next (three intro cards: the
+   goal, how the ship works with Wi-Fi and Bluetooth, your day; then instructions, what
+   needs you, deliveries, how things travel, watch duty, the ship light, the log; Skip
+   works too), and
    **Go aboard** on the last one lands on home with today's story. The phone remembers it
    has read the briefing; a later sign-in goes straight home (it's under FILE › How to
    play). A phone that forgets (some captive-portal sheets don't keep storage) is offered
@@ -431,6 +434,14 @@ One board is enough. Tick each step.
     one shows up on the other within about 15 s (the board has no WebSocket, so the page
     polls `/api/v`; the page shows "Live link down · checking every 15 s", which is
     expected here).
+
+    **Who's in range**, with a second board (another ship number) powered next to this
+    one: your crew page shows that ship's astronaut as **Nearby · in sync** (or
+    **Nearby · syncing** for a moment) within about a minute, and the gift pickers show
+    **Nearby** under their name. Unplug the second board: about 3 minutes later it reads
+    **In range N min ago**. Crewmates whose ship this board hasn't heard since it booted
+    (or in the last day) show **Not in range lately**. A gift goes through either way;
+    nearby only means it lands now.
 11. **A phone that stops**: lock one phone mid-game or walk out of range. The other
     phone must not stall (the board drops a silent connection after 5 s and serves up to
     4 requests at once; a fifth at the same moment gets "busy, try again": tap again).
