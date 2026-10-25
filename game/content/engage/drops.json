@@ -11,13 +11,13 @@
     {"tier": "routine", "kind": "Sensor log", "t": "Hull temperature sensor 14 is reading two degrees warm again. The ground adds it to the list of sensors with personalities."},
     {"tier": "routine", "kind": "Letter from home", "t": "A letter from home, three days in the uplink queue. The dog has learned to open the fridge. Nobody knows how, and the dog isn't saying."},
     {"tier": "routine", "kind": "Starbase weather", "t": "Starbase: 31 °C, wind from the southeast, and a gull loose in the high bay again. Ground crew morale is described as 'fine'."},
-    {"tier": "routine", "kind": "Maintenance ticket", "t": "Ticket 2231 is closed by the ground as 'cannot reproduce'. {A} reproduces it twice before lunch and reopens it with a video."},
+    {"tier": "routine", "kind": "Maintenance ticket", "t": "Ticket 2231 is closed by the ground as 'cannot reproduce'. {A} {A:reproduces} it twice before lunch and {A:reopens} it with a video."},
     {"tier": "routine", "kind": "Uplink digest", "t": "Today's uplink: 14 procedure updates, 2 software patches, 1 crossword. The crossword gets done first."},
     {"tier": "priority", "kind": "Ground photo", "t": "A photo from the ground team: the empty pad the morning after launch, scorched black, a single hard hat left on the rail."},
     {"tier": "priority", "kind": "Recorded message", "t": "A recording from the launch-day control room. Fourteen people talking at once, all saying the same thing: go."},
     {"tier": "priority", "kind": "Mission Control memo", "t": "Mission Control approves 40 extra minutes of bandwidth for personal calls this week. The approval took six signatures and a meeting."},
     {"tier": "rare", "kind": "Parcel from home", "art": "class_patch", "t": "A scan from home, printed in the galley: {A}'s training-class patch, frayed at one corner, with a family photo taken the day it was sewn on."},
     {"tier": "rare", "kind": "Data card", "art": "pad_photo", "t": "A data card from the ground team: the whole fleet on the pad the night before launch, lit from below, steam curling off the tanks."},
-    {"tier": "rare", "kind": "Keepsake", "art": "stopwatch", "t": "The launch director sends up a photo of the wind-up stopwatch that sat beside the console on launch day. It's {A}'s now, waiting at home."}
+    {"tier": "rare", "kind": "Keepsake", "art": "stopwatch", "t": "The launch director sends up a photo of the wind-up stopwatch that sat beside the console on launch day. It's {A?yours|{A}'s} now, waiting at home."}
   ]
 }

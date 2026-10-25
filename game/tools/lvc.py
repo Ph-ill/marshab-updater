@@ -42,9 +42,9 @@ Card format (one card per `card` line, indentation only matters for option effec
   when trait A curious >= 10      # condition (see COND_SYNTAX below)
   when tag A mech                 # A is a crew member tagged `mech` in roster.lv
   when !is A cook_who             # A is not the crew member a `who` var names
-  text {A} wants to fix it.       # phone template; {A} {B} are crew names
+  text {A} {A:wants} to fix it. # {A} {B} are crew names, {A:verb} agrees ("you want")
   do set seen_rock                # effect when the card fires (see EFFECT_SYNTAX)
-  option fix | Fix it now | {A} opens the panel.
+  option fix | Fix it now | {A} {A:opens} the panel.
     set galley_fixed              # option effects, indented
 """
 import gzip
@@ -321,7 +321,8 @@ def parse_cards(path, ctx):
                 elif word == "text":
                     card["text"] = rest.strip()
                 elif word == "option":
-                    parts = [p.strip() for p in rest.split("|")]
+                    # A "|" inside {A:...} or {A?...|...} belongs to the slot, not the line.
+                    parts = [p.strip() for p in re.split(r"\|(?![^{}]*\})", rest)]
                     if len(parts) != 3:
                         raise PackError("option needs: name | button label | outcome text")
                     opt = {"name": parts[0], "label": parts[1], "text": parts[2], "effects": []}
@@ -368,7 +369,7 @@ VOICE_RE = re.compile(r'\bvoice\s+"([^"{}]*)"')
 VOICE_DEFAULT = "Out."
 # Used for anyone whose roster line has no habit yet. Deliberately generic: a real
 # habit is something the player sends in, never something the writers invent.
-HABIT_DEFAULT = "{A} keeps one small thing from home within reach of the console."
+HABIT_DEFAULT = "{A} {A:keeps} one small thing from home within reach of the console."
 
 
 def split_habit(line):
@@ -471,6 +472,57 @@ def _strings(x):
     elif isinstance(x, list):
         for v in x:
             yield from _strings(v)
+
+
+# Second person (web/render.js, sim/render.py): every ship reads the same story, and a
+# line about the reader's own crew member reads "you". Card text marks what has to
+# change: {A:checks} for a verb or pronoun that agrees with role A ("check", "are",
+# "your"...; {A:aches|ache} spells it out), {A?you wording|other wording} for a line
+# that needs rewording, {AB:they} for the pair A and B ("you", "yourselves"), and
+# {A}'s becomes "your" by itself.
+YOU_WORDS = {"is", "was", "has", "does", "goes", "isn't", "wasn't", "hasn't", "doesn't", "they",
+             "them", "their", "theirs", "themselves", "themself", "they're", "they've", "they'd",
+             "they'll"}
+SLOT_RE = re.compile(r"\{(AB|[A-Z])\?((?:[^{}|]|\{[^{}]*\})*)\|((?:[^{}]|\{[^{}]*\})*)\}|\{(\w+)(?::([^{}]+))?\}")
+
+
+def plain(t):
+    """A line as a reader who is in none of its roles sees it (for length checks)."""
+    return SLOT_RE.sub(lambda m: plain(m.group(3)) if m.group(1) else
+                       (m.group(5).split("|")[0] if m.group(5) else m.group(0)), t)
+
+
+def slots(t):
+    """Every slot name in a line, with any wording problem: [(name, problem or None)]."""
+    out = []
+    for m in SLOT_RE.finditer(t):
+        if m.group(1):
+            out.append((m.group(1), None))
+            out += slots(m.group(2)) + slots(m.group(3))
+            continue
+        k, w = m.group(4), m.group(5)
+        bad = None
+        if w is not None:
+            v = w.split("|")
+            if k not in ("A", "B", "T", "AB"):
+                bad = "{%s:...} needs a crew role" % k
+            elif len(v) > 2 or not all(v):
+                bad = "{%s:%s} is {%s:word} or {%s:word|your form}" % (k, w, k, k)
+            elif len(v) == 1 and not (v[0].lower() in YOU_WORDS or re.fullmatch(r"[a-z']+s", v[0].lower())):
+                bad = "{%s:%s}: only a verb in -s or they/them/their... changes for the reader" % (k, w)
+        out.append((k, bad))
+    return out
+
+
+UNMARKED = re.compile(r"(?:^|[.,;:!?(—]\s*|\b(?:and|but|while|when|as|then|so|until|before|after|because|if|once|or)\s)"
+                      r"\{([AB])\}\s((?:[a-z]+ly\s)?)(is|was|has|does|[a-z]+[^su]s)\b")
+
+
+def unmarked_verbs(t):
+    """{A} checks... with no {A:checks}: the reader would get 'you checks'."""
+    q = re.sub(r'"[^"]*"', lambda m: " " * len(m.group(0)), t)
+    return [m.group(0).strip() for m in UNMARKED.finditer(q)
+            if m.group(3) not in ("its", "this", "plus", "news")]
 
 
 def check_pronouns(cards, system, ctx):
@@ -587,7 +639,9 @@ def check_style(cards, fleet, ctx):
                 if m:
                     ctx.warnings.append("style: %s %s %r %s" % (w, what, m.group(0), why))
             # Caps count a sign-off at its longest (any crewmate may hold the role).
-            t = re.sub(r"\{[AB]v\}", max(voices, key=len), t)
+            for v in unmarked_verbs(t):
+                ctx.errors.append("%s %s: %r needs {A:verb} (or {B:verb}) so it reads 'you ...' on that ship" % (w, what, v))
+            t = re.sub(r"\{[AB]v\}", max(voices, key=len), plain(t))
             cap = (MAX_ENDING if c["type"] == O.ENDING else
                    MAX_PAYOFF if (c["reveal"] or c["days"][0] >= PAYOFF_FROM) else MAX_TEXT)
             if len(t) > cap:
@@ -615,12 +669,20 @@ def validate(cards, ctx, fleet, system):
             ctx.errors.append("%s: days %d..%d outside 1..%d" % (w, d0, d1, fleet["season"]))
         if not c["text"]:
             ctx.errors.append("%s: %s has no text" % (w, c["id"]))
-        for m in re.findall(r"\{(\w+)\}", c["text"] + "".join(o["text"] for o in c["options"])):
-            if m in O.ROLES and O.ROLES.index(m) >= c["nroles"]:
+        found = slots(c["text"] + "".join(o["text"] + o["label"] for o in c["options"]))
+        for m, bad in found:
+            if bad:
+                ctx.errors.append("%s: %s" % (w, bad))
+                continue
+            if m == "T":
+                ctx.errors.append("%s: {T} is for system lines; cards use {A}/{B}" % w)
+            elif m in O.ROLES and O.ROLES.index(m) >= c["nroles"]:
                 ctx.errors.append("%s: text uses {%s} but the card binds %d role(s)" % (w, m, c["nroles"]))
+            elif m == "AB" and c["nroles"] < 2:
+                ctx.errors.append("%s: text uses {AB:...} but the card binds %d role(s)" % (w, c["nroles"]))
             elif m in ("Av", "Bv") and O.ROLES.index(m[0]) >= c["nroles"]:
                 ctx.errors.append("%s: text uses {%s} but the card binds %d role(s)" % (w, m, c["nroles"]))
-            elif m not in O.ROLES and m not in ("n", "Av", "Bv"):
+            elif m not in O.ROLES and m not in ("n", "Av", "Bv", "AB"):
                 ctx.errors.append("%s: unknown template slot {%s}" % (w, m))
         names = [o["name"] for o in c["options"]]
         voted = c["type"] in (O.DECISION, O.DILEMMA, O.RESCUE)
@@ -704,7 +766,7 @@ def validate(cards, ctx, fleet, system):
         ctx.errors.append("roster.lv: crew names must be unique")
     for cr in fleet["crew"]:
         for h in (cr.get("habits") or ([cr["habit"]] if cr.get("habit") is not None else [])):
-            if not h or "{A}" not in h or re.search(r"\{(?!A\})", h):
+            if not h or "{A}" not in h or any(k != "A" or bad for k, bad in slots(h)):
                 ctx.errors.append("roster.lv: %s's habit must be one sentence about {A} (no other slots)"
                                   % cr["name"])
         if cr["quirk"] not in fleet["quirks"]:

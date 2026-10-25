@@ -11,7 +11,7 @@ weight 8
 once
 roles A B
 when same A B
-text {A} and {B} bake bread from one recipe in two galley ovens, over the link. Without gravity it rises in every direction at once and comes out shaped like a lung, twice. They eat it warm on camera with the lights down, and agree not to describe it to anyone at home.
+text {A} and {B} bake bread from one recipe in two galley ovens, over the link. Without gravity it rises in every direction at once and comes out shaped like a lung, twice. {AB:They} eat it warm on camera with the lights down, and agree not to describe it to anyone at home.
 do bond A B 5
 
 card beat_zipties
@@ -39,7 +39,7 @@ when away A
 when home B
 when cond A ok
 when !is A eva_who
-text {A}, aboard on a visit, cuts {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} pays in coffee.
+text {A}, aboard on a visit, {A:cuts} {B}'s hair with the vacuum clippers, which clog twice and file a complaint each time. {B} {B:pays} in coffee.
 do bond A B 5
 
 card beat_home_msg2
@@ -50,7 +50,7 @@ weight 6
 once
 roles A
 when cond A ok
-text The school group writes again: they've built Mars in the classroom out of papier-mâché and want to know if it's the right red. {A} sends back a photo through the window, unprocessed, and a note: "Close. A bit more butterscotch."
+text The school group writes again: they've built Mars in the classroom out of papier-mâché and want to know if it's the right red. {A} {A:sends} back a photo through the window, unprocessed, and a note: "Close. A bit more butterscotch."
 do morale A 4
 
 card beat_shelter_night
@@ -72,7 +72,7 @@ weight 10
 once
 roles A B
 when cond B ok
-text {A} and {B} share the night watch over the fleet link. From low orbit Earth fills the window, its dark side strung with cities. {A} holds up a thumb, and the planet spills out around it on every side. They talk about home as if it were down the road. For a few more days, it is.
+text {A} and {B} share the night watch over the fleet link. From low orbit Earth fills the window, its dark side strung with cities. {A} {A:holds} up a thumb, and the planet spills out around it on every side. {AB:They} talk about home as if it were down the road. For a few more days, it is.
 do bond A B 5
 
 card beat_early_call
@@ -83,7 +83,7 @@ weight 8
 once
 roles A B
 when cond B ok
-text {A} and {B} watch the last top-off tankers come and go and narrate each docking on the fleet channel like a sports commentary. By the third they have a catchphrase; by the fourth it is fleet-wide.
+text {A} and {B} watch the last top-off tankers come and go and narrate each docking on the fleet channel like a sports commentary. By the third {AB:they} have a catchphrase; by the fourth it is fleet-wide.
 do bond A B 4
 
 # --- Idle-friendly: only for astronauts whose owner hasn't been in for a while ----
@@ -96,7 +96,7 @@ once
 roles A
 when idle A >= 3
 when cond A ok
-text {A} stands the night watch for the whole fleet so the other seven can sleep. Unasked. The watch report is two lines long and neat.
+text {A} {A:stands} the night watch for the whole fleet so the other seven can sleep. Unasked. The watch report is two lines long and neat.
 do morale A 2
 do trait A warm 2
 
@@ -110,7 +110,7 @@ roles A B
 when idle A >= 3
 when cond B ok
 when is B abort_who
-text {A} walks {B} through taking the landing by hand over the link: hold, pick a new spot, commit. Step by step, until {B} can call it without the checklist. {A} logs the hours in {B}'s book as training.
+text {A} {A:walks} {B} through taking the landing by hand over the link: hold, pick a new spot, commit. Step by step, until {B} can call it without the checklist. {A} {A:logs} the hours in {B}'s book as training.
 do who abort_who B
 do bond B A 6
 do trait B brave 2
@@ -124,7 +124,7 @@ weight 8
 roles A
 when idle A >= 4
 when cond A ok
-text {A} inventories the spares locker by hand and finds a scrubber cartridge the manifest says was never loaded. Someone at Starbase packed a margin and ticked it in marker. {A} logs a thank-you: "Found it. {Av}"
+text {A} {A:inventories} the spares locker by hand and {A:finds} a scrubber cartridge the manifest says was never loaded. Someone at Starbase packed a margin and ticked it in marker. {A} {A:logs} a thank-you: "Found it. {Av}"
 do res spares 1
 
 # --- Quirks: per-crewmate lines from roster.lv `habit "..."` (round 19) -------
