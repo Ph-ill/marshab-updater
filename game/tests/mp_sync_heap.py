@@ -284,11 +284,25 @@ ok = (synced and http_ok[0] and led_ok and
       (base == 0 or BITS == 64 or (0 < board < 80000)))
 import lv                                   # noqa: E402
 if FROZEN:
-    # the core is the frozen one (not hidden by a lv/ directory), the glue comes from files
+    # the core is the frozen one (not hidden by a lv/ directory). Since lv-core 0.2.0 the glue
+    # and the pack are frozen too, unless build/board-fw ships a newer copy (a hotfix file
+    # is found first): each must come from exactly where the layout says.
     core, _ = lv.firmware()
-    ok = ok and core is not None and not core["shadowed"] and lvship.__file__.startswith("build/board-fw")
-print("impl %s %d-bit; glue from %s, pack from %s; %s" % (sys.implementation.name, BITS,
-      getattr(lvship, "__file__", "frozen"), ROOT + "pack.bin", lv.describe()))
+    glue_file = str(getattr(lvship, "__file__", "")).startswith("build/board-fw")
+    try:
+        os.stat(ROOT + "lvship.mpy")
+        want_glue_file = True
+    except OSError:
+        want_glue_file = False
+    try:
+        os.stat(ROOT + "pack.bin")
+        want_pack = "file"
+    except OSError:
+        want_pack = "frozen"
+    ok = (ok and core is not None and not core["shadowed"] and glue_file == want_glue_file
+          and ship.pack_src == want_pack)
+print("impl %s %d-bit; glue from %s, pack %s; %s" % (sys.implementation.name, BITS,
+      lvship.__file__ if (not FROZEN or glue_file) else "the firmware (frozen)", ship.pack_src, lv.describe()))
 print("heap: fake radio module %d, code (lvship + lv incl. sync, ble) %d, peer %d, ship with the whole season "
       "and the story at day 42 %d" % (m_fake, m_code - m_fake, m_peer - m_code, m_ship - m_peer))
 print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio time); peer and fake world at the end %d; "

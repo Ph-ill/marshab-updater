@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The game firmware's split ("option 2"): lv/ frozen, everything else files.
+"""The game firmware's split: lv/, the board modules and the pack frozen, files override.
  - lv/__init__.py, via the frozen lvfrozen.py (tools/fw/lvfrozen_rt.py), loads
    lvx/<name>.mpy|.py over lv.<name> (a fixed core module without reflashing), in
    dependency order; a broken override falls back to the built-in one. Without lvfrozen
@@ -7,7 +7,10 @@
  - lvfrozen.py (tools/fw/gen_lvfrozen.py) names the frozen core; lv.describe() reports
    "frozen lv-core <version> (core <hash>), overrides: [...]", and a /lv directory that
    hides the frozen package is called out.
- - tools/fw/manifest.py freezes lv/ and lvfrozen.py only: no glue, no content.
+ - tools/fw/manifest.py freezes lv/, lvfrozen.py and, since lv-core 0.2.0, the board
+   modules (gen_lvfrozen.BOARD) and the story pack (lvpackdata.py). main.py, the web
+   pages and engage.bin stay files. A /<module>.mpy or /pack.bin file replaces the frozen
+   one (a hotfix); describe() lists those as "board files", and the core hash covers them.
 Under CPython always; with LV_FROZEN_MP (tools/build_firmware.sh unix32) and MPY_CROSS,
 also on the frozen interpreter with .mpy overrides, as on a board.
   python3 tests/test_fw_split.py      (from game/)"""
@@ -26,6 +29,11 @@ MPY_CROSS = os.environ.get("MPY_CROSS")
 
 def rd(p):
     with open(p) as f:
+        return f.read()
+
+
+def rd_b(p):
+    with open(p, "rb") as f:
         return f.read()
 
 
@@ -92,8 +100,14 @@ class Split(unittest.TestCase):
     def test_manifest(self):
         m = rd(os.path.join(ROOT, "tools", "fw", "manifest.py"))
         calls = re.findall(r'^(\w+)\("([^"]+)"', m, re.M)
+        sys.path.insert(0, os.path.join(ROOT, "tools", "fw"))
+        import gen_lvfrozen as G
         self.assertEqual(calls, [("include", "$(BOARD_DIR)/manifest.py"), ("package", "lv"),
-                                 ("module", "lvfrozen.py")])
+                                 ("module", "lvfrozen.py"), ("module", "lvpackdata.py")]
+                         + [("module", b + ".py") for b in G.BOARD])
+        # every board module but main.py (the boot entry) is frozen
+        self.assertEqual(sorted(G.BOARD), sorted(f[:-3] for f in os.listdir(os.path.join(ROOT, "board"))
+                                                 if f.endswith(".py") and f != "main.py"))
         subprocess.run([sys.executable, "tools/fw/gen_lvfrozen.py"], cwd=ROOT, check=True,
                        stdout=subprocess.DEVNULL)
         g = {}
@@ -102,8 +116,47 @@ class Split(unittest.TestCase):
                                 if f.endswith(".py") and f != "__init__.py"])
         self.assertEqual(sorted(g["MODULES"]), want)
         self.assertRegex(g["CORE"], r"^[0-9a-f]{12}$")
-        for glue in ("lv.lvship", "lvship", "lvphone", "lvweb"):
-            self.assertNotIn(glue, g["MODULES"])
+        self.assertEqual(tuple(g["BOARD"]), G.BOARD)
+        self.assertRegex(g["PACK"], r"^[0-9a-f]{12}$")
+        p = {}
+        exec(rd(os.path.join(ROOT, "build", "fw", "lvpackdata.py")), p)
+        self.assertEqual(p["DATA"], rd_b(os.path.join(ROOT, "build", "pack.bin")))
+
+    def test_core_hash_covers_board_and_pack(self):
+        """Changing a board module or the pack changes the core hash (the updater matches
+        releases to firmware by it); changed_files() names what a release must ship."""
+        sys.path.insert(0, os.path.join(ROOT, "tools", "fw"))
+        import gen_lvfrozen as G
+        import changed_modules as CM
+        import json
+        base = G.core_hash()
+        saved = (G.ROOT, G.PACK, G.RT)
+        with tempfile.TemporaryDirectory() as d:
+            for sub in ("lv", "board"):
+                shutil.copytree(os.path.join(ROOT, sub), os.path.join(d, sub))
+            os.makedirs(os.path.join(d, "build"))
+            shutil.copy(G.PACK, os.path.join(d, "build", "pack.bin"))
+            try:
+                G.ROOT, G.PACK = d, os.path.join(d, "build", "pack.bin")
+                self.assertEqual(G.core_hash(), base, "a copy hashes the same")
+                with open(os.path.join(d, "board", "lvweb.py"), "a") as f:
+                    f.write("\n# fixed\n")
+                h1 = G.core_hash()
+                self.assertNotEqual(h1, base)
+                with open(G.PACK, "ab") as f:
+                    f.write(b"\0")
+                self.assertNotEqual(G.core_hash(), h1)
+            finally:
+                G.ROOT, G.PACK, G.RT = saved
+            cores = sorted(f for f in os.listdir(os.path.join(ROOT, "tools", "fw", "cores")) if f.endswith(".json"))
+            with open(os.path.join(ROOT, "tools", "fw", "cores", cores[-1])) as f:
+                core = json.load(f)
+            self.assertEqual(CM.changed_files(core, d), ["lvweb.mpy", "pack.bin"])
+            self.assertEqual(CM.changed_files(core), [], "board/ and the pack match the newest core")
+            old = {"id": "lv-core", "version": "0.1.0", "core": "f1b383588e79", "modules": core["modules"],
+                   "sha256": {k: v for k, v in core["sha256"].items() if k.startswith("lv")}}
+            self.assertEqual(CM.changed_files(old), [b + ".mpy" for b in G.BOARD] + ["pack.bin"],
+                             "a 0.1.0 core froze no board modules: a release ships them all")
 
     def test_partial_overrides(self):
         """A partial release ships only the core modules changed since the flashed core."""
@@ -112,7 +165,8 @@ class Split(unittest.TestCase):
         cores = sorted(f for f in os.listdir(os.path.join(ROOT, "tools", "fw", "cores")) if f.endswith(".json"))
         self.assertTrue(cores, "tools/fw/cores/ holds the flashed core's manifest")
         import json
-        core = json.load(open(os.path.join(ROOT, "tools", "fw", "cores", cores[-1])))
+        with open(os.path.join(ROOT, "tools", "fw", "cores", cores[-1])) as f:
+            core = json.load(f)
         with tempfile.TemporaryDirectory() as d:
             lvd = os.path.join(d, "lv")
             shutil.copytree(os.path.join(ROOT, "lv"), lvd)
@@ -151,6 +205,46 @@ class Split(unittest.TestCase):
             wr(os.path.join(d, "probe.py"), PROBE)
             out = self.run_probe([FROZEN_MP], d)
             self.assertIn("HIDDEN by a /lv directory", out)
+        board_probe = (PROBE.split("from lv.engage")[0] +
+                       "import lvship\nprint('GLUE', getattr(lvship, 'MARK', 'frozen'))\n"
+                       "p, src = lvship.pack_for()\nprint('PACK', src, p.ncards > 0)\n")
+        with tempfile.TemporaryDirectory() as d:           # lv-core 0.2.0: all frozen
+            wr(os.path.join(d, "probe.py"), board_probe)
+            out = self.run_probe([FROZEN_MP], d)
+            self.assertRegex(out, r"overrides: \[\], board files: \[\]")
+            self.assertIn("GLUE frozen", out)
+            self.assertIn("PACK frozen True", out)
+        with tempfile.TemporaryDirectory() as d:           # hotfix files replace them
+            p = os.path.join(d, "lvship.py")
+            wr(p, rd(os.path.join(ROOT, "board", "lvship.py")) + 'MARK = "file"\n')
+            subprocess.run([MPY_CROSS, "-O3", "-o", p[:-3] + ".mpy", p], check=True)
+            os.remove(p)
+            shutil.copy(os.path.join(ROOT, "build", "pack.bin"), os.path.join(d, "pack.bin"))
+            wr(os.path.join(d, "probe.py"), board_probe)
+            out = self.run_probe([FROZEN_MP], d)
+            self.assertRegex(out, r"board files: \[lvship, pack.bin\]")
+            self.assertIn("GLUE file", out)
+            self.assertIn("PACK file True", out)
+        board_probe = (PROBE.split("from lv.engage")[0] +
+                       "import lvship\nprint('GLUE', getattr(lvship, 'MARK', 'frozen'))\n"
+                       "p, src = lvship.pack_for()\nprint('PACK', src, p.ncards > 0)\n")
+        with tempfile.TemporaryDirectory() as d:           # lv-core 0.2.0: all frozen
+            wr(os.path.join(d, "probe.py"), board_probe)
+            out = self.run_probe([FROZEN_MP], d)
+            self.assertRegex(out, r"overrides: \[\], board files: \[\]")
+            self.assertIn("GLUE frozen", out)
+            self.assertIn("PACK frozen True", out)
+        with tempfile.TemporaryDirectory() as d:           # hotfix files replace them
+            p = os.path.join(d, "lvship.py")
+            wr(p, rd(os.path.join(ROOT, "board", "lvship.py")) + 'MARK = "file"\n')
+            subprocess.run([MPY_CROSS, "-O3", "-o", p[:-3] + ".mpy", p], check=True)
+            os.remove(p)
+            shutil.copy(os.path.join(ROOT, "build", "pack.bin"), os.path.join(d, "pack.bin"))
+            wr(os.path.join(d, "probe.py"), board_probe)
+            out = self.run_probe([FROZEN_MP], d)
+            self.assertRegex(out, r"board files: \[lvship, pack.bin\]")
+            self.assertIn("GLUE file", out)
+            self.assertIn("PACK file True", out)
 
 
 if __name__ == "__main__":

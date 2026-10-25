@@ -46,9 +46,9 @@ check("ports: Picos only", [p for p, _ in ports] == ["/dev/ttyACM0", "COM5"], po
 
 # ---- the selftest parser
 CANNED = """MPY: soft reboot
-SELFTEST lvship 0.1.0-lv-test on rp2, MicroPython 3.4.0
+SELFTEST lvship 0.2.0-lv-test on rp2, MicroPython 3.4.0
 SELFTEST wifi: hotspot LV-2 active True, ip 192.168.4.1
-SELFTEST firmware: frozen lv-core 0.1.0 (core f1b383588e79), overrides: []
+SELFTEST firmware: frozen lv-core 0.2.0 (core 2661c2144844), overrides: [], board files: []
 day: flight day 9 (phone)
 SELFTEST day: flight day 9 (phone), launch date 2026-10-15, time known True
 SELFTEST ble: active True, advert 0201
@@ -88,6 +88,14 @@ check("parse: day lines", st["days"][0] == (9, "phone"), st["days"])
 check("parse: wifi/server/dns", "LV-2" in st["wifi"] and "port 80" in st["server"] and "every name" in st["dns"])
 check("parse: led end line", st["led"].startswith("notifier ON, waiting False, pin writes 10"), st["led"])
 check("parse: battery (the last line)", st["battery"] == "detected, 72%, 3950 mV, charging yes at the end", st)
+check("firmware line: board files", bench.board_files("frozen lv-core 0.2.0 (core 2661c2144844), overrides: [], "
+                                                     "board files: [lvship, pack.bin]") == ["lvship", "pack.bin"])
+check("firmware line: none", bench.board_files("frozen lv-core 0.2.0 (core 2661c2144844), overrides: [], board files: []") == [])
+check("firmware line: a 0.1.0 core", bench.board_files("frozen lv-core 0.1.0 (core f1b383588e79), overrides: []") is None)
+rel02 = {"files": [{"path": "main.py"}, {"path": "lvweb.mpy"}],
+         "frozen": {"requires": "2661c2144844", "board": ["lvship", "lvweb"], "pack": True}}
+check("stale frozen copies", bench.frozen_stale(rel02) == ["lvship.py", "lvship.mpy", "lvweb.py", "pack.bin"],
+      bench.frozen_stale(rel02))
 check("parse: ignores noise", bench.parse_selftest("hello\nSELFTESTX y PASS\n")["checks"] == {})
 
 rep = bench.Report()
@@ -227,7 +235,9 @@ if MP:
     root = tempfile.mkdtemp()
     rc, o = bench_run(root, MP, "--ship", "2")
     check("stock: exit 1", rc == 1, o)
-    check("stock: names the .uf2", "stock MicroPython" in o and "lv-core-0.1.0-f1b383588e79-RPI_PICO_W.uf2" in o, o)
+    fz = json.load(open(bench.RELEASE))["frozen"]
+    uf2 = "%s-%s-%s-RPI_PICO_W.uf2" % (fz["id"], fz["version"], fz["requires"])
+    check("stock: names the .uf2", "stock MicroPython" in o and uf2 in o, (uf2, o))
     check("stock: nothing installed", not os.path.exists(os.path.join(root, "version.json")), os.listdir(root))
 else:
     print("test_bench: no MicroPython: skipped the stock-firmware run")
@@ -237,6 +247,11 @@ if FW:
     os.makedirs(os.path.join(root, "data"))
     with open(os.path.join(root, "data", "ship.json"), "w") as f:
         json.dump({"http_port": 18081, "fleet_key": "fleet-placeholder", "day": 4, "story": True}, f)
+    # what a 0.1.0 install leaves: the board modules and the pack as files. On a 0.2.0 core
+    # they would run instead of the frozen ones, so the install has to remove them.
+    for stale in ("lvship.mpy", "lvweb.mpy", "selftest.py", "pack.bin"):
+        with open(os.path.join(root, stale), "w") as f:
+            f.write("raise ImportError('stale copy')\n")
     rc, o = bench_run(root, FW, "--ship", "3", "--launch", "2026-10-15", "--led", "on", "--led-test",
                       "--code", "Phill=1234", "--code", "Kim=4321", "--seconds", "12")
     check("fw: OVERALL PASS", rc == 0 and "OVERALL PASS" in o, o)
@@ -245,6 +260,11 @@ if FW:
                 "captive DNS up          PASS", "flight day              PASS", "LED path                PASS",
                 "LED pulse test          INFO"):
         check("fw row " + row.split()[0], row in o, o)
+    if json.load(open(bench.RELEASE))["frozen"].get("board"):
+        for row in ("no stale frozen copies  PASS", "frozen board modules    PASS"):
+            check("fw row " + row.split("  ")[0], row in o, o)
+        left = [x for x in ("lvship.mpy", "lvweb.mpy", "selftest.py", "pack.bin") if os.path.exists(os.path.join(root, x))]
+        check("fw: stale copies removed", left == [], left)
     check("fw: no battery is INFO", re.search(r"battery\s+INFO\s+none detected", o), o)
     check("fw: codes not printed", not leaked(o, "1234", "4321"))
     check("fw: fleet key not printed", "fleet-placeholder" not in o)
