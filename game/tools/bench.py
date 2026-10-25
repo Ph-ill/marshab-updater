@@ -7,12 +7,14 @@ the ship up, run the serial self-test and print a PASS/FAIL report (docs/BENCH_T
 
 Per board, in order:
   1. finds the Pico W on USB (or --port), reads its firmware: it must be the game firmware
-     lv-core 0.1.0 core f1b383588e79. Stock MicroPython or another core stops here and
+     the release's core (lv-core 0.2.0 core 2661c2144844). Stock MicroPython or another core stops here and
      names the .uf2 to flash (--uf2 FILE flashes it: the board reboots into BOOTSEL and the
      file is copied onto the RPI-RP2 drive);
-  2. installs 0.1.0-lv-test from firmware/releases/ (the same files, deletes and sha256
+  2. installs 0.2.0-lv-test from firmware/releases/ (the same files, deletes and sha256
      checks as the updater page; files already right are skipped), then reads every file's
-     sha256 back from the board;
+     sha256 back from the board. It also removes any copy of a module the firmware has
+     frozen in (lvship.mpy, pack.bin... left by a 0.1.0 install), which would run instead
+     of the frozen one;
   3. sets /data/ship.json from the flags given and nothing else (other keys, a bench
      "day", day_start, fleet_key... are kept), and crew codes into /data/crew.json (the
      updater's format; names not given keep their code);
@@ -47,7 +49,7 @@ import time
 
 GAME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(GAME)
-RELEASE = os.path.join(REPO, "firmware", "releases", "0.1.0-lv-test", "release.json")
+RELEASE = os.path.join(REPO, "firmware", "releases", "0.2.0-lv-test", "release.json")
 CREW = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian", "Marco"]  # = content/roster.lv
 HEAP_CAP = 80000
 PICO_VID = "2e8a"
@@ -406,6 +408,26 @@ selftest.run(%(seconds)d, epoch=%(epoch)s, tz=%(tz)d, wifi=True, led=%(led)s, le
 '''
 
 
+def frozen_stale(release):
+    """Files on the board that would replace a module the release's core has frozen in
+    (lv-core 0.2.0+: the board modules and the pack): every <module>.py / .mpy and pack.bin
+    the release doesn't ship itself. A file is found before the frozen module, so a copy left
+    by an older install would run instead of the firmware's (and cost its heap). Releases
+    built by tools/build_release.py list these in "delete" too; this covers older ones."""
+    fz = release.get("frozen") or {}
+    ship = set(f["path"] for f in release.get("files", []))
+    out = [m + e for m in fz.get("board") or () for e in (".py", ".mpy") if m + e not in ship]
+    if fz.get("pack") and "pack.bin" not in ship:
+        out.append("pack.bin")
+    return out
+
+
+def board_files(firmware_line):
+    """The "board files: [...]" part of lv.describe() (lv-core 0.2.0+), or None."""
+    m = re.search(r"board files: \[([^\]]*)\]", firmware_line or "")
+    return None if m is None else sorted(x.strip() for x in m.group(1).split(",") if x.strip())
+
+
 def snippet(code, **names):
     return "".join("%s = %r\n" % (k, v) for k, v in names.items()) + code
 
@@ -695,9 +717,11 @@ def bench_one(args, ship, board, logf, ask=input):
         before = board_json(out)
         todo = [f for f in files if before.get(f["path"]) != f["sha256"]]
         todo.sort(key=lambda f: f["path"] == "version.json")      # version.json last, as the updater does
-        say("install: %d of %d files to write, removing %s" % (len(todo), len(files), ", ".join(release["delete"])))
+        gone = list(release.get("delete", []))
+        gone += [p for p in frozen_stale(release) if p not in gone]
+        say("install: %d of %d files to write, removing %s" % (len(todo), len(files), ", ".join(gone)))
         dirs = sorted(set(os.path.dirname(f["path"]) for f in files if "/" in f["path"]))
-        rc, out = run(snippet(REMOVE, PATHS=release.get("delete", []), DIRS=dirs), 60, what="remove")
+        rc, out = run(snippet(REMOVE, PATHS=gone, DIRS=dirs), 60, what="remove")
         tmp = tempfile.mkdtemp(prefix="lv-bench-")
         try:
             pairs = []
@@ -723,6 +747,14 @@ def bench_one(args, ship, board, logf, ask=input):
     bad = [f["path"] for f in files if after.get(f["path"]) != f["sha256"]]
     rep.add("files hash-match", "FAIL" if bad else "PASS",
             ("differ: " + ", ".join(bad)) if bad else "%d files, sha256 as in %s" % (len(files), release["version"]))
+    stale = frozen_stale(release)
+    if stale:
+        rc, out = run(snippet(HASHES, PATHS=stale), 60, what="frozen modules not replaced")
+        left = sorted(p for p, h in board_json(out).items() if h is not None)
+        rep.add("no stale frozen copies", "FAIL" if left else "PASS",
+                ("still on the board: " + ", ".join(left)) if left else
+                "no file replaces the %d frozen board modules or the pack, except what %s ships" % (
+                    len((release.get("frozen") or {}).get("board") or ()), release["version"]))
 
     # 3. settings
     st_set, st_drop = settings_from(args, ship)
@@ -813,6 +845,15 @@ def bench_one(args, ship, board, logf, ask=input):
             want = (want[0], "manual")
         selftest_checks(rep, st, want_day=want, rollover=args.rollover, expect_peers=args.peers,
                         led=led, led_seen=seen, led_test=args.led_test)
+        if (release.get("frozen") or {}).get("board"):
+            # What runs from files instead of the firmware: exactly the release's hotfixes.
+            want_f = sorted([f["path"][:-4] for f in files if f["path"][:-4] in release["frozen"]["board"]
+                             and f["path"].endswith(".mpy")] + (["pack.bin"] if "pack.bin" in paths else []))
+            got_f = board_files(st.get("firmware"))
+            rep.add("frozen board modules", "PASS" if got_f == want_f else "FAIL",
+                    "from files: [%s]%s" % (", ".join(got_f or []), "" if got_f == want_f else
+                                            " (expected [%s])" % ", ".join(want_f)) if got_f is not None
+                    else "the firmware line names no board files (older core?)")
         if restore is not None:
             rc, out = run(snippet(SETTINGS, SET=restore[0], DROP=restore[1], CODES=None), 30, what="settings restore")
             say("rollover: settings put back: %s" % json.dumps(board_json(out)["now"], sort_keys=True))
@@ -868,7 +909,7 @@ def main(argv=None, ask=input):
     ap.add_argument("--no-ask", action="store_true", help="don't ask questions (LED test: report INFO)")
     ap.add_argument("--quiet", action="store_true", help="don't echo the selftest output")
     ap.add_argument("--uf2", help="the game firmware .uf2: flash it if the board has other firmware")
-    ap.add_argument("--release", default=RELEASE, help="release.json to install (default 0.1.0-lv-test)")
+    ap.add_argument("--release", default=RELEASE, help="release.json to install (default 0.2.0-lv-test, for lv-core 0.2.0)")
     ap.add_argument("--log-dir", default=os.path.join(GAME, "build", "bench-logs"))
     ap.add_argument("--mpremote", default=os.environ.get("MPREMOTE", "mpremote"))
     ap.add_argument("--dry-run", action="store_true", help="print the plan, touch nothing")
