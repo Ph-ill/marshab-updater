@@ -46,7 +46,7 @@ SELFTEST firmware: frozen lv-core 0.1.0 (core f1b383588e79), overrides: []
 day: flight day 9 (phone)
 SELFTEST day: flight day 9 (phone), launch date 2026-10-15, time known True
 SELFTEST ble: active True, advert 0201
-SELFTEST led test: watch the board's LED now: 3 slow blinks (1 s on, 1 s off)
+SELFTEST led test: watch the board's LED now: 3 slow breaths (fades up and down, 2 s each)
 SELFTEST led: notifier ON (led_notify True), time known True, waiting False
 SELFTEST server: phone game listening on port 80
 SELFTEST t=10s STAT ship=2 recs=3 digest=aa ble=idle peers=1 ok=1 fail=0 sent=1 got=2 new=2 gifts_in=0 led=test/6 heap_used=70000 heap_free=100 day=9/phone
@@ -85,7 +85,7 @@ rep = bench.Report()
 bench.selftest_checks(rep, st, want_day=(9, "phone"), expect_peers=True, led_test=True, led_seen=True)
 txt = rep.text()
 for row in ("selftest ran", "heap used < 80 KB", "BLE up", "Wi-Fi hotspot up", "phone server listening", "captive DNS up",
-            "flight day", "LED path", "LED blink test", "peers"):
+            "flight day", "LED path", "LED pulse test", "peers"):
     check("report row " + row, row in txt, txt)
 check("report: CHECK in sync fails with --peers", not rep.ok(), txt)
 rep = bench.Report()
@@ -102,6 +102,13 @@ check("report: heap over the cap fails", not rep.ok() and "81234" in rep.text(),
 rep = bench.Report()
 bench.selftest_checks(rep, st2, want_day=(9, "phone"), led_test=True, led_seen=False)
 check("report: LED not seen fails", not rep.ok() and "did NOT see" in rep.text(), rep.text())
+check("parse: led test line", "3 slow breaths" in st["led_test"], st)
+check("led pattern: breaths", bench.led_pattern(st).startswith("3 slow breaths"))
+check("led pattern: an older build's blinks", bench.led_pattern(bench.parse_selftest(
+    CANNED.replace("3 slow breaths (fades up and down, 2 s each)", "3 slow blinks (1 s on, 1 s off)"))) == "3 slow blinks")
+rep = bench.Report()
+bench.selftest_checks(rep, st2, want_day=(9, "phone"), led_test=True, led_seen=True)
+check("report: saw the breaths", "you saw the 3 slow breaths" in rep.text(), rep.text())
 rep = bench.Report()
 bench.selftest_checks(rep, bench.parse_selftest(CANNED.replace("server listening       PASS", "server listening       CHECK")))
 check("report: server down fails", not rep.ok() and "phone server listening  FAIL" in rep.text(), rep.text())
@@ -218,7 +225,7 @@ if FW:
     for row in ("firmware/core           PASS", "files hash-match        PASS", "heap used < 80 KB       PASS",
                 "BLE up                  PASS", "Wi-Fi hotspot up        PASS", "phone server listening  PASS",
                 "captive DNS up          PASS", "flight day              PASS", "LED path                PASS",
-                "LED blink test          INFO"):
+                "LED pulse test          INFO"):
         check("fw row " + row.split()[0], row in o, o)
     check("fw: codes not printed", "1234" not in o and "4321" not in o)
     check("fw: fleet key not printed", "fleet-placeholder" not in o)

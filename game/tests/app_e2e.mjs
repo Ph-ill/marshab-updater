@@ -99,7 +99,7 @@ try {
     'intro cards: the goal, then the ship (Pico W, its Wi-Fi LV-3, no internet): ' + leads.slice(0, 2).join(' | '));
   check(/every morning at 6\b/.test(leads[2]) && /six weeks/.test(leads[2]), 'intro card 3 gives the day start and the length: ' + leads[2]);
   check(leads.some((l) => /Bluetooth/.test(l) && /in range/.test(l)), 'a card says how things travel by Bluetooth');
-  check(leads.some((l) => /blink/.test(l)), 'a card explains the ship light');
+  check(leads.some((l) => /puls/.test(l)), 'a card explains the ship light');
   check(seen === cards, 'briefing cards seen ' + seen + '/' + cards);
   check(await click('[data-tut=done]'), 'last briefing card: no Go aboard button');
   await until(`route==='home'&&localStorage.getItem('lv-briefed')==='1'`, 4000, 'briefing done: home, remembered');
