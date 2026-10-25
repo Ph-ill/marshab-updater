@@ -413,7 +413,7 @@ def snippet(code, **names):
 # ---------------------------------------------------------------- the report
 def parse_selftest(text):
     """What the SELFTEST lines say: {checks, result, heap_peak, heap_used, firmware, days,
-    stats, led, wifi, server, dns, peers}. Lines from other prints are ignored."""
+    stats, led, wifi, server, dns, peers, battery}. Lines from other prints are ignored."""
     r = {"checks": {}, "result": None, "stats": [], "days": []}
     for line in text.splitlines():
         line = line.strip()
@@ -453,6 +453,8 @@ def parse_selftest(text):
             r["peers"] = body[11:].strip()
         elif body.startswith("log:"):
             r["log"] = body[4:].strip()
+        elif body.startswith("battery:"):          # the last one: the reading at the end
+            r["battery"] = body[8:].strip()
     return r
 
 
@@ -520,6 +522,8 @@ def selftest_checks(rep, st, want_day=None, rollover=None, expect_peers=False, l
                     "you saw the 3 blinks" if led_seen else "you did NOT see the blinks")
     rep.add("peers", ("PASS" if c.get("in sync with a peer") else "FAIL") if expect_peers else "INFO",
             st.get("peers", "none"))
+    # The battery is optional hardware (docs/BATTERY.md): reported, never a FAIL.
+    rep.add("battery", "INFO", st.get("battery", "not reported (an older install)"))
 
 
 # ---------------------------------------------------------------- the steps
