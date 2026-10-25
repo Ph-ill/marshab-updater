@@ -36,6 +36,7 @@ python3 tests/mock_check.py
 python3 tests/test_phone.py
 python3 tests/test_cal.py
 python3 tests/test_led.py
+python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
 LV_FROZEN_MP="$LV_FROZEN_MP" MPY_CROSS="$MPY_CROSS" python3 tests/test_fw_split.py
@@ -44,6 +45,9 @@ if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py
   "$MP" tests/mp_codes.py
   "$MP" tests/test_led.py
+  # every ship id boots with a launch date (ship 2, 2026-10-25)
+  "$MP" -X heapsize=512k tests/test_ships8.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi
   "$MP" -X heapsize=160k tests/mp_engage.py
   "$MP" -X heapsize=192k tests/mp_merge.py
   # 3 boards in one process (a 64-bit port needs about 320k for this one).

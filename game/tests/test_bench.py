@@ -8,6 +8,7 @@ import datetime as DT
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -160,6 +161,30 @@ finally:
 o = out.getvalue()
 check("dry run", rc == 0 and "ship 1:" in o and "ship 2:" in o and "1234" not in o and "set for Phill" in o, o)
 
+# ---- a real deadline on every mpremote call (2026-10-25: a silent board held bench forever,
+# because the old loop only looked at the clock when a line arrived)
+import time  # noqa: E402
+SILENT = [sys.executable, "-c", "import sys,time; print('SELFTEST lvship start', flush=True); time.sleep(60)"]
+t0 = time.time()
+rc, o = bench.run_with_deadline(subprocess.Popen(SILENT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True), 2)
+took = time.time() - t0
+check("deadline: a silent child is stopped on time", took < 6, took)
+check("deadline: rc 124", rc == 124, rc)
+check("deadline: says TIMEOUT and to replug", bench.timed_out(o) and "unplug the board" in o and "SELFTEST lvship start" in o, o)
+rc, o = bench.run_with_deadline(subprocess.Popen([sys.executable, "-c", "print('hi')"], stdout=subprocess.PIPE,
+                                                 stderr=subprocess.STDOUT, text=True), 20)
+check("deadline: a quick child is untouched", rc == 0 and o == "hi\n" and not bench.timed_out(o), (rc, o))
+rc, o = bench.run_with_deadline(subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"],
+                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True), 1)
+check("deadline: no output at all", rc == 124 and bench.timed_out(o), (rc, o))
+# Mpremote itself, with a stand-in mpremote that hangs without a word
+fake_mp = os.path.join(tempfile.mkdtemp(), "mpremote_hang.py")
+with open(fake_mp, "w") as f:
+    f.write("import time\ntime.sleep(60)\n")
+t0 = time.time()
+rc, o = bench.Mpremote("/dev/null-port", "%s %s" % (sys.executable, fake_mp)).exec("print(1)", timeout=2)
+check("mpremote: silent board times out", time.time() - t0 < 6 and rc == 124 and bench.timed_out(o), (rc, o))
+
 # ---- whole runs on a fake board (MicroPython unix ports)
 MP = os.environ.get("MICROPYTHON") or shutil.which("micropython")
 FW = os.environ.get("LV_FROZEN_MP")
@@ -219,6 +244,43 @@ if FW:
     cfg = json.load(open(os.path.join(root, "data", "ship.json")))
     check("fw again: launch kept, LED off", cfg["launch_date"] == "2026-10-15" and cfg["led_notify"] is False, cfg)
     check("fw again: LED dark", "led off unless asked" not in o or "LED path                PASS" in o, o)
+    # A board that goes silent in the selftest (ship 2's radio chip, 2026-10-25): the
+    # bench must stop on its own with a FAIL that says to unplug and replug the board.
+    Real = bench.FakeBoard
+
+    class HangBoard(Real):
+        def exec(self, code, timeout=60, echo=False):
+            if "selftest.run" in code:
+                return bench.run_with_deadline(subprocess.Popen(SILENT, stdout=subprocess.PIPE,
+                                                                stderr=subprocess.STDOUT, text=True), 2)
+            return Real.exec(self, code, timeout, echo)
+
+    bench.FakeBoard = HangBoard
+    out = io.StringIO()
+    old = sys.stdout
+    sys.stdout = out
+    try:
+        t0 = time.time()
+        rc = bench.main(["--fake-board", root, "--micropython", FW, "--no-ask", "--log-dir", logs, "--quiet",
+                         "--ship", "2", "--launch", "2026-10-25", "--led", "on"])
+    finally:
+        sys.stdout = old
+        bench.FakeBoard = Real
+    o = out.getvalue()
+    check("hang: bench finishes", time.time() - t0 < 120 and rc == 1, (rc, o))
+    check("hang: FAIL says replug", re.search(r"selftest ran\s+FAIL\s+TIMEOUT", o) and "Unplug the board" in o
+          and "OVERALL FAIL" in o, o)
+    # an old-updater ship.json (schema, ship_name, role, hotspot_open: what ttyACM7 had) keeps
+    # working, and the open hotspot is pointed out
+    with open(os.path.join(root, "data", "ship.json"), "w") as f:
+        json.dump({"schema": 2, "ship_id": 1, "ship_name": "Starship-01", "role": "B", "hotspot_open": True,
+                   "updated_at": "2026-10-23T00:11:15.363Z", "http_port": 18081}, f)
+    rc, o = bench_run(root, FW, "--ship", "3", "--launch", "2026-10-25", "--led", "on", "--seconds", "5")
+    check("old ship.json: PASS", rc == 0 and "OVERALL PASS" in o, o)
+    check("old ship.json: open hotspot noted", re.search(r"hotspot open\s+INFO", o), o)
+    cfg = json.load(open(os.path.join(root, "data", "ship.json")))
+    check("old ship.json: ship 3 set, rest kept", cfg["ship_id"] == 3 and cfg["role"] == "B" and
+          cfg["launch_date"] == "2026-10-25", cfg)
 else:
     print("test_bench: no LV_FROZEN_MP: skipped the fake-board runs")
 shutil.rmtree(logs, ignore_errors=True)

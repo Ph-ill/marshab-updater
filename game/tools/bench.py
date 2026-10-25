@@ -23,6 +23,10 @@ Per board, in order:
   5. prints one PASS/FAIL/INFO line per check and saves everything to a log file
      (build/bench-logs/) to send back. Exit code 1 if anything failed;
   6. resets the board so it starts the game.
+Before the selftest the board is hard-reset into the REPL (machine.reset with /data/maint),
+so the CYW43 radio chip starts clean whatever ran on the board before (--no-fresh-boot
+skips it). Every mpremote call has a real deadline: a board that goes silent is killed off
+and reported as FAIL (unplug it, plug it back in, run again), never a bench that waits forever.
 
 --ships 1,2,3 does several boards in a row (plug each in when asked). --dry-run shows the
 plan without a board. --fake-board DIR runs it all against the unix port (tests).
@@ -51,6 +55,74 @@ MARK = "BENCHJSON"
 
 
 # ---------------------------------------------------------------- talking to the board
+TIMEOUT_MARK = "bench: TIMEOUT"
+REPLUG = ("unplug the board, plug it back in (a power cycle resets its radio chip) and run "
+          "bench.py again for this ship")
+
+
+def run_with_deadline(p, timeout, echo=False):
+    """Read a child's output until it exits or `timeout` seconds pass, whichever is first.
+    Lines are read on a thread, so the deadline holds even if the child prints nothing at
+    all. On the deadline the child is killed. Returns (returncode, output); a timed-out
+    run returns 124 (as timeout(1)) and its output ends with a TIMEOUT_MARK line."""
+    import queue
+    import threading
+    q = queue.Queue()
+
+    def reader():
+        try:
+            for line in p.stdout:
+                q.put(line)
+        finally:
+            q.put(None)
+
+    threading.Thread(target=reader, daemon=True).start()
+    out = []
+    t0 = time.time()
+    last = t0
+    deadline = t0 + timeout
+    timed_out = False
+    while True:
+        left = deadline - time.time()
+        if left <= 0:
+            timed_out = True
+            break
+        try:
+            line = q.get(timeout=min(left, 0.5))
+        except queue.Empty:
+            continue
+        if line is None:
+            break
+        last = time.time()
+        out.append(line)
+        if echo:
+            sys.stdout.write("  | " + line)
+            sys.stdout.flush()
+    if timed_out:
+        try:
+            p.kill()
+        except OSError:
+            pass
+        msg = ("%s after %d s (the board said nothing for the last %d s). Its radio or USB link "
+               "is probably stuck: %s.\n" % (TIMEOUT_MARK, timeout, int(time.time() - last), REPLUG))
+        out.append(msg)
+        if echo:
+            sys.stdout.write("  | " + msg)
+            sys.stdout.flush()
+    try:
+        p.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        p.kill()
+    try:
+        p.stdout.close()
+    except Exception:
+        pass
+    return (124 if timed_out else p.returncode), "".join(out)
+
+
+def timed_out(out):
+    return TIMEOUT_MARK in (out or "")
+
 class Mpremote:
     """The board over USB serial with mpremote. Board paths are relative to / (its cwd)."""
 
@@ -60,24 +132,14 @@ class Mpremote:
         self.log = log
 
     def _run(self, args, timeout, echo=False):
+        """Run one mpremote command. The deadline is real: a reader thread collects the
+        output while this thread waits on the clock, so a board that goes silent (a radio
+        chip that never answers, a wedged USB link) can't hold the bench forever. On the
+        deadline mpremote is killed and the output ends with a TIMEOUT line (TIMEOUT_MARK)
+        that the report turns into a FAIL telling you to unplug and replug the board."""
         p = subprocess.Popen(self.cmd + ["connect", self.port] + args, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, text=True, errors="replace")
-        out = []
-        t0 = time.time()
-        try:
-            for line in p.stdout:
-                out.append(line)
-                if echo:
-                    sys.stdout.write("  | " + line)
-                    sys.stdout.flush()
-                if time.time() - t0 > timeout:
-                    p.kill()
-                    out.append("bench: timed out after %d s\n" % timeout)
-                    break
-            p.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            p.kill()
-        return p.returncode, "".join(out)
+        return run_with_deadline(p, timeout, echo)
 
     def exec(self, code, timeout=60, echo=False):
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
@@ -95,6 +157,28 @@ class Mpremote:
 
     def reset(self):
         return self._run(["reset"], 20)
+
+    def fresh_boot(self, wait_s=25):
+        """Hard-reset the board (machine.reset: the RP2040 AND the CYW43 radio chip start
+        over) into the REPL, not the game: /data/maint makes main.py skip the game once.
+        mpremote's own soft reset keeps the radio chip as the last program left it, and a
+        radio left in a bad state by an older program made bluetooth.BLE().active(True)
+        wait forever (ship 2, 2026-10-25). Returns True when the board answers again."""
+        serial = port_serial(self.port, self.cmd)
+        self._run(["exec", "open('/data/maint','w').close()"], 15)
+        self._run(["reset"], 15)
+        t0 = time.time()
+        while time.time() - t0 < wait_s:
+            time.sleep(1.5)
+            if serial:      # the port can come back under another name after a reset
+                p = port_for_serial(serial, self.cmd)
+                if p:
+                    self.port = p
+            rc, out = self._run(["exec", "print('fresh-ok')"], 8)
+            if rc == 0 and "fresh-ok" in out:
+                self._run(["exec", "import os\ntry: os.remove('/data/maint')\nexcept OSError: pass"], 8)
+                return True
+        return False
 
     def bootloader(self):
         return self._run(["bootloader"], 10)
@@ -123,13 +207,13 @@ class FakeBoard:
                                text=True, errors="replace", timeout=timeout)
             out = p.stdout + p.stderr
         except subprocess.TimeoutExpired as e:
-            out, p = (e.stdout or b"").decode() + "bench: timed out\n", None
+            out, p = (e.stdout or b"").decode() + "%s after %d s: %s\n" % (TIMEOUT_MARK, timeout, REPLUG), None
         finally:
             os.unlink(path)
         if echo:
             for line in out.splitlines():
                 print("  | " + line)
-        return (p.returncode if p else 1), out
+        return (p.returncode if p else 124), out
 
     def put(self, pairs, timeout=300):
         for local, remote in pairs:
@@ -140,6 +224,9 @@ class FakeBoard:
 
     def reset(self):
         return 0, ""
+
+    def fresh_boot(self, wait_s=25):
+        return True          # (no radio chip to restart)
 
     def bootloader(self):
         return 1, "fake board has no bootloader"
@@ -153,6 +240,30 @@ def find_ports(mpremote="mpremote"):
     except (OSError, subprocess.TimeoutExpired) as e:
         raise SystemExit("bench: can't run mpremote (%s). Install it: pip install mpremote" % e)
     return parse_ports(out)
+
+
+def _list(cmd):
+    try:
+        return subprocess.run(list(cmd) + ["connect", "list"], capture_output=True, text=True, timeout=20).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def port_serial(port, cmd=("mpremote",)):
+    """The USB serial number of the Pico on `port` (from mpremote connect list), or None."""
+    for line in _list(cmd).splitlines():
+        f = line.split()
+        if len(f) >= 3 and f[0] == port and f[2].lower().startswith(PICO_VID + ":"):
+            return f[1]
+    return None
+
+
+def port_for_serial(serial, cmd=("mpremote",)):
+    for line in _list(cmd).splitlines():
+        f = line.split()
+        if len(f) >= 3 and f[1] == serial and f[2].lower().startswith(PICO_VID + ":"):
+            return f[0]
+    return None
 
 
 def parse_ports(text):
@@ -643,9 +754,18 @@ def bench_one(args, ship, board, logf, ask=input):
     if not cfg.get("hotspot_password") and not cfg.get("hotspot_open"):
         rep.add("hotspot password", "INFO", "none set: the AP uses the public placeholder (--password or "
                 "LV_HOTSPOT_PASSWORD)")
+    if cfg.get("hotspot_open") and not cfg.get("hotspot_password"):
+        rep.add("hotspot open", "INFO", "ship.json has hotspot_open true (an older updater setting): the AP "
+                "has no password; --password or LV_HOTSPOT_PASSWORD sets one and closes it")
 
     # 4. selftest
     if not args.no_selftest:
+        if not args.no_fresh_boot:
+            say("restart: hard reset first so the radio chip starts clean (a few seconds)...")
+            if not board.fresh_boot():
+                rep.add("board answers after reset", "FAIL", "no answer within 25 s: " + REPLUG)
+                return rep
+            logf.write("fresh boot: ok, port %s\n" % board.port)
         led = cfg.get("led_notify", False)
         extra = ""
         if args.fake_board:
@@ -658,6 +778,11 @@ def bench_one(args, ship, board, logf, ask=input):
         say("selftest: %d s (Wi-Fi, phone server, DNS, BLE%s)..." % (
             args.seconds, ", rollover" if args.rollover else ""))
         rc, out = run(code, args.seconds + 120, echo=not args.quiet, what="selftest")
+        if timed_out(out):
+            last = [ln for ln in out.splitlines() if ln.startswith("SELFTEST ")]
+            rep.add("selftest ran", "FAIL", "TIMEOUT: the board stopped answering%s. %s" % (
+                " after: " + last[-1][9:60] if last else "", REPLUG[0].upper() + REPLUG[1:]))
+            return rep
         st = parse_selftest(out)
         seen = None
         if args.led_test and not args.no_ask:
@@ -719,6 +844,8 @@ def main(argv=None, ask=input):
     ap.add_argument("--no-install", action="store_true", help="skip installing files (still checks their hashes)")
     ap.add_argument("--no-selftest", action="store_true")
     ap.add_argument("--no-reset", action="store_true", help="leave the board at the REPL afterwards")
+    ap.add_argument("--no-fresh-boot", action="store_true",
+                    help="skip the hard reset before the selftest (by default the radio chip is restarted)")
     ap.add_argument("--no-ask", action="store_true", help="don't ask questions (LED test: report INFO)")
     ap.add_argument("--quiet", action="store_true", help="don't echo the selftest output")
     ap.add_argument("--uf2", help="the game firmware .uf2: flash it if the board has other firmware")
