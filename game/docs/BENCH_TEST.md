@@ -560,4 +560,5 @@ address 0x62 on GP4/GP5) once, and a board without one carries on exactly as bef
 - `ship.json` (all optional): `"battery": false` never looks, `true` always shows the
   battery (as "unknown" if the gauge doesn't answer); `bat_sda`, `bat_scl` (default 4, 5),
   `bat_chg` (default 6, `-1` for none), `bat_chg_pull` (`"down"`, `"up"`, `"none"`),
-  `bat_every_s` (default 60).
+  `bat_every_s` (default 60), `bat_khz` (unset: 50 kHz, falling back to 10 kHz; the Pico's
+  internal pull-ups are switched on, so the 4.7 kΩ resistors are optional).
