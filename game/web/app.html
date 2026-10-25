@@ -665,8 +665,8 @@ function TUT(){
     ["Watch duty","Keeping watch",`Anything you send on a flight day counts as a watch: a plan, a ballot, an answer, a gift or an ask. Days in a row make a run.`,tFig(5),
       [["Grace days","Miss a day and it's covered, up to twice a flight week. Today never counts against you."],["Badges",`Awarded at ${EG.badges.map((b)=>b[0]).join(", ").replace(/, (\d+)$/," and $1")} days.`],["Broken run","A new run starts with your next tap. No harm done."]]]);
   if(S.led!=null)st.push(
-    ["Ship light","A light on the ship",`Your ship's light can blink to say something's waiting, no phone needed. It's off until someone turns it on: CREW › Ship light.`,"",
-      [["One blink","Every few seconds: today's page hasn't been opened here yet."],["Double","A crewmate's gift has reached this ship."],["Three quick","A new flight day has begun."],["Off again","Opening the game here clears it. Dark at night, 22:00 to 07:00."]]]);
+    ["Ship light","A light on the ship",`Your ship's light can glow, softly pulsing, to say something's waiting, no phone needed. It's off until someone turns it on: CREW › Ship light.`,"",
+      [["One slow pulse","Every few seconds: today's page hasn't been opened here yet."],["Double pulse","A crewmate's gift has reached this ship."],["Three quick","A new flight day has begun."],["Off again","Opening the game here clears it. Dark at night, 22:00 to 07:00."]]]);
   st.push(["The log","Missed a few days?",`No problem. The log reads newest page first, and pages new since your last visit carry a rust square. Catch up whenever you like.`,"",
     [["While away","You carry on in character, and votes close with whoever voted."],["Late signals","Today's and yesterday's pages can still change as word arrives from other ships. That's normal."],["Filed under",`${file} › How to play, for when you need it again.`]]]);
   return st;
