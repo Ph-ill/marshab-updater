@@ -30,6 +30,7 @@ python3 tests/test_engage.py
 python3 tests/mp_engage.py --write > /dev/null
 python3 tests/test_sync.py
 python3 tests/mp_sync.py
+python3 tests/test_you_voice.py
 node tests/render_check.mjs
 python3 web/build.py
 python3 tests/mock_check.py

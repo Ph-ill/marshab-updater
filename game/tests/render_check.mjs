@@ -49,8 +49,25 @@ cases.forEach((k, i) => {
   same(`epilogue fallback case ${i + 1}`, JSON.stringify(got), JSON.stringify(k.lines));
 });
 
+// Second person (tests/test_you_voice.py writes build/season_you.json): the same season
+// read from each of the eight ships, and every string filled with each role as the viewer.
+const you = JSON.parse(readFileSync(join(root, "build/season_you.json"), "utf8"));
+let nyou = 0;
+for (let me = 0; me < text.crew.length; me++) {
+  const k = you[me];
+  const got = new Renderer(text, eng, me).lines(story).map(([d, s]) => `${d}\t${s}`);
+  same(`ship ${me + 1}'s log`, got.join("\n"), k.lines.join("\n"));
+  const e = new Renderer(text, eng, me).epilogue(story);
+  same(`ship ${me + 1}'s epilogue`, JSON.stringify(Object.fromEntries(Object.entries(e).map(([c, s]) => [String(c), s]))), JSON.stringify(k.epilogue));
+  nyou += got.length;
+}
+const dummy = { ...text, crew: ["Ann", "Bea", "Cy", ...text.crew.slice(3).map((_, i) => `X${i}`)] };
+you.fills.forEach(([s, me, py], i) => {
+  same(`string ${i + 1} with role ${me} as the viewer`, new Renderer(dummy, eng, me).fill(s, 0, 1, { T: 2 }), py);
+});
+
 for (const n of [1, 6, 7, 8, 42]) if (!/^LOG PAGE \d\d · DAYS? \d+(–\d+)?$/.test(pageHeading(n))) {
   console.error("bad page heading " + pageHeading(n));
   process.exit(1);
 }
-console.log(`render.js matches sim/render.py (${js.split("\n").length} lines, epilogue ${Object.keys(epi).length}+${coda ? 1 : 0}, fallback x${cases.length})`);
+console.log(`render.js matches sim/render.py (${js.split("\n").length} lines, epilogue ${Object.keys(epi).length}+${coda ? 1 : 0}, fallback x${cases.length}; 8 viewers ${nyou} lines, ${you.fills.length} fills)`);
