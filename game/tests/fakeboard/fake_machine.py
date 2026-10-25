@@ -47,6 +47,7 @@ class I2C:
 
     def __init__(self, i, sda=None, scl=None, freq=400000, timeout=50000):
         self.i = i
+        self.freq = freq
 
     def _dev(self, addr):
         if addr != 0x62 or not BAT["on"] or BAT["fail"]:

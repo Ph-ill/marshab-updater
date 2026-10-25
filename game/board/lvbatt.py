@@ -8,10 +8,11 @@
 #   at boot     start(): one look for the gauge. Not there: ship.bat stays None, the pins
 #               go back to plain inputs and nothing more runs (a board with no battery).
 #   every 60 s  poll(): percent, mV, charging, from the main loop while neither the radio
-#               nor the web server is busy. Each I2C transfer has a 5 ms timeout; an error
+#               nor the web server is busy. Each I2C transfer has a 10 ms timeout; an error
 #               only means "unknown" (three in a row and the numbers go blank).
 # ship.bat = [percent or None, mV or None, charging (True/False/None), SOC in 1/256 %,
-#             mV smoothed, errors in a row, ticks_ms of the last reading, ms to the next]
+#             mV smoothed, errors in a row, ticks_ms of the last reading, ms to the next,
+#             I2C speed in kHz]
 #            (one list, so a ship holds one attribute for all of it); /api/state sends
 #            the first three ("bat").
 #
@@ -20,6 +21,7 @@
 #                  "unknown" when the gauge doesn't answer), false (never look)
 #   bat_sda, bat_scl   GPIO numbers, default 4 and 5 (I2C0: Pico pins 6 and 7)
 #   bat_i2c        the RP2040 I2C block for those pins, default 0
+#   bat_khz        I2C speed; default: try 50 kHz, then 10 kHz (below)
 #   bat_chg        the charger-detect GPIO, default 6 (Pico pin 9); -1 or null: none
 #   bat_chg_pull   "down" (default), "up" or "none" for that pin
 #   bat_every_s    seconds between readings, default 60
@@ -31,6 +33,16 @@
 #   quick start, as the vendor script does), only when it is asleep: a gauge that has been
 #   running keeps its estimate across Pico restarts. Just after waking, SOC reads 0 for a
 #   moment; that counts as unknown and the next look is 5 s later.
+#
+# No pull-up resistors needed (docs/BATTERY.md): a Raspberry Pi has 1.8 kOhm pull-ups on
+# its I2C pins, so the UPS-Lite's published schematic has none of its own, and this module
+# uses the RP2040's internal pull-ups (50-80 kOhm; machine.I2C on rp2 turns them on too).
+# Those are far weaker than I2C's usual 4.7 kOhm, so the bus runs slowly: at 50 kHz each
+# half clock is 8-12 us, and a line takes ~3 us to rise to the RP2040's 2 V input high
+# with 60 kOhm and ~50 pF of short wires (~7.5 us at the worst case, 80 kOhm and 100 pF;
+# the CW2015 already reads high at 1.4 V). If the gauge doesn't answer at 50 kHz the boot look tries
+# 10 kHz, and three failed readings in a row also drop to 10 kHz. External 4.7 kOhm
+# resistors to 3V3(OUT) still work at any speed; bat_khz pins the speed.
 from lv.clock import ticks_ms
 
 ADDR = 0x62
@@ -45,9 +57,10 @@ def _hw(ship):
     from machine import I2C, Pin
     c = ship.cfg
 
-    def bus():
-        return I2C(c.get("bat_i2c", 0), sda=Pin(c.get("bat_sda", 4)), scl=Pin(c.get("bat_scl", 5)),
-                   freq=100000, timeout=5000)
+    def bus(k):
+        u = Pin.PULL_UP                             # internal pull-ups, before I2C takes the pins
+        return I2C(c.get("bat_i2c", 0), sda=Pin(c.get("bat_sda", 4), Pin.IN, u),
+                   scl=Pin(c.get("bat_scl", 5), Pin.IN, u), freq=k * 1000, timeout=10000)
 
     def chg():
         p = c.get("bat_chg", 6)
@@ -75,15 +88,18 @@ def start(ship):
     on = ship.cfg.get("battery", "auto")
     if on is False or on in ("off", "no", 0):
         return EVERY
-    try:
-        bus = _hw(ship)[0]()
-        bus.readfrom_mem(ADDR, 0, 1)                 # VERSION: is anyone there?
-    except Exception:
-        bus = None
+    k = ship.cfg.get("bat_khz")
+    for k in (k,) if k else (50, 10):              # weak pull-ups: slow, then slower
+        try:
+            bus = _hw(ship)[0](k)
+            bus.readfrom_mem(ADDR, 0, 1)             # VERSION: is anyone there?
+            break
+        except Exception:
+            bus = None
     if bus is None and on not in (True, "on"):
         _release(ship)
         return EVERY
-    ship.bat = [None, None, None, 0, 0, 0, 0, 0]
+    ship.bat = [None, None, None, 0, 0, 0, 0, 0, k]
     if bus is not None:
         try:
             if bus.readfrom_mem(ADDR, 10, 1)[0] & 0xC0:     # asleep (MODE): wake + quick start
@@ -91,7 +107,7 @@ def start(ship):
                 ship.say("battery: gauge woken (quick start)")
         except Exception:
             pass
-    ship.say("battery: %s" % ("gauge found at 0x62" if bus else "not found, battery forced on"))
+    ship.say("battery: %s" % ("gauge found at 0x62, I2C %d kHz" % k if bus else "not found, battery forced on"))
     return poll(ship, bus)
 
 
@@ -112,7 +128,7 @@ def _poll(ship, b, bus):
     except Exception:
         b[2] = None
     try:
-        bus = bus or mk()
+        bus = bus or mk(b[8])
         v = bus.readfrom_mem(ADDR, 2, 2)              # VCELL
         s = bus.readfrom_mem(ADDR, 4, 2)              # SOC
         mv = ((v[0] & 0x3F) << 8 | v[1]) * 305 // 1000
@@ -130,6 +146,7 @@ def _poll(ship, b, bus):
         b[5] += 1
         if b[5] >= 3:
             b[0] = b[1] = None
+            b[8] = min(b[8], 10)                      # weak pull-ups or long wires: slower
         if b[0] is None:
             return 5000
     try:
