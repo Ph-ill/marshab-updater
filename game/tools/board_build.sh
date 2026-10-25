@@ -8,7 +8,7 @@
 #
 #   build/board/     stock MicroPython 1.29 (Variant A): the game core lv/*.mpy too
 #   build/board-fw/  the game firmware (tools/build_firmware.sh, the core lv/ frozen in):
-#                    only what stays updatable: main.py, the glue (lvship, lvcal, lvled, lvledcfg, lvdays, lvweb, lvphone, lvstat,
+#                    only what stays updatable: main.py, the glue (lvship, lvreport, lvcal, lvled, lvledcfg, lvbatt, lvdays, lvweb, lvphone, lvstat,
 #                    lvwifi, selftest), the pack, engage.bin and the phone page www/*.gz.
 #                    Never put lv/ on a game-firmware board: it hides the frozen core. A
 #                    fixed core module goes in lvx/<name>.mpy instead (lv/__init__.py):
@@ -27,7 +27,7 @@ MPY_CROSS="${MPY_CROSS:-mpy-cross}"
 MPREMOTE="${MPREMOTE:-mpremote}"
 OUT=build/board
 FW=build/board-fw
-GLUE="lvship lvcal lvled lvledcfg lvdays lvweb lvphone lvstat lvwifi selftest"
+GLUE="lvship lvreport lvcal lvled lvledcfg lvbatt lvdays lvweb lvphone lvstat lvwifi selftest"
 
 python3 tools/lvc.py > /dev/null
 python3 tools/lve.py > /dev/null
@@ -92,7 +92,7 @@ def rm(p):
             os.remove(p)
     except OSError:
         pass
-for p in ('/lv', '/lvx', '/www', '/lvship.py', '/selftest.py', '/lvwifi.py', '/lvweb.py', '/lvphone.py', '/lvstat.py', '/lvdays.py', '/lvcal.py', '/lvled.py', '/lvledcfg.py'):
+for p in ('/lv', '/lvx', '/www', '/lvship.py', '/selftest.py', '/lvwifi.py', '/lvweb.py', '/lvphone.py', '/lvstat.py', '/lvdays.py', '/lvcal.py', '/lvled.py', '/lvledcfg.py', '/lvbatt.py', '/lvreport.py'):
     rm(p)
 for d in ('/data', '/www'$( [ "$SRC" = "$OUT" ] && echo ", '/lv'")):
     try:

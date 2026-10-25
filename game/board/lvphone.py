@@ -280,6 +280,8 @@ class Phone:
             # to lv/ble's last peer sweep (every 10 s), so no clock of our own. Not in the log.
             "air": [[k, max(0, sh.ble._swept - q.seen) // 1000, q.diff_since is None]
                     for k, q in sh.ble.peers.items()] if sh.ble else None,
+            # This board's battery (lvbatt.py): [percent, mV, charging], null without one.
+            "bat": sh.bat[:3] if sh.bat else None,
         }
 
 

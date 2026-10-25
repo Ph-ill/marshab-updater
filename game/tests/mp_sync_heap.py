@@ -20,6 +20,9 @@
 #   frozen   the interpreter has the game core lv/ frozen in (tools/build_firmware.sh
 #            unix32, the Pico firmware's manifest); the rest comes from build/board-fw,
 #            the files the updater installs on a game-firmware board.
+#   --bat    a UPS-Lite battery (board/lvbatt.py, a fake CW2015 gauge from tests/fakeboard:
+#            72 %, charging): found at boot, read every simulated second while the
+#            radio is idle (lvship reads once a minute), lvbatt dropped after each read.
 #   --phone  phones play while it syncs: prints PORT <n> and serves the phone game until
 #            build/heap-data/done exists. tests/phone_heap.py drives it from CPython (two
 #            phones through tests/phone_flow.py, in another process so their buffers
@@ -30,10 +33,14 @@ import gc
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 PHONE = "--phone" in sys.argv
 LED = "--led" in sys.argv
-if LED:
+BAT = "--bat" in sys.argv
+if LED or BAT:
     sys.path.insert(0, "tests/fakeboard")
     import fakeboard
     fakeboard.install()
+if BAT:
+    import fake_machine
+    fake_machine.BAT.update({"on": True, "soc": 72 * 256, "mv": 3950, "chg": True})
 FROZEN = bool(ARGS) and ARGS[0] == "frozen"
 if FROZEN:
     for p in ("", "."):
@@ -166,6 +173,7 @@ else:
     handler = lvstat.server(ship)
 during = [0]
 air = [None]
+bat = [None, 0]
 
 
 def done_flag():
@@ -202,6 +210,9 @@ async def heap_run():
         peer.poll(w.now)
         if LED:
             ship.led.poll(ship.ble.busy())
+        if BAT and t % 1000 == 0 and not ship.ble.busy() and not (WEB and web.busy > 0):
+            ship.bat_poll()                  # as lvship's loop does, only while nothing is busy
+            bat[1] += 1
         if t % 50 == 0:
             sample()
             await lvship.sleep_ms(1 if PHONE else 0)
@@ -223,6 +234,7 @@ async def heap_run():
                 sample()
         # (not sampled: the phones' own /api/state calls during the sync are, above)
         air[0] = web.phone.state_body(0, 39, ship.clock.minute())["air"]
+        bat[0] = web.phone.state_body(0, 39, ship.clock.minute())["bat"]
         gc.collect()
     if LED:
         # the patterns in real time (the sync above runs on the fake radio's clock): the
@@ -294,6 +306,14 @@ if PHONE:
                                                           ship.cal.src if ship.cal else "manual day"))
     print("phone: %d requests served (%d while the BLE radio ran), %d refused busy; heap peak includes "
           "/api/state, the page streamed from flash and the taps" % (web.served, during[0], web.refused))
+if BAT:
+    # the gauge found at boot and read while idle; lvbatt never stays loaded
+    B = bat[0] if PHONE else (ship.bat[:3] if ship.bat else None)
+    bat_ok = (B is not None and B[0] == 72 and 3940 <= B[1] <= 3960 and B[2] is True and bat[1] > 0
+              and "lvbatt" not in sys.modules)
+    ok = ok and bat_ok
+    print("battery: %s after %d readings while idle, lvbatt %s: %s" % (
+        B, bat[1], "loaded" if "lvbatt" in sys.modules else "dropped", "ok" if bat_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:
