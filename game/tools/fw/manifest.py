@@ -1,16 +1,35 @@
 # Frozen-module manifest for the Long Voyage game firmware (tools/build_firmware.sh).
 # Paths are relative to this file.
 #
-# Frozen ("option 2"): only what rarely changes, the deterministic game core lv/ (engine,
-# state, pack reader, records and log, BLE sync, codes, engagement rules...), plus
-# lvfrozen.py, the manifest of what was frozen (tools/fw/gen_lvfrozen.py).
-# Not frozen, updatable as files by the web updater: the story pack and text, the phone
-# page (www/app.html.gz), engage data, and the board glue (main.py, lvship, lvweb,
-# lvphone, lvwifi, selftest). A file /lvx/<name>.mpy replaces the frozen lv.<name>
-# (lv/__init__.py), so a core fix can ship without reflashing too.
+# Frozen code runs from flash: only its objects live on the heap, not its bytecode.
+#   lv-core 0.1.0  the deterministic game core lv/ (engine, state, pack reader, records and
+#                  log, BLE sync, codes, engagement rules...) and lvfrozen.py.
+#   lv-core 0.2.0  also the board modules (lvship ... selftest, tools/fw/gen_lvfrozen.py
+#                  BOARD) and the story pack as a frozen bytes object (lvpackdata.py):
+#                  about 29 KB less heap with two phones playing during a BLE sync.
+# Still files the web updater installs: main.py, the phone page and text (www/*.gz) and
+# engage.bin. Every frozen piece can still be replaced without reflashing: /lvx/<name>.mpy
+# for lv.<name> (lv/__init__.py), /<board module>.mpy and /pack.bin for the rest (found
+# before the frozen ones on sys.path). tools/board_build.sh ships only what changed since
+# the flashed core, and the updater removes stale copies of everything else.
 
 # The board's own manifest first: networking, aioble, asyncio, _boot.py (filesystem).
 include("$(BOARD_DIR)/manifest.py")
 
 package("lv", base_path="../..")
 module("lvfrozen.py", base_path="../../build/fw")
+module("lvpackdata.py", base_path="../../build/fw")
+# The board modules, in tools/fw/gen_lvfrozen.py BOARD order (tests/test_fw_split.py checks
+# the two agree). -O3 as tools/board_build.sh compiles their file versions.
+module("lvship.py", base_path="../../board", opt=3)
+module("lvreport.py", base_path="../../board", opt=3)
+module("lvcal.py", base_path="../../board", opt=3)
+module("lvled.py", base_path="../../board", opt=3)
+module("lvledcfg.py", base_path="../../board", opt=3)
+module("lvbatt.py", base_path="../../board", opt=3)
+module("lvdays.py", base_path="../../board", opt=3)
+module("lvweb.py", base_path="../../board", opt=3)
+module("lvphone.py", base_path="../../board", opt=3)
+module("lvstat.py", base_path="../../board", opt=3)
+module("lvwifi.py", base_path="../../board", opt=3)
+module("selftest.py", base_path="../../board", opt=3)

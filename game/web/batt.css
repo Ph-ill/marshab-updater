@@ -1,0 +1,6 @@
+/* The ship's battery in the top bar and the low-battery line (web/batt.js). */
+#top .bat{display:inline-flex;align-items:center;gap:5px;margin-right:12px}
+#top .bat.low{color:var(--rust-t)}
+.bati{width:22px;height:12px;display:block}
+.batlow{margin-top:var(--s4);padding:var(--s2) var(--s3);border-left:3px solid var(--rust);font:14px/20px var(--mono);color:var(--ink2)}
+.batlow b{color:var(--rust-t);font-weight:700}

@@ -12,7 +12,11 @@ game/tools/build_firmware.sh): --frozen game/tools/fw/cores/lv-core-<ver>-<core>
 which core the release is built against. Such a release ships no lv/ (a /lv folder would
 hide the frozen core), may ship lvx/<module>.mpy overrides of only the core modules that
 changed, and is refused by the updater on a board running any other core. lv/ and lvx/ are
-always cleared first, so overrides from an older release never linger.
+always cleared first, so overrides from an older release never linger. A core that froze
+the board modules and the pack too (lv-core 0.2.0+: "board", "pack" in its manifest) also
+gets every copy of those the release doesn't ship (<module>.py, <module>.mpy, pack.bin)
+added to "delete", and "replaces" lists the ones it does ship (hotfixes over the frozen
+ones: a file is found first on the board).
 
 Example (coexistence bench test):
   python3 tools/build_release.py --version 0.0.1-coex --channel bench \
@@ -144,8 +148,33 @@ def frozen_spec(path: Path, rels: list[str]) -> tuple[dict, list[str]]:
             if m.group(1) in overrides:
                 raise SystemExit(f"{r}: two overrides for lv.{m.group(1)}")
             overrides.append(m.group(1))
-    return ({"id": core["id"], "version": core["version"], "requires": core["core"],
-             "micropython": core.get("micropython", ""), "modules": sorted(mods)}, sorted(overrides))
+    spec = {"id": core["id"], "version": core["version"], "requires": core["core"],
+            "micropython": core.get("micropython", ""), "modules": sorted(mods)}
+    # lv-core 0.2.0+ also froze the board modules and the story pack (top-level on the board).
+    board = list(core.get("board") or [])
+    if board:
+        spec["board"] = board
+    if core.get("pack"):
+        spec["pack"] = True
+    return spec, sorted(overrides)
+
+
+def frozen_replaces(frozen: dict, rels: list[str]) -> list[str]:
+    """The frozen board modules (and the pack) this release replaces with its own files."""
+    out = [m for m in frozen.get("board", []) if m + ".mpy" in rels or m + ".py" in rels]
+    if frozen.get("pack") and "pack.bin" in rels:
+        out.append("pack.bin")
+    return out
+
+
+def frozen_stale(frozen: dict, rels: list[str]) -> list[str]:
+    """Top-level files to delete before installing: every copy of a frozen board module or
+    of the pack the release doesn't ship. Files are found before frozen modules on the
+    board, so a leftover from an older release would run instead of the firmware's."""
+    out = [m + e for m in frozen.get("board", []) for e in (".py", ".mpy") if m + e not in rels]
+    if frozen.get("pack") and "pack.bin" not in rels:
+        out.append("pack.bin")
+    return out
 
 
 def vkey(version: str):
@@ -170,10 +199,11 @@ def main() -> None:
 
     frozen, overrides = (None, [])
     if a.frozen:
-        frozen, overrides = frozen_spec(a.frozen.resolve(), [r.as_posix() for r in rels])
-        for d in ("lv", "lvx"):           # never a stale full install or an old override
-            if d not in a.delete:
-                a.delete.append(d)
+        names = [r.as_posix() for r in rels]
+        frozen, overrides = frozen_spec(a.frozen.resolve(), names)
+        for d in ["lv", "lvx"] + frozen_stale(frozen, names):   # never a stale full install,
+            if d not in a.delete:                                 # an old override or a copy
+                a.delete.append(d)                                # of a now-frozen module
     elif any(r.parts[0] == "lvx" for r in rels):
         raise SystemExit("lvx/ overrides only work on the game firmware: give --frozen <core manifest>")
 
@@ -227,6 +257,7 @@ def main() -> None:
         "shipConfig": {"roles": [r for r in a.roles.split(",") if r]},
         **({"hotspot": {"prefix": a.hotspot_prefix}} if a.hotspot_prefix else {}),
         **({"frozen": frozen, "overrides": overrides} if frozen else {}),
+        **({"replaces": frozen_replaces(frozen, [p for p, _ in payload])} if frozen and frozen.get("board") else {}),
         "payload_bytes": total,
         "files": files,
     }
@@ -256,7 +287,8 @@ def main() -> None:
 
     print(f"wrote {out.relative_to(root)}: {len(files)} files, {total} bytes payload, {out.stat().st_size} bytes json")
     if frozen:
-        print(f"partial release for {frozen['id']} {frozen['version']} core {frozen['requires']}: overrides [{', '.join(overrides)}]")
+        print(f"partial release for {frozen['id']} {frozen['version']} core {frozen['requires']}: overrides [{', '.join(overrides)}]"
+              + (f", replaces frozen [{', '.join(frozen_replaces(frozen, [p for p, _ in payload]))}]" if frozen.get("board") else ""))
     print(f"index {index_path.relative_to(root)}: latest={index['latest']} channels={index['channels']}")
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the phone page: inline web/render.js (and engage.js/.css) into web/app.html, strip comments and
+"""Build the phone page: inline web/render.js (and engage.js/.css, batt.js/.css) into web/app.html, strip comments and
 indentation, gzip it. Writes build/app.html and build/app.html.gz (what the Pico serves).
 
   python3 web/build.py
@@ -30,7 +30,9 @@ def main():
     js = re.sub(r"^export\s+", "", js, flags=re.M)
     html = html.replace("/*RENDER_JS*/", js)
     # Engagement screens and their styles (web/engage.js, web/engage.css), if present.
-    for name, mark in (("engage.js", "/*ENGAGE_JS*/"), ("engage.css", "/*ENGAGE_CSS*/")):
+    # The ship's battery (web/batt.js, .css) the same way.
+    for name, mark in (("engage.js", "/*ENGAGE_JS*/"), ("engage.css", "/*ENGAGE_CSS*/"),
+                       ("batt.js", "/*BATT_JS*/"), ("batt.css", "/*BATT_CSS*/")):
         path = os.path.join(HERE, name)
         src = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
         if name.endswith(".css"):

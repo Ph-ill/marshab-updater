@@ -82,17 +82,24 @@ try {
   // A first sign-in: the ship says `first`, so the meet screen offers the crew briefing
   // instead of Go aboard. Every card, then Go aboard lands on Home and the phone remembers.
   await until(`route==='meet'&&tutDue&&!!document.querySelector('.big')`, 8000, 'meet screen (briefing due) on the first sign-in');
+  check(/10 cards/.test(await ev(`(document.querySelector('[data-go="how"]')||{}).textContent||''`)), 'meet screen: the briefing button gives the card count');
   check(await click('[data-go="how"]'), 'meet screen: no Crew briefing button on a first sign-in');
   await until(`!!document.querySelector('.tut')`, 4000, 'crew briefing card');
   const cards = await ev('TUT().length');
-  check(cards === 6, 'briefing has ' + cards + ' cards (expected 6 with engagement)');
-  const lead = await ev(`document.querySelector('.tut .lead').textContent`);
-  check(/every morning at 6\b/.test(lead) && /six weeks/.test(lead), 'briefing card 1 gives the day start and the length: ' + lead);
+  check(cards === 10, 'briefing has ' + cards + ' cards (expected 10: 3 intro, then 7 with engagement and the ship light)');
+  const leads = [await ev(`document.querySelector('.tut .lead').textContent`)];
+  check(/Intro 01\/10/.test(await ev(`document.querySelector('.tut .lab').textContent`)), 'briefing card 1 is labelled Intro 01/10');
   let seen = 1;
   for (let i = 1; i < cards; i++) {
     await click('[data-tut=next]');
     if (await until(`!!document.querySelector('.tut')&&tutStep()===${i}`, 4000, 'briefing card ' + (i + 1))) seen++;
+    leads.push(await ev(`document.querySelector('.tut .lead').textContent`));
   }
+  check(/Mars/.test(leads[0]) && /Pico W/.test(leads[1]) && /LV-3\b/.test(leads[1]) && /No internet/.test(leads[1]),
+    'intro cards: the goal, then the ship (Pico W, its Wi-Fi LV-3, no internet): ' + leads.slice(0, 2).join(' | '));
+  check(/every morning at 6\b/.test(leads[2]) && /six weeks/.test(leads[2]), 'intro card 3 gives the day start and the length: ' + leads[2]);
+  check(leads.some((l) => /Bluetooth/.test(l) && /in range/.test(l)), 'a card says how things travel by Bluetooth');
+  check(leads.some((l) => /puls/.test(l)), 'a card explains the ship light');
   check(seen === cards, 'briefing cards seen ' + seen + '/' + cards);
   check(await click('[data-tut=done]'), 'last briefing card: no Go aboard button');
   await until(`route==='home'&&localStorage.getItem('lv-briefed')==='1'`, 4000, 'briefing done: home, remembered');
@@ -155,6 +162,19 @@ try {
   await until(`!!document.querySelector('[data-out]')`, 4000, 'crew page with the sign-out button');
   const crewRows = await ev(`document.querySelectorAll('[data-go^="crew/"]').length`);
   check(crewRows === 7, 'crew page lists ' + crewRows + ' crewmates');
+  // Who's in Bluetooth range (S.air): a nearby ship gets the rust "Nearby" mark, the others
+  // when they were last in range. The mock sends a fixed sample; a board without a radio null (nothing shown).
+  const air = JSON.parse(await ev(`JSON.stringify({air:S.air,near:document.querySelectorAll('[data-go^="crew/"] .near').length,txt:[...document.querySelectorAll('[data-go^="crew/"] small')].map((x)=>x.textContent)})`));
+  const nNear = (air.air || []).filter((x) => x[0] !== st.here && x[1] <= 180).length;
+  check((air.air === null || Array.isArray(air.air)) && air.near === nNear && (!(air.air || []).length || air.txt.some((t) => /^In range \d+ (min|h) ago$/.test(t))),
+    'crew page Bluetooth contact: ' + JSON.stringify(air));
+  // The marks themselves, from a sample like a board with a radio sends (this server has none):
+  // a ship heard 20 s ago is Nearby, one heard 15 min ago was in range then, the rest unheard.
+  const mk = JSON.parse(await ev(`(S.air=[[(S.here+1)%8,20,false],[(S.here+2)%8,900,true]],crew(),JSON.stringify([...document.querySelectorAll('[data-go^="crew/"] small:nth-of-type(2)')].map((x)=>x.textContent)))`));
+  // (no mark for this ship's own astronaut: their ship is this one)
+  check(mk.length >= 5 && mk.filter((t) => t === 'Nearby · syncing').length === 1 &&
+    mk.includes('In range 15 min ago') && mk.filter((t) => t === 'Not in range lately').length === mk.length - 2,
+    'crew page Bluetooth marks from a sample: ' + JSON.stringify(mk));
   // The Ship light switch (the board's LED notifier): the board answers on (game firmware)
   // or stays off (a plain interpreter); the button shows what the board said. Back off after.
   check(await ev(`!!document.querySelector('[data-led]')`), 'Ship light button on your crew page');

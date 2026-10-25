@@ -12,14 +12,17 @@
 # 80 KB (80,000 B): the peak, less the fake radio module and the peer at its largest
 # (see below). The LED stays off, unless:
 #   --led    the LED notifier on (led_notify: board/lvled.py loaded, a fake pin from
-#            tests/fakeboard): it blinks through the sync (no quiet hours, a test pattern
-#            first), polled from the loop as lvship does. On stock MicroPython the
+#            tests/fakeboard): it breathes through the sync (no quiet hours, a test pattern
+#            first), polled frame by frame as its asyncio task (lvled.Led.run) does. On stock MicroPython the
 #            notifier stays dark (game firmware only); --led --force measures it anyway.
 #   dir      a directory of .mpy files first on the path (tools/board_build.sh build/board:
 #            stock MicroPython, Variant A): the code comes precompiled, as on the board.
 #   frozen   the interpreter has the game core lv/ frozen in (tools/build_firmware.sh
 #            unix32, the Pico firmware's manifest); the rest comes from build/board-fw,
 #            the files the updater installs on a game-firmware board.
+#   --bat    a UPS-Lite battery (board/lvbatt.py, a fake CW2015 gauge from tests/fakeboard:
+#            72 %, charging): found at boot, read every simulated second while the
+#            radio is idle (lvship reads once a minute), lvbatt dropped after each read.
 #   --phone  phones play while it syncs: prints PORT <n> and serves the phone game until
 #            build/heap-data/done exists. tests/phone_heap.py drives it from CPython (two
 #            phones through tests/phone_flow.py, in another process so their buffers
@@ -30,10 +33,14 @@ import gc
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 PHONE = "--phone" in sys.argv
 LED = "--led" in sys.argv
-if LED:
+BAT = "--bat" in sys.argv
+if LED or BAT:
     sys.path.insert(0, "tests/fakeboard")
     import fakeboard
     fakeboard.install()
+if BAT:
+    import fake_machine
+    fake_machine.BAT.update({"on": True, "soc": 72 * 256, "mv": 3950, "chg": True})
 FROZEN = bool(ARGS) and ARGS[0] == "frozen"
 if FROZEN:
     for p in ("", "."):
@@ -165,6 +172,8 @@ if WEB:
 else:
     handler = lvstat.server(ship)
 during = [0]
+air = [None]
+bat = [None, 0]
 
 
 def done_flag():
@@ -201,6 +210,9 @@ async def heap_run():
         peer.poll(w.now)
         if LED:
             ship.led.poll(ship.ble.busy())
+        if BAT and t % 1000 == 0 and not ship.ble.busy() and not (WEB and web.busy > 0):
+            ship.bat_poll()                  # as lvship's loop does, only while nothing is busy
+            bat[1] += 1
         if t % 50 == 0:
             sample()
             await lvship.sleep_ms(1 if PHONE else 0)
@@ -212,9 +224,22 @@ async def heap_run():
         if phones_done and peer.node.digest() == ship.node.digest() and ship.ble.state == "idle" \
                 and peer.state == "idle":
             break
+    if PHONE:
+        # A few more scans, so the ship hears the peer's advert after the sync (in sync now).
+        for i in range(6000):
+            w.step(10)
+            ship.ble.poll(w.now)
+            peer.poll(w.now)
+            if i % 5 == 0:
+                sample()
+        # (not sampled: the phones' own /api/state calls during the sync are, above)
+        air[0] = web.phone.state_body(0, 39, ship.clock.minute())["air"]
+        bat[0] = web.phone.state_body(0, 39, ship.clock.minute())["bat"]
+        gc.collect()
     if LED:
         # the patterns in real time (the sync above runs on the fake radio's clock): the
-        # test blinks, then the gift's double blink, polled as lvship's loop does
+        # test breaths, then the gift's double pulse, polled frame by frame as the light's
+        # own task (lvled.Led.run) does
         n = 0
         while n < 9000:
             d = min(100, max(1, ship.led.poll(False)))
@@ -259,11 +284,25 @@ ok = (synced and http_ok[0] and led_ok and
       (base == 0 or BITS == 64 or (0 < board < 80000)))
 import lv                                   # noqa: E402
 if FROZEN:
-    # the core is the frozen one (not hidden by a lv/ directory), the glue comes from files
+    # the core is the frozen one (not hidden by a lv/ directory). Since lv-core 0.2.0 the glue
+    # and the pack are frozen too, unless build/board-fw ships a newer copy (a hotfix file
+    # is found first): each must come from exactly where the layout says.
     core, _ = lv.firmware()
-    ok = ok and core is not None and not core["shadowed"] and lvship.__file__.startswith("build/board-fw")
-print("impl %s %d-bit; glue from %s, pack from %s; %s" % (sys.implementation.name, BITS,
-      getattr(lvship, "__file__", "frozen"), ROOT + "pack.bin", lv.describe()))
+    glue_file = str(getattr(lvship, "__file__", "")).startswith("build/board-fw")
+    try:
+        os.stat(ROOT + "lvship.mpy")
+        want_glue_file = True
+    except OSError:
+        want_glue_file = False
+    try:
+        os.stat(ROOT + "pack.bin")
+        want_pack = "file"
+    except OSError:
+        want_pack = "frozen"
+    ok = (ok and core is not None and not core["shadowed"] and glue_file == want_glue_file
+          and ship.pack_src == want_pack)
+print("impl %s %d-bit; glue from %s, pack %s; %s" % (sys.implementation.name, BITS,
+      lvship.__file__ if (not FROZEN or glue_file) else "the firmware (frozen)", ship.pack_src, lv.describe()))
 print("heap: fake radio module %d, code (lvship + lv incl. sync, ble) %d, peer %d, ship with the whole season "
       "and the story at day 42 %d" % (m_fake, m_code - m_fake, m_peer - m_code, m_ship - m_peer))
 print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio time); peer and fake world at the end %d; "
@@ -271,11 +310,25 @@ print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
+    # Bluetooth contact for the phones (lvphone.air): ship 2 heard seconds ago and in sync,
+    # nobody else heard; ship 1 is this one.
+    A = air[0]
+    air_ok = A is not None and len(A) == 1 and A[0][0] == 1 and 0 <= A[0][1] <= 30 and A[0][2] is True
+    ok = ok and air_ok
+    print("air: %s (ship 2 heard seconds ago, in sync): %s" % (A, "ok" if air_ok else "FAIL"))
     ok = ok and ship.cal is not None and ship.day == 42
     print("calendar: launch %s, flight day %d from the %s" % (ship.cal.date if ship.cal else None, ship.day,
                                                           ship.cal.src if ship.cal else "manual day"))
     print("phone: %d requests served (%d while the BLE radio ran), %d refused busy; heap peak includes "
           "/api/state, the page streamed from flash and the taps" % (web.served, during[0], web.refused))
+if BAT:
+    # the gauge found at boot and read while idle; lvbatt never stays loaded
+    B = bat[0] if PHONE else (ship.bat[:3] if ship.bat else None)
+    bat_ok = (B is not None and B[0] == 72 and 3940 <= B[1] <= 3960 and B[2] is True and bat[1] > 0
+              and "lvbatt" not in sys.modules)
+    ok = ok and bat_ok
+    print("battery: %s after %d readings while idle, lvbatt %s: %s" % (
+        B, bat[1], "loaded" if "lvbatt" in sys.modules else "dropped", "ok" if bat_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:

@@ -1,7 +1,15 @@
 # Boot: hotspot first, then the ship (BLE sync + story), the web server (the phone game,
 # lvweb.py + lvphone.py) and the captive-portal DNS.
-# Put an empty file at /data/maint to skip this once (frees the REPL for mpremote).
+# Ways to keep the game from starting (the board is sealed in its case: no BOOTSEL):
+#   * the first 2 s after power-up: any mpremote command (it sends Ctrl-C) stops main.py
+#     here, before the radio is touched, and leaves the REPL:
+#       mpremote connect /dev/ttyACM0 exec "print('stopped')"     (or: mpremote repl)
+#   * /data/maint (an empty file): skip the game once (bench.py uses it), then it's removed
+#   * /data/safe (an empty file): skip the game on every boot until it is removed
+# Ctrl-C works later too (any point in the Python code); the window is for a board whose
+# game would otherwise lock up straight away.
 import os
+import time
 
 try:
     import asyncio
@@ -11,7 +19,24 @@ except ImportError:  # pragma: no cover
 import lvship
 
 
+BOOT_WINDOW_MS = 2000
+
+
+def flag(path):
+    try:
+        os.stat(path)
+        return True
+    except OSError:
+        return False
+
+
 def main():
+    print("boot: The Long Voyage starts in %d s (Ctrl-C or any mpremote command stops it)" % (
+        BOOT_WINDOW_MS // 1000))
+    time.sleep_ms(BOOT_WINDOW_MS)
+    if flag("/data/safe"):
+        print("safe: /data/safe found, not starting (remove it to play)")
+        return
     cfg = lvship.load_config()
     try:
         os.stat("/data/maint")

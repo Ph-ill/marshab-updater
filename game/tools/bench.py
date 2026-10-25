@@ -7,12 +7,14 @@ the ship up, run the serial self-test and print a PASS/FAIL report (docs/BENCH_T
 
 Per board, in order:
   1. finds the Pico W on USB (or --port), reads its firmware: it must be the game firmware
-     lv-core 0.1.0 core f1b383588e79. Stock MicroPython or another core stops here and
+     the release's core (lv-core 0.2.0 core 2661c2144844). Stock MicroPython or another core stops here and
      names the .uf2 to flash (--uf2 FILE flashes it: the board reboots into BOOTSEL and the
      file is copied onto the RPI-RP2 drive);
-  2. installs 0.1.0-lv-test from firmware/releases/ (the same files, deletes and sha256
+  2. installs 0.2.0-lv-test from firmware/releases/ (the same files, deletes and sha256
      checks as the updater page; files already right are skipped), then reads every file's
-     sha256 back from the board;
+     sha256 back from the board. It also removes any copy of a module the firmware has
+     frozen in (lvship.mpy, pack.bin... left by a 0.1.0 install), which would run instead
+     of the frozen one;
   3. sets /data/ship.json from the flags given and nothing else (other keys, a bench
      "day", day_start, fleet_key... are kept), and crew codes into /data/crew.json (the
      updater's format; names not given keep their code);
@@ -23,6 +25,10 @@ Per board, in order:
   5. prints one PASS/FAIL/INFO line per check and saves everything to a log file
      (build/bench-logs/) to send back. Exit code 1 if anything failed;
   6. resets the board so it starts the game.
+Before the selftest the board is hard-reset into the REPL (machine.reset with /data/maint),
+so the CYW43 radio chip starts clean whatever ran on the board before (--no-fresh-boot
+skips it). Every mpremote call has a real deadline: a board that goes silent is killed off
+and reported as FAIL (unplug it, plug it back in, run again), never a bench that waits forever.
 
 --ships 1,2,3 does several boards in a row (plug each in when asked). --dry-run shows the
 plan without a board. --fake-board DIR runs it all against the unix port (tests).
@@ -43,7 +49,7 @@ import time
 
 GAME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(GAME)
-RELEASE = os.path.join(REPO, "firmware", "releases", "0.1.0-lv-test", "release.json")
+RELEASE = os.path.join(REPO, "firmware", "releases", "0.2.0-lv-test", "release.json")
 CREW = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian", "Marco"]  # = content/roster.lv
 HEAP_CAP = 80000
 PICO_VID = "2e8a"
@@ -51,6 +57,74 @@ MARK = "BENCHJSON"
 
 
 # ---------------------------------------------------------------- talking to the board
+TIMEOUT_MARK = "bench: TIMEOUT"
+REPLUG = ("unplug the board, plug it back in (a power cycle resets its radio chip) and run "
+          "bench.py again for this ship")
+
+
+def run_with_deadline(p, timeout, echo=False):
+    """Read a child's output until it exits or `timeout` seconds pass, whichever is first.
+    Lines are read on a thread, so the deadline holds even if the child prints nothing at
+    all. On the deadline the child is killed. Returns (returncode, output); a timed-out
+    run returns 124 (as timeout(1)) and its output ends with a TIMEOUT_MARK line."""
+    import queue
+    import threading
+    q = queue.Queue()
+
+    def reader():
+        try:
+            for line in p.stdout:
+                q.put(line)
+        finally:
+            q.put(None)
+
+    threading.Thread(target=reader, daemon=True).start()
+    out = []
+    t0 = time.time()
+    last = t0
+    deadline = t0 + timeout
+    timed_out = False
+    while True:
+        left = deadline - time.time()
+        if left <= 0:
+            timed_out = True
+            break
+        try:
+            line = q.get(timeout=min(left, 0.5))
+        except queue.Empty:
+            continue
+        if line is None:
+            break
+        last = time.time()
+        out.append(line)
+        if echo:
+            sys.stdout.write("  | " + line)
+            sys.stdout.flush()
+    if timed_out:
+        try:
+            p.kill()
+        except OSError:
+            pass
+        msg = ("%s after %d s (the board said nothing for the last %d s). Its radio or USB link "
+               "is probably stuck: %s.\n" % (TIMEOUT_MARK, timeout, int(time.time() - last), REPLUG))
+        out.append(msg)
+        if echo:
+            sys.stdout.write("  | " + msg)
+            sys.stdout.flush()
+    try:
+        p.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        p.kill()
+    try:
+        p.stdout.close()
+    except Exception:
+        pass
+    return (124 if timed_out else p.returncode), "".join(out)
+
+
+def timed_out(out):
+    return TIMEOUT_MARK in (out or "")
+
 class Mpremote:
     """The board over USB serial with mpremote. Board paths are relative to / (its cwd)."""
 
@@ -60,24 +134,14 @@ class Mpremote:
         self.log = log
 
     def _run(self, args, timeout, echo=False):
+        """Run one mpremote command. The deadline is real: a reader thread collects the
+        output while this thread waits on the clock, so a board that goes silent (a radio
+        chip that never answers, a wedged USB link) can't hold the bench forever. On the
+        deadline mpremote is killed and the output ends with a TIMEOUT line (TIMEOUT_MARK)
+        that the report turns into a FAIL telling you to unplug and replug the board."""
         p = subprocess.Popen(self.cmd + ["connect", self.port] + args, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, text=True, errors="replace")
-        out = []
-        t0 = time.time()
-        try:
-            for line in p.stdout:
-                out.append(line)
-                if echo:
-                    sys.stdout.write("  | " + line)
-                    sys.stdout.flush()
-                if time.time() - t0 > timeout:
-                    p.kill()
-                    out.append("bench: timed out after %d s\n" % timeout)
-                    break
-            p.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            p.kill()
-        return p.returncode, "".join(out)
+        return run_with_deadline(p, timeout, echo)
 
     def exec(self, code, timeout=60, echo=False):
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
@@ -95,6 +159,28 @@ class Mpremote:
 
     def reset(self):
         return self._run(["reset"], 20)
+
+    def fresh_boot(self, wait_s=25):
+        """Hard-reset the board (machine.reset: the RP2040 AND the CYW43 radio chip start
+        over) into the REPL, not the game: /data/maint makes main.py skip the game once.
+        mpremote's own soft reset keeps the radio chip as the last program left it, and a
+        radio left in a bad state by an older program made bluetooth.BLE().active(True)
+        wait forever (ship 2, 2026-10-25). Returns True when the board answers again."""
+        serial = port_serial(self.port, self.cmd)
+        self._run(["exec", "open('/data/maint','w').close()"], 15)
+        self._run(["reset"], 15)
+        t0 = time.time()
+        while time.time() - t0 < wait_s:
+            time.sleep(1.5)
+            if serial:      # the port can come back under another name after a reset
+                p = port_for_serial(serial, self.cmd)
+                if p:
+                    self.port = p
+            rc, out = self._run(["exec", "print('fresh-ok')"], 8)
+            if rc == 0 and "fresh-ok" in out:
+                self._run(["exec", "import os\ntry: os.remove('/data/maint')\nexcept OSError: pass"], 8)
+                return True
+        return False
 
     def bootloader(self):
         return self._run(["bootloader"], 10)
@@ -123,13 +209,13 @@ class FakeBoard:
                                text=True, errors="replace", timeout=timeout)
             out = p.stdout + p.stderr
         except subprocess.TimeoutExpired as e:
-            out, p = (e.stdout or b"").decode() + "bench: timed out\n", None
+            out, p = (e.stdout or b"").decode() + "%s after %d s: %s\n" % (TIMEOUT_MARK, timeout, REPLUG), None
         finally:
             os.unlink(path)
         if echo:
             for line in out.splitlines():
                 print("  | " + line)
-        return (p.returncode if p else 1), out
+        return (p.returncode if p else 124), out
 
     def put(self, pairs, timeout=300):
         for local, remote in pairs:
@@ -140,6 +226,9 @@ class FakeBoard:
 
     def reset(self):
         return 0, ""
+
+    def fresh_boot(self, wait_s=25):
+        return True          # (no radio chip to restart)
 
     def bootloader(self):
         return 1, "fake board has no bootloader"
@@ -153,6 +242,30 @@ def find_ports(mpremote="mpremote"):
     except (OSError, subprocess.TimeoutExpired) as e:
         raise SystemExit("bench: can't run mpremote (%s). Install it: pip install mpremote" % e)
     return parse_ports(out)
+
+
+def _list(cmd):
+    try:
+        return subprocess.run(list(cmd) + ["connect", "list"], capture_output=True, text=True, timeout=20).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def port_serial(port, cmd=("mpremote",)):
+    """The USB serial number of the Pico on `port` (from mpremote connect list), or None."""
+    for line in _list(cmd).splitlines():
+        f = line.split()
+        if len(f) >= 3 and f[0] == port and f[2].lower().startswith(PICO_VID + ":"):
+            return f[1]
+    return None
+
+
+def port_for_serial(serial, cmd=("mpremote",)):
+    for line in _list(cmd).splitlines():
+        f = line.split()
+        if len(f) >= 3 and f[1] == serial and f[2].lower().startswith(PICO_VID + ":"):
+            return f[0]
+    return None
 
 
 def parse_ports(text):
@@ -295,6 +408,26 @@ selftest.run(%(seconds)d, epoch=%(epoch)s, tz=%(tz)d, wifi=True, led=%(led)s, le
 '''
 
 
+def frozen_stale(release):
+    """Files on the board that would replace a module the release's core has frozen in
+    (lv-core 0.2.0+: the board modules and the pack): every <module>.py / .mpy and pack.bin
+    the release doesn't ship itself. A file is found before the frozen module, so a copy left
+    by an older install would run instead of the firmware's (and cost its heap). Releases
+    built by tools/build_release.py list these in "delete" too; this covers older ones."""
+    fz = release.get("frozen") or {}
+    ship = set(f["path"] for f in release.get("files", []))
+    out = [m + e for m in fz.get("board") or () for e in (".py", ".mpy") if m + e not in ship]
+    if fz.get("pack") and "pack.bin" not in ship:
+        out.append("pack.bin")
+    return out
+
+
+def board_files(firmware_line):
+    """The "board files: [...]" part of lv.describe() (lv-core 0.2.0+), or None."""
+    m = re.search(r"board files: \[([^\]]*)\]", firmware_line or "")
+    return None if m is None else sorted(x.strip() for x in m.group(1).split(",") if x.strip())
+
+
 def snippet(code, **names):
     return "".join("%s = %r\n" % (k, v) for k, v in names.items()) + code
 
@@ -302,7 +435,7 @@ def snippet(code, **names):
 # ---------------------------------------------------------------- the report
 def parse_selftest(text):
     """What the SELFTEST lines say: {checks, result, heap_peak, heap_used, firmware, days,
-    stats, led, wifi, server, dns, peers}. Lines from other prints are ignored."""
+    stats, led, wifi, server, dns, peers, battery}. Lines from other prints are ignored."""
     r = {"checks": {}, "result": None, "stats": [], "days": []}
     for line in text.splitlines():
         line = line.strip()
@@ -332,6 +465,8 @@ def parse_selftest(text):
                                    "day": int(m.group(4)), "src": m.group(5)})
         elif body.startswith("led:"):
             r["led"] = body[4:].strip()
+        elif body.startswith("led test:"):
+            r["led_test"] = body[9:].strip()
         elif body.startswith("wifi:"):
             r["wifi"] = body[5:].strip()
         elif body.startswith("server:"):
@@ -342,6 +477,8 @@ def parse_selftest(text):
             r["peers"] = body[11:].strip()
         elif body.startswith("log:"):
             r["log"] = body[4:].strip()
+        elif body.startswith("battery:"):          # the last one: the reading at the end
+            r["battery"] = body[8:].strip()
     return r
 
 
@@ -359,6 +496,13 @@ class Report:
     def text(self):
         w = max([len(n) for n, _, _ in self.rows] + [10])
         return "\n".join("%-*s  %-4s  %s" % (w, n, s, d) for n, s, d in self.rows)
+
+
+def led_pattern(st):
+    """What the board's LED test plays, from its own SELFTEST line: 3 slow breaths (lvled.py
+    since led-pulse: software PWM, the LED fades up and down) or, on an older build, 3 slow
+    blinks."""
+    return "3 slow blinks" if "blink" in st.get("led_test", "") else "3 slow breaths (fading up and down)"
 
 
 def selftest_checks(rep, st, want_day=None, rollover=None, expect_peers=False, led=None, led_seen=None,
@@ -400,15 +544,18 @@ def selftest_checks(rep, st, want_day=None, rollover=None, expect_peers=False, l
         rep.add("LED path", "PASS" if c[lp] else "FAIL", st.get("led", ""))
     if led_test:
         played = c.get("led test played")
+        what = led_pattern(st)
         if not played:
-            rep.add("LED blink test", "FAIL", "the pattern didn't run (pin writes too few)")
+            rep.add("LED pulse test", "FAIL", "the pattern didn't run (pin writes too few)")
         elif led_seen is None:
-            rep.add("LED blink test", "INFO", "played; only your eyes can tell: 3 slow blinks?")
+            rep.add("LED pulse test", "INFO", "played; only your eyes can tell: %s?" % what)
         else:
-            rep.add("LED blink test", "PASS" if led_seen else "FAIL",
-                    "you saw the 3 blinks" if led_seen else "you did NOT see the blinks")
+            rep.add("LED pulse test", "PASS" if led_seen else "FAIL",
+                    ("you saw the " if led_seen else "you did NOT see the ") + what)
     rep.add("peers", ("PASS" if c.get("in sync with a peer") else "FAIL") if expect_peers else "INFO",
             st.get("peers", "none"))
+    # The battery is optional hardware (docs/BATTERY.md): reported, never a FAIL.
+    rep.add("battery", "INFO", st.get("battery", "not reported (an older install)"))
 
 
 # ---------------------------------------------------------------- the steps
@@ -570,9 +717,11 @@ def bench_one(args, ship, board, logf, ask=input):
         before = board_json(out)
         todo = [f for f in files if before.get(f["path"]) != f["sha256"]]
         todo.sort(key=lambda f: f["path"] == "version.json")      # version.json last, as the updater does
-        say("install: %d of %d files to write, removing %s" % (len(todo), len(files), ", ".join(release["delete"])))
+        gone = list(release.get("delete", []))
+        gone += [p for p in frozen_stale(release) if p not in gone]
+        say("install: %d of %d files to write, removing %s" % (len(todo), len(files), ", ".join(gone)))
         dirs = sorted(set(os.path.dirname(f["path"]) for f in files if "/" in f["path"]))
-        rc, out = run(snippet(REMOVE, PATHS=release.get("delete", []), DIRS=dirs), 60, what="remove")
+        rc, out = run(snippet(REMOVE, PATHS=gone, DIRS=dirs), 60, what="remove")
         tmp = tempfile.mkdtemp(prefix="lv-bench-")
         try:
             pairs = []
@@ -598,6 +747,14 @@ def bench_one(args, ship, board, logf, ask=input):
     bad = [f["path"] for f in files if after.get(f["path"]) != f["sha256"]]
     rep.add("files hash-match", "FAIL" if bad else "PASS",
             ("differ: " + ", ".join(bad)) if bad else "%d files, sha256 as in %s" % (len(files), release["version"]))
+    stale = frozen_stale(release)
+    if stale:
+        rc, out = run(snippet(HASHES, PATHS=stale), 60, what="frozen modules not replaced")
+        left = sorted(p for p, h in board_json(out).items() if h is not None)
+        rep.add("no stale frozen copies", "FAIL" if left else "PASS",
+                ("still on the board: " + ", ".join(left)) if left else
+                "no file replaces the %d frozen board modules or the pack, except what %s ships" % (
+                    len((release.get("frozen") or {}).get("board") or ()), release["version"]))
 
     # 3. settings
     st_set, st_drop = settings_from(args, ship)
@@ -643,9 +800,18 @@ def bench_one(args, ship, board, logf, ask=input):
     if not cfg.get("hotspot_password") and not cfg.get("hotspot_open"):
         rep.add("hotspot password", "INFO", "none set: the AP uses the public placeholder (--password or "
                 "LV_HOTSPOT_PASSWORD)")
+    if cfg.get("hotspot_open") and not cfg.get("hotspot_password"):
+        rep.add("hotspot open", "INFO", "ship.json has hotspot_open true (an older updater setting): the AP "
+                "has no password; --password or LV_HOTSPOT_PASSWORD sets one and closes it")
 
     # 4. selftest
     if not args.no_selftest:
+        if not args.no_fresh_boot:
+            say("restart: hard reset first so the radio chip starts clean (a few seconds)...")
+            if not board.fresh_boot():
+                rep.add("board answers after reset", "FAIL", "no answer within 25 s: " + REPLUG)
+                return rep
+            logf.write("fresh boot: ok, port %s\n" % board.port)
         led = cfg.get("led_notify", False)
         extra = ""
         if args.fake_board:
@@ -653,22 +819,41 @@ def bench_one(args, ship, board, logf, ask=input):
         code = SELFTEST % {"seconds": args.seconds, "epoch": "None" if args.no_clock else int(now.timestamp() * 1000),
                            "tz": tz, "led": bool(led), "led_test": bool(args.led_test), "extra": extra}
         if args.led_test:
-            say("LED: watch the board's LED: 3 slow blinks (1 s on, 1 s off) in the first seconds. "
-                "Through the current case: take the lid off, or look at the LED's spot from the side.")
+            say("LED: watch the board's LED: 3 slow breaths in the first seconds, the light fading up "
+                "and back down 3 times, about 7 s (a board still on an older build blinks 3 times "
+                "instead). Through the current case: take the lid off, or look at the LED's spot from the side.")
         say("selftest: %d s (Wi-Fi, phone server, DNS, BLE%s)..." % (
             args.seconds, ", rollover" if args.rollover else ""))
         rc, out = run(code, args.seconds + 120, echo=not args.quiet, what="selftest")
+        if timed_out(out):
+            last = [ln for ln in out.splitlines() if ln.startswith("SELFTEST ")]
+            rep.add("selftest ran", "FAIL", "TIMEOUT: the board stopped answering%s. %s" % (
+                " after: " + last[-1][9:60] if last else "", REPLUG[0].upper() + REPLUG[1:]))
+            return rep
         st = parse_selftest(out)
         seen = None
         if args.led_test and not args.no_ask:
-            a = ask("Did you see 3 slow blinks on the LED? [y/n] ").strip().lower()
+            if "blink" in st.get("led_test", ""):
+                a = ask("Did you see 3 slow blinks on the LED? [y/n] ")
+            else:
+                a = ask("Did you see the LED pulse: fade up and back down 3 times (not hard blinks)? [y/n] ")
+            a = a.strip().lower()
             seen = a.startswith("y")
-            logf.write("led blink answer: %s\n" % a)
+            logf.write("led pulse answer: %s\n" % a)
         want = None if args.no_clock else expected_day(cfg, DT.datetime.now().astimezone(), tz)
         if want is not None and want[1] == "manual" and not cfg.get("launch_date"):
             want = (want[0], "manual")
         selftest_checks(rep, st, want_day=want, rollover=args.rollover, expect_peers=args.peers,
                         led=led, led_seen=seen, led_test=args.led_test)
+        if (release.get("frozen") or {}).get("board"):
+            # What runs from files instead of the firmware: exactly the release's hotfixes.
+            want_f = sorted([f["path"][:-4] for f in files if f["path"][:-4] in release["frozen"]["board"]
+                             and f["path"].endswith(".mpy")] + (["pack.bin"] if "pack.bin" in paths else []))
+            got_f = board_files(st.get("firmware"))
+            rep.add("frozen board modules", "PASS" if got_f == want_f else "FAIL",
+                    "from files: [%s]%s" % (", ".join(got_f or []), "" if got_f == want_f else
+                                            " (expected [%s])" % ", ".join(want_f)) if got_f is not None
+                    else "the firmware line names no board files (older core?)")
         if restore is not None:
             rc, out = run(snippet(SETTINGS, SET=restore[0], DROP=restore[1], CODES=None), 30, what="settings restore")
             say("rollover: settings put back: %s" % json.dumps(board_json(out)["now"], sort_keys=True))
@@ -708,7 +893,7 @@ def main(argv=None, ask=input):
     ap.add_argument("--day", type=int, help="manual bench flight day 1-42 (clears the launch date unless --launch)")
     ap.add_argument("--day-start", help="flight day start HH:MM (bench only; 06:00 or '' removes it)")
     ap.add_argument("--led", choices=["on", "off"], help="LED notifier (led_notify)")
-    ap.add_argument("--led-test", action="store_true", help="play 3 slow blinks during the selftest and ask if you saw them")
+    ap.add_argument("--led-test", action="store_true", help="play 3 slow breaths (the LED fading up and down) during the selftest and ask if you saw them pulse")
     ap.add_argument("--code", action="append", help="crew code NAME=1234 (repeat); other names keep theirs")
     ap.add_argument("--codes", help="all 8 codes in roster order, comma-separated (blank keeps)")
     ap.add_argument("--password", help="hotspot password (8-63); or set LV_HOTSPOT_PASSWORD so it isn't in your shell history")
@@ -719,10 +904,12 @@ def main(argv=None, ask=input):
     ap.add_argument("--no-install", action="store_true", help="skip installing files (still checks their hashes)")
     ap.add_argument("--no-selftest", action="store_true")
     ap.add_argument("--no-reset", action="store_true", help="leave the board at the REPL afterwards")
+    ap.add_argument("--no-fresh-boot", action="store_true",
+                    help="skip the hard reset before the selftest (by default the radio chip is restarted)")
     ap.add_argument("--no-ask", action="store_true", help="don't ask questions (LED test: report INFO)")
     ap.add_argument("--quiet", action="store_true", help="don't echo the selftest output")
     ap.add_argument("--uf2", help="the game firmware .uf2: flash it if the board has other firmware")
-    ap.add_argument("--release", default=RELEASE, help="release.json to install (default 0.1.0-lv-test)")
+    ap.add_argument("--release", default=RELEASE, help="release.json to install (default 0.2.0-lv-test, for lv-core 0.2.0)")
     ap.add_argument("--log-dir", default=os.path.join(GAME, "build", "bench-logs"))
     ap.add_argument("--mpremote", default=os.environ.get("MPREMOTE", "mpremote"))
     ap.add_argument("--dry-run", action="store_true", help="print the plan, touch nothing")
@@ -750,7 +937,7 @@ def main(argv=None, ask=input):
                   " crew codes %s; selftest %d s%s%s; report; reset" % (
                       s, ", ".join(rel["delete"]), json.dumps(st_set, sort_keys=True), st_drop,
                       ("set for " + ", ".join(CREW[i] for i in sorted(codes))) if codes else "kept", args.seconds,
-                      ", LED blink test" if args.led_test else "", ", rollover to FD %d" % args.rollover
+                      ", LED pulse test" if args.led_test else "", ", rollover to FD %d" % args.rollover
                       if args.rollover else ""))
         return 0
     os.makedirs(args.log_dir, exist_ok=True)

@@ -1,8 +1,10 @@
 #!/bin/sh
 # Build the Long Voyage game firmware: MicroPython v1.29.0 for the Pico W with the game
-# core lv/ frozen in (tools/fw/manifest.py). Frozen code runs from flash, so the heap
-# doesn't pay for it. Content and the board glue stay files the web updater installs
-# (tools/board_build.sh makes both file sets).
+# core lv/, the board modules and the story pack frozen in (tools/fw/manifest.py; the board
+# modules and pack since lv-core 0.2.0). Frozen code runs from flash, so the heap doesn't
+# pay for it. main.py, the phone page and engage.bin stay files the web updater installs,
+# and any frozen module can still be replaced by a file (tools/board_build.sh ships only
+# what changed since the flashed core).
 #
 #   sh tools/build_firmware.sh                    RPI_PICO_W .uf2
 #   BOARD=RPI_PICO2_W sh tools/build_firmware.sh  Pico 2 W (untested on hardware)
@@ -35,6 +37,7 @@ fi
 have=$(git -C "$MP" rev-parse HEAD)
 [ "$have" = "$MP_COMMIT" ] || { echo "$MP is at $have, expected $MP_COMMIT ($MP_TAG)"; exit 1; }
 
+python3 tools/lvc.py > /dev/null          # build/pack.bin: frozen in as lvpackdata
 python3 tools/fw/gen_lvfrozen.py
 VERSION=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' lv/__init__.py)
 CORE=$(python3 tools/fw/gen_lvfrozen.py --print-core)
@@ -49,11 +52,11 @@ if [ "$1" = unix32 ]; then
   sed "s|\$(BOARD_DIR)/manifest.py|$MP/ports/unix/variants/standard/manifest.py|; s|base_path=\"\.\./\.\.|base_path=\"$GAME|; s|base_path=\"\.\"|base_path=\"$GAME/tools/fw\"|" \
     "$MANIFEST" > "$UM"
   make -s -C "$MP/ports/unix" submodules > /dev/null
-  make -s -C "$MP/ports/unix" -j"$JOBS" BUILD=build-lv32 PROG=micropython-lv32 \
+  make -s -C "$MP/ports/unix" -j"$JOBS" BUILD="build-lv32-$VERSION" PROG=micropython-lv32 \
     CFLAGS_EXTRA=-m32 LDFLAGS_EXTRA=-m32 MICROPY_PY_FFI=0 MICROPY_PY_BTREE=0 MICROPY_SSL_AXTLS=0 MICROPY_PY_SSL=0 \
     FROZEN_MANIFEST="$UM"
   mkdir -p "$OUT"
-  cp "$MP/ports/unix/build-lv32/micropython-lv32" "$OUT/micropython-lv32"
+  cp "$MP/ports/unix/build-lv32-$VERSION/micropython-lv32" "$OUT/micropython-lv32"
   echo "built $OUT/micropython-lv32 (unix, 32-bit, lv-core $VERSION core $CORE frozen)"
   exit 0
 fi
@@ -62,7 +65,7 @@ command -v arm-none-eabi-gcc > /dev/null || { echo "arm-none-eabi-gcc not found 
 make -s -C "$MP/ports/rp2" BOARD="$BOARD" submodules > /dev/null
 sdk=$(git -C "$MP/lib/pico-sdk" rev-parse HEAD)
 [ "$sdk" = "$PICO_SDK_COMMIT" ] || { echo "pico-sdk is at $sdk, expected $PICO_SDK_COMMIT"; exit 1; }
-B="build-lv-$BOARD"
+B="build-lv-$VERSION-$BOARD"        # one build tree per core version: no stale objects
 make -s -C "$MP/ports/rp2" BOARD="$BOARD" BUILD="$B" FROZEN_MANIFEST="$MANIFEST" -j"$JOBS" > "$FW_WORK/$B.log" 2>&1 || {
   tail -30 "$FW_WORK/$B.log"; exit 1; }
 mkdir -p "$OUT"

@@ -8,6 +8,7 @@ import datetime as DT
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -29,6 +30,12 @@ def check(name, cond, extra=""):
     n[0] += 1
 
 
+def leaked(text, *codes):
+    """A crew code printed as itself, not as four digits inside a sha256 or a heap figure
+    (the log lists every file's hash, and one of them can contain 1234)."""
+    return any(re.search(r"(?<![0-9A-Za-z])%s(?![0-9A-Za-z])" % c, text) for c in codes)
+
+
 # ---- the port list (mpremote connect list)
 ports = bench.parse_ports("""/dev/ttyS0 None 0000:0000 None None
 /dev/ttyACM0 e66141040396 2e8a:0005 MicroPython Board in FS mode
@@ -39,20 +46,22 @@ check("ports: Picos only", [p for p, _ in ports] == ["/dev/ttyACM0", "COM5"], po
 
 # ---- the selftest parser
 CANNED = """MPY: soft reboot
-SELFTEST lvship 0.1.0-lv-test on rp2, MicroPython 3.4.0
+SELFTEST lvship 0.2.0-lv-test on rp2, MicroPython 3.4.0
 SELFTEST wifi: hotspot LV-2 active True, ip 192.168.4.1
-SELFTEST firmware: frozen lv-core 0.1.0 (core f1b383588e79), overrides: []
+SELFTEST firmware: frozen lv-core 0.2.0 (core 2661c2144844), overrides: [], board files: []
 day: flight day 9 (phone)
 SELFTEST day: flight day 9 (phone), launch date 2026-10-15, time known True
 SELFTEST ble: active True, advert 0201
-SELFTEST led test: watch the board's LED now: 3 slow blinks (1 s on, 1 s off)
+SELFTEST led test: watch the board's LED now: 3 slow breaths (fades up and down, 2 s each)
 SELFTEST led: notifier ON (led_notify True), time known True, waiting False
+SELFTEST battery: detected, reading unknown, charging no
 SELFTEST server: phone game listening on port 80
 SELFTEST t=10s STAT ship=2 recs=3 digest=aa ble=idle peers=1 ok=1 fail=0 sent=1 got=2 new=2 gifts_in=0 led=test/6 heap_used=70000 heap_free=100 day=9/phone
 SELFTEST t=20s STAT ship=2 recs=3 digest=aa ble=idle peers=1 ok=2 fail=0 sent=1 got=2 new=2 gifts_in=1 led=gift/10 heap_used=71000 heap_free=100 day=9/phone
 SELFTEST dns: every name -> 192.168.4.1 on port 53
 SELFTEST peers seen: 1 (ship 3)
 SELFTEST led: notifier ON, waiting False, pin writes 10, now gift
+SELFTEST battery: detected, 72%, 3950 mV, charging yes at the end
 SELFTEST day: flight day 9 (phone) at the end
 SELFTEST heap: used 70500, peak 71234, free now 1, lowest free 1
 SELFTEST ble active             PASS
@@ -78,15 +87,28 @@ check("parse: stats", [(s["t"], s["led"], s["day"], s["src"]) for s in st["stats
 check("parse: day lines", st["days"][0] == (9, "phone"), st["days"])
 check("parse: wifi/server/dns", "LV-2" in st["wifi"] and "port 80" in st["server"] and "every name" in st["dns"])
 check("parse: led end line", st["led"].startswith("notifier ON, waiting False, pin writes 10"), st["led"])
+check("parse: battery (the last line)", st["battery"] == "detected, 72%, 3950 mV, charging yes at the end", st)
+check("firmware line: board files", bench.board_files("frozen lv-core 0.2.0 (core 2661c2144844), overrides: [], "
+                                                     "board files: [lvship, pack.bin]") == ["lvship", "pack.bin"])
+check("firmware line: none", bench.board_files("frozen lv-core 0.2.0 (core 2661c2144844), overrides: [], board files: []") == [])
+check("firmware line: a 0.1.0 core", bench.board_files("frozen lv-core 0.1.0 (core f1b383588e79), overrides: []") is None)
+rel02 = {"files": [{"path": "main.py"}, {"path": "lvweb.mpy"}],
+         "frozen": {"requires": "2661c2144844", "board": ["lvship", "lvweb"], "pack": True}}
+check("stale frozen copies", bench.frozen_stale(rel02) == ["lvship.py", "lvship.mpy", "lvweb.py", "pack.bin"],
+      bench.frozen_stale(rel02))
 check("parse: ignores noise", bench.parse_selftest("hello\nSELFTESTX y PASS\n")["checks"] == {})
 
 rep = bench.Report()
 bench.selftest_checks(rep, st, want_day=(9, "phone"), expect_peers=True, led_test=True, led_seen=True)
 txt = rep.text()
 for row in ("selftest ran", "heap used < 80 KB", "BLE up", "Wi-Fi hotspot up", "phone server listening", "captive DNS up",
-            "flight day", "LED path", "LED blink test", "peers"):
+            "flight day", "LED path", "LED pulse test", "peers"):
     check("report row " + row, row in txt, txt)
+check("report: battery INFO", re.search(r"battery\s+INFO\s+detected, 72%", txt), txt)
 check("report: CHECK in sync fails with --peers", not rep.ok(), txt)
+rep = bench.Report()
+bench.selftest_checks(rep, bench.parse_selftest(CANNED.replace("SELFTEST battery:", "SELFTEST (no) battery:")))
+check("report: no battery line is INFO", re.search(r"battery\s+INFO\s+not reported", rep.text()), rep.text())
 rep = bench.Report()
 st2 = bench.parse_selftest(CANNED.replace("in sync with a peer    CHECK", "in sync with a peer    PASS")
                            .replace("RESULT CHECK", "RESULT PASS"))
@@ -101,6 +123,13 @@ check("report: heap over the cap fails", not rep.ok() and "81234" in rep.text(),
 rep = bench.Report()
 bench.selftest_checks(rep, st2, want_day=(9, "phone"), led_test=True, led_seen=False)
 check("report: LED not seen fails", not rep.ok() and "did NOT see" in rep.text(), rep.text())
+check("parse: led test line", "3 slow breaths" in st["led_test"], st)
+check("led pattern: breaths", bench.led_pattern(st).startswith("3 slow breaths"))
+check("led pattern: an older build's blinks", bench.led_pattern(bench.parse_selftest(
+    CANNED.replace("3 slow breaths (fades up and down, 2 s each)", "3 slow blinks (1 s on, 1 s off)"))) == "3 slow blinks")
+rep = bench.Report()
+bench.selftest_checks(rep, st2, want_day=(9, "phone"), led_test=True, led_seen=True)
+check("report: saw the breaths", "you saw the 3 slow breaths" in rep.text(), rep.text())
 rep = bench.Report()
 bench.selftest_checks(rep, bench.parse_selftest(CANNED.replace("server listening       PASS", "server listening       CHECK")))
 check("report: server down fails", not rep.ok() and "phone server listening  FAIL" in rep.text(), rep.text())
@@ -158,7 +187,31 @@ try:
 finally:
     sys.stdout = old
 o = out.getvalue()
-check("dry run", rc == 0 and "ship 1:" in o and "ship 2:" in o and "1234" not in o and "set for Phill" in o, o)
+check("dry run", rc == 0 and "ship 1:" in o and "ship 2:" in o and not leaked(o, "1234") and "set for Phill" in o, o)
+
+# ---- a real deadline on every mpremote call (2026-10-25: a silent board held bench forever,
+# because the old loop only looked at the clock when a line arrived)
+import time  # noqa: E402
+SILENT = [sys.executable, "-c", "import sys,time; print('SELFTEST lvship start', flush=True); time.sleep(60)"]
+t0 = time.time()
+rc, o = bench.run_with_deadline(subprocess.Popen(SILENT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True), 2)
+took = time.time() - t0
+check("deadline: a silent child is stopped on time", took < 6, took)
+check("deadline: rc 124", rc == 124, rc)
+check("deadline: says TIMEOUT and to replug", bench.timed_out(o) and "unplug the board" in o and "SELFTEST lvship start" in o, o)
+rc, o = bench.run_with_deadline(subprocess.Popen([sys.executable, "-c", "print('hi')"], stdout=subprocess.PIPE,
+                                                 stderr=subprocess.STDOUT, text=True), 20)
+check("deadline: a quick child is untouched", rc == 0 and o == "hi\n" and not bench.timed_out(o), (rc, o))
+rc, o = bench.run_with_deadline(subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"],
+                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True), 1)
+check("deadline: no output at all", rc == 124 and bench.timed_out(o), (rc, o))
+# Mpremote itself, with a stand-in mpremote that hangs without a word
+fake_mp = os.path.join(tempfile.mkdtemp(), "mpremote_hang.py")
+with open(fake_mp, "w") as f:
+    f.write("import time\ntime.sleep(60)\n")
+t0 = time.time()
+rc, o = bench.Mpremote("/dev/null-port", "%s %s" % (sys.executable, fake_mp)).exec("print(1)", timeout=2)
+check("mpremote: silent board times out", time.time() - t0 < 6 and rc == 124 and bench.timed_out(o), (rc, o))
 
 # ---- whole runs on a fake board (MicroPython unix ports)
 MP = os.environ.get("MICROPYTHON") or shutil.which("micropython")
@@ -166,10 +219,15 @@ FW = os.environ.get("LV_FROZEN_MP")
 logs = tempfile.mkdtemp()
 
 
-def bench_run(root, mp, *extra):
+def bench_run(root, mp, *extra, bat=None):
+    """bat="PERCENT,MV,CHARGING": the fake board has a UPS-Lite (tests/fakeboard/fake_machine.py)."""
+    env = dict(os.environ)
+    env.pop("LV_FAKE_BAT", None)
+    if bat:
+        env["LV_FAKE_BAT"] = bat
     p = subprocess.run([sys.executable, os.path.join(GAME, "tools", "bench.py"), "--fake-board", root,
                         "--micropython", mp, "--no-ask", "--log-dir", logs, "--quiet"] + list(extra),
-                       capture_output=True, text=True, timeout=600)
+                       capture_output=True, text=True, timeout=600, env=env)
     return p.returncode, p.stdout + p.stderr
 
 
@@ -177,7 +235,9 @@ if MP:
     root = tempfile.mkdtemp()
     rc, o = bench_run(root, MP, "--ship", "2")
     check("stock: exit 1", rc == 1, o)
-    check("stock: names the .uf2", "stock MicroPython" in o and "lv-core-0.1.0-f1b383588e79-RPI_PICO_W.uf2" in o, o)
+    fz = json.load(open(bench.RELEASE))["frozen"]
+    uf2 = "%s-%s-%s-RPI_PICO_W.uf2" % (fz["id"], fz["version"], fz["requires"])
+    check("stock: names the .uf2", "stock MicroPython" in o and uf2 in o, (uf2, o))
     check("stock: nothing installed", not os.path.exists(os.path.join(root, "version.json")), os.listdir(root))
 else:
     print("test_bench: no MicroPython: skipped the stock-firmware run")
@@ -187,15 +247,26 @@ if FW:
     os.makedirs(os.path.join(root, "data"))
     with open(os.path.join(root, "data", "ship.json"), "w") as f:
         json.dump({"http_port": 18081, "fleet_key": "fleet-placeholder", "day": 4, "story": True}, f)
+    # what a 0.1.0 install leaves: the board modules and the pack as files. On a 0.2.0 core
+    # they would run instead of the frozen ones, so the install has to remove them.
+    for stale in ("lvship.mpy", "lvweb.mpy", "selftest.py", "pack.bin"):
+        with open(os.path.join(root, stale), "w") as f:
+            f.write("raise ImportError('stale copy')\n")
     rc, o = bench_run(root, FW, "--ship", "3", "--launch", "2026-10-15", "--led", "on", "--led-test",
                       "--code", "Phill=1234", "--code", "Kim=4321", "--seconds", "12")
     check("fw: OVERALL PASS", rc == 0 and "OVERALL PASS" in o, o)
     for row in ("firmware/core           PASS", "files hash-match        PASS", "heap used < 80 KB       PASS",
                 "BLE up                  PASS", "Wi-Fi hotspot up        PASS", "phone server listening  PASS",
                 "captive DNS up          PASS", "flight day              PASS", "LED path                PASS",
-                "LED blink test          INFO"):
+                "LED pulse test          INFO"):
         check("fw row " + row.split()[0], row in o, o)
-    check("fw: codes not printed", "1234" not in o and "4321" not in o)
+    if json.load(open(bench.RELEASE))["frozen"].get("board"):
+        for row in ("no stale frozen copies  PASS", "frozen board modules    PASS"):
+            check("fw row " + row.split("  ")[0], row in o, o)
+        left = [x for x in ("lvship.mpy", "lvweb.mpy", "selftest.py", "pack.bin") if os.path.exists(os.path.join(root, x))]
+        check("fw: stale copies removed", left == [], left)
+    check("fw: no battery is INFO", re.search(r"battery\s+INFO\s+none detected", o), o)
+    check("fw: codes not printed", not leaked(o, "1234", "4321"))
     check("fw: fleet key not printed", "fleet-placeholder" not in o)
     cfg = json.load(open(os.path.join(root, "data", "ship.json")))
     check("fw: no clobber", cfg == {"http_port": 18081, "fleet_key": "fleet-placeholder", "day": 4, "story": True,
@@ -207,10 +278,12 @@ if FW:
     logs_now = os.listdir(logs)
     check("fw: log saved", any(x.startswith("ship3-") for x in logs_now), logs_now)
     log = open(os.path.join(logs, sorted(x for x in logs_now if x.startswith("ship3-"))[-1])).read()
-    check("fw: log has no codes", "1234" not in log and "4321" not in log)
+    check("fw: log has no codes", not leaked(log, "1234", "4321"), [m.group(0) for m in re.finditer(r".{40}(?:1234|4321).{20}", log)])
     # again: nothing to write, one more code, the others kept (same salt), the LED switched off
-    rc, o = bench_run(root, FW, "--ship", "3", "--led", "off", "--code", "Jai=5555", "--seconds", "5")
+    rc, o = bench_run(root, FW, "--ship", "3", "--led", "off", "--code", "Jai=5555", "--seconds", "5",
+                      bat="12,3610,0")
     check("fw again: PASS", rc == 0, o)
+    check("fw again: low battery is INFO", re.search(r"battery\s+INFO\s+detected, 12%, 36\d\d mV, charging no", o), o)
     check("fw again: no files written", "install: nothing to write" in o or "0 of" in o, o)
     crew2 = json.load(open(os.path.join(root, "data", "crew.json")))
     book = lvcodes.CodeBook(crew2)
@@ -219,6 +292,43 @@ if FW:
     cfg = json.load(open(os.path.join(root, "data", "ship.json")))
     check("fw again: launch kept, LED off", cfg["launch_date"] == "2026-10-15" and cfg["led_notify"] is False, cfg)
     check("fw again: LED dark", "led off unless asked" not in o or "LED path                PASS" in o, o)
+    # A board that goes silent in the selftest (ship 2's radio chip, 2026-10-25): the
+    # bench must stop on its own with a FAIL that says to unplug and replug the board.
+    Real = bench.FakeBoard
+
+    class HangBoard(Real):
+        def exec(self, code, timeout=60, echo=False):
+            if "selftest.run" in code:
+                return bench.run_with_deadline(subprocess.Popen(SILENT, stdout=subprocess.PIPE,
+                                                                stderr=subprocess.STDOUT, text=True), 2)
+            return Real.exec(self, code, timeout, echo)
+
+    bench.FakeBoard = HangBoard
+    out = io.StringIO()
+    old = sys.stdout
+    sys.stdout = out
+    try:
+        t0 = time.time()
+        rc = bench.main(["--fake-board", root, "--micropython", FW, "--no-ask", "--log-dir", logs, "--quiet",
+                         "--ship", "2", "--launch", "2026-10-25", "--led", "on"])
+    finally:
+        sys.stdout = old
+        bench.FakeBoard = Real
+    o = out.getvalue()
+    check("hang: bench finishes", time.time() - t0 < 120 and rc == 1, (rc, o))
+    check("hang: FAIL says replug", re.search(r"selftest ran\s+FAIL\s+TIMEOUT", o) and "Unplug the board" in o
+          and "OVERALL FAIL" in o, o)
+    # an old-updater ship.json (schema, ship_name, role, hotspot_open: what ttyACM7 had) keeps
+    # working, and the open hotspot is pointed out
+    with open(os.path.join(root, "data", "ship.json"), "w") as f:
+        json.dump({"schema": 2, "ship_id": 1, "ship_name": "Starship-01", "role": "B", "hotspot_open": True,
+                   "updated_at": "2026-10-23T00:11:15.363Z", "http_port": 18081}, f)
+    rc, o = bench_run(root, FW, "--ship", "3", "--launch", "2026-10-25", "--led", "on", "--seconds", "5")
+    check("old ship.json: PASS", rc == 0 and "OVERALL PASS" in o, o)
+    check("old ship.json: open hotspot noted", re.search(r"hotspot open\s+INFO", o), o)
+    cfg = json.load(open(os.path.join(root, "data", "ship.json")))
+    check("old ship.json: ship 3 set, rest kept", cfg["ship_id"] == 3 and cfg["role"] == "B" and
+          cfg["launch_date"] == "2026-10-25", cfg)
 else:
     print("test_bench: no LV_FROZEN_MP: skipped the fake-board runs")
 shutil.rmtree(logs, ignore_errors=True)

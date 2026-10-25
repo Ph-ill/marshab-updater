@@ -1,12 +1,13 @@
 # Serial self-test for the bench. With main.py stopped (Ctrl-C in mpremote, or /data/maint):
 #   mpremote exec "import selftest; selftest.run(120, gift_to=2)"
 # Prints BLE state, peers seen, records exchanged, free heap, the gift path and the LED
-# path, then one PASS/CHECK line per check and a SELFTEST RESULT line.
+# path, the battery (if the board has one: lvbatt.py, information only), then one
+# PASS/CHECK line per check and a SELFTEST RESULT line.
 #   wifi=True       also the hotspot, the phone server (or the status page on stock
 #                   MicroPython) and the captive DNS, as main.py runs them
 #   epoch=ms, tz=m  the time, as a phone would bring it (the flight day, the LED's quiet hours)
-#   led=True/False  the LED notifier on/off for this run; led_test=True plays 3 slow blinks
-#                   to watch for (lvled.py)
+#   led=True/False  the LED notifier on/off for this run; led_test=True plays 3 slow breaths
+#                   (the LED fades up and down 3 times, about 7 s) to watch for (lvled.py)
 # docs/BENCH_TEST.md has the full checklist and what to send back when something fails;
 # tools/bench.py runs all of it with one command and reads these lines.
 import os
@@ -32,6 +33,17 @@ def _exists(f):
 def _where(mod):
     f = getattr(mod, "__file__", "")
     return ("file " + f) if f and _exists(f) else "frozen"
+
+
+def _bat(ship):
+    """The battery line (lvbatt.py, optional hardware: information only, never a CHECK)."""
+    try:
+        import lvbatt
+        return lvbatt.line(ship)
+    except Exception as e:
+        return "unknown (%r)" % (e,)
+    finally:
+        lvship.drop("lvbatt")
 
 
 def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None, led_test=False,
@@ -65,8 +77,9 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None, led_t
         import lvdays
         days = lvdays.Days(data + "/days.bin")
     ship = lvship.Ship(cfg, data=data, days=days)
-    # Game firmware: the core lv/ is frozen (lvfrozen.py says which), the glue and content
-    # are files; /lvx/ can override frozen modules. Stock MicroPython: everything is files.
+    # Game firmware: the core lv/ is frozen (lvfrozen.py says which) and, since lv-core
+    # 0.2.0, the board modules and the pack too; /lvx/<m>.mpy overrides a core module and
+    # /<m>.mpy or /pack.bin a board one (the "board files"). Stock MicroPython: all files.
     import lv
     print("SELFTEST firmware: " + lv.describe())
     src = getattr(lvship, "__file__", "?")
@@ -95,11 +108,12 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None, led_t
         print("SELFTEST gift out: ship %d -> ship %d, record %s" % (ship.me + 1, int(gift_to), r.hex()))
     if led_test and ship.led_on(True):
         ship._led("test")
-        print("SELFTEST led test: watch the board's LED now: 3 slow blinks (1 s on, 1 s off)")
+        print("SELFTEST led test: watch the board's LED now: 3 slow breaths (fades up and down, 2 s each)")
     elif led_test:
         print("SELFTEST led test: skipped, the notifier needs the game firmware")
     print("SELFTEST led: notifier %s (led_notify %s), time known %s, waiting %s" % (
         "ON" if ship.led.enabled else "off", cfg["led_notify"], ship.clock.known(), ship.led.waiting))
+    print("SELFTEST battery: " + _bat(ship))
     low = [lvship.free()]
     srv = [None, None]          # [phone/status server ok, dns: None running, True bound, or the error]
     stop = [False]
@@ -161,8 +175,12 @@ def run(seconds=120, gift_to=None, epoch=None, tz=0, wifi=False, led=None, led_t
         n["sent"], n["got"], n["new"], n["ok"], n["fail"], n["retries"]))
     print("SELFTEST gifts in: %s" % (", ".join(["from ship %d item %d day %d" % (g[0] + 1, g[1], g[2])
                                                 for g in ship.gifts_in]) or "none"))
-    print("SELFTEST led: notifier %s, waiting %s, pin writes %d, now %s" % (
-        "ON" if ship.led.enabled else "off", ship.led.waiting, ship.led.writes, st["led"]["why"]))
+    print("SELFTEST led: notifier %s, waiting %s, pin writes %d, now %s, write cost %d us%s" % (
+        "ON" if ship.led.enabled else "off", ship.led.waiting, ship.led.writes, st["led"]["why"],
+        getattr(ship.led, "wus", 0), ", plain blinks (slow radio)" if getattr(ship.led, "wus", 0) > 2000 else ""))
+    if ship.bat is not None:
+        ship.bat_poll()
+    print("SELFTEST battery: %s at the end" % _bat(ship))
     print("SELFTEST day: flight day %d (%s) at the end" % (ship.day, st["day_src"]))
     print("SELFTEST heap: used %d, peak %d, free now %d, lowest free %d" % (
         st["heap_used"], ship.mem_peak, st["heap_free"], low[0]))

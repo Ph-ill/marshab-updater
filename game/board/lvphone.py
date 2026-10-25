@@ -274,6 +274,14 @@ class Phone:
             "eng": EN.view(self.eng, self.local, p, st, log, you, minute),
             "v": sh.v, "start": sh.cal.start if sh.cal is not None else None,
             "led": sh.led.enabled,
+            # Bluetooth contact, for the crew list and the gift picker: [ship index, seconds
+            # since this ship last heard it, its log matched ours then] per ship heard in the
+            # last day (lvship keeps lv/ble's peers that long); null with no radio. Ages count
+            # to lv/ble's last peer sweep (every 10 s), so no clock of our own. Not in the log.
+            "air": [[k, max(0, sh.ble._swept - q.seen) // 1000, q.diff_since is None]
+                    for k, q in sh.ble.peers.items()] if sh.ble else None,
+            # This board's battery (lvbatt.py): [percent, mV, charging], null without one.
+            "bat": sh.bat[:3] if sh.bat else None,
         }
 
 
@@ -282,7 +290,19 @@ class Phone:
         from binascii import b2a_base64
         sh = self.ship
         body = self.state_body(you, last, minute)
-        rest = json.dumps(body)
+        # Each field encoded on its own and the dict emptied as it goes, so the whole body
+        # never sits on the heap twice (dict + one big JSON string): /api/state is the board's
+        # heap peak with two phones playing. A field is (b',"key":', JSON bytes); the bytes
+        # give the exact Content-Length (MicroPython's json writes non-ASCII as UTF-8).
+        parts = []
+        tl = 1                                  # the closing }
+        for k in list(body):
+            v = body.pop(k)
+            kp = (',%s:' % json.dumps(k)).encode()
+            v = json.dumps(v).encode()
+            parts.append((kp, v))
+            tl += len(kp) + len(v)
+            v = kp = None
         if probe:
             probe()
         body = None
@@ -293,13 +313,12 @@ class Phone:
         for x in range(1, d + 1):
             n += days.length(x)
         pre = b'{"story":"'
-        tail = bytes('",' + rest[1:], "utf-8")
-        rest = None
+        tl += 1                                 # the story's closing quote
         b64 = (n + 2) // 3 * 4
 
         async def write(w):
             import lvweb
-            w.write(lvweb.head(200, "application/json", len(pre) + b64 + len(tail)))
+            w.write(lvweb.head(200, "application/json", len(pre) + b64 + tl))
             w.write(pre)
             carry = b""
             days.readers += 1
@@ -315,7 +334,11 @@ class Phone:
                 days.readers -= 1
             if carry:
                 w.write(b2a_base64(carry)[:-1])
-            w.write(tail)
+            w.write(b'"')
+            for kp, v in parts:
+                w.write(kp)
+                w.write(v)
+            w.write(b"}")
             if probe:
                 probe()
             await w.drain()

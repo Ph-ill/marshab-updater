@@ -3,30 +3,30 @@
     {
       "id": "gift",
       "label": "Give a gift",
-      "you": "On your word, {A} looks after {T} today.",
-      "self": "{A} checks in on {T}.",
-      "owner": "{A} looks after {T}, on a word from home."
+      "you": "{A?You look after {T} today.|On your word, {A} {A:looks} after {T} today.}",
+      "self": "{A} {A:checks} in on {T}.",
+      "owner": "{A} {A:looks} after {T}, on a word from home."
     },
     {
       "id": "advice",
-      "label": "Give advice",
-      "you": "{A} takes your advice to heart and tries to be {axis}.",
-      "self": "{A} has a think about being {axis}.",
-      "owner": "{A} takes some advice from home and tries to be {axis}."
+      "label": "Work on yourself",
+      "you": "{A?You make up your mind to be {axis}.|{A} {A:takes} your advice to heart and {A:tries} to be {axis}.}",
+      "self": "{A} {A:has} a think about being {axis}.",
+      "owner": "{A} {A:takes} some advice from home and {A:tries} to be {axis}."
     },
     {
       "id": "task",
-      "label": "Set a task",
-      "you": "{A} spends the shift on {res}, as you asked.",
-      "self": "{A} spends the shift on {res}.",
-      "owner": "{A} spends the shift on {res}, on a word from home."
+      "label": "Take a task",
+      "you": "{A?You spend the shift on {res}, as planned.|{A} {A:spends} the shift on {res}, as you asked.}",
+      "self": "{A} {A:spends} the shift on {res}.",
+      "owner": "{A} {A:spends} the shift on {res}, on a word from home."
     },
     {
       "id": "rest",
-      "label": "Tell them to rest",
-      "you": "{A} takes the day off, on your orders.",
-      "self": "{A} sleeps through the morning watch.",
-      "owner": "{A} takes the day off, on a word from home."
+      "label": "Rest",
+      "you": "{A?You take the day off.|{A} {A:takes} the day off, on your orders.}",
+      "self": "{A} {A:sleeps} through the morning watch.",
+      "owner": "{A} {A:takes} the day off, on a word from home."
     }
   ],
   "axis_words": [
@@ -54,9 +54,9 @@
     "Don't do anything brave without me."
   ],
   "sys": {
-    "move": "{A} rides the transfer line across to {S} for a few days, and leaves the home ship flying itself, as it was built to.",
-    "home": "{A} rides the transfer line back home to {S}.",
-    "note": "{A} passes {T} a note: “{line}”",
+    "move": "{A} {A:rides} the transfer line across to {S} for a few days, and {A:leaves} the home ship flying itself, as it was built to.",
+    "home": "{A} {A:rides} the transfer line back home to {S}.",
+    "note": "{A} {A:passes} {T} a note: “{line}”",
     "dec_open": "Fleet vote:",
     "dec_close": "With the ballots in, the fleet's advice: {opt}.",
     "dec_lean": "No votes came in, so the flight director went with the crew's lean: {opt}.",
@@ -66,9 +66,9 @@
       "Even split across {n} ballots. The tie goes to the crew's lean: {opt}.",
       "The {n} ballots cancel out, so the crew's lean carries it: {opt}."
     ],
-    "dil_open": "Private, for whoever looks after {A}:",
-    "dil_you": "{A} went with your call: {opt}.",
-    "dil_self": "No word from home in time, so {A} chose: {opt}.",
+    "dil_open": "{A?Private, for you:|Private, for whoever looks after {A}:}",
+    "dil_you": "{A?You made the call: {opt}.|{A} went with your call: {opt}.}",
+    "dil_self": "{A?No word in time, so you went with your gut: {opt}.|No word from home in time, so {A} chose: {opt}.}",
     "res_open": "Anyone can answer; one tap is enough.",
     "res_close": "The fleet's answer: {opt}.",
     "res_default": "No answer in time, so it fell to the crew: {opt}.",
@@ -134,7 +134,7 @@
       ],
       [
         "e_entry_clear",
-        "Heard an engine light late at the landing burn, and kept the engine-out call behind their teeth."
+        "Heard an engine light late at the landing burn, and kept the engine-out call behind {A:their} teeth."
       ],
       [
         "m_carrier",

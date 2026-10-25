@@ -8,7 +8,9 @@
 # MicroPython; with LV_FROZEN_MP (the game firmware as a unix port: tools/build_firmware.sh
 # unix32) the frozen split is checked too, and the 80 KB heap gate with BLE sync and two
 # phones playing at once. The LED notifier's schedule (tests/test_led.py) and the bench
-# script (tools/bench.py, tests/test_bench.py: fake boards on the unix ports).
+# script (tools/bench.py, tests/test_bench.py: fake boards on the unix ports). The battery
+# reader (board/lvbatt.py, tests/test_batt.py: a fake fuel gauge) on all of them, and its
+# share of the heap (phone_heap.py ... --led --bat).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 game/tests/run.sh
 set -e
@@ -30,12 +32,15 @@ python3 tests/test_engage.py
 python3 tests/mp_engage.py --write > /dev/null
 python3 tests/test_sync.py
 python3 tests/mp_sync.py
+python3 tests/test_you_voice.py
 node tests/render_check.mjs
 python3 web/build.py
 python3 tests/mock_check.py
 python3 tests/test_phone.py
 python3 tests/test_cal.py
 python3 tests/test_led.py
+python3 tests/test_batt.py
+python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
 LV_FROZEN_MP="$LV_FROZEN_MP" MPY_CROSS="$MPY_CROSS" python3 tests/test_fw_split.py
@@ -44,6 +49,11 @@ if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py
   "$MP" tests/mp_codes.py
   "$MP" tests/test_led.py
+  "$MP" tests/test_batt.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_batt.py; fi
+  # every ship id boots with a launch date (ship 2, 2026-10-25)
+  "$MP" -X heapsize=512k tests/test_ships8.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi
   "$MP" -X heapsize=160k tests/mp_engage.py
   "$MP" -X heapsize=192k tests/mp_merge.py
   # 3 boards in one process (a 64-bit port needs about 320k for this one).
@@ -67,6 +77,8 @@ if [ -n "$MP" ]; then
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen
       # ...and with the LED notifier on and blinking (board/lvled.py in the heap too).
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led
+      # ...and a UPS-Lite battery read while idle (board/lvbatt.py loaded and dropped each time).
+      python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat
     fi
     # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
     # and, with LV_FROZEN_MP, the game firmware (install, settings, selftest, report).

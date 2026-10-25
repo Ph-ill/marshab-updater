@@ -21,10 +21,63 @@ def page_heading(day):
 
 VOICE_CARDS = 2  # web/render.js uses the same cap
 
+# Second person, the same rules as web/render.js (see the notes there): {A} {B} {T} are a
+# name or "you"/"You" for the reader, {A}'s is "your", {A:checks} agrees with A ("check",
+# "are", "your"...; {A:aches|ache} spells the reader's form), {A?mine|theirs} picks
+# whole wording, and {AB:they} is the pair ("you", "yourselves" if either reads).
+# Quoted speech never changes; with no reader every line is as written.
+YOU = {
+    "is": "are", "was": "were", "has": "have", "does": "do", "goes": "go", "isn't": "aren't",
+    "wasn't": "weren't", "hasn't": "haven't", "doesn't": "don't", "they": "you", "them": "you",
+    "their": "your", "theirs": "yours", "themselves": "yourself", "themself": "yourself",
+    "they're": "you're", "they've": "you've", "they'd": "you'd", "they'll": "you'll",
+}
+
+
+# The pair A and B, when either reads: "you both" keeps it from sounding like you alone.
+PAIR = {"they": "you both", "themselves": "yourselves"}
+
+
+def second(w, pair=False):
+    if "|" in w:
+        return w[w.index("|") + 1:]
+    lo = w.lower()
+    r = (PAIR.get(lo) or YOU.get(lo)) if pair else YOU.get(lo)
+    if r is None:
+        if len(lo) > 4 and re.search(r"[^aeiou]ies$", lo):
+            r = lo[:-3] + "y"
+        elif re.search(r"(ss|sh|ch|x|zz|o)es$", lo):
+            r = lo[:-2]
+        else:
+            r = lo[:-1] if lo.endswith("s") else lo
+    return r[0].upper() + r[1:] if w[0] != lo[0] else r
+
+
+TOKEN = re.compile(r"\{(AB|[ABT])\?((?:[^{}|]|\{[^{}]*\})*)\|((?:[^{}]|\{[^{}]*\})*)\}|\{([ABT])\}'s\b"
+                   r"|\{(\w+)(?::([^{}]+))?\}")
+
+
+def quoted(s):
+    return s.count('"') % 2 == 1 or s.rfind("\u201c") > s.rfind("\u201d")
+
+
+TAG = re.compile(r"\s*\{[ABT]:(asks|says|answers|tells|calls|adds|replies|whispers|shouts)\}")
+
+
+def opening(s, rest=""):
+    # A quoted question or exclamation followed by its speech verb is one sentence:
+    # "Ready?" you ask. Anything else after it starts a new one.
+    p = s.rstrip()
+    if re.search(r"[?!][\"\u201d]$", p) and TAG.match(rest):
+        return False
+    return p == "" or re.search(r"[.!?][\"\u201d)]*$", p) is not None
+
+
 class Renderer:
-    def __init__(self, text, eng=None):
+    def __init__(self, text, eng=None, me=NONE):
         self.t = text
         self.e = eng     # build/engage.json, optional: without it gift lines are skipped
+        self.me = me     # the reader's own crew member (ship - 1): their lines read "you"
         self.roles = {}  # card -> (A, B) from the entry that opened it
         self.ties = 0    # tie closes seen so far: steps through sys.dec_tie
         self.vcards = {}  # crew -> cards that printed their voice this season
@@ -47,16 +100,47 @@ class Renderer:
         return v[c]
 
     def fill(self, tpl, A=NONE, B=NONE, **kw):
-        def sub(m):
-            k = m.group(1)
-            if k == "A":
-                return self.name(A)
-            if k == "B":
-                return self.name(B)
-            if k in ("Av", "Bv"):
-                return self.voice(A if k == "Av" else B)
-            return str(kw.get(k, m.group(0)))
-        return re.sub(r"\{(\w+)\}", sub, tpl)
+        # kw T may be a crew index (a role like A and B) or ready-made text.
+        me = self.me
+        if me != NONE:
+            if B == me:
+                tpl = tpl.replace("{A} and {B}", "{B} and {A}")  # "you and Kim", not "Kim and you"
+            elif A == me:
+                tpl = tpl.replace("{B} and {A}", "{A} and {B}")
+        R = {"A": A, "B": B}
+        if isinstance(kw.get("T"), int):
+            R["T"] = kw["T"]
+        return self._fill(tpl, R, kw, "")
+
+    def _fill(self, tpl, R, kw, pre):
+        out, at, me = "", 0, self.me
+        for m in TOKEN.finditer(tpl):
+            out += tpl[at:m.start()]
+            at = m.end()
+            so = pre + out
+
+            def mine(r):
+                hit = (R["A"] == me or R["B"] == me) if r == "AB" else R[r] == me
+                if me != NONE and hit and not quoted(so):
+                    self.hit = True  # this line spoke to the reader
+                    return True
+                return False
+            if m.group(1):
+                out += self._fill(m.group(2) if mine(m.group(1)) else m.group(3), R, kw, so)
+            elif m.group(4):
+                r = m.group(4)
+                out += ("Your" if opening(so, tpl[at:]) else "your") if mine(r) else self.name(R[r]) + "'s"
+            else:
+                k, w = m.group(5), m.group(6)
+                if w is not None:
+                    out += second(w, k == "AB") if (k in R or k == "AB") and mine(k) else w.split("|")[0]
+                elif k in ("Av", "Bv"):
+                    out += self.voice(R["A"] if k == "Av" else R["B"])
+                elif k in R:
+                    out += ("You" if opening(so, tpl[at:]) else "you") if mine(k) else self.name(R[k])
+                else:
+                    out += str(kw.get(k, m.group(0)))
+        return out + tpl[at:]
 
     def entry(self, e):
         day, code, card, a, b, c, d, _ = e
@@ -103,17 +187,17 @@ class Renderer:
             tpl = act["self" if d else "you"]
             ax = t["axis_words"][e[7]][1 if c == 0 else 0] if b == 1 and e[7] < 3 else ""
             res = t["res_words"][e[7]] if b == 2 and e[7] < 3 else ""
-            return self.fill(tpl, a, axis=ax, res=res, T=self.name(c))
+            return self.fill(tpl, a, axis=ax, res=res, T=c)
         if code == O.O_MOVE:
             tpl = sy["home"] if c == a else sy["move"]
             return self.fill(tpl, a, S=t["ships"][c])
         if code == O.O_NOTE:
-            return self.fill(sy["note"], a, T=self.name(c), line=t["notes"][b])
+            return self.fill(sy["note"], a, T=c, line=t["notes"][b])
         if code == O.O_GIFT:
             g = self.e and self.e["gifts"]
             if not g or b >= len(g["items"]) or d > 2:
                 return None
-            return self.fill(g["sys"][("give", "ask", "answer")[d]], a, T=self.name(c), item=g["items"][b][0])
+            return self.fill(g["sys"][("give", "ask", "answer")[d]], a, T=c, item=g["items"][b][0])
         if code == O.O_SHORT:
             return sy["short"]
         if code == O.O_END:
@@ -158,7 +242,9 @@ class Renderer:
                     names.append(c)
             if not names or day >= last:
                 return None
-            who = [self.name(c) for c in names]
+            if self.me in names:  # the reader last: "Kim, Jai and you"
+                names = [c for c in names if c != self.me] + [self.me]
+            who = ["you" if c == self.me else self.name(c) for c in names]
             if len(names) >= crew:
                 who = [self.t["sys"].get("fold_all", "everyone")]
             who = who[0] if len(who) == 1 else ", ".join(who[:-1]) + " and " + who[-1]
@@ -168,7 +254,8 @@ class Renderer:
                 used.append(day)
             k = used[0] + len(used) - 1
             used.append(day)
-            return self.fill(pool[k % len(pool)], who=who, n=len(names))
+            f = self.fill(pool[k % len(pool)], who=who, n=len(names))
+            return "You" + f[3:] if f.startswith("you") else f
 
         def flush(day, lines, folded, seen, hook_at):
             # Thinned: the fold appears on quiet days (at most one story line) and on
@@ -241,7 +328,7 @@ class Renderer:
                     lines[c] = line
         if st is not None:
             self._epilogue_fallback(lines, epi, st)
-        return lines
+        return {c: self.fill(line, c) for c, line in lines.items()}  # "their" is "your" on your own line
 
     def _epilogue_fallback(self, lines, epi, st, cut=20):
         # Anyone with no story line gets one from the end-of-season state, so the end
@@ -263,7 +350,7 @@ class Renderer:
             if epi.get("bond"):
                 for j in sorted((j for j in range(n) if j != c), key=lambda j: -st.bond(c, j)):
                     if st.bond(c, j) >= cut:
-                        picks.append(self.fill(epi["bond"], T=self.name(j)))
+                        picks.append(self.fill(epi["bond"], T=j))
                     break
             picks.append(epi.get("plain", ""))
             line = next((p for p in picks if p and p not in used), picks[-1])

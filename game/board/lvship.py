@@ -11,6 +11,7 @@
 # DEFAULTS. Nothing secret lives in this file: the hotspot password is per board, and
 # the fleet key below is the public test key the simulator uses.
 import gc
+import os
 import sys
 
 try:
@@ -18,7 +19,7 @@ try:
 except ImportError:  # pragma: no cover
     import uasyncio as asyncio
 
-from lv.pack import load
+from lv.pack import Pack, load
 from lv.chlog import ChoiceLog
 from lv.state import State, N
 from lv.engine import Engine
@@ -33,7 +34,7 @@ except AttributeError:     # CPython (the tests)
     def sleep_ms(ms):
         return asyncio.sleep(ms / 1000)
 
-VERSION = "0.1.0-lv-test"
+VERSION = "0.2.0-lv-test"
 
 DEFAULTS = {
     "ship_id": 1,                  # 1-8 (ship 1 = crew 0)
@@ -54,7 +55,10 @@ DEFAULTS = {
     "phone_game": "auto",          # serve the phone game: auto = on the game firmware only
     "led_notify": False,           # the LED notifier stays off unless this says true
     "stat_every_s": 60,
-    "ble": {},                     # overrides for lv/ble.DEFAULTS (scan duty, intervals...)
+    # overrides for lv/ble.DEFAULTS (scan duty, intervals...). A heard ship is kept a day,
+    # not lv/ble's 10 min, so the phones can show when it was last in range (lvphone "air");
+    # a "ble" in ship.json replaces this whole dict, so give "peer_ttl_ms" there too.
+    "ble": {"peer_ttl_ms": 86400000},
 }
 
 
@@ -111,13 +115,24 @@ def used():
 
 
 def pack_for(root=""):
-    # The story pack is content: always a file the updater can replace (pack.bin).
+    """(Pack, where): a pack.bin file if there is one (stock MicroPython, or a story update
+    on the game firmware), else the pack frozen into the game firmware (lv-core 0.2.0+,
+    lvpackdata: a bytes object read in place from flash, so the pack costs no heap)."""
+    try:
+        os.stat(root + "pack.bin")
+    except OSError:
+        try:
+            import lvpackdata
+        except ImportError:
+            raise OSError("no pack.bin and no pack frozen in the firmware")
+        return Pack(lvpackdata.DATA), "frozen"
     return load(root + "pack.bin"), "file"
 
 
 class Ship:
     SNAP_EVERY = 7
     SNAPS = 3          # weekly snapshots kept (743 B each); older rewinds start from day 0
+    bat = None         # the battery, if the board has one (lvbatt.py: [percent, mV, charging, ...])
 
     def __init__(self, cfg, root="", data="/data", ble=None, say=print, radio=True, days=None):
         self.cfg = cfg
@@ -142,6 +157,8 @@ class Ship:
         self.web = None            # lvweb.Server, if the phone game runs (its busy count)
         if cfg["led_notify"]:
             self.led_on(True)
+        if cfg.get("battery", "auto"):    # the battery (lvbatt.py): sets self.bat if there is one
+            self.bat_poll(True)
         self.ready = False
         self.cal = None            # lvcal.Calendar with a launch date, else the manual day
         if cfg.get("launch_date"):
@@ -208,6 +225,19 @@ class Ship:
             return lvledcfg.switch(self, on)
         finally:
             drop("lvledcfg")
+
+    # ---- the battery (lvbatt.py, loaded for each reading and dropped; ship.json "battery")
+    def bat_poll(self, boot=False):
+        """Boot: look for a UPS-Lite's fuel gauge once (ship.bat stays None without one).
+        After that, one reading (loop() calls it while nothing is busy, when bat[7] ms have
+        passed since bat[6])."""
+        try:
+            import lvbatt
+            lvbatt.start(self) if boot else lvbatt.poll(self)
+        except Exception as e:     # (an install without lvbatt.mpy: no battery)
+            self.say("battery: %r" % (e,))
+        finally:
+            drop("lvbatt")
 
     def _led(self, what):
         if self.led.enabled:                  # (lv/led.py's dark Notifier never is)
@@ -286,33 +316,21 @@ class Ship:
             self.gifts_out += 1
         return rec
 
-    # ---- status
+    # ---- status (lvreport.py, loaded for a moment: the STAT line once a minute, the bench's
+    # /status; kept out of the resident code to make room for the battery reader)
     def status(self):
-        now = self.clock.uptime()
-        u = used()
-        if u > self.mem_peak:
-            self.mem_peak = u
-        s = {"ship": self.me + 1, "version": VERSION, "day": self.day, "records": len(self.log),
-             "digest": self.node.digest().hex(), "story": self.st.hexdigest() if self.st else None,
-             "replays": self.replays, "gifts_in": len(self.gifts_in), "gifts_out": self.gifts_out,
-             "led": {"enabled": self.led.enabled, "waiting": self.led.waiting, "writes": self.led.writes,
-                     "time_known": self.clock.known(),
-                     "why": getattr(self.led, "state", "off")},
-             "heap_used": u, "heap_free": free(), "heap_peak": self.mem_peak, "http": self.http_hits,
-             "v": self.v, "day_src": self.cal.src if self.cal else "manual"}
-        s["ble"] = self.ble.status(now) if self.ble else None
-        return s
+        return self._report(False)
 
     def stat_line(self):
-        s = self.status()
-        b = s["ble"] or {"state": "off", "peers": [], "n": {}}
-        n = b["n"]
-        peers = " ".join(["%d%s" % (p["ship"], "=" if p["same"] else "*") for p in b["peers"]]) or "-"
-        return ("STAT ship=%d recs=%d digest=%s ble=%s peers=%s ok=%s fail=%s sent=%s got=%s new=%s "
-                "gifts_in=%d led=%s/%d heap_used=%d heap_free=%d day=%d/%s" % (
-                    s["ship"], s["records"], s["digest"], b["state"], peers, n.get("ok"), n.get("fail"),
-                    n.get("sent"), n.get("got"), n.get("new"), s["gifts_in"],
-                    s["led"]["why"], self.led.writes, s["heap_used"], s["heap_free"], self.day, s["day_src"]))
+        return self._report(True)
+
+    def _report(self, line):
+        u = used()                 # the ship's heap, before lvreport's own code joins it
+        import lvreport
+        try:
+            return lvreport.stat_line(self, u) if line else lvreport.status(self, u)
+        finally:
+            drop("lvreport")
 
     async def loop(self, stop_after_ms=None, stat_every_ms=None, until=None):
         t0 = ticks_ms()
@@ -326,13 +344,18 @@ class Ship:
             if now >= nday:
                 nday = now + 10000
                 self.day_check()
-            wait = self.led.poll((self.ble is not None and self.ble.busy()) or
-                                 (self.web is not None and self.web.busy > 0))
-            if now >= nxt:
+            busy = (self.ble is not None and self.ble.busy()) or (self.web is not None and self.web.busy > 0)
+            if self.bat and not busy and ticks_diff(ticks_ms(), self.bat[6]) >= self.bat[7]:
+                self.bat_poll()
+            l = self.led
+            if l.enabled and getattr(l, "task", 0) is None:      # (lv/led.py's dark Notifier has none)
+                l.task = asyncio.create_task(l.run(self, sleep_ms))
+            if now >= nxt and not busy:          # (lvreport's moment on the heap: not mid-sync)
                 nxt = now + every
                 self.say(self.stat_line())
-            if stop_after_ms is not None and now >= stop_after_ms:
+            if (stop_after_ms is not None and now >= stop_after_ms) or (until is not None and until()):
+                t = getattr(l, "task", None)
+                if t:                   # the light's task ends with the loop (dark); the next loop restarts it
+                    t.cancel()
                 return
-            if until is not None and until():
-                return
-            await sleep_ms(min(50, wait))
+            await sleep_ms(50)

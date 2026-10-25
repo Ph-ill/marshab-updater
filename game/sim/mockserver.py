@@ -2,7 +2,7 @@
 """Mock Pico for the phone UI. Serves the real gzipped page and an API backed by the
 real engine and the simulated season, so the prototype shows engine-made story.
 
-  python3 web/build.py && python3 sim/mockserver.py [--port 8042] [--day 23] [codes=1234,,5555,...]
+  python3 web/build.py && python3 sim/mockserver.py [--port 8042] [--day 23] [codes=1234,,5555,...] [bat=72,3950,0]
 
 Open http://localhost:8042/ (add ?day=8 to look at another flight day; mock only).
 
@@ -99,6 +99,7 @@ class Game:
         self.cache = {}
         self.lock = threading.RLock()   # gift() checks, then taps
         self.led = False          # the Ship light switch (POST /api/led)
+        self.bat = None           # the board's battery, [percent, mV, charging] (bat=72,3950,0)
         self.changed = threading.Condition()
         self.version = 0
         self.etable = EN.load_table(os.path.join(BUILD, "engage.bin"))
@@ -167,7 +168,16 @@ class Game:
             "eng": EN.view(self.eng, self.local, p, st, sh.log, you, minute),
             "led": self.led,       # the Ship light switch (board: lvled.py, off by default)
             "start": 360,          # a flight day starts at 06:00 (the board: lvcal.py; None on a fixed bench day)
+            "air": self.air(you),  # Bluetooth contact per ship (the board: lvphone.air)
+            "bat": self.bat,       # the board's battery (lvbatt.py), null without one
         }
+
+    def air(self, you):
+        """A made-up picture of who is in Bluetooth range, as lvphone sends it: [ship index,
+        seconds since heard, in sync]. The mock has no radio, so this is a fixed sample: two
+        ships nearby (one still syncing), others heard minutes to hours ago, one never."""
+        ago = [(20, True), (75, False), (900, True), (5400, True), (30000, True), (300, True)]
+        return [[(you + 1 + i) % N, a, f] for i, (a, f) in enumerate(ago)]
 
     def gift(self, you, day, item, to, mode):
         """The board's rules for a gift tap. Returns an error string or None."""
@@ -407,6 +417,9 @@ def main(argv):
         if a.startswith("codes="):
             got = [k or None for k in a[6:].split(",")]
             G.book = K.CodeBook(K.make_config((got + [None] * N)[:N], b"mock-fleet-salt!"))
+        if a.startswith("bat="):   # bat=PERCENT,MV,CHARGING (1/0): a board with a battery
+            p, mv, c = a[4:].split(",")
+            G.bat = [int(p), int(mv), c == "1"]
     srv = ThreadingHTTPServer(("0.0.0.0", port), H)
     srv.daemon_threads = True
     print("mock Pico on http://localhost:%d/  (flight day %d)" % (port, day), flush=True)
