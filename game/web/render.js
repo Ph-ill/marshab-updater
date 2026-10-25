@@ -11,6 +11,50 @@ export const O = {
 };
 const NONE = 255;
 const VOICE_CARDS = 2;
+
+// Second person (sim/render.py has the same rules). Every ship reads the same story,
+// so a line about the reader's own crew member is turned to "you" as it is drawn:
+//   {A} {B} {T}       a name, or "you"/"You" for the reader (capital at a sentence start)
+//   {A}'s             "your" for the reader
+//   {A:checks}        a verb or pronoun that agrees with A: "check", "are" for "is",
+//                     "your" for "their", "yourself" for "themselves"; {A:aches|ache}
+//                     gives the reader's form outright
+//   {A?mine|theirs}   whole wording: the first for the reader, the second otherwise
+//   {AB:they}         the pair A and B: "you" when either is the reader ("yourselves")
+// Inside double quotes nothing changes: a crewmate saying a name keeps the name.
+// With no reader (me = 255, the simulator) every line reads exactly as written.
+const YOU = {
+  is: "are", was: "were", has: "have", does: "do", goes: "go", "isn't": "aren't", "wasn't": "weren't",
+  "hasn't": "haven't", "doesn't": "don't", they: "you", them: "you", their: "your", theirs: "yours",
+  themselves: "yourself", themself: "yourself", "they're": "you're", "they've": "you've",
+  "they'd": "you'd", "they'll": "you'll",
+};
+// The pair A and B, when either reads: "you both" keeps it from sounding like you alone.
+const PAIR = { they: "you both", themselves: "yourselves" };
+
+export function second(w, pair = false) {
+  const bar = w.indexOf("|");
+  if (bar >= 0) return w.slice(bar + 1);
+  const lo = w.toLowerCase();
+  let r = pair ? PAIR[lo] || YOU[lo] : YOU[lo];
+  if (r === undefined) {
+    if (lo.length > 4 && /[^aeiou]ies$/.test(lo)) r = lo.slice(0, -3) + "y";
+    else if (/(ss|sh|ch|x|zz|o)es$/.test(lo)) r = lo.slice(0, -2);
+    else r = lo.endsWith("s") ? lo.slice(0, -1) : lo;
+  }
+  return w[0] !== lo[0] ? r[0].toUpperCase() + r.slice(1) : r;
+}
+const TOKEN = /\{(AB|[ABT])\?((?:[^{}|]|\{[^{}]*\})*)\|((?:[^{}]|\{[^{}]*\})*)\}|\{([ABT])\}'s\b|\{(\w+)(?::([^{}]+))?\}/g;
+// Is the end of s inside double quotes, or at the start of a sentence?
+const quoted = (s) => (s.split('"').length % 2 === 0) || s.lastIndexOf("\u201c") > s.lastIndexOf("\u201d");
+// A quoted question or exclamation followed by its speech verb is one sentence:
+// "Ready?" you ask. Anything else after it starts a new one.
+const TAG = /^\s*\{[ABT]:(asks|says|answers|tells|calls|adds|replies|whispers|shouts)\}/;
+const opening = (s, rest = "") => {
+  const p = s.replace(/\s+$/, "");
+  if (/[?!]["\u201d]$/.test(p) && TAG.test(rest)) return false;
+  return p === "" || /[.!?]["\u201d)]*$/.test(p);
+};
 const STORY = [O.EVENT, O.DEC_OPEN, O.DIL_OPEN, O.RES_OPEN]; // codes that cast a card
 
 // Log page n covers flight days [a, b]: pages 1-6 are one day each (Earth orbit and
@@ -25,9 +69,10 @@ export function pageHeading(n) {
 }
 
 export class Renderer {
-  constructor(text, eng = null) {
+  constructor(text, eng = null, me = NONE) {
     this.t = text;
     this.e = eng; // engage.json, optional: without it gift lines are skipped
+    this.me = me; // the reader's own crew member (ship - 1): their lines read "you"
     this.roles = new Map(); // card -> [A, B] from the entry that opened it
     this.ties = 0; // tie closes seen so far: steps through sys.dec_tie
     this.vcards = {}; // crew -> cards that printed their voice this season
@@ -51,13 +96,40 @@ export class Renderer {
     return v[c];
   }
 
+  // kw.T may be a crew index (a role like A and B) or ready-made text.
   fill(tpl, A = NONE, B = NONE, kw = {}) {
-    return tpl.replace(/\{(\w+)\}/g, (m, k) => {
-      if (k === "A") return this.name(A);
-      if (k === "B") return this.name(B);
-      if (k === "Av" || k === "Bv") return this.voice(k === "Av" ? A : B);
-      return k in kw ? String(kw[k]) : m;
-    });
+    const me = this.me;
+    if (me !== NONE) {
+      // "Kim and you" reads better as "you and Kim".
+      if (B === me) tpl = tpl.split("{A} and {B}").join("{B} and {A}");
+      else if (A === me) tpl = tpl.split("{B} and {A}").join("{A} and {B}");
+    }
+    return this.fillAt(tpl, { A, B, T: typeof kw.T === "number" ? kw.T : undefined }, kw, "");
+  }
+
+  fillAt(tpl, R, kw, pre) {
+    let out = "", at = 0;
+    const me = this.me;
+    for (const m of tpl.matchAll(TOKEN)) {
+      out += tpl.slice(at, m.index);
+      at = m.index + m[0].length;
+      const so = pre + out;
+      // hit: this line spoke to the reader (their own crew page lists these as "Lately").
+      const mine = (r) => me !== NONE && (r === "AB" ? R.A === me || R.B === me : R[r] === me) && !quoted(so) && (this.hit = true);
+      const role = (k) => k === "A" || k === "B" || k === "AB" || (k === "T" && R.T !== undefined);
+      if (m[1]) out += this.fillAt(mine(m[1]) ? m[2] : m[3], R, kw, so);
+      else if (m[4]) out += mine(m[4]) ? (opening(so, tpl.slice(at)) ? "Your" : "your") : this.name(R[m[4]]) + "'s";
+      else {
+        const k = m[5];
+        if (m[6] !== undefined) {
+          const w = m[6].split("|")[0];
+          out += role(k) && mine(k) ? second(m[6], k === "AB") : w;
+        } else if (k === "Av" || k === "Bv") out += this.voice(k === "Av" ? R.A : R.B);
+        else if (role(k) && k !== "AB") out += mine(k) ? (opening(so, tpl.slice(at)) ? "You" : "you") : this.name(R[k]);
+        else out += k in kw ? String(kw[k]) : m[0];
+      }
+    }
+    return out + tpl.slice(at);
   }
 
   entry(e) {
@@ -106,16 +178,16 @@ export class Renderer {
         const p = e[7];
         const axis = b === 1 && p < 3 ? t.axis_words[p][c === 0 ? 1 : 0] : "";
         const res = b === 2 && p < 3 ? t.res_words[p] : "";
-        return this.fill(act[d ? "self" : "you"], a, NONE, { axis, res, T: this.name(c) });
+        return this.fill(act[d ? "self" : "you"], a, NONE, { axis, res, T: c });
       }
       case O.MOVE:
         return this.fill(c === a ? sy.home : sy.move, a, NONE, { S: t.ships[c] });
       case O.NOTE:
-        return this.fill(sy.note, a, NONE, { T: this.name(c), line: t.notes[b] });
+        return this.fill(sy.note, a, NONE, { T: c, line: t.notes[b] });
       case O.GIFT: {
         const g = this.e && this.e.gifts;
         if (!g || b >= g.items.length || d > 2) return null;
-        return this.fill(g.sys[["give", "ask", "answer"][d]], a, NONE, { T: this.name(c), item: g.items[b][0] });
+        return this.fill(g.sys[["give", "ask", "answer"][d]], a, NONE, { T: c, item: g.items[b][0] });
       }
       case O.SHORT:
         return sy.short;
@@ -155,6 +227,7 @@ export class Renderer {
       for (let c = 0; c < n; c++) if (!(c in lines) && first.has(card * 256 + c)) lines[c] = line;
     }
     if (st) this.epilogueFallback(lines, epi, st);
+    for (const c in lines) lines[c] = this.fill(lines[c], +c); // "their" is "your" on your own line
     return lines;
   }
 
@@ -173,7 +246,7 @@ export class Renderer {
       }
       if (epi.bond) {
         const j = [...Array(n).keys()].filter((j) => j !== c).sort(by((j) => st.bond(c, j)))[0];
-        if (j !== undefined && st.bond(c, j) >= cut) picks.push(this.fill(epi.bond, NONE, NONE, { T: this.name(j) }));
+        if (j !== undefined && st.bond(c, j) >= cut) picks.push(this.fill(epi.bond, NONE, NONE, { T: j }));
       }
       picks.push(epi.plain || "");
       const line = picks.find((p) => p && !used.has(p)) ?? picks[picks.length - 1];

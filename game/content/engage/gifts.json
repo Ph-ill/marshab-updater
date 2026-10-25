@@ -13,9 +13,9 @@
     {"n": "a roll of Kapton tape", "give": 1, "ask": 1}
   ],
   "sys": {
-    "give": "{A} sends {T} {item} on the next cargo transfer.",
-    "ask": "{A} asks {T} for {item}.",
-    "answer": "{A} sends {T} {item}, as asked."
+    "give": "{A} {A:sends} {T} {item} on the next cargo transfer.",
+    "ask": "{A} {A:asks} {T} for {item}.",
+    "answer": "{A} {A:sends} {T} {item}, as asked."
   },
   "ask_days": 3
 }

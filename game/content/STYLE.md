@@ -116,6 +116,36 @@ players).
 - No gendered pronouns: the compiler rejects he, she, him, her and the rest. Use
   the name ({A}, {B}) or "they".
 
+## Second person: every ship reads its own astronaut as "you"
+
+The same story goes to all eight ships. Each phone renders its own crew member in the
+second person ("you check the seals") and everyone else by name ("Kim checks the
+seals"). Write every line in the third person with role tokens, and mark the words that
+change when the role is the reader. The renderer (sim/render.py, web/render.js, kept
+identical by tests/render_check.mjs) does the rest; with no reader it prints the line
+exactly as written.
+
+- `{A}` `{B}` `{T}`: the name, or "you" ("You" at a sentence start). `{A}'s` becomes
+  "your".
+- `{A:checks}`: a verb or pronoun that agrees with the role: "checks" for others,
+  "check" for you. Common words are known (is, was, has, does, they, them, their,
+  theirs, themselves, isn't, ...); regular verbs drop their -s/-es/-ies. Mark every
+  verb whose subject is the role, coordinated ones too: "{A} {A:checks} the valve and
+  {A:logs} it". Never mark a verb whose subject is someone else.
+- `{A:goes|go}`: an explicit pair when the rule would get it wrong.
+- `{A?for the reader|for everyone else}`: a whole phrase that has to differ, such as a
+  possessive standing alone ("{A?Yours|{A}'s} is the last one"). Branches may hold
+  simple tokens.
+- `{AB:they}`: the pair as a subject: "you both" when either of A or B is the reader,
+  "they" otherwise (`{AB:themselves}`, `{AB:are}` and so on). "{A} and {B}" is put in
+  the order "you and Kim" automatically.
+- Nothing inside quotation marks changes. People speak to each other by name, so
+  quoted speech keeps the name: `"Kim, hand me that," {B} {B:says}.`
+- tests/test_you_voice.py reads a full season from all eight ships and fails on a ship
+  that names its own astronaut outside quotes, or on "you checks", "you is", "You's", or
+  a lowercase "you" opening a sentence. The lvc compiler rejects `{AB:...}` on a card
+  with fewer than two roles.
+
 ## Subtle skill flavor
 
 Seven of the crew are controls and automation engineers, and Diego is a mechanical

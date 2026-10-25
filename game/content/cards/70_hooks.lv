@@ -18,7 +18,7 @@ when home A
 when fired m_flash2
 when is A ow_hail
 do who hook_who A
-text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} counts past eleven, twelve, thirty, out loud now, to an empty cabin, and the next knock doesn't come.
+text 23:40, mid-window, with Mars square to {A}'s dish. The old-channel carrier misses a knock, the first in-window miss in weeks. {A} {A:counts} past eleven, twelve, thirty, out loud now, to an empty cabin, and the next knock doesn't come.
 
 # --- 2. Cabin pressure -------------------------------------------------------
 card h_pressure
@@ -32,7 +32,7 @@ roles A
 when cond A ok
 when home A
 do who hook_who A
-text The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} is awake at 01:50 to see it first, a minute before the fleet's night watch.
+text The cabin pressure on {A}'s ship is falling, a tenth of a kilopascal an hour. {A} {A:is} awake at 01:50 to see it first, a minute before the fleet's night watch.
 
 # --- 3. Solar flare ----------------------------------------------------------
 card h_flare
@@ -46,7 +46,7 @@ roles A
 when cond A ok
 when !fired storm_shelter
 do who hook_who A
-text The X-ray monitor jumps at 23:52, and the ground's space weather alert lands minutes later: a major flare. Its protons will reach the fleet in about forty minutes. {A} starts calling the other ships.
+text The X-ray monitor jumps at 23:52, and the ground's space weather alert lands minutes later: a major flare. Its protons will reach the fleet in about forty minutes. {A} {A:starts} calling the other ships.
 
 # --- 4. Uncommanded thruster --------------------------------------------------
 card h_thruster
@@ -60,7 +60,7 @@ roles A
 when cond A ok
 when home A
 do who hook_who A
-text 02:14. {A}'s ship starts to roll with nothing in the command log. The control loop fires a thruster. Then another. {A} is already at the console.
+text 02:14. {A}'s ship starts to roll with nothing in the command log. The control loop fires a thruster. Then another. {A} {A:is} already at the console.
 
 card valve_later
 type event
@@ -73,7 +73,7 @@ when flag valve_out
 when is A valve_who
 when since t_valve >= 6
 when home A
-text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The ground's thruster-select table has a new row with {A}'s initials. {A} has stopped noticing, mostly, except at 02:00.
+text Every attitude move on {A}'s ship now takes a beat longer, routed around the valve that was isolated that night. The ground's thruster-select table has a new row with {A}'s initials. {A} {A:has} stopped noticing, mostly, except at 02:00.
 do morale A -1
 
 # --- 5. Alarm flood -----------------------------------------------------------
@@ -101,7 +101,7 @@ weight 8
 roles A
 when cond A ok
 do who hook_who A
-text Mission Control misses a scheduled check-in. Then the next one. {A} sends a third hail and starts the clock: twice the light time, plus a minute for someone to put a coffee down.
+text Mission Control misses a scheduled check-in. Then the next one. {A} {A:sends} a third hail and {A:starts} the clock: twice the light time, plus a minute for someone to put a coffee down.
 
 # --- 7. Hull strike -----------------------------------------------------------
 card h_strike
@@ -116,7 +116,7 @@ when cond A ok
 when home A
 when !is A eva_who
 do who hook_who A
-text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} reads every green twice, then goes to look.
+text Something hits {A}'s ship hard enough to tick through the whole hull. Every pressure reading is green. {A} {A:reads} every green twice, then {A:goes} to look.
 
 # --- 8. Star tracker ghost (ominous) ---------------------------------------------
 card h_ghost
@@ -174,7 +174,7 @@ roles A
 when cond A ok
 when home A
 do who hook_who A
-text 03:05. The smoke alarm on {A}'s ship trips, then the one by the bunk. The air tastes of hot plastic. {A} has the mask on before the second alarm stops, and starts pulling breakers, one at a time, counting.
+text 03:05. The smoke alarm on {A}'s ship trips, then the one by the bunk. The air tastes of hot plastic. {A} {A:has} the mask on before the second alarm stops, and {A:starts} pulling breakers, one at a time, counting.
 
 # --- 12. The tank (round 24; late, when the knock hasn't missed) ---------------------
 card h_tank
@@ -189,4 +189,4 @@ when cond A ok
 when home A
 when !fired h_band
 do who hook_who A
-text 04:10. The drinking tank on {A}'s ship reads nine litres lower than at midnight, and falling. No droplets drift in the torch beam; the floor is dry. {A} logs the reading, as procedure demands, and opens the first access panel.
+text 04:10. The drinking tank on {A}'s ship reads nine litres lower than at midnight, and falling. No droplets drift in the torch beam; the floor is dry. {A} {A:logs} the reading, as procedure demands, and {A:opens} the first access panel.

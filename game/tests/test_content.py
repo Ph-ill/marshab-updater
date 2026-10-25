@@ -65,7 +65,7 @@ weight 50
 cooldown 1
 roles A
 when tag A mech
-text {A} looks at the bracket.
+text {A} {A:looks} at the bracket.
 """
 
 
@@ -119,7 +119,7 @@ days 2 42
 roles A
 when fired h%d
 when is A hook_who
-text {A} sorts it out. (%d)
+text {A} {A:sorts} it out. (%d)
 """ % (i, i, i, i, i))
     filler = """
 card filler
@@ -127,13 +127,13 @@ type beat
 weight 50
 cooldown 1
 roles A
-text {A} makes coffee.
+text {A} {A:makes} coffee.
 
 card ev
 type event
 cooldown 1
 roles A
-text {A} checks the dosimeter.
+text {A} {A:checks} the dosimeter.
 """
     return "".join(out) + filler
 
@@ -252,9 +252,9 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
         print("\n" + lvc.mix_line(self.ctx), file=sys.stderr)
 
     def test_mix_lint_fails_a_repair_heavy_deck(self):
-        src = "".join("card fix%d\ntype beat\ncat repair%s\nroles A\ntext {A} fixes thing %d.\n\n"
+        src = "".join("card fix%d\ntype beat\ncat repair%s\nroles A\ntext {A} {A:fixes} thing %d.\n\n"
                       % (i, " skill" if i < 2 else "", i) for i in range(3))
-        src += "card ok1\ntype beat\ncat life\nroles A\ntext {A} sleeps.\n\ncard un\ntype beat\nroles A\ntext {A} waits.\n"
+        src += "card ok1\ntype beat\ncat life\nroles A\ntext {A} {A:sleeps}.\n\ncard un\ntype beat\nroles A\ntext {A} {A:waits}.\n"
         _, _, ctx = lvc.build(mini_content(src))
         msg = " ".join(ctx.warnings)
         self.assertIn("repair/fault", msg)
@@ -266,9 +266,9 @@ text As a controls engineer, {A} forgot the seals again. By month four it was ju
         self.assertTrue(any("cat is" in e for e in ctx.errors))
 
     def test_slow_burn_lint(self):
-        src = ("card early\ntype beat\ncat life\ndays 2 20\nroles A\ntext {A} feels a chill. Something is wrong.\n\n"
-               "card early_m\ntype beat\ncat mystery\ndays 5 20\nroles A\ntext {A} logs a number.\n\n"
-               "card late\ntype beat\ncat mystery\ndays 30 40\nroles A\ntext {A} feels a chill.\n")
+        src = ("card early\ntype beat\ncat life\ndays 2 20\nroles A\ntext {A} {A:feels} a chill. Something is wrong.\n\n"
+               "card early_m\ntype beat\ncat mystery\ndays 5 20\nroles A\ntext {A} {A:logs} a number.\n\n"
+               "card late\ntype beat\ncat mystery\ndays 30 40\nroles A\ntext {A} {A:feels} a chill.\n")
         _, _, ctx = lvc.build(mini_content(src))
         ws = [w for w in ctx.warnings if "keep days" in w or "cat mystery but" in w]
         self.assertTrue(any("early " in w and "chill" in w for w in ws))
@@ -602,10 +602,10 @@ class TestFairCasting(unittest.TestCase):
     def test_presence_matches_text_over_300_seasons(self):
         # Text that places someone must agree with where the engine has them. Over the
         # same 300 seasons as the fair-play test, replaying each season's crossings:
-        # "{A}'s ship" in an opening line means A is at home; "{A}, visiting", "{A} is
-        # still aboard", "{A}, aboard on a visit" or "{A} happens to be aboard" means A is
-        # away, on B's ship; a rescue option where "{B} brings
-        # it over" or "{B} rides the line" means B was on another ship when it opened.
+        # "{A}'s ship" in an opening line means A is at home; "{A}, visiting", "{A} {A:is}
+        # still aboard", "{A}, aboard on a visit" or "{A} {A:happens} to be aboard" means A is
+        # away, on B's ship; a rescue option where "{B} {B:brings}
+        # it over" or "{B} {B:rides} the line" means B was on another ship when it opened.
         sys.path.insert(0, os.path.join(ROOT, "sim"))
         from season import reference_season
         _, text, _ = lvc.build(CONTENT)
@@ -632,14 +632,14 @@ class TestFairCasting(unittest.TestCase):
                         checks += 1
                         if loc[a] != a:
                             bad.append((i, d, cid, "A not home"))
-                    if a < N and re.search(r"\{A\},? (visiting|is still aboard|aboard on a visit|happens to be aboard)", t):
+                    if a < N and re.search(r"\{A\},? (visiting|(?:\{A:is\}|is) still aboard|aboard on a visit|(?:\{A:happens\}|happens) to be aboard)", t):
                         checks += 1
                         if loc[a] == a or (b < N and (loc[b] != b or loc[a] != b)):
                             bad.append((i, d, cid, "A not visiting B"))
                 if code == O.O_RES_CLOSE and card in opened:
                     a0, b0, la, lb = opened.pop(card)
                     o = cards[card]["o"]
-                    if b0 < N and a < len(o) and re.search(r"\{B\} (brings|rides)", o[a][1]):
+                    if b0 < N and a < len(o) and re.search(r"\{B\} (?:\{B:)?(brings|rides)", o[a][1]):
                         checks += 1
                         if la == lb:
                             bad.append((i, d, cards[card]["id"], "B already aboard"))
@@ -828,8 +828,8 @@ class TestRound2Language(unittest.TestCase):
     """`!is`, `clue core GROUP` and `title`."""
 
     def test_negated_is_excludes_the_named_crew(self):
-        src = ("card pick\ntype event\ndue\nonce\ndays 1 1\nroles A\ntext {A} is picked.\ndo who own A\n\n"
-               "card other\ntype event\ndue\nonce\ndays 2 2\nroles A\nwhen !is A own\ntext {A} is not.\n")
+        src = ("card pick\ntype event\ndue\nonce\ndays 1 1\nroles A\ntext {A} {A:is} picked.\ndo who own A\n\n"
+               "card other\ntype event\ndue\nonce\ndays 2 2\nroles A\nwhen !is A own\ntext {A} {A:is} not.\n")
         pack, text, ctx = lvc.build(mini_content(src))
         self.assertEqual(ctx.errors, [])
         _, days = season(Pack(pack))
@@ -844,12 +844,12 @@ class TestRound2Language(unittest.TestCase):
     def test_ending_names_crew_through_is(self):
         # The ending entry carries two roles, read straight from the `is` vars: no
         # casting, so one astronaut may fill both, and the choice of ending is unchanged.
-        src = ("card pick\ntype event\ndue\nonce\ndays 1 1\nroles A\ntext {A} is picked.\ndo who own A\n\n"
-               "card other\ntype event\ndue\nonce\ndays 2 2\nroles A\nwhen !is A own\ntext {A} is not.\n"
+        src = ("card pick\ntype event\ndue\nonce\ndays 1 1\nroles A\ntext {A} {A:is} picked.\ndo who own A\n\n"
+               "card other\ntype event\ndue\nonce\ndays 2 2\nroles A\nwhen !is A own\ntext {A} {A:is} not.\n"
                "do who two A\n\n"
                "card fin\ntype ending\nroles A B\nwhen fired other\nwhen is A own\nwhen is B two\n"
                "text {A} and {B} land.\n\n"
-               "card fin2\ntype ending\nroles A B\nwhen is A own\nwhen is B own\ntext {A} lands; {B} waves.\n")
+               "card fin2\ntype ending\nroles A B\nwhen is A own\nwhen is B own\ntext {A} {A:lands}; {B} {B:waves}.\n")
         pack, text, ctx = lvc.build(mini_content(src))
         self.assertEqual(ctx.errors, [])
         from sim.render import Renderer
@@ -882,9 +882,9 @@ class TestRound2Language(unittest.TestCase):
         self.assertTrue(any("only with `is`" in e for e in ctx.errors), ctx.errors)
 
     def test_core_groups_and_titles(self):
-        src = ("card c1\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} sees one.\n\n"
-               "card c2\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} sees two.\n\n"
-               "card c3\ntype event\nclue core\ndays 2 3\nroles A\ntext {A} sees three.\n\n"
+        src = ("card c1\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} {A:sees} one.\n\n"
+               "card c2\ntype event\nclue core g\ndays 2 3\nroles A\ntext {A} {A:sees} two.\n\n"
+               "card c3\ntype event\nclue core\ndays 2 3\nroles A\ntext {A} {A:sees} three.\n\n"
                "card fin\ntype ending\ntitle A Proper Title\nwhen fired c3\ntext Fin.\n")
         _, text, ctx = lvc.build(mini_content(src))
         self.assertEqual(ctx.errors, [])
@@ -895,7 +895,7 @@ class TestRound2Language(unittest.TestCase):
     def test_crossings_only_in_transfer_windows(self):
         # Each astronaut has a home ship; crossings happen only on transfer-window days,
         # and only to a crewmate who is at home, so a ship holds at most 2.
-        src = "card idle\ntype beat\ndays 1 42\nweight 5\nroles A\ntext {A} reads.\n"
+        src = "card idle\ntype beat\ndays 1 42\nweight 5\nroles A\ntext {A} {A:reads}.\n"
         pack, _, _ = lvc.build(mini_content(src))
         moved = 0
         for seed in range(30):
@@ -917,7 +917,7 @@ class TestRound2Language(unittest.TestCase):
         self.assertGreater(moved, 0)
 
     def test_only_some_conditions_negate(self):
-        src = "card bad\ntype event\ndays 2 3\nroles A\nwhen !var x >= 1\ntext {A} waits.\n"
+        src = "card bad\ntype event\ndays 2 3\nroles A\nwhen !var x >= 1\ntext {A} {A:waits}.\n"
         _, _, ctx = lvc.build(mini_content(src))
         self.assertTrue(any("negated" in e for e in ctx.errors), ctx.errors)
 
@@ -976,12 +976,12 @@ class TestHabitSlot(unittest.TestCase):
                          for i, n in enumerate(names))
 
     def test_clones_bind_only_their_astronaut(self):
-        hs = ["{A} hums.", None, "{A} whistles.", None, None, None, None, None]
+        hs = ["{A} {A:hums}.", None, "{A} {A:whistles}.", None, None, None, None, None]
         pack, text, ctx = lvc.build(mini_content(self.SRC, self.roster(hs)))
         self.assertEqual(ctx.errors, [])
         ids = [c["id"] for c in text["cards"]]
         self.assertEqual(ids[:N], ["hab_%d" % i for i in range(1, N + 1)])
-        self.assertEqual(text["cards"][0]["t"], "On shift: {A} hums.")
+        self.assertEqual(text["cards"][0]["t"], "On shift: {A} {A:hums}.")
         self.assertEqual(text["cards"][1]["t"], "On shift: " + lvc.HABIT_DEFAULT)
         self.assertNotIn("{habit}", repr(text))
         seen = {}
@@ -1084,7 +1084,7 @@ class TestRound19(unittest.TestCase):
             self.assertIn("pulled power by hand", self.t[cid], cid)
 
     def test_endings_round_19(self):
-        self.assertIn("and answers anyway", self.t["end_close"])
+        self.assertIn("and {A:answers} anyway", self.t["end_close"])
         self.assertIn("spare power in hand", self.t["end_close"])
         self.assertNotIn("argued to wait", self.t["end_long_orbit"])
         self.assertIn("All eight. The ninth gave us its night.", self.t["end_friend"])
@@ -1137,14 +1137,14 @@ class TestRound19(unittest.TestCase):
     def test_each_habit_skips_placeholder_and_missing(self):
         src = "card q\ntype beat\neach habit 2\nonce\nweight 50\nroles A\ntext {habit}\n"
         names = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian", "Marco"]
-        hs = {"Kim": ' habit "{A} hums." habit "{A} whistles."',
+        hs = {"Kim": ' habit "{A} {A:hums}." habit "{A} {A:whistles}."',
               "Jai": ' habit "%s" habit "%s"' % (lvc.HABIT_DEFAULT, lvc.HABIT_DEFAULT),
-              "Diego": ' habit "{A} draws."'}
+              "Diego": ' habit "{A} {A:draws}."'}
         roster = "\n".join("crew %s ship Ship 0%d%s" % (n, i + 1, hs.get(n, "")) for i, n in enumerate(names))
         _, text, ctx = lvc.build(mini_content(src, roster))
         self.assertEqual(ctx.errors, [])
         qs = [c for c in text["cards"] if c["id"].startswith("q_")]
-        self.assertEqual([(c["id"], c["t"]) for c in qs], [("q_3", "{A} whistles.")])
+        self.assertEqual([(c["id"], c["t"]) for c in qs], [("q_3", "{A} {A:whistles}.")])
 
 
 class TestEightShips(unittest.TestCase):
@@ -1251,7 +1251,7 @@ class TestRound20(unittest.TestCase):
         # Dry seed survives freezing; wet-packed germination trays do not.
         self.assertIn("germination trays", self.t["end_long_orbit"])
         self.assertNotIn("seed stock", self.t["end_long_orbit"])
-        self.assertIn("{B} calls the roll, ship by ship", self.t["end_long_orbit"])
+        self.assertIn("{B} {B:calls} the roll, ship by ship", self.t["end_long_orbit"])
 
     def test_loose_threads_closed(self):
         # The hopper's "intermittent beacon" was the knock, booked to the wrong name.
@@ -1320,7 +1320,7 @@ class TestRound20(unittest.TestCase):
                        "like a breach", "no cutscenes"):
             self.assertNotIn(banned, joined, banned)
         # Habit lines never touch life-support settings for a joke.
-        self.assertIn("writes it a bass line", joined)
+        self.assertIn("{A:writes} it a bass line", joined)
         # Kittens stay at home: any habit line about them arrives as mail.
         for h in habits:
             if "kitten" in h or "litter" in h:
@@ -1333,7 +1333,7 @@ class TestRound20(unittest.TestCase):
         self.assertNotIn("wanted to answer all along", self.t["end_through"])
         self.assertIn("enough to get there, not back", self.t["end_friend"])
         self.assertIn("forklift photo", self.t["end_friend"])
-        self.assertIn("puts a glove flat on the cold hull", self.t["end_close"])
+        self.assertIn("{B:puts} a glove flat on the cold hull", self.t["end_close"])
         self.assertIn("By then it has nothing left to hear it with.", self.t["end_close"])
 
     def test_fold_pool_has_people(self):
@@ -1372,7 +1372,7 @@ class TestRound21(unittest.TestCase):
 
     def test_endings_round_21(self):
         self.assertIn("up the old channel", self.t["end_long_orbit"])
-        self.assertIn("{B} calls the roll, ship by ship", self.t["end_long_orbit"])
+        self.assertIn("{B} {B:calls} the roll, ship by ship", self.t["end_long_orbit"])
         self.assertIn("enough to get there, not back", self.t["end_friend"])
         self.assertIn("behind a door on ship power", self.t["end_close"])
         self.assertIn("the folded ship's last battery", self.t["end_through"])
@@ -1502,7 +1502,7 @@ class TestRound24(unittest.TestCase):
     def test_endings_round_24(self):
         self.assertIn("Thirty-three: a click", self.t["end_patience"])
         self.assertIn("NO GO", self.t["end_through"])
-        self.assertIn("{B} makes it eight", self.t["end_long_orbit"])
+        self.assertIn("{B} {B:makes} it eight", self.t["end_long_orbit"])
 
     def test_fold_lines_never_repeat_in_a_season(self):
         from sim.render import Renderer
@@ -1558,7 +1558,7 @@ class TestRound25(unittest.TestCase):
         for cid in ("m_checked", "m_checked_g"):
             self.assertNotIn("scar in a photo", self.t[cid])
         self.assertIn("scar in a low-res pass", self.t["l_manifest"])
-        self.assertIn("{A} circles it", self.t["m_hopper"])
+        self.assertIn("{A} {A:circles} it", self.t["m_hopper"])
         self.assertNotIn("pen down", self.t["m_hopper"])
         self.assertIn("Tolerance has a column for crew", self.t["g_ledger"])
         self.assertIn("a relay, a hopper, Cargo 2", self.t["g_ledger"])
@@ -1579,7 +1579,7 @@ class TestRound25(unittest.TestCase):
         self.assertNotIn("blamed a pump", epi)
         self.assertIn("the next crew's germination trays", self.t["end_long_orbit"])
         self.assertIn("Week three, storm spent", self.t["end_patience"])
-        self.assertIn("They drive home cold", self.t["end_close"])
+        self.assertIn("{AB:They} drive home cold", self.t["end_close"])
 
 
 if __name__ == "__main__":

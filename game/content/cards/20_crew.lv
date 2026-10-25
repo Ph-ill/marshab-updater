@@ -25,12 +25,12 @@ roles A
 when !fired dil_stash
 lean warm share keep
 text The three packs from behind the panel are the good rations, the ones the galley ran out of first. They aren't on any inventory.
-option keep | Keep them quiet | {A} thanks the packer silently. The packs go into a personal locker, for the bad week every mission eventually has.
+option keep | Keep them quiet | {A} {A:thanks} the packer silently. The packs go into a personal locker, for the bad week every mission eventually has.
   set stash_kept
   mark t_stash
   who stash_who A
   morale A 6
-option share | Hand them in | {A} turns them in, bag and all. The galley has an unplanned surplus for the first time since launch.
+option share | Hand them in | {A} {A:turns} them in, bag and all. The galley has an unplanned surplus for the first time since launch.
   who stash_who A
   res food 3
   morale A 2
@@ -45,7 +45,7 @@ roles A B
 when flag stash_kept
 when since t_stash >= 10
 when is A stash_who
-text {A} opens the locker before breakfast, tags one pack for {B} for the next crossing window, and eats another on video with {B}, reading the bag aloud like the back of a cereal box.
+text {A} {A:opens} the locker before breakfast, {A:tags} one pack for {B} for the next crossing window, and {A:eats} another on video with {B}, reading the bag aloud like the back of a cereal box.
 do bond A B 6
 do morale A 3
 do set stash_exposed
@@ -59,7 +59,7 @@ days 8 11
 weight 10
 roles A B
 when bond A B >= -20
-text {A} and {B} stand the night watch over the fleet link, each in a dark cabin. Earth is a thin bright crescent now, low beside the Sun's glare, already smaller than the Moon looks from home. They make coffee at the same minute, as if that counted.
+text {A} and {B} stand the night watch over the fleet link, each in a dark cabin. Earth is a thin bright crescent now, low beside the Sun's glare, already smaller than the Moon looks from home. {AB:They} make coffee at the same minute, as if that counted.
 do bond A B 6
 
 # Trait-driven reaction: what happens depends on how brave A is.
@@ -73,9 +73,9 @@ roles A
 when trait A curious >= -5
 when cond A ok
 lean brave closer window
-text {A} spots a glint keeping pace off the starboard side, catching the sun every few seconds.
-option closer | Get a closer look | {A} talks Mission Control into a camera slew: a flake of ice from the last waste-water dump, tumbling, a little smaller every hour.
+text {A} {A:spots} a glint keeping pace off the starboard side, catching the sun every few seconds.
+option closer | Get a closer look | {A} {A:talks} Mission Control into a camera slew: a flake of ice from the last waste-water dump, tumbling, a little smaller every hour.
   trait A brave 3
-option window | Track it from the window | {A} notes its bearing hourly: ice from the last waste-water dump, tumbling, smaller each hour.
+option window | Track it from the window | {A} {A:notes} its bearing hourly: ice from the last waste-water dump, tumbling, smaller each hour.
   trait A curious 2
 
