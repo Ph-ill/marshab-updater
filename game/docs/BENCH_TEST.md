@@ -558,3 +558,24 @@ open the game on a phone once (the board learns the time), close it: nothing unt
 gift or 06:00 page; send a gift from another board's phone and the double pulse starts
 within a few seconds (outside quiet hours), and stops when you open the game on this board.
 Off again: `bench.py --led off --no-selftest` or the Ship light button.
+
+## 13. The ship battery (optional UPS-Lite)
+
+A board with a UPS-Lite v1.3 wired to it (`board/lvbatt.py`; the wiring and soldering
+guide is `docs/BATTERY.md`) reports its battery in the self-test, in the bench report and
+on the phones. Nothing to switch on: at boot the board looks for the fuel gauge (I2C
+address 0x62 on GP4/GP5) once, and a board without one carries on exactly as before.
+
+- Self-test: `SELFTEST battery: detected, 87%, 4012 mV, charging yes` (also printed at the
+  end, after a fresh reading), or `none detected (optional, docs/BATTERY.md)`. Just after
+  the gauge wakes up it can say `reading unknown` for a few seconds.
+- Bench report: a `battery` row, always **INFO**: a missing or unreadable battery never
+  fails the bench.
+- Phones: a small battery mark with the percent at the top of the ship's page (a bolt while
+  it charges), a gentle "plug your ship in" line on Home under 15%, and a Battery line on
+  the "How it works" briefing card. None of it shows on a board without a battery.
+- `ship.json` (all optional): `"battery": false` never looks, `true` always shows the
+  battery (as "unknown" if the gauge doesn't answer); `bat_sda`, `bat_scl` (default 4, 5),
+  `bat_chg` (default 6, `-1` for none), `bat_chg_pull` (`"down"`, `"up"`, `"none"`),
+  `bat_every_s` (default 60), `bat_khz` (unset: 50 kHz, falling back to 10 kHz; the Pico's
+  internal pull-ups are switched on, so the 4.7 kΩ resistors are optional).
