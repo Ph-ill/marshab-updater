@@ -96,6 +96,39 @@ class Contract(unittest.TestCase):
         self.assertTrue(got["open"], "nothing open on day 9")
         self.assertEqual(got["day"], self.day)
 
+    def test_air(self):
+        # Bluetooth contact as the crew list and gift picker read it: lv/ble's peers (kept a
+        # day by lvship), ages to its last sweep, in sync when it last matched our log.
+        from lv.ble import Peer
+        a, b = Peer(2), Peer(5)
+        a.seen, b.seen = 95000, 1000000          # b heard after the sweep: age 0, not negative
+        b.diff_since = 990000                    # b's log differed: still syncing
+
+        class Ble:
+            peers = {2: a, 5: b}
+            _swept = 125000
+        self.ship.ble = Ble()
+        try:
+            got = self.phone.state_body(1, self.day - 3, 600)["air"]
+        finally:
+            self.ship.ble = None
+        self.assertEqual(sorted(got), [[2, 30, True], [5, 0, False]])
+        self.assertIsNone(self.phone.state_body(1, self.day - 3, 600)["air"])   # no radio: hidden
+        mock = self.mock.state(1, self.day, self.day - 3, 600)["air"]
+        self.assertTrue(all(len(x) == 3 and x[0] != 1 and x[1] >= 0 for x in mock))
+
+    def test_peer_ttl(self):
+        # lvship keeps a heard ship a day (lv/ble forgets after 10 min by default); a "ble"
+        # in ship.json replaces the default.
+        import bluetooth
+        cfg = lvship.load_config("/nonexistent")
+        sh = lvship.Ship(cfg, root="build/", data=None, say=lambda s: None, radio=bluetooth.World(3).new())
+        self.assertEqual(sh.ble.cfg["peer_ttl_ms"], 86400000)
+        cfg = lvship.load_config("/nonexistent")
+        cfg["ble"] = {"peer_ttl_ms": 60000}
+        sh = lvship.Ship(cfg, root="build/", data=None, say=lambda s: None, radio=bluetooth.World(3).new())
+        self.assertEqual(sh.ble.cfg["peer_ttl_ms"], 60000)
+
     def test_routes(self):
         P = self.phone
         s, j = P.api(Req("GET", "/api/crew"))

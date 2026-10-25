@@ -54,7 +54,10 @@ DEFAULTS = {
     "phone_game": "auto",          # serve the phone game: auto = on the game firmware only
     "led_notify": False,           # the LED notifier stays off unless this says true
     "stat_every_s": 60,
-    "ble": {},                     # overrides for lv/ble.DEFAULTS (scan duty, intervals...)
+    # overrides for lv/ble.DEFAULTS (scan duty, intervals...). A heard ship is kept a day,
+    # not lv/ble's 10 min, so the phones can show when it was last in range (lvphone "air");
+    # a "ble" in ship.json replaces this whole dict, so give "peer_ttl_ms" there too.
+    "ble": {"peer_ttl_ms": 86400000},
 }
 
 
