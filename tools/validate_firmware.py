@@ -120,7 +120,30 @@ def check_frozen(rel, paths, name):
     for d in rel.get("preserve") or []:
         if d.rstrip("/") in ("lv", "lvx") or d.startswith(("lv/", "lvx/")):
             err(f"{name}: must not preserve {d}")
-    return f", partial: {fz['id']} core {fz['requires']}, overrides [{', '.join(sorted(names))}]"
+    # lv-core 0.2.0+: the board modules and the pack are frozen too. A file on the board is
+    # found before the frozen module, so the release must delete every copy it doesn't ship
+    # (an older install's lvship.mpy would run instead of the firmware's), and "replaces"
+    # must name exactly the ones it ships (hotfixes).
+    board = fz.get("board") or []
+    if not isinstance(board, list) or not all(isinstance(m, str) and re.match(r"^[a-z_][a-z0-9_]*$", m) for m in board):
+        err(f"{name}: frozen.board must be a list of module names")
+        board = []
+    top = set(p for p in paths if "/" not in p)
+    stale = [m + e for m in board for e in (".py", ".mpy") if m + e not in top]
+    if fz.get("pack") and "pack.bin" not in top:
+        stale.append("pack.bin")
+    missing = [p for p in stale if p not in (rel.get("delete") or [])]
+    if missing:
+        err(f"{name}: must delete {', '.join(missing)} (frozen in core {fz['requires']}; a leftover file would replace it)")
+    shipped = [m for m in board if m + ".mpy" in top or m + ".py" in top] + (
+        ["pack.bin"] if fz.get("pack") and "pack.bin" in top else [])
+    if board and sorted(rel.get("replaces") or []) != sorted(shipped):
+        err(f"{name}: replaces {rel.get('replaces')} != the frozen modules it ships {sorted(shipped)}")
+    for p in top:
+        if p in (rel.get("delete") or []):
+            err(f"{name}: ships {p} and deletes it")
+    extra = f", replaces frozen [{', '.join(shipped)}]" if board else ""
+    return f", partial: {fz['id']} core {fz['requires']}, overrides [{', '.join(sorted(names))}]{extra}"
 
 
 def check_index():

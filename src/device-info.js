@@ -40,7 +40,8 @@ except Exception:
     uid = None
 try:
     import lvfrozen
-    fz = {'id': lvfrozen.ID, 'version': lvfrozen.VERSION, 'core': lvfrozen.CORE}
+    fz = {'id': lvfrozen.ID, 'version': lvfrozen.VERSION, 'core': lvfrozen.CORE,
+          'board': list(getattr(lvfrozen, 'BOARD', ())), 'pack': getattr(lvfrozen, 'PACK', None)}
 except Exception:
     fz = None
 try:
@@ -63,12 +64,23 @@ export function overridesOf(runtime){
   return names;
 }
 
+// lv-core 0.2.0+ froze the board modules and the pack too: a /<module>.py|.mpy or /pack.bin
+// found on the board runs instead of the frozen one (a hotfix, or a leftover to reinstall).
+export function boardFilesOf(runtime){
+  const fz = runtime?.frozen;
+  const root = runtime?.root || [];
+  const out = (fz?.board || []).filter(m => root.includes(`${m}.py`) || root.includes(`${m}.mpy`));
+  if(fz?.pack && root.includes('pack.bin')) out.push('pack.bin');
+  return out;
+}
+
 export function describeFirmware(runtime){
   const fz = runtime?.frozen;
   if(!fz) return 'stock MicroPython (no frozen game core)';
   const base = `frozen ${fz.id} ${fz.version} (core ${fz.core})`;
   if((runtime.root || []).includes('lv')) return `${base} HIDDEN by a /lv directory: reinstall to remove it`;
-  return `${base}, overrides: [${overridesOf(runtime).join(', ')}]`;
+  const board = fz.board?.length ? `, board files: [${boardFilesOf(runtime).join(', ')}]` : '';
+  return `${base}, overrides: [${overridesOf(runtime).join(', ')}]${board}`;
 }
 
 export async function readJsonFile(device, path){
