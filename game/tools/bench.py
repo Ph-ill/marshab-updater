@@ -443,6 +443,8 @@ def parse_selftest(text):
                                    "day": int(m.group(4)), "src": m.group(5)})
         elif body.startswith("led:"):
             r["led"] = body[4:].strip()
+        elif body.startswith("led test:"):
+            r["led_test"] = body[9:].strip()
         elif body.startswith("wifi:"):
             r["wifi"] = body[5:].strip()
         elif body.startswith("server:"):
@@ -470,6 +472,13 @@ class Report:
     def text(self):
         w = max([len(n) for n, _, _ in self.rows] + [10])
         return "\n".join("%-*s  %-4s  %s" % (w, n, s, d) for n, s, d in self.rows)
+
+
+def led_pattern(st):
+    """What the board's LED test plays, from its own SELFTEST line: 3 slow breaths (lvled.py
+    since led-pulse: software PWM, the LED fades up and down) or, on an older build, 3 slow
+    blinks."""
+    return "3 slow blinks" if "blink" in st.get("led_test", "") else "3 slow breaths (fading up and down)"
 
 
 def selftest_checks(rep, st, want_day=None, rollover=None, expect_peers=False, led=None, led_seen=None,
@@ -511,13 +520,14 @@ def selftest_checks(rep, st, want_day=None, rollover=None, expect_peers=False, l
         rep.add("LED path", "PASS" if c[lp] else "FAIL", st.get("led", ""))
     if led_test:
         played = c.get("led test played")
+        what = led_pattern(st)
         if not played:
-            rep.add("LED blink test", "FAIL", "the pattern didn't run (pin writes too few)")
+            rep.add("LED pulse test", "FAIL", "the pattern didn't run (pin writes too few)")
         elif led_seen is None:
-            rep.add("LED blink test", "INFO", "played; only your eyes can tell: 3 slow blinks?")
+            rep.add("LED pulse test", "INFO", "played; only your eyes can tell: %s?" % what)
         else:
-            rep.add("LED blink test", "PASS" if led_seen else "FAIL",
-                    "you saw the 3 blinks" if led_seen else "you did NOT see the blinks")
+            rep.add("LED pulse test", "PASS" if led_seen else "FAIL",
+                    ("you saw the " if led_seen else "you did NOT see the ") + what)
     rep.add("peers", ("PASS" if c.get("in sync with a peer") else "FAIL") if expect_peers else "INFO",
             st.get("peers", "none"))
 
@@ -773,8 +783,9 @@ def bench_one(args, ship, board, logf, ask=input):
         code = SELFTEST % {"seconds": args.seconds, "epoch": "None" if args.no_clock else int(now.timestamp() * 1000),
                            "tz": tz, "led": bool(led), "led_test": bool(args.led_test), "extra": extra}
         if args.led_test:
-            say("LED: watch the board's LED: 3 slow blinks (1 s on, 1 s off) in the first seconds. "
-                "Through the current case: take the lid off, or look at the LED's spot from the side.")
+            say("LED: watch the board's LED: 3 slow breaths in the first seconds, the light fading up "
+                "and back down 3 times, about 7 s (a board still on an older build blinks 3 times "
+                "instead). Through the current case: take the lid off, or look at the LED's spot from the side.")
         say("selftest: %d s (Wi-Fi, phone server, DNS, BLE%s)..." % (
             args.seconds, ", rollover" if args.rollover else ""))
         rc, out = run(code, args.seconds + 120, echo=not args.quiet, what="selftest")
@@ -786,9 +797,13 @@ def bench_one(args, ship, board, logf, ask=input):
         st = parse_selftest(out)
         seen = None
         if args.led_test and not args.no_ask:
-            a = ask("Did you see 3 slow blinks on the LED? [y/n] ").strip().lower()
+            if "blink" in st.get("led_test", ""):
+                a = ask("Did you see 3 slow blinks on the LED? [y/n] ")
+            else:
+                a = ask("Did you see the LED pulse: fade up and back down 3 times (not hard blinks)? [y/n] ")
+            a = a.strip().lower()
             seen = a.startswith("y")
-            logf.write("led blink answer: %s\n" % a)
+            logf.write("led pulse answer: %s\n" % a)
         want = None if args.no_clock else expected_day(cfg, DT.datetime.now().astimezone(), tz)
         if want is not None and want[1] == "manual" and not cfg.get("launch_date"):
             want = (want[0], "manual")
@@ -833,7 +848,7 @@ def main(argv=None, ask=input):
     ap.add_argument("--day", type=int, help="manual bench flight day 1-42 (clears the launch date unless --launch)")
     ap.add_argument("--day-start", help="flight day start HH:MM (bench only; 06:00 or '' removes it)")
     ap.add_argument("--led", choices=["on", "off"], help="LED notifier (led_notify)")
-    ap.add_argument("--led-test", action="store_true", help="play 3 slow blinks during the selftest and ask if you saw them")
+    ap.add_argument("--led-test", action="store_true", help="play 3 slow breaths (the LED fading up and down) during the selftest and ask if you saw them pulse")
     ap.add_argument("--code", action="append", help="crew code NAME=1234 (repeat); other names keep theirs")
     ap.add_argument("--codes", help="all 8 codes in roster order, comma-separated (blank keeps)")
     ap.add_argument("--password", help="hotspot password (8-63); or set LV_HOTSPOT_PASSWORD so it isn't in your shell history")
@@ -877,7 +892,7 @@ def main(argv=None, ask=input):
                   " crew codes %s; selftest %d s%s%s; report; reset" % (
                       s, ", ".join(rel["delete"]), json.dumps(st_set, sort_keys=True), st_drop,
                       ("set for " + ", ".join(CREW[i] for i in sorted(codes))) if codes else "kept", args.seconds,
-                      ", LED blink test" if args.led_test else "", ", rollover to FD %d" % args.rollover
+                      ", LED pulse test" if args.led_test else "", ", rollover to FD %d" % args.rollover
                       if args.rollover else ""))
         return 0
     os.makedirs(args.log_dir, exist_ok=True)
