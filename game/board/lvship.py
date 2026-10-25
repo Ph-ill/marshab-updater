@@ -329,13 +329,15 @@ class Ship:
             if now >= nday:
                 nday = now + 10000
                 self.day_check()
-            wait = self.led.poll((self.ble is not None and self.ble.busy()) or
-                                 (self.web is not None and self.web.busy > 0))
+            l = self.led
+            if l.enabled and getattr(l, "task", 0) is None:      # (lv/led.py's dark Notifier has none)
+                l.task = asyncio.create_task(l.run(self, sleep_ms))
             if now >= nxt:
                 nxt = now + every
                 self.say(self.stat_line())
-            if stop_after_ms is not None and now >= stop_after_ms:
+            if (stop_after_ms is not None and now >= stop_after_ms) or (until is not None and until()):
+                t = getattr(l, "task", None)
+                if t:                   # the light's task ends with the loop (dark); the next loop restarts it
+                    t.cancel()
                 return
-            if until is not None and until():
-                return
-            await sleep_ms(min(50, wait))
+            await sleep_ms(50)

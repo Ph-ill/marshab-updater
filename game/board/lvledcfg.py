@@ -3,8 +3,8 @@
 # sys.modules), so none of this sits in the heap while phones play.
 #   led_notify        true: on (game firmware only; "force" also on stock MicroPython)
 #   led_quiet         "HH:MM-HH:MM" local, default "22:00-07:00"; "" or "off": no quiet hours
-#   led_unknown_time  true: blink before any phone has brought the time (default false)
-#   led_budget_s      lit seconds a day, default 240
+#   led_unknown_time  true: breathe before any phone has brought the time (default false)
+#   led_budget_s      lit seconds a day (by brightness), default 900
 QUIET = "22:00-07:00"
 
 
@@ -26,17 +26,32 @@ def parse_quiet(s):
     return _hm(a), _hm(b)
 
 
+class _HostTime:
+    # CPython (the tests): the three MicroPython time functions lvled uses
+    def ticks_us(self):
+        import time
+        return time.perf_counter_ns() // 1000
+
+    def ticks_diff(self, a, b):
+        return a - b
+
+    def sleep_us(self, n):
+        pass
+
+
 def make(clock, cfg, say=print, pin=None):
     import lvled
+    if not hasattr(lvled._t, "ticks_us"):
+        lvled._t = _HostTime()
     try:
         q = parse_quiet(cfg.get("led_quiet", QUIET))
     except Exception:
         say("led: led_quiet %r not understood (HH:MM-HH:MM), using %s" % (cfg.get("led_quiet"), QUIET))
         q = parse_quiet(QUIET)
     try:
-        b = int(cfg.get("led_budget_s", 240)) * 1000
+        b = int(cfg.get("led_budget_s", 900)) * 1000
     except Exception:
-        b = 240000
+        b = 900000
     return lvled.Led(clock, q, bool(cfg.get("led_unknown_time", False)), b, pin or lvled._pin)
 
 
