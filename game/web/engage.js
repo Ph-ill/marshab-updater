@@ -18,7 +18,7 @@ const tag=(k,t)=>isNew(k)?`<span class=new>New</span>`:`<span>${t}</span>`;
 let RAW=null,RAWsrc="";
 function raw(){if(RAWsrc!==S.story){RAWsrc=S.story;RAW=Uint8Array.from(atob(S.story),(c)=>c.charCodeAt(0))}return RAW}
 function entries(f){const b=raw(),out=[];for(let i=0;i+8<=b.length;i+=8){const e=Array.from(b.slice(i,i+8));if(f(e))out.push(e)}return out}
-function line(e){const r=new Renderer(T,EG);return(r.entry(e)||"").trim()}
+function line(e){const r=new Renderer(T,EG,S.you);return(r.entry(e)||"").trim()}
 
 // ---- cliffhanger: "Tonight" on the day it lands, "Last night" the morning after --------
 function hookCard(c){return c!==NONE&&T.cards[c]&&T.cards[c].h}
@@ -82,7 +82,7 @@ function dropScreen(d){
   const x=S.eng.drops.find((y)=>y[0]===d);if(!x)return go("home");
   shipTop();
   const it=dropOf(x),rare=x[1]===EG.tiers.length-1;
-  let o=`<div class=kick><div class=lab>Daily drop · FD ${pad(d)}</div><h2>${x[3]?h(it.k):"For "+h(nm(S.you))}</h2></div>`;
+  let o=`<div class=kick><div class=lab>Daily drop · FD ${pad(d)}</div><h2>${x[3]?h(it.k):"For you"}</h2></div>`;
   if(!x[3])o+=`<div class=seal><span class="lab ${rare?"r":""}">${h(EG.tiers[x[1]])}</span><b>Sealed</b><p class=dim style="font-size:15px">One item a flight day. It keeps until you open it.</p></div>`;
   else{
     o+=`<div class=card><div class="lab ${rare?"r":""}"><span>${h(EG.tiers[x[1]])}</span><span>FD ${pad(d)}</span></div><div class=body><p class=lead>${h(A(it.t))}</p></div></div>`;
@@ -97,7 +97,7 @@ function jobScreen(d){
   const j=S.eng.jobs.find((y)=>y[0]===d);if(!j)return go("home");
   shipTop();
   const J=EG.jobs[j[1]];
-  let o=`<div class=kick><div class=lab>Timed job · FD ${pad(d)}</div><h2>${h(J.l)}</h2></div><div class=card><div class=lab><span>${h(nm(S.you))}</span><span>${j[3]>=0?"Done":S.eng.minute!=null?"About "+hhmm(j[2]):"Later today"}</span></div><div class=body><p class=lead>${h(A(J.t))}</p>`;
+  let o=`<div class=kick><div class=lab>Timed job · FD ${pad(d)}</div><h2>${h(J.l)}</h2></div><div class=card><div class=lab><span>Your job</span><span>${j[3]>=0?"Done":S.eng.minute!=null?"About "+hhmm(j[2]):"Later today"}</span></div><div class=body><p class=lead>${h(A(J.t))}</p>`;
   if(j[3]>=0){const r=J.out[j[3]];o+=`<div class=then style="border-top:1px solid var(--rule);margin-top:12px;padding-top:8px"><div class="lab r">Result</div><p>${h(A(r.t))}</p></div>`;
     if(r.art){const a=EG.arts.find((z)=>z.id===r.art);o+=`<p class=dim style="font-size:15px">Added to your file: ${h(a.n)}.</p>`}}
   else o+=`<p class=dim style="font-size:16px">${S.eng.minute!=null?`Should wrap up about ${hhmm(j[2])}, your time. Check back after.`:"Should wrap up later today."}</p>`;
@@ -119,7 +119,7 @@ function giftsScreen(){
   }else o+=`<p class=dim style="margin-top:8px">${mode?"Your ask for today is on its way.":"Today's gift is on the cargo run."} Tomorrow there's room for another.</p>`;
   o+=`</section>`;
   const hist=[...E.in.map((g)=>[g[0],1,g]),...E.out.map((g)=>[g[0],0,g])].sort((a,b)=>b[0]-a[0]).slice(0,10);
-  if(hist.length)o+=`<section><div class=lab><span>Recent</span></div><ul class=log>${hist.map(([d,inn,g])=>`<li class="${inn?"big":"you"}"><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(R.fill(G.sys[["give","ask","answer"][g[3]]],inn?g[1]:S.you,NONE,{T:inn?nm(S.you):nm(g[1]),item:G.items[g[2]][0]}))}</li>`).join("")}</ul></section>`;
+  if(hist.length)o+=`<section><div class=lab><span>Recent</span></div><ul class=log>${hist.map(([d,inn,g])=>`<li class="${inn?"big":"you"}"><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(R.fill(G.sys[["give","ask","answer"][g[3]]],inn?g[1]:S.you,NONE,{T:inn?S.you:g[1],item:G.items[g[2]][0]}))}</li>`).join("")}</ul></section>`;
   $("v").innerHTML=o;
   const ok=can&&gd.to!=null&&gd.item!=null;
   dock(can?`<button class="btn pri" data-eng="send"${ok?"":" disabled"}><span>${mode?"Send ask":"Send gift"}</span><i>${ok?h(nm(gd.to)):"choose"}</i></button>`:`<button class="btn sec" data-go="home"><span>Back aboard</span><i>←</i></button>`,"home");
@@ -128,8 +128,8 @@ function giftsScreen(){
 // ---- watch duty -----------------------------------------------------------------------
 function streakScreen(){
   shipTop();
-  const s=S.eng.streak,days=new Set(s.days),cov=new Set(s.covered),A1=nm(S.you);
-  let o=`<div class=kick><div class=lab>Watch duty · ${h(ship(S.you))}</div><h1 class=m>${s.cur} <span class=dim style="font-weight:400;font-size:21px">${s.cur===1?"day":"days"}</span></h1><p class=dim>Best ${s.best}. Any tap on a flight day counts as a watch. Miss a day and ${h(A1)} covers it, up to twice a flight week.</p>`;
+  const s=S.eng.streak,days=new Set(s.days),cov=new Set(s.covered);
+  let o=`<div class=kick><div class=lab>Watch duty · ${h(ship(S.you))}</div><h1 class=m>${s.cur} <span class=dim style="font-weight:400;font-size:21px">${s.cur===1?"day":"days"}</span></h1><p class=dim>Best ${s.best}. Any tap on a flight day counts as a watch. Miss a day and it's covered, up to twice a flight week.</p>`;
   const last=s.cur===0&&S.day>1&&s.best>0;
   if(last)o+=`<p>A new watch starts with your next tap.</p>`;
   o+=`</div><section><div class=lab><span>Flight days</span><span>FD 01–${pad(S.season)}</span></div><div class=watch>`;
@@ -137,7 +137,7 @@ function streakScreen(){
     o+=`<span>W${w+1}</span>`;
     for(let i=1;i<=7;i++){const d=w*7+i;const c=d>S.day?"":days.has(d)?"w":cov.has(d)?"c":"";o+=`<i class="${c}${d===S.day?" t":""}">${d<=S.day?d:""}</i>`}
   }
-  o+=`</div><div class=key><span><i style="background:var(--ink)"></i>Your watch</span><span><i style="border-style:dashed"></i>${h(A1)} covered</span><span><i style="border:2px solid var(--rust)"></i>Today</span></div></section>`;
+  o+=`</div><div class=key><span><i style="background:var(--ink)"></i>Your watch</span><span><i style="border-style:dashed"></i>Covered</span><span><i style="border:2px solid var(--rust)"></i>Today</span></div></section>`;
   o+=`<section><div class=lab><span>Badges</span><span>${EG.badges.filter((b)=>s.best>=b[0]).length}/${EG.badges.length}</span></div>${EG.badges.map(([n,t])=>`<div class=row><span class="pt m" style="display:flex;align-items:center;justify-content:center;font-weight:700;${s.best>=n?"background:var(--ink);color:var(--paper)":"border-color:var(--rule);color:var(--graph)"}">${n}</span><span class=t>${h(t)}<small>${s.best>=n?"Earned":n+" days in a row"}</small></span></div>`).join("")}</section>`;
   $("v").innerHTML=o;
   dock(`<button class="btn sec" data-go="file"><span>Crew file</span><i>→</i></button>`,"file");
@@ -170,7 +170,7 @@ function fileScreen(){
     const lean=F.lean[ax][t[ax]>=0?0:1];
     o+=`<div class=cf><span class=pt>${portrait(j)}</span><div><b>${h(nm(j))}</b>`;
     o+=met.has(j)?`<p>${h(R.fill(F.met,NONE,NONE,{T:nm(j),S:ship(j)}))}</p>`:`<p class=no>Not in your log yet.</p>`;
-    o+=shared.has(j)?`<p>${h(R.fill(F.shared,NONE,NONE,{lean}))}</p>`:`<p class=no>Hasn't shared a shift with ${h(nm(Y))}.</p>`;
+    o+=shared.has(j)?`<p>${h(R.fill(F.shared,NONE,NONE,{lean}))}</p>`:"<p class=no>Hasn't shared a shift with you.</p>";
     o+=traded.has(j)?`<p>${h(F.traded[j%F.traded.length])}</p>`:`<p class=no>Swap cargo to learn more.</p>`;
     o+=`</div></div>`;
   }
