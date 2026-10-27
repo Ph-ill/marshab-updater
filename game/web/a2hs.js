@@ -3,7 +3,7 @@
 // install (that needs HTTPS and a service worker). What they do allow by hand: iOS Safari
 // (Share > Add to Home Screen) opens it full screen like an app; Android Chrome
 // (menu > Add to Home screen) makes a shortcut that opens a Chrome tab. This shows how,
-// once, on the home screen (and any time from your crew page), worded for the browser
+// once, on the home screen (and any time in Settings: web/settings.js), worded for the browser
 // you're in. The captive sign-in windows can't add icons, so there it says how to get to
 // a real browser first. Not shown once the game runs from the icon.
 const A2K="lv.a2hs";
@@ -51,24 +51,6 @@ function a2Steps(k){
 }
 function a2Opens(k){return /^(ios|iosx|sheet)$/.test(k)?"full screen, like an app":"in a Chrome tab"}
 const A2_WIFI="The icon only works while your phone is on the ship's Wi-Fi. Anywhere else it opens to a can't-connect page.";
-function a2Screen(){
-  shipTop();
-  const k=a2Kind();
-  let o=`<div class=kick><div class=lab>Home screen</div><h1>One tap to come aboard</h1><p class=dim>Put the game on your home screen and open it like an app, no browser to find first.</p></div>`;
-  o+=k?`<section><div class=lab><span>How</span><span>${a2Steps(k).split("<li>").length-1} steps</span></div>${a2Steps(k)}<dl class=facts><dt>Opens</dt><dd>${a2Opens(k).replace(/^./,(c)=>c.toUpperCase())}</dd><dt>Works</dt><dd>On the ship's Wi-Fi only</dd><dt>First time</dt><dd>Sign in once with your crew code</dd></dl><p class=fine>Away from the ship the icon opens to a can't-connect page. Join the ship's Wi-Fi and tap it again.</p></section>`
-    :`<section><p class=dim>${a2Std()?"You're already playing from your home screen.":"Open the game on your phone to put it on your home screen."}</p></section>`;
-  $("v").innerHTML=o;
-  dock("","crew");
-}
-const view_a2=view;view=function(){
-  if(route==="a2h"&&tok&&S)return a2Screen();
-  return view_a2();
-};
-const crew_a2=crew;crew=function(c){
-  crew_a2(c);
-  const out=document.querySelector("#v [data-out]");if(!out||!a2Kind())return;
-  out.insertAdjacentHTML("beforebegin",`<button class="btn sec" data-go="a2h"><span>Add to home screen</span><i>one tap</i></button>`);
-};
 const home_a2=home;home=function(){
   home_a2();
   const k=a2Kind(),top=document.querySelector("#v>.kick");

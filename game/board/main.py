@@ -51,6 +51,8 @@ def ota_hooks(lvweb, web):
     route = web.route
 
     async def ota_route(req, w):
+        if req.path == "/api/reset":
+            return await reset_ship(lvweb, web, req, w)
         if req.path.startswith("/api/ota"):
             import lvota
             try:
@@ -69,6 +71,52 @@ def ota_hooks(lvweb, web):
             return r[:2] + b"\x81\x85\x00\x01\x00\x00\x00\x00\x00\x00" + r[12:len(r) - 16 * r[7]]
         return r
     lvweb.dns_answer = dns_answer
+
+
+# "Reset this ship" (the page's Settings): the players' progress goes, the ship's setup stays.
+# Deleted from /data: log.bin (every record this ship holds: taps, votes, gifts; other ships
+# in range sync theirs back), days.bin (the days told), clock.json (the saved flight day and
+# time; the launch date in ship.json brings the day back once a phone tells the time),
+# local.bin (what phones opened and saw), and the funnel's seen-phones store once there is
+# one (add it to RESET). Sign-ins and sessions live in RAM, so the restart forgets them.
+# Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
+# codes), the installed software and ota/ (the update state and rollback copy), maint/safe.
+RESET = ("log.bin", "days.bin", "clock.json", "local.bin")
+reboot = None               # tests: called instead of machine.reset()
+
+
+async def reset_ship(lvweb, web, req, w):
+    # POST /api/reset {confirm: this ship's number} with a signed-in X-Crew-Token, else
+    # 401/403 and nothing changes. 200, then the files go and the board restarts.
+    if req.method != "POST":
+        return await lvweb.send_json(w, 404, {"err": "no such thing"})
+    if web.get_phone().who(req) is None:
+        return await lvweb.send_json(w, 401, {"err": "signed out"})
+    sh = web.ship
+    try:
+        import json
+        ok = int(json.loads(req.body or b"{}")["confirm"]) == sh.cfg["ship_id"]
+    except Exception:
+        ok = False
+    if not ok:
+        return await lvweb.send_json(w, 403, {"err": "Type this ship's number to confirm."})
+    await lvweb.send_json(w, 200, {"ok": True, "restart_ms": 1500})
+
+    async def later():
+        await asyncio.sleep(1)
+        # No await from here on: nothing can write a file back before the restart.
+        import os
+        for f in RESET:
+            try:
+                os.remove(sh.data + "/" + f)
+            except OSError:
+                pass
+        print("reset: player progress cleared, restarting")
+        if reboot:
+            return reboot()
+        import machine
+        machine.reset()
+    asyncio.create_task(later())
 
 
 async def ota_ok():

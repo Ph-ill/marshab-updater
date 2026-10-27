@@ -183,7 +183,7 @@ async def main():
     if s != 200:
         fail("after the timeouts: %d" % s)
 
-    # The Ship light switch (CREW > your page): the LED notifier on and off from a phone,
+    # The Ship light switch (Settings): the LED notifier on and off from a phone,
     # kept in ship.json (the rest of it kept too). Game firmware only, so on a plain
     # interpreter it says off; "force" lets the on path run here.
     import json as J

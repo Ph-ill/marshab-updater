@@ -157,9 +157,10 @@ try {
     await until(`S.day===${DAY + 1}&&document.querySelector('#top').textContent.includes('FD ${String(DAY + 1).padStart(2, '0')}')`, 45000, 'the next flight day after 06:00');
   }
   step('sign out');
-  // Sign out, from the crew page (your astronaut).
+  // Your crew page: only the crew (Ship light, Sign out and the rest are in Settings).
   await ev(`go("crew")`);
-  await until(`!!document.querySelector('[data-out]')`, 4000, 'crew page with the sign-out button');
+  await until(`document.querySelectorAll('[data-go^="crew/"]').length>0`, 4000, 'your crew page');
+  check(!(await ev(`!!document.querySelector('#v [data-out],#v [data-led],#v [data-go=sw],#v [data-go=a2h]')`)), 'crew page has no Settings rows');
   const crewRows = await ev(`document.querySelectorAll('[data-go^="crew/"]').length`);
   check(crewRows === 7, 'crew page lists ' + crewRows + ' crewmates');
   // Who's in Bluetooth range (S.air): a nearby ship gets the rust "Nearby" mark, the others
@@ -177,7 +178,16 @@ try {
     'crew page Bluetooth marks from a sample: ' + JSON.stringify(mk));
   // The Ship light switch (the board's LED notifier): the board answers on (game firmware)
   // or stays off (a plain interpreter); the button shows what the board said. Back off after.
-  check(await ev(`!!document.querySelector('[data-led]')`), 'Ship light button on your crew page');
+  // Settings, from the gear in the top bar (beside FD): a labelled 44 px button.
+  check(await ev(`(b=>!!b&&b.getAttribute("aria-label")==="Settings"&&b.getBoundingClientRect().width>=44&&b.parentElement.textContent.includes("FD "))(document.querySelector('#top .gear'))`), 'gear in the top bar');
+  await click('#top .gear');
+  await until(`route==="set"&&!!document.querySelector('#set-rst')`, 4000, 'Settings open');
+  check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),"set-out","set-rst"].join()`)), 'Settings sections in order, Reset last');
+  // Reset this ship (main.py reset_ship on the board): refused without a session, without the
+  // ship's number and with another; still signed in after (the success is tests/test_reset.py).
+  const rst = JSON.parse(await ev(`(async()=>{const f=(b,t)=>fetch("/api/reset",{method:"POST",headers:t?{"X-Crew-Token":tok}:{},body:b}).then((r)=>r.status);const n=S.here+1;return JSON.stringify([await f(JSON.stringify({confirm:n}),0),await f("{}",1),await f(JSON.stringify({confirm:n%8+1}),1),await fetch("/api/state",{headers:{"X-Crew-Token":tok}}).then((r)=>r.status)])})()`));
+  check(rst.join() === '401,403,403,200', 'reset refused without a session / confirm / the right number: ' + rst.join());
+  check(await ev(`!!document.querySelector('[data-led]')`), 'Ship light button in Settings');
   await click('[data-led]');
   await until(`typeof S.led==="boolean"&&!document.querySelector('[data-led]').disabled&&document.querySelector('[data-led]').textContent.includes("Ship light: "+(S.led?"on":"off"))`, 4000, 'Ship light answered');
   if (await ev('S.led')) {
@@ -191,8 +201,8 @@ try {
   await click(`[data-who="${C}"]`);
   for (const k of '1234') await click(`[data-key="${k}"]`);
   await until(`tok!==""&&route==='home'&&!tutDue&&!document.querySelector('.tut')`, 15000, 'second sign-in goes straight Home');
-  await ev(`go("crew")`);
-  await until(`!!document.querySelector('[data-out]')`, 4000, 'sign-out button');
+  await click('#top .gear');
+  await until(`!!document.querySelector('[data-out]')`, 4000, 'sign-out button in Settings');
   await click('[data-out]');
   await until(`tok===""`, 4000, 'signed out again');
   step('pre-launch');
@@ -203,7 +213,7 @@ try {
   await ev('(PRE=null,hello(),1)');
   // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404).
   // (and /api/me's 401 when the page opens signed out).
-  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me'));
+  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)));
   check(bad.length === 0, 'HTTP errors: ' + JSON.stringify(bad));
   check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship about updates (web/ota.js)');
   check(wsTried, 'the page tried the WebSocket and fell back to polling');

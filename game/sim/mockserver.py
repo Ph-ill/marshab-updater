@@ -106,6 +106,7 @@ class Game:
         self.lock = threading.RLock()   # gift() checks, then taps
         self.led = False          # the Ship light switch (POST /api/led)
         self.bat = None           # the board's battery, [percent, mV, charging] (bat=72,3950,0)
+        self.resets = 0           # POST /api/reset that went through (the board restarts)
         self.ota = None           # over-the-air updates (ota=0.2.0[,back]: sim/mockota.py)
         self.changed = threading.Condition()
         self.version = 0
@@ -418,6 +419,23 @@ class H(BaseHTTPRequestHandler):
         you = self.who()
         if you is None:
             return self.send(401, {"err": "signed out"})
+        if u.path == "/api/reset":   # board/main.py reset_ship: the confirm is this ship's number
+            try:
+                good = int(b["confirm"]) == you + 1
+            except (KeyError, TypeError, ValueError):
+                good = False
+            if not good:
+                return self.send(403, {"err": "Type this ship's number to confirm."})
+            with G.lock:          # progress gone, sign-ins forgotten (the restart), codes kept
+                G.tokens.clear()
+                G.book.phones = []
+                G.book.seen = [False] * N
+                G.mine = []
+                G.cache = {}
+                G.local = EN.Local(G.pack.season)
+                G.resets += 1
+                G.bump()
+            return self.send(200, {"ok": True, "restart_ms": 1500})
         d = self.day(q)
         self.minute(q)
         try:

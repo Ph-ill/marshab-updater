@@ -194,6 +194,7 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 /*BATT_CSS*/
 /*OTA_CSS*/
 /*A2HS_CSS*/
+/*SET_CSS*/
 .off{display:flex;align-items:center;gap:var(--s2);min-height:44px;padding:var(--s1) 0;font:600 13px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule)}
 .off::before{content:"";flex:none;width:8px;height:8px;background:var(--rust);animation:blink 2s steps(1) infinite}
 .off button{margin-left:auto;min-height:44px;padding:0 0 0 var(--s4);text-decoration:underline;text-underline-offset:3px}
@@ -238,6 +239,7 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 /*BATT_JS*/
 /*OTA_JS*/
 /*A2HS_JS*/
+/*SET_JS*/
 const N=8;
 const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];
@@ -501,7 +503,7 @@ function crew(c){
   const mentions=[];
   for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if((mine?x.me:x.s.includes(nm(c)))&&mentions.length<3)mentions.push([d,x.s]);
   o+=`<section><div class=lab><span>Lately</span></div><ul class=log>${mentions.map(([d,s])=>`<li><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(s)}</li>`).join("")||"<li class=fold>Nothing logged yet.</li>"}</ul></section>`;
-  if(mine)o+=`<section>${EG?"":`<button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button>`}${S.led!=null?`<button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>the board's LED</i></button>`:""}<button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
+  if(mine&&!EG)o+=`<section><button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button></section>`;
   $("v").innerHTML=o;
   dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to you</span><i>←</i></button>`,"crew");
 }
@@ -702,7 +704,7 @@ function TUT(){
     ["Watch duty","Keeping watch",`Anything you send on a flight day counts as a watch: a plan, a ballot, an answer, a gift or an ask. Days in a row make a run.`,tFig(5),
       [["Grace days","Miss a day and it's covered, up to twice a flight week. Today never counts against you."],["Badges",`Awarded at ${EG.badges.map((b)=>b[0]).join(", ").replace(/, (\d+)$/," and $1")} days.`],["Broken run","A new run starts with your next tap. No harm done."]]]);
   if(S.led!=null)st.push(
-    ["Ship light","A light on the ship",`Your ship's light can glow, softly pulsing, to say something's waiting, no phone needed. It's off until someone turns it on: CREW › Ship light.`,"",
+    ["Ship light","A light on the ship",`Your ship's light can glow, softly pulsing, to say something's waiting, no phone needed. It's off until someone turns it on: Settings (the gear, top right) › Ship light.`,"",
       [["One slow pulse","Every few seconds: today's page hasn't been opened here yet."],["Double pulse","A crewmate's gift has reached this ship."],["Three quick","A new flight day has begun."],["Off again","Opening the game here clears it. Dark at night, 22:00 to 07:00."]]]);
   st.push(["The log","Missed a few days?",`No problem. The log reads newest page first, and pages new since your last visit carry a rust square. Catch up whenever you like.`,"",
     [["While away","You carry on in character, and votes close with whoever voted."],["Late signals","Today's and yesterday's pages can still change as word arrives from other ships. That's normal."],["Filed under",`${file} › How to play, for when you need it again.`]]]);
