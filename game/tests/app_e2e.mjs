@@ -154,7 +154,7 @@ try {
     if (await click('[data-eng^="open:"]')) await until(`location.hash.includes('drop')||route.startsWith('drop')`, 4000, 'drop opened');
   }
   step('poll');
-  // A crewmate on another phone taps; this phone sees it by polling /api/v (no WebSocket on the board).
+  // A crewmate on another phone taps; this phone sees it by polling /api/bat ({v, bat}, every 5 s; no WebSocket on the board).
   const other = (C + 1) % 7 === 5 ? (C + 2) % 7 : (C + 1) % 7;
   const H = { 'User-Agent': 'other-phone', 'Content-Type': 'application/json' };
   const lg = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H, body: JSON.stringify({ crew: other, pin: '1234' }) })).json();
@@ -162,11 +162,12 @@ try {
   const r = await fetch(BASE + '/api/act', { method: 'POST', headers: { ...H, 'X-Crew-Token': lg.token }, body: JSON.stringify({ act: 0, param: 0, tgt: 0 }) });
   check(r.status === 200, 'other phone act: ' + r.status);
   check(await ev('net') === 'poll', 'no WebSocket on the board: the page should be polling');
-  await until(`S.v!==${vb}`, 20000, 'the poll picked up a crewmate\'s tap');
+  check(await ev(`!document.querySelector('.off')`), 'polling is the normal mode: no banner');
+  await until(`S.v!==${vb}`, 9000, 'the poll picked up a crewmate\'s tap');
   if (DAY < 42) {
     step('06:00');
     // The phone's clock crosses 06:00: the ship moves to the next flight day and the page,
-    // polling /api/v every 15 s, shows it (and the new day's story) without a reload.
+    // polling /api/bat ({v, bat}) every 5 s, shows it (and the new day's story) without a reload.
     await ev('go("home")');
     await ev('__shift(12*60000)');
     await until(`S.day===${DAY + 1}&&document.querySelector('#top').textContent.includes('FD ${String(DAY + 1).padStart(2, '0')}')`, 45000, 'the next flight day after 06:00');

@@ -319,7 +319,7 @@ class H(BaseHTTPRequestHandler):
             if "set" in q:          # mock only: /api/bat?set=PERCENT,MV,CHARGING (1/0)
                 p, mv, c = q["set"][0].split(",")
                 G.bat = [int(p), int(mv), c == "1"]
-            return self.send(200, {"bat": G.bat})
+            return self.send(200, {"v": G.version, "bat": G.bat})
         if u.path == "/api/crew":
             return self.send(200, {"set": [G.book.is_set(c) for c in range(N)], "day": self.day(q)})
         if u.path == "/api/me":     # remembered phone: sign straight back in
