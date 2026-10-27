@@ -9,7 +9,8 @@ RESULT come from the board side, with the 80,000 B cap at 32-bit.
 version, signed with a test key) in pieces while the two play, the way web/ota.js does:
 a refused envelope first, a piece at a wrong offset, then everything; the board checks
 the signature and each file, and the heap peak includes all of it. Then it cancels
-(applying restarts the board: tests/test_ota.py covers that)."""
+(applying restarts the board: tests/test_ota.py covers that). The home-screen funnel's
+/api/hello (board/lvfunnel.py, main.py's ota_route) is asked three times meanwhile."""
 import asyncio
 import json
 import os
@@ -129,9 +130,27 @@ async def ota_upload(req, env, bad, files, fail, log):
         len(files), sum(len(x) for x in files), n))
 
 
+async def funnel_hello(req, fail, log):
+    """What web/funnel.js does as a phone opens the page: /api/hello (board/lvfunnel.py,
+    loaded and dropped per request): a Safari tab, then an icon launch, then a tab again."""
+    seen = []
+    for q in ("ctx=ios", "ctx=standalone&m=icon", "ctx=ios"):
+        s, _, b = await req("GET", "/api/hello?" + q, None, {"X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"})
+        if s != 200:
+            return fail("funnel: hello %s: %d %s" % (q, s, b))
+        seen.append(json.loads(b).get("installed"))
+    if seen != [0, 1, 1]:
+        return fail("funnel: installed after each hello %s" % seen)
+    log("funnel: a tab, an icon launch, a tab again: the ship remembered the icon")
+
+
 def main(argv):
     mp, mode = argv[0], argv[1:]
     os.makedirs(DATA, exist_ok=True)
+    try:
+        os.remove(DATA + "/funnel.bin")      # the phones the last run's ship remembered
+    except OSError:
+        pass
     ota = ota_setup() if "--ota" in mode else None
     with open(DATA + "/crew.json", "w") as f:
         json.dump(K.make_config(["1234"] * 7 + [None], b"bench-salt-16-by"), f)
@@ -155,6 +174,7 @@ def main(argv):
                 F.session(req, "heapB", 6, "1234", fails.append, assets, log=print)]
         if ota:
             jobs.append(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print))
+            jobs.append(funnel_hello(req, fails.append, print))
         return await asyncio.gather(*jobs)
     try:
         asyncio.run(phones())

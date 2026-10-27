@@ -17,6 +17,9 @@
 # (web/shots_ota.sh, needs playwright-core: PW=...); the home-screen card for each phone
 # browser (web/shots_a2hs.sh, the same); Settings and Reset this ship (board/main.py
 # reset_ship: tests/test_reset.py on all of them; web/shots_settings.sh against the mock).
+# The home-screen funnel (board/lvfunnel.py, the ship's memory of which phones opened the
+# game from the icon: tests/test_funnel.py on all of them; its /api/hello in the --ota heap
+# run; web/funnel.js in tests/app_e2e.mjs and web/shots_funnel.sh against the board's server).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
@@ -49,6 +52,7 @@ python3 tests/test_batt.py
 python3 tests/test_ota.py
 python3 tests/test_ota_release.py
 python3 tests/test_reset.py
+python3 tests/test_funnel.py
 python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
@@ -64,6 +68,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_ota.py; fi
   "$MP" tests/test_reset.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_reset.py; fi
+  "$MP" tests/test_funnel.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_funnel.py; fi
   # every ship id boots with a launch date (ship 2, 2026-10-25)
   "$MP" -X heapsize=512k tests/test_ships8.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi
@@ -92,7 +98,8 @@ if [ -n "$MP" ]; then
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led
       # ...and a UPS-Lite battery read while idle (board/lvbatt.py loaded and dropped each time).
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat
-      # ...and a third phone uploading a signed update meanwhile (board/lvota.py, lvsig.py).
+      # ...and a third phone uploading a signed update meanwhile (board/lvota.py, lvsig.py),
+      # and the home-screen funnel's /api/hello (board/lvfunnel.py, loaded and dropped).
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota
     fi
     # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
@@ -118,6 +125,7 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_ota.sh "$O/ota"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_a2hs.sh "$O/a2hs"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_settings.sh "$O/settings"; rm -rf "$O"
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_funnel.sh "$O/funnel"; rm -rf "$O"
   else
     echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi

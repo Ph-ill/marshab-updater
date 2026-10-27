@@ -7,7 +7,11 @@
 // WebSocket), sign out, and a second sign-in that skips the briefing.
 // The ship runs on the calendar (board/lvcal.py): launch date DAY days before a phone date in
 // November at 05:50 CST, so it's flight day DAY; then the phone's clock jumps past 06:00 and
-// the page must show DAY+1 by its next poll. Last, the pre-launch countdown screen.
+// the page must show DAY+1 by its next poll. Then the pre-launch countdown screen. The phone is
+// iOS 26 Safari, so the first visit opens on the home-screen guide (web/funnel.js, board/lvfunnel.py)
+// and plays after "Play in this browser this time"; last, the funnel against the ship's memory
+// of this phone: an icon launch marks it, the next tab says "You have the icon", the captive
+// sheet sends it to the icon, Reset this ship forgets it, and an Android icon launch (?src=icon).
 // Fails on page exceptions, console errors and unexpected HTTP errors.
 //   node --experimental-websocket tests/app_e2e.mjs [day]          (from game/)
 //   BOARD_PY="/path/to/micropython -X heapsize=1m" ... runs the server on MicroPython
@@ -56,9 +60,20 @@ try {
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `(()=>{const r=Date.now.bind(Date);let o=${T0}-r();Date.now=()=>r()+o;` +
     `Date.prototype.getTimezoneOffset=function(){return ${-TZ}};window.__shift=(m)=>{o+=m}})()` });
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
-  await send('Network.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 e2e' });
+  const UA = {
+    ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1 e2e',
+    sheet: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 e2e',
+    and: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36 e2e',
+  };
+  await send('Network.setUserAgentOverride', { userAgent: UA.ios });
   step('navigate');
   await send('Page.navigate', { url: BASE + '/' });
+  // A first visit in Safari: the ship hasn't seen this phone open the game from the icon, so
+  // the home-screen guide (web/funnel.js) comes first; one tap plays in this tab instead.
+  await until(`typeof FN==='object'&&FN.scr==='ADD'&&/Get to Mars/.test(document.querySelector('#v h1')?.textContent||'')`, 15000, 'first browser visit: the home-screen guide');
+  check(http.some(([s, p]) => s === 200 && p === '/api/hello'), 'the page asked the ship about this phone (/api/hello)');
+  check(!(await ev(`!!document.querySelector('[data-who]')`)), 'the guide comes before the crew list');
+  await click('[data-fn=here]');
   await until(`document.querySelectorAll('[data-who]').length===8`, 15000, 'the crew list');
   const C = crew;
   step('portraits');
@@ -220,7 +235,7 @@ try {
   // The home screen (web/a2hs.js): the manifest and icon the page's <head> names, from the ship.
   const mf = await fetch(BASE + '/app.webmanifest'), ic = await fetch(BASE + '/icon.png');
   const mj = mf.status === 200 ? await mf.json() : {}, ib = Buffer.from(await ic.arrayBuffer());
-  check(/manifest\+json/.test(mf.headers.get('content-type')) && mj.name === 'The Long Voyage' && mj.short_name === 'The Long Voyage' && mj.start_url === '/' && mj.icons[0].src === '/icon.png', 'manifest: ' + mf.status + ' ' + JSON.stringify(mj));
+  check(/manifest\+json/.test(mf.headers.get('content-type')) && mj.name === 'The Long Voyage' && mj.short_name === 'The Long Voyage' && mj.start_url === '/?src=icon' && mj.icons[0].src === '/icon.png', 'manifest: ' + mf.status + ' ' + JSON.stringify(mj));
   check(ic.status === 200 && ic.headers.get('content-type') === 'image/png' && ib.readUInt32BE(16) === 192 && ib.readUInt32BE(20) === 192, 'icon: ' + ic.status + ' ' + ib.length + ' B');
   // The iOS launch screens (web/launch.py): one link per iPhone size, each served from flash by
   // main.py as a plain PNG of exactly that size. Any other /ls/ name is not a file: a missing
@@ -245,9 +260,59 @@ try {
   // leaves out the manifest and Apple's web-app tags (they give the icon a too-short window
   // there); web/shots_a2hs.mjs checks they're added on iOS 18, Android and computers.
   check(['icon', 'apple-touch-icon'].every((x) => hd.includes(x)) && !hd.includes('manifest') && !hd.some((x) => /^apple-mobile-web-app/.test(x)), 'home-screen tags (iOS 26): ' + JSON.stringify(hd));
+  step('funnel');
+  // The home-screen funnel against the ship's memory of this phone (board/lvfunnel.py, by IP).
+  // Each visit is a new tab as far as the page knows (sessionStorage cleared).
+  const hellos = () => http.filter(([s, p]) => s === 200 && p === '/api/hello').length;
+  const visit = async (url, ua, extra = '') => {
+    await ev(`(sessionStorage.clear(),localStorage.clear(),1)`);
+    await send('Network.setUserAgentOverride', { userAgent: ua });
+    let sid = null;
+    if (extra) sid = (await send('Page.addScriptToEvaluateOnNewDocument', { source: extra })).result.identifier;
+    const h0 = hellos();
+    await send('Page.navigate', { url: BASE + url });
+    await until(`document.readyState==='complete'`, 8000, 'page load ' + url);
+    await until(`typeof FN==='object'`, 8000, 'funnel loaded ' + url);
+    if (sid) await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: sid });
+    return h0;
+  };
+  const scr = () => ev(`FN.scr+"|"+(document.querySelector('#v h1')?.textContent||'')`);
+  // 1. Opened from the icon on iOS (navigator.standalone): straight to the game, and the ship
+  // now knows this phone has the icon.
+  let h0 = await visit('/', UA.sheet, `Object.defineProperty(navigator,'standalone',{get:()=>true})`);
+  await until(`document.querySelectorAll('[data-who]').length===8&&!document.querySelector('.fn')`, 15000, 'icon launch: the game, no guide');
+  for (let t = 0; t < 40 && hellos() === h0; t++) await sleep(100);
+  check(hellos() > h0, 'icon launch told the ship (/api/hello)');
+  // 2. The next visit in a Safari tab: "You have the icon", with Play here anyway and the guide.
+  await visit('/', UA.ios);
+  await until(`FN.scr==='OPEN'`, 8000, 'browser visit after the icon: You have the icon');
+  check(/You have the icon/.test(await scr()) && await ev(`!!document.querySelector('[data-fn=play]')&&!!document.querySelector('[data-fn=add]')`), 'You have the icon: ' + await scr());
+  await click('[data-fn=play]');
+  await until(`document.querySelectorAll('[data-who]').length===8`, 8000, 'Play here anyway: the game');
+  // 3. The captive sheet on that phone: open the game from your icon (no game in the sheet).
+  await visit('/', UA.sheet);
+  await until(`FN.scr==='LEAVE_KNOWN'`, 8000, 'captive sheet, phone with the icon');
+  check(/from your icon/.test(await scr()) && !(await ev(`!!document.querySelector('[data-who],[data-fn=here]')`)), 'captive sheet, phone with the icon: ' + await scr());
+  // 4. Reset this ship forgets it (funnel.bin is in main.py RESET).
+  const lr = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H, body: JSON.stringify({ crew: C, pin: '1234' }) })).json();
+  const rr = await fetch(BASE + '/api/reset', { method: 'POST', headers: { ...H, 'X-Crew-Token': lr.token }, body: JSON.stringify({ confirm: st.here + 1 }) });
+  check(rr.status === 200, 'reset: ' + rr.status);
+  await sleep(1600);   // main.py removes the files 1 s after its answer, then restarts
+  await visit('/', UA.sheet);
+  await until(`FN.scr==='LEAVE'`, 8000, 'captive sheet after reset: route to Safari');
+  check(/Open the game in Safari/.test(await scr()) && /Use Without Internet/.test(await ev(`document.querySelector('.fn').textContent`)), 'captive sheet routes to Safari: ' + await scr());
+  await visit('/', UA.ios);
+  await until(`FN.scr==='ADD'`, 8000, 'Safari after reset: the guide again');
+  // 5. Android: the icon opens /?src=icon (the manifest's start_url): a launch, the marker
+  // taken off the address; then a Chrome tab says "You have the icon".
+  await visit('/?src=icon', UA.and);
+  await until(`document.querySelectorAll('[data-who]').length===8&&!document.querySelector('.fn')`, 15000, 'Android icon launch: the game');
+  check(await ev(`location.search===''`), 'Android icon launch: the marker is taken off the address');
+  await visit('/', UA.and);
+  await until(`FN.scr==='OPEN'`, 8000, 'Chrome tab after the Android icon: You have the icon');
   check(problems.length === 0, 'page problems: ' + JSON.stringify(problems));
   console.log(`app e2e on ${py.split('/').pop()}, day ${DAY}, crew ${C}: ${http.length} requests, ` +
-    `${voted ? 'voted card ' + voted[0] : 'nothing to vote on'}, gift sent${drop ? ', drop ' + drop : ''}, poll saw a crewmate, briefing ${cards} cards, 8 portraits${DAY < 42 ? ', FD ' + DAY + ' -> ' + (DAY + 1) + ' at 06:00' : ''}, pre-launch screen, signed out: ${fails.length ? 'FAIL' : 'ok'}`);
+    `${voted ? 'voted card ' + voted[0] : 'nothing to vote on'}, gift sent${drop ? ', drop ' + drop : ''}, poll saw a crewmate, briefing ${cards} cards, 8 portraits${DAY < 42 ? ', FD ' + DAY + ' -> ' + (DAY + 1) + ' at 06:00' : ''}, pre-launch screen, signed out, funnel: ${fails.length ? 'FAIL' : 'ok'}`);
   sock.close();
   done(fails.length ? 1 : 0);
 } catch (e) { console.log('FAIL', e.message); done(1); }
