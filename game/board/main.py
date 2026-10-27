@@ -8,6 +8,11 @@
 #   * /data/safe (an empty file): skip the game on every boot until it is removed
 # Ctrl-C works later too (any point in the Python code); the window is for a board whose
 # game would otherwise lock up straight away.
+# Over-the-air updates (lvota.py, lvboot.py): /api/ota* goes to lvota, loaded per request;
+# the captive DNS leaves GitHub's names unanswered so a phone with another route can still
+# fetch an update; and after an update this file reports in (lvota.good()) once the game
+# has run OTA_OK_MS, or boot.py's deadline rolls the update back. Every release's main.py
+# has to keep that call.
 import os
 import time
 
@@ -20,6 +25,7 @@ import lvship
 
 
 BOOT_WINDOW_MS = 2000
+OTA_OK_MS = 30000
 
 
 def flag(path):
@@ -28,6 +34,39 @@ def flag(path):
         return True
     except OSError:
         return False
+
+
+def ota_hooks(lvweb, web):
+    lvweb.MAX_BODY = 1024                       # update pieces (lvota.CHUNK)
+    route = web.route
+
+    async def ota_route(req, w):
+        if req.path.startswith("/api/ota"):
+            import lvota
+            try:
+                return await lvota.api(web, req, w)
+            finally:
+                lvship.drop("lvota")
+        return await route(req, w)
+    web.route = ota_route
+    answer = lvweb.dns_answer
+
+    def dns_answer(q, ip):
+        # REFUSED for GitHub (where phones fetch updates), so no phone caches this board
+        # as github.com; every other name is still the board (the captive portal).
+        r = answer(q, ip)
+        if r and (b"\x06github\x03com\x00" in q or b"\x11githubusercontent\x03com\x00" in q):
+            return r[:2] + b"\x81\x85\x00\x01\x00\x00\x00\x00\x00\x00" + r[12:len(r) - 16 * r[7]]
+        return r
+    lvweb.dns_answer = dns_answer
+
+
+async def ota_ok():
+    await lvship.sleep_ms(OTA_OK_MS)
+    import lvota
+    if lvota.good():
+        print("ota: update kept")
+    lvship.drop("lvota")
 
 
 def main():
@@ -76,6 +115,7 @@ def main():
         if game:
             import lvweb
             web = lvweb.Server(ship, ip=ip)
+            ota_hooks(lvweb, web)
             await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
             asyncio.create_task(web.tick())
             if cfg["captive_dns"]:
@@ -85,6 +125,8 @@ def main():
             import lvstat
             await asyncio.start_server(lvstat.server(ship), "0.0.0.0", cfg["http_port"])
             print("web: status only on http://%s/ (the phone game needs the game firmware)" % ip)
+        if flag("ota/state.json"):
+            asyncio.create_task(ota_ok())
         await ship.loop()
     asyncio.run(run())
 

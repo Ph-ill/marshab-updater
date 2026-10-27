@@ -34,6 +34,10 @@ ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 PHONE = "--phone" in sys.argv
 LED = "--led" in sys.argv
 BAT = "--bat" in sys.argv
+# --ota (with --phone): main.py's over-the-air hooks on the server, and lvota from
+# build/heap-ota-mod/ (tests/phone_heap.py writes it: board/lvota.py with a test key and its
+# staging under build/heap-ota/), so a phone can upload a signed update while the others play.
+OTA = "--ota" in sys.argv
 if LED or BAT:
     sys.path.insert(0, "tests/fakeboard")
     import fakeboard
@@ -56,6 +60,8 @@ else:
     sys.path.append("board")
     sys.path.append(".")
     ROOT = ARGS[0].rstrip("/") + "/" if ARGS else "build/"
+if OTA:
+    sys.path.insert(0, "build/heap-ota-mod")
 DATA = "build/heap-data"         # the board's /data: log.bin, days.bin (each day's story)
 import os                         # noqa: E402
 try:
@@ -168,6 +174,14 @@ async def client(port):
 if WEB:
     web = lvweb.Server(ship, root=ROOT, say=lambda s: None)
     lvweb.probe = sample
+    if OTA:
+        # main.py's ota_hooks() as it is (main.py itself starts a board, so only that part)
+        src = open("board/main.py").read()
+        src = src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")]
+        g = {"lvship": lvship, "asyncio": asyncio}
+        exec(src, g)
+        g["ota_hooks"](lvweb, web)
+        src = g = None
     handler = web.handle
 else:
     handler = lvstat.server(ship)

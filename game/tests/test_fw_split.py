@@ -105,9 +105,9 @@ class Split(unittest.TestCase):
         self.assertEqual(calls, [("include", "$(BOARD_DIR)/manifest.py"), ("package", "lv"),
                                  ("module", "lvfrozen.py"), ("module", "lvpackdata.py")]
                          + [("module", b + ".py") for b in G.BOARD])
-        # every board module but main.py (the boot entry) is frozen
+        # every board module but main.py and boot.py (the boot entries) is frozen
         self.assertEqual(sorted(G.BOARD), sorted(f[:-3] for f in os.listdir(os.path.join(ROOT, "board"))
-                                                 if f.endswith(".py") and f != "main.py"))
+                                                 if f.endswith(".py") and f not in ("main.py", "boot.py")))
         subprocess.run([sys.executable, "tools/fw/gen_lvfrozen.py"], cwd=ROOT, check=True,
                        stdout=subprocess.DEVNULL)
         g = {}
@@ -151,8 +151,10 @@ class Split(unittest.TestCase):
             cores = sorted(f for f in os.listdir(os.path.join(ROOT, "tools", "fw", "cores")) if f.endswith(".json"))
             with open(os.path.join(ROOT, "tools", "fw", "cores", cores[-1])) as f:
                 core = json.load(f)
-            self.assertEqual(CM.changed_files(core, d), ["lvweb.mpy", "pack.bin"])
-            self.assertEqual(CM.changed_files(core), [], "board/ and the pack match the newest core")
+            # board modules newer than the newest core (the OTA ones after 0.2.0) ship as files too
+            new = [b + ".mpy" for b in G.BOARD if b not in core["board"]]
+            self.assertEqual(CM.changed_files(core, d), ["lvweb.mpy"] + new + ["pack.bin"])
+            self.assertEqual(CM.changed_files(core), new, "otherwise board/ and the pack match the newest core")
             old = {"id": "lv-core", "version": "0.1.0", "core": "f1b383588e79", "modules": core["modules"],
                    "sha256": {k: v for k, v in core["sha256"].items() if k.startswith("lv")}}
             self.assertEqual(CM.changed_files(old), [b + ".mpy" for b in G.BOARD] + ["pack.bin"],

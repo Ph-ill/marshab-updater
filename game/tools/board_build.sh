@@ -12,7 +12,7 @@
 #                    lvphone, lvstat, lvwifi, selftest), the pack, engage.bin, www/*.gz.
 #   build/board-fw/  the game firmware (tools/build_firmware.sh): only what the flashed
 #                    core doesn't already have frozen in, i.e. what a release on it ships:
-#                    main.py, engage.bin and the phone page www/*.gz always; a board module
+#                    main.py, boot.py, engage.bin and the phone page www/*.gz always; a board module
 #                    as <name>.mpy and the pack as pack.bin only if they changed since that
 #                    core (lv-core 0.1.0 froze neither: then all of them); a changed core
 #                    module as lvx/<name>.mpy (lv/__init__.py). Files are found before the
@@ -50,12 +50,13 @@ done
 for f in $GLUE; do
   "$MPY_CROSS" $MPY_OPT -o "$OUT/$f.mpy" "board/$f.py"
 done
-cp board/main.py "$OUT/main.py"      # the boot file stays .py (it is tiny)
+cp board/main.py "$OUT/main.py"      # the boot files stay .py (they are tiny)
+cp board/boot.py "$OUT/boot.py"
 cp build/pack.bin build/engage.bin "$OUT/"
 cp build/app.html.gz build/text.json.gz build/engage.json.gz "$OUT/www/"
 # The game firmware's set: what the frozen core the boards run doesn't have as it is now.
 FROZEN_CORE="${FROZEN_CORE:-$(ls tools/fw/cores/lv-core-*.json 2>/dev/null | sort -V | tail -1)}"
-cp "$OUT/main.py" "$OUT/engage.bin" "$FW/"
+cp "$OUT/main.py" "$OUT/boot.py" "$OUT/engage.bin" "$FW/"
 cp "$OUT"/www/*.gz "$FW/www/"
 LVX=""
 if [ -n "$FROZEN_CORE" ]; then
@@ -97,7 +98,8 @@ SRC="$OUT"
 [ "$LAYOUT" = fw ] && SRC="$FW"
 # Stop whatever is running, clear old copies (a .py next to a .mpy would win; a /lv next to
 # the game firmware hides its frozen core; a board module or pack.bin the game firmware has
-# frozen in would replace the frozen one), copy, reset. /data is never touched.
+# frozen in would replace the frozen one; an over-the-air update in progress, /ota, would
+# be swapped in or rolled back over these at the next boot), copy, reset. /data is never touched.
 $MPREMOTE $C exec "
 import os
 def rm(p):
@@ -110,7 +112,7 @@ def rm(p):
             os.remove(p)
     except OSError:
         pass
-for p in ['/lv', '/lvx', '/www', '/pack.bin'] + ['/%s.%s' % (m, e) for m in '$GLUE'.split() for e in ('py', 'mpy')]:
+for p in ['/lv', '/lvx', '/www', '/pack.bin', '/ota'] + ['/%s.%s' % (m, e) for m in '$GLUE'.split() for e in ('py', 'mpy')]:
     rm(p)
 for d in ('/data', '/www'$( [ "$SRC" = "$OUT" ] && echo ", '/lv'")):
     try:
@@ -120,7 +122,7 @@ for d in ('/data', '/www'$( [ "$SRC" = "$OUT" ] && echo ", '/lv'")):
 "
 [ "$SRC" = "$OUT" ] && $MPREMOTE $C cp "$OUT"/lv/*.mpy :lv/
 $MPREMOTE $C cp "$SRC"/www/*.gz :www/
-$MPREMOTE $C cp $(ls "$SRC"/*.mpy "$SRC"/pack.bin 2>/dev/null) "$SRC"/engage.bin "$SRC"/main.py :
+$MPREMOTE $C cp $(ls "$SRC"/*.mpy "$SRC"/pack.bin 2>/dev/null) "$SRC"/engage.bin "$SRC"/boot.py "$SRC"/main.py :
 if [ -d "$SRC/lvx" ]; then
   $MPREMOTE $C mkdir :lvx || true
   $MPREMOTE $C cp "$SRC"/lvx/*.mpy :lvx/

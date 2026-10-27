@@ -33,3 +33,7 @@ module("lvphone.py", base_path="../../board", opt=3)
 module("lvstat.py", base_path="../../board", opt=3)
 module("lvwifi.py", base_path="../../board", opt=3)
 module("selftest.py", base_path="../../board", opt=3)
+# Over-the-air updates (since the core after 0.2.0; on 0.2.0 releases ship them as .mpy files).
+module("lvota.py", base_path="../../board", opt=3)
+module("lvsig.py", base_path="../../board", opt=3)
+module("lvboot.py", base_path="../../board", opt=3)

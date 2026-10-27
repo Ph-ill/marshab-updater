@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Offline check of everything the updater serves: the release list (firmware/index.json),
 every release manifest (embedded sizes + sha256, safe paths, nothing device-local shipped),
+the over-the-air envelope of a signed release (signature against the ship's keys in
+game/board/lvota.py, manifest = the release's files),
 the MicroPython runtime list (firmware/runtime.json) and the served tree as a whole.
 Exit 1 on any problem.
 
@@ -81,6 +83,8 @@ def check_release(path, version):
     if rel.get("payload_bytes") != total:
         err(f"{name}: payload_bytes {rel.get('payload_bytes')} != {total}")
     part = check_frozen(rel, paths, name)
+    if rel.get("ota") is not None:
+        part += check_ota(rel, name)
     notes.append(f"{name}: {len(paths)} files, {total} B{part}")
     return rel
 
@@ -146,6 +150,56 @@ def check_frozen(rel, paths, name):
     return f", partial: {fz['id']} core {fz['requires']}, overrides [{', '.join(sorted(names))}]{extra}"
 
 
+def ota_keys():
+    """KEYS from game/board/lvota.py (what the ships trust), read without importing it."""
+    import ast
+    src = (ROOT / "game/board/lvota.py").read_text() if (ROOT / "game/board/lvota.py").is_file() else \
+        (Path(__file__).resolve().parents[1] / "game/board/lvota.py").read_text()
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "KEYS":
+            return {k.value: bytes.fromhex(v.args[0].value) for k, v in zip(node.value.keys, node.value.values)}
+    return {}
+
+
+def ota_protected(p):
+    top = p.split("/")[0]
+    return top in ("data", "ota", "boot.py") or top.startswith("lvboot.")
+
+
+def check_ota(rel, name):
+    """The signed envelope game/tools/ota/sign_release.py adds: a ship would take it."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "game/board"))
+    import lvsig
+    env = rel["ota"]
+    if not isinstance(env, dict) or not all(isinstance(env.get(k), str) for k in ("m", "sig", "kid")):
+        err(f"{name}: ota must be {{m, sig, kid}} strings")
+        return ""
+    pub = ota_keys().get(env["kid"])
+    if pub is None:
+        err(f"{name}: ota key {env['kid']} is not one the ships trust (game/board/lvota.py KEYS)")
+        return ""
+    try:
+        sig = base64.b64decode(env["sig"], validate=True)
+    except Exception:  # noqa: BLE001
+        sig = b""
+    if not lvsig.verify(pub, b"LV-OTA-1\n" + hashlib.sha256(env["m"].encode()).digest(), sig):
+        err(f"{name}: ota signature doesn't verify")
+        return ""
+    m = json.loads(env["m"])
+    want = {"schema": 1, "project": "LongVoyage", "version": rel.get("version"),
+            "channel": rel.get("channel"), "core": (rel.get("frozen") or {}).get("requires")}
+    for k, v in want.items():
+        if m.get(k) != v:
+            err(f"{name}: ota manifest {k} {m.get(k)!r} != {v!r}")
+    files = [[f["path"], f["size"], f["sha256"]] for f in rel.get("files", []) if not ota_protected(f["path"])]
+    if m.get("files") != files:
+        err(f"{name}: ota manifest files don't match the release's files")
+    for p in m.get("delete") or []:
+        if not SAFE.match(p) or ota_protected(p):
+            err(f"{name}: ota deletes {p!r}")
+    return f", ota signed {env['kid']}"
+
+
 def check_index():
     idx = load(ROOT / "firmware/index.json")
     if idx is None:
@@ -174,6 +228,9 @@ def check_index():
             want = ((rel or {}).get("frozen") or {}).get("requires")
             if rel is not None and r.get("frozen") != want:
                 err(f"index.json {r.get('version')}: frozen {r.get('frozen')} != release {want}")
+            kid = ((rel or {}).get("ota") or {}).get("kid")
+            if rel is not None and r.get("ota") != kid:
+                err(f"index.json {r.get('version')}: ota {r.get('ota')} != release's key {kid}")
     notes.append(f"index.json: {len(versions)} release(s), latest {idx.get('latest')}")
 
 

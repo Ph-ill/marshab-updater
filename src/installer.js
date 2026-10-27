@@ -110,7 +110,9 @@ export async function installRelease(device, releaseManifest, { clean = false, o
     onLog(`clean install: removing old files (keeping ${preserve.join(', ')})`);
     onLog(await wipeExcept(device, preserve));
   }
-  const gone = [...new Set([...(releaseManifest.delete || []), ...frozenStale(releaseManifest)])];
+  // ota/: an over-the-air update staged or on trial on the board (game/board/lvota.py). Left
+  // there, the board's boot.py would swap it in over this install, or "roll back" to it.
+  const gone = [...new Set([...(releaseManifest.delete || []), ...frozenStale(releaseManifest), 'ota'])];
   if(gone.length){
     onLog(`removing ${gone.length} obsolete path(s)`);
     await removePaths(device, gone, preserve);
