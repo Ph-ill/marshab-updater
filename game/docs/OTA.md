@@ -329,6 +329,33 @@ and they're never committed.
 page under the status bar with white status text. That text would be unreadable on the
 light paper colour.
 
+**The game stays on http.** The HTTPS study (branch `https-probe`) came out no-go, so
+everything below assumes plain `http://192.168.4.1`.
+
+**Full screen on Android.** With no WebAPK, the Android icon opens a Chrome tab. The
+Fullscreen API still works over http, from a tap, so `web/fullscreen.js` puts a small
+**Full screen** button (four corners, a 44 px target, `aria-label="Full screen"`) in the
+top bar just before the gear:
+
+- Only on Android browsers that have the API (`document.fullscreenEnabled` and
+  `requestFullscreen`): Chrome and Samsung Internet. Not in the Android sign-in window
+  (a WebView), not on iOS (its icon already opens full screen), not on computers.
+- A tap calls `document.documentElement.requestFullscreen({navigationUI: "hide"})`. If the
+  browser refuses, nothing happens and nothing is logged.
+- It hides while the page is full screen (`fullscreenchange`, and `:root:fullscreen` in
+  the CSS) and comes back when Back or a swipe leaves full screen.
+- Chrome needs a tap every time: full screen ends when the page reloads or the tab is
+  reopened. So it's one tap each time you open the game.
+- The Android home-screen steps get a third one: "Open the game from the icon, then tap
+  [corners] at the top for **full screen**. Back leaves it." The card's lead says "It opens
+  in a Chrome tab; one tap makes it full screen".
+- The safe areas still hold in full screen: `web/shots_a2hs.mjs` goes full screen with
+  Android insets (24 px status bar, 16 px gesture bar) and checks the header clears the
+  status bar and the dock reaches the bottom edge with the nav right above the gesture
+  bar, on the home and file screens (`a2hs-12`..`14`). At 320 px with a battery figure the
+  two icons close up so the bar still fits (`set-10`). **[NEEDS A REAL PHONE]**: the
+  gesture bar and cutout insets Chrome really reports in full screen.
+
 **No one-tap install, and nothing to customise when it fails.**
 
 - The page is plain `http://192.168.4.1`, which isn't a secure context. That rules out:
@@ -349,8 +376,8 @@ light paper colour.
 | iOS 26 Safari | Page menu (box over two lines) in the address bar › Share (or Share on the toolbar) › View More › Add to Home Screen, keep **Open as Web App** on › Add | The same; on iOS 26 every added site is a web app unless you turn that off |
 | Chrome / Firefox / Edge on iOS | Share (address bar or menu) › Add to Home Screen | iOS 16.4+ allows this from other browsers. **[NEEDS A REAL PHONE]** |
 | iOS captive sheet | Tap **Cancel**, then **Use Without Internet**. Open Safari, go to `192.168.4.1`, then Share › Add to Home Screen | The sheet has no Share button. A link can't leave it either: links only open Safari once iOS marks the network as connected, which needs the probe answered "Success", and the ship never does that (section 5). So the card shows the address in large type to read and type. **[NEEDS A REAL PHONE]**: the Cancel › Use Without Internet wording |
-| Android Chrome | ⋮ › Add to Home screen › Add | A plain shortcut that opens a Chrome tab, not full screen. Over http, Chrome can't make a WebAPK. The shortcut may use the page's icon or a letter, depending on the Chrome version. **[NEEDS A REAL PHONE]** |
-| Samsung Internet | ☰ › Add page to › Home screen | A shortcut. **[NEEDS A REAL PHONE]** |
+| Android Chrome | ⋮ › Add to Home screen › Add; then, opened from the icon, tap the Full screen button at the top | A plain shortcut that opens a Chrome tab; the top bar's Full screen button (below) hides Chrome's bars. Over http, Chrome can't make a WebAPK. The shortcut may use the page's icon or a letter, depending on the Chrome version. **[NEEDS A REAL PHONE]** |
+| Samsung Internet | ☰ › Add page to › Home screen; then the Full screen button | A shortcut; the Full screen button works the same. **[NEEDS A REAL PHONE]** |
 | Android sign-in window | Close it (you stay on the Wi-Fi), open Chrome, go to `192.168.4.1`, then ⋮ › Add to Home screen | It's a WebView with no menu |
 | A computer, or already opened from the icon | Nothing | Hidden when `navigator.standalone` or `display-mode: standalone/fullscreen/minimal-ui` |
 

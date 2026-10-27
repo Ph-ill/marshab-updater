@@ -7,6 +7,9 @@ update ready" with a rust dot when an update is waiting). It opens one page for 
 and this ship (`web/settings.js`, `web/settings.css`; route `#set`). The four tabs stay as
 they are, with none marked current.
 
+On Android, a Full screen button (four corners, the same size) sits just before the gear;
+it isn't part of Settings (docs/OTA.md section 6, "Full screen on Android").
+
 The crew page is only about the crew now: your astronaut, crewmates and "How to play"
 (when there's no FILE tab). Ship software, Add to home screen, the Ship light and Sign out
 moved here. The old `#sw` and `#a2h` routes open Settings.
