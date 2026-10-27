@@ -24,20 +24,25 @@ const A2_MV=`<svg class=a2i viewBox="0 0 16 16" aria-label=menu role=img><circle
 // Safari's page menu (iOS 18+): a box over two lines, at the left of the address bar.
 const A2_PM=`<svg class=a2i viewBox="0 0 16 16" aria-label="page menu" role=img><path d="M2.5 2.5h11v5h-11zM2.5 10.5h11M2.5 13.5h7"/></svg>`;
 const A2_MH=`<svg class=a2i viewBox="0 0 16 16" aria-label=More role=img><circle cx=3 cy=8 r=1.4 /><circle cx=8 cy=8 r=1.4 /><circle cx=13 cy=8 r=1.4 /></svg>`;
-const A2_SH26=`Tap <b>Share</b> ${A2_SH}. No Share button? Tap ${A2_PM} in the address bar, or ${A2_MH}, and it's in there`;
+// The share sheet's View More button (a chevron in a circle; iOS 26).
+const A2_VM=`<svg class=a2i viewBox="0 0 16 16" aria-label="View More" role=img><path d="M3.5 6l4.5 4.5 4.5-4.5"/></svg>`;
 function a2Steps(k){
   const u=navigator.userAgent,v=+((u.match(/Version\/(\d+)/)||[])[1]||0),pad_=/iPad|Macintosh/.test(u);
   const at=`<b class="a2u m">${h(location.host||"192.168.4.1")}</b>`;
   const add="Tap <b>Add to Home Screen</b>, then <b>Add</b>.";
+  // Safari 26 (app.html tells it by anchor positioning too: its user agent says 18_6).
+  const i26=v>=26||!!(window.CSS&&CSS.supports("anchor-name:--a"));
   const S_={
-    // iOS 26 moves Share with the tab layout (Settings > Safari > Tabs): a toolbar button
-    // in Bottom and Top, inside a menu in Compact (the page menu in the address bar, or
-    // the ... button, depending on the release). One step that fits all three.
-    ios:[v>=26?A2_SH26+".":`Tap <b>Share</b> ${A2_SH} at the ${pad_?"top":"bottom"} of Safari.`,
-      v>=26?"Tap <b>Add to Home Screen</b> (scroll down for it), keep <b>Open as Web App</b> on, then <b>Add</b>.":"Scroll down. "+add],
+    // iOS 26, as on a real iPhone: the page menu at the left of the address bar has Share
+    // first; the share sheet hides Add to Home Screen under View More. In the Bottom and
+    // Top tab layouts Share is also a toolbar button, hence the second sentence.
+    ios:i26?[`Tap ${A2_PM} in the address bar, then <b>Share</b> ${A2_SH}. Share in Safari's toolbar? Tap that.`,
+      `Tap <b>View More</b> ${A2_VM}, then <b>Add to Home Screen</b>.`,
+      "Keep <b>Open as Web App</b> on, then tap <b>Add</b>."]:
+      [`Tap <b>Share</b> ${A2_SH} at the ${pad_?"top":"bottom"} of Safari.`,"Scroll down. "+add],
     iosx:[`Tap <b>Share</b> ${A2_SH}: it's in the address bar or the browser's menu.`,"Scroll down. "+add],
     sheet:["This sign-in window can't add icons. Tap <b>Cancel</b> at the top, then <b>Use Without Internet</b>. You stay on the ship's Wi-Fi.",
-      `Open <b>Safari</b> and go to ${at}`,`Tap <b>Share</b> ${A2_SH} (or find it under ${A2_PM} in the address bar, or ${A2_MH}), then <b>Add to Home Screen</b>.`],
+      `Open <b>Safari</b> and go to ${at}`,i26?`Tap ${A2_PM} in the address bar, then <b>Share</b>, <b>View More</b> ${A2_VM} and <b>Add to Home Screen</b>.`:`Tap <b>Share</b> ${A2_SH}, then <b>Add to Home Screen</b>.`],
     and:[`Tap ${A2_MV} at the top right of Chrome.`,"Tap <b>Add to Home screen</b>, then <b>Add</b>."],
     sam:["Tap <b>☰</b> at the bottom of the screen.","Tap <b>Add page to</b>, then <b>Home screen</b>."],
     awv:["This sign-in screen can't add icons. Close it. Your phone stays on the ship's Wi-Fi.",
@@ -50,7 +55,7 @@ function a2Screen(){
   shipTop();
   const k=a2Kind();
   let o=`<div class=kick><div class=lab>Home screen</div><h1>One tap to come aboard</h1><p class=dim>Put the game on your home screen and open it like an app, no browser to find first.</p></div>`;
-  o+=k?`<section><div class=lab><span>How</span><span>${k==="sheet"||k==="awv"?"3 steps":"2 steps"}</span></div>${a2Steps(k)}<dl class=facts><dt>Opens</dt><dd>${a2Opens(k).replace(/^./,(c)=>c.toUpperCase())}</dd><dt>Works</dt><dd>On the ship's Wi-Fi only</dd><dt>First time</dt><dd>Sign in once with your crew code</dd></dl><p class=fine>Away from the ship the icon opens to a can't-connect page. Join the ship's Wi-Fi and tap it again.</p></section>`
+  o+=k?`<section><div class=lab><span>How</span><span>${a2Steps(k).split("<li>").length-1} steps</span></div>${a2Steps(k)}<dl class=facts><dt>Opens</dt><dd>${a2Opens(k).replace(/^./,(c)=>c.toUpperCase())}</dd><dt>Works</dt><dd>On the ship's Wi-Fi only</dd><dt>First time</dt><dd>Sign in once with your crew code</dd></dl><p class=fine>Away from the ship the icon opens to a can't-connect page. Join the ship's Wi-Fi and tap it again.</p></section>`
     :`<section><p class=dim>${a2Std()?"You're already playing from your home screen.":"Open the game on your phone to put it on your home screen."}</p></section>`;
   $("v").innerHTML=o;
   dock("","crew");
@@ -69,7 +74,7 @@ const home_a2=home;home=function(){
   const k=a2Kind(),top=document.querySelector("#v>.kick");
   // One thing at a time: an update notice wins this visit.
   if(!k||a2Done()||!top||S.ending!==NONE||document.querySelector("#v .otab"))return;
-  top.insertAdjacentHTML("afterend",`<section class=a2h aria-labelledby=a2t><div class=lab><span id=a2t>Home screen</span><span>${k==="sheet"||k==="awv"?"3 steps":"2 steps"}</span></div><p class=a2l>Keep the game one tap away. It opens ${a2Opens(k)}.</p>${a2Steps(k)}<p class=fine>${A2_WIFI}</p><div class=a2b><button class="btn sec" data-a2h=ok><span>Got it</span><i>hide this</i></button></div></section>`);
+  top.insertAdjacentHTML("afterend",`<section class=a2h aria-labelledby=a2t><div class=lab><span id=a2t>Home screen</span><span>${a2Steps(k).split("<li>").length-1} steps</span></div><p class=a2l>Keep the game one tap away. It opens ${a2Opens(k)}.</p>${a2Steps(k)}<p class=fine>${A2_WIFI}</p><div class=a2b><button class="btn sec" data-a2h=ok><span>Got it</span><i>hide this</i></button></div></section>`);
 };
 document.addEventListener("click",(ev)=>{
   const el=ev.target.closest("button[data-a2h]");if(!el)return;

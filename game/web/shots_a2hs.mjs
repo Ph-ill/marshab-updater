@@ -107,19 +107,18 @@ await shot(p, "a2hs-03-ios-safari-screen");
 // What Chrome makes of the ship's address: the manifest parses, no install offered.
 const cdp = await p.context().newCDPSession(p);
 const mf = await cdp.send("Page.getAppManifest", {});
-ok("Chrome reads the manifest from 192.168.4.1 with no errors", mf.url === SHIP + "/app.webmanifest" && mf.errors.length === 0 && /Long Voyage/.test(mf.data || ""));
+ok("Chrome reads the manifest from 192.168.4.1 with no errors", mf.url === SHIP + "/app.webmanifest" && mf.errors.length === 0 && JSON.parse(mf.data || "{}").name === "The Long Voyage" && JSON.parse(mf.data || "{}").short_name === "The Long Voyage");
 const ie = await cdp.send("Page.getInstallabilityErrors").catch((e) => ({ installabilityErrors: [{ errorId: "unavailable: " + e.message }] }));
 const ids = ie.installabilityErrors.map((e) => e.errorId);
 console.log("     Chrome installability on http://192.168.4.1: " + JSON.stringify(ids));
 ok("Chrome won't offer a one-tap install on http (not a secure origin)", ids.includes("not-from-secure-origin"));
 await close(p);
 
-// 2. iOS 26 Safari: Share is a button (Bottom, Top) or in a menu (Compact: the page menu
-// in the address bar, or ...): one step names all three; keep Open as Web App on.
+// 2. iOS 26 Safari, as on a real iPhone: page menu > Share > View More > Add to Home Screen.
 p = await page("ios26");
 t = await card(p);
-ok("iOS 26: Share, or the page menu / More; Open as Web App", !!t && /No Share button\? Tap .* in the address bar, or .*, and it's in there/.test(t) && /Open as Web App/.test(t) && !/beside the address/.test(t));
-ok("iOS 26: share, page menu and More icons inline", (await p.$$eval(".a2h li:first-child svg.a2i", (s) => s.map((e) => e.getAttribute("aria-label")))).join() === "Share,page menu,More");
+ok("iOS 26: page menu, Share; View More, Add to Home Screen; Open as Web App, Add", !!t && /3 steps/i.test(t) && /Tap\s+in the address bar, then Share\s*\. Share in Safari's toolbar\? Tap that\./.test(t) && /Tap View More\s*, then Add to Home Screen\./.test(t) && /Keep Open as Web App on, then tap Add\./.test(t));
+ok("iOS 26: page menu, share and View More icons inline", (await p.$$eval(".a2h .a2s svg.a2i", (s) => s.map((e) => e.getAttribute("aria-label")))).join() === "page menu,Share,View More");
 await center(p, ".a2h");
 await shot(p, "a2hs-04-ios26-safari-card");
 await close(p);
@@ -172,6 +171,7 @@ const tags = (p) => p.evaluate(() => [!!document.querySelector('link[rel=manifes
 for (const [kind, want, what] of [["ios", "true,true", "iOS 18 Safari"], ["ios26", "false,false", "iOS 26 Safari"], ["sheet", "false,false", "iOS 26 sheet or icon"], ["and", "true,true", "Android Chrome"], ["desk", "true,true", "a computer"]]) {
   p = await page(kind, kind === "sheet" ? { standalone: "ios" } : {});
   ok(`${what}: manifest and web-app tags ${want === "true,true" ? "there" : "left out"}`, (await tags(p)) === want);
+  ok(`${what}: the icon's name is The Long Voyage`, (await p.evaluate(() => [document.title, document.querySelector("meta[name=apple-mobile-web-app-title]")?.content ?? document.title].join())) === "The Long Voyage,The Long Voyage");
   await close(p);
 }
 

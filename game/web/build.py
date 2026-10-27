@@ -55,9 +55,10 @@ def main():
 
 # What a phone fetches to put the game on its home screen (web/a2hs.js): the manifest and
 # one 192 px icon (web/icon.png, drawn by web/icon.py), gzipped like everything the board
-# serves. Short name "Long Voyage": every ship answers on the same address, so one icon
-# opens whichever ship's Wi-Fi you're on, and 11 letters fit under an iPhone icon.
-MANIFEST = {"name": "The Long Voyage", "short_name": "Long Voyage", "id": "/", "start_url": "/",
+# serves. The name, short name too, is "The Long Voyage" (Phill's choice), not a ship's:
+# every ship answers on the same address, so one icon opens whichever ship's Wi-Fi you're
+# on. It's a little wide for one line under an iPhone icon (docs/OTA.md section 6).
+MANIFEST = {"name": "The Long Voyage", "short_name": "The Long Voyage", "id": "/", "start_url": "/",
             "scope": "/", "display": "standalone", "orientation": "portrait",
             "background_color": "#F2ECDF", "theme_color": "#F2ECDF",
             "icons": [{"src": "/icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}]}
