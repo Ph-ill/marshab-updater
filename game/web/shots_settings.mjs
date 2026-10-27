@@ -1,6 +1,8 @@
 // Settings (web/settings.js), clicked through against the mock Pico: the gear in the top bar
 // (beside the battery and the flight day, a 44 px target with a label), what moved there from
 // the crew page (Ship software, the home-screen steps, the Ship light, Sign out), the battery,
+// Change your code under Sign out (refused without a session, a bad format, a wrong current
+// code; the two new ones checked on the phone; the new code signs in, the old one doesn't),
 // and Reset this ship at the bottom: refused without a session or the ship's number, the
 // typed confirm, and after it the page's own storage gone and the first-time flow again.
 // Story text is swapped for placeholders. Exits non-zero if a step fails.
@@ -12,7 +14,7 @@ const out = process.argv[2] || "shots";
 const browser = await chromium.launch({ executablePath: process.env.CHROME });
 const PH = "Placeholder text: story hidden from this screenshot.";
 let fails = 0, ua = 0;
-const ok = (what, c) => { console.log((c ? "ok   " : "FAIL ") + what); if (!c) fails++; };
+const ok = (what, c, why) => { console.log((c ? "ok   " : "FAIL ") + what + (c || why === undefined ? "" : " (" + why + ")")); if (!c) fails++; };
 const blank = (x) => typeof x === "string" ? (x.length > 18 && x.includes(" ") ? PH : x) : Array.isArray(x) ? x.map(blank)
   : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, blank(v)])) : x;
 const ANDROID = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36";
@@ -88,13 +90,25 @@ ok("crew page: no Ship light, Sign out, Ship software or Add to home screen", !(
 await p.click("#top .gear");
 await p.waitForSelector("#set-rst");
 const secs = await p.$$eval("#v section", (s) => s.map((e) => e.id));
-ok("Settings: Ship software, Home screen icon, Ship light, Battery, Sign out, Reset (last)", secs.join() === "set-sw,set-a2h,set-led,set-bat,set-out,set-rst");
+ok("Settings: Ship software, Home screen icon, Ship light, Battery, Sign out, Your code, Reset (last)", secs.join() === "set-sw,set-a2h,set-led,set-bat,set-out,set-code,set-rst");
 ok("Settings: the gear says where you are", await p.$eval("#top .gear", (e) => e.getAttribute("aria-current") === "page"));
 ok("Settings: the four tabs, none current", (await p.$$eval("#dock nav button", (b) => b.map((x) => x.dataset.go + (x.hasAttribute("aria-current") ? "*" : "")))).join() === "home,crew,log,file");
 ok("Ship software: installed, channel, available, checked, check button", await p.$eval("#set-sw", (e) => /Installed\s*0\.2\.0/.test(e.textContent) && /Channel/.test(e.textContent) && /Available/.test(e.textContent) && /Checked/.test(e.textContent) && !!e.querySelector("[data-ota=check]")));
 ok("Home screen icon: the steps for this browser", await p.$eval("#set-a2h", (e) => !!e.querySelector(".a2s") && /Add to Home Screen/.test(e.textContent)));
 ok("Battery: 72 %, 3.95 V, charging", await p.$eval("#set-bat", (e) => /Charge\s*72%/.test(e.textContent) && /3\.95 V/.test(e.textContent) && /Charging\s*Yes/.test(e.textContent)));
 ok("Reset: a danger button", await p.$eval("#set-rst [data-rst=ask]", (e) => e.classList.contains("dgr") && getComputedStyle(e).color !== getComputedStyle(document.body).color));
+// The charging bolt follows the cable within seconds (web/batt.js's 5 s look at /api/bat),
+// redrawn in place: the rest of the page stays the same nodes.
+await p.evaluate(() => { window.__keep = document.querySelector("#set-sw"); return fetch("/api/bat?set=72,3950,0"); });
+const bolt = () => p.evaluate(() => !!document.querySelector("#top .bat .bati path"));
+ok("Battery: charging shows the bolt", await bolt());
+await p.waitForFunction(() => !document.querySelector("#top .bat .bati path") && /Charging\s*No/.test(document.querySelector("#set-bat").textContent), null, { timeout: 12000 }).then(() => true, () => false).then((r) => ok("Battery: unplugged, no bolt within 12 s, two 5 s looks (top bar and Settings)", r));
+await p.evaluate(() => fetch("/api/bat?set=73,4010,1"));
+const t0 = Date.now();
+await p.waitForFunction(() => !!document.querySelector("#top .bat .bati path") && /Charging\s*Yes/.test(document.querySelector("#set-bat").textContent) && /73%/.test(document.querySelector("#top .bat").textContent), null, { timeout: 12000 }).then(() => true, () => false).then((r) => ok("Battery: plugged in, the bolt and 73% back within 12 s (" + (Date.now() - t0) + " ms)", r));
+ok("Battery: redrawn in place, not the whole page", await p.evaluate(() => window.__keep === document.querySelector("#set-sw")));
+await p.evaluate(() => fetch("/api/bat?set=72,3950,1"));
+await p.waitForFunction(() => /72%/.test(document.querySelector("#top .bat").textContent), null, { timeout: 12000 });
 await shot(p, "set-02-settings-top");
 await shot(p, "set-03-settings", true);
 // The Ship light from here.
@@ -105,6 +119,81 @@ await center(p, "#set-led");
 await shot(p, "set-04-ship-light-on-battery");
 await p.click("#set-led [data-led]");
 await p.waitForFunction(() => S.led === false && document.querySelector("#set-led [data-led]")?.textContent.includes("Ship light: off"));
+// 2b. Change your code: under Sign out, above Reset; the old code, then the new one twice.
+const codeReq = (p, body, token = true) => p.evaluate(async ([b, t]) => {
+  const r = await fetch("/api/code", { method: "POST", headers: t ? { "X-Crew-Token": tok, "Content-Type": "application/json" } : { "Content-Type": "application/json" }, body: JSON.stringify(b) });
+  return [r.status, await r.json()];
+}, [body, token]);
+const typeCode = async (p, a, b, c) => { await p.fill("#chg0", a); await p.fill("#chg1", b); await p.fill("#chg2", c); };
+const chgErrText = (p) => p.$eval("#chge", (e) => e.textContent);
+await center(p, "#set-code");
+ok("Your code: a quiet row with Change your code, and says it's this ship only", await p.$eval("#set-code", (e) => /Change your code/.test(e.textContent) && /LV-\d only/.test(e.textContent) && /Other ships keep your current code/.test(e.textContent) && e.querySelector("[data-chg=ask]").classList.contains("sec")));
+await shot(p, "set-c1-your-code-row");
+await p.click("[data-chg=ask]");
+await p.waitForSelector("#chg2");
+const f = await p.$$eval("#set-code input", (i) => i.map((x) => [x.type, x.inputMode, x.getAttribute("autocomplete"), x.maxLength, x.pattern, getComputedStyle(x).webkitTextSecurity || ""]));
+ok("form: three fields, numeric keypad, 4 digits, masked, no autofill", f.length === 3 && f.every(([t, im, ac, ml, pt, sec]) => t === "text" && im === "numeric" && ac === "off" && ml === 4 && pt === "[0-9]*" && sec === "disc"));
+ok("form: labelled, current code first", (await p.$$eval("#set-code label", (l) => l.map((x) => x.textContent))).join("|") === "Your code now|New code|New code again");
+ok("form: the current-code field has focus", await p.evaluate(() => document.activeElement?.id === "chg0"));
+await p.keyboard.type("12a3");
+ok("form: letters don't go in", await p.$eval("#chg0", (e) => e.value === "123"));
+await p.fill("#chg0", "");
+await center(p, "#set-code");
+await shot(p, "set-c2-change-code-form");
+await p.emulateMedia({ colorScheme: "dark" });
+await p.waitForTimeout(150);
+await p.screenshot({ path: `${out}/set-c2-change-code-form-dark-390x844.png` });
+console.log(`${out}/set-c2-change-code-form-dark-390x844.png`);
+await p.emulateMedia({ colorScheme: "light" });
+// Caught on the phone, before asking the ship.
+const asked = [];
+p.on("request", (r) => { if (r.url().includes("/api/code")) asked.push(r.url()); });
+await typeCode(p, "1234", "5678", "5679");
+await p.click("[data-chg=go]");
+await p.waitForFunction(() => /don't match/.test(document.querySelector("#chge")?.textContent || ""));
+ok("mismatched new codes: caught on the phone, not sent", asked.length === 0);
+ok("mismatched: the new fields are cleared and marked, the new-code field focused", await p.evaluate(() => $("chg1").value === "" && $("chg2").value === "" && $("chg1").classList.contains("bad") && document.activeElement?.id === "chg1" && $("chg0").value === "1234"));
+await center(p, "#set-code");
+await shot(p, "set-c3-change-code-mismatch");
+await typeCode(p, "1234", "56", "56");
+await p.click("[data-chg=go]");
+ok("too short: caught on the phone", /4 digits/.test(await chgErrText(p)) && asked.length === 0);
+await typeCode(p, "1234", "1234", "1234");
+await p.click("[data-chg=go]");
+ok("same as the current one: caught on the phone", /same as your current/.test(await chgErrText(p)) && asked.length === 0);
+// The ship's own refusals.
+let [st, jj] = await codeReq(p, { old: "1234", new: "5678" }, false);
+ok("ship: no session is 401", st === 401);
+[st, jj] = await codeReq(p, { old: "1234", new: "56789" });
+ok("ship: 5 digits is 400", st === 400 && /4 digits/.test(jj.err));
+[st, jj] = await codeReq(p, { old: "1234", new: "56a8" });
+ok("ship: a letter is 400", st === 400);
+[st, jj] = await codeReq(p, { old: "1234", new: "1234" });
+ok("ship: the same code is 400", st === 400);
+asked.length = 0;
+await typeCode(p, "9999", "5678", "5678");
+await p.click("[data-chg=go]");
+await p.waitForFunction(() => /isn't your current code/.test(document.querySelector("#chge")?.textContent || ""));
+ok("wrong current code: the ship says so and how many tries are left", /4 tries left/.test(await chgErrText(p)) && asked.length === 1, await chgErrText(p));
+ok("wrong current code: still signed in", await p.evaluate(() => !!tok && route === "set"));
+await center(p, "#set-code");
+await shot(p, "set-c4-change-code-wrong");
+await typeCode(p, "1234", "5678", "5678");
+await p.click("[data-chg=go]");
+await p.waitForSelector("#set-code .ok");
+ok("success: says so, you're still signed in, the form is closed", await p.evaluate(() => /new code/.test($("set-code").textContent) && !!tok && !$("chg0") && document.activeElement?.dataset.chg === "ask"));
+ok("success: still signed in on the ship", (await p.evaluate(async () => (await fetch("/api/state", { headers: { "X-Crew-Token": tok } })).status)) === 200);
+await center(p, "#set-code");
+await shot(p, "set-c5-change-code-done");
+const login = (p, pin) => p.evaluate(async (pin) => (await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ crew: 0, pin }) })).status, pin);
+ok("after: the old code no longer signs in", (await login(p, "1234")) === 403);
+ok("after: the new one does", (await login(p, "5678")) === 200);
+[st, jj] = await codeReq(p, { old: "5678", new: "1234" });
+ok("and back to 1234 for the rest of the run", st === 200 && (await login(p, "1234")) === 200);
+await p.click("[data-chg=ask]");
+await p.waitForSelector("#chg0");
+await p.click("[data-chg=no]");
+ok("Cancel closes the form", !(await p.$("#chg0")) && !!(await p.$("[data-chg=ask]")));
 // 3. Reset this ship: the ship refuses without a session and without its number.
 const no = await p.evaluate(() => S.here + 1);
 ok("reset refused without a session: 401", (await post(p, JSON.stringify({ confirm: no }), false)) === 401);

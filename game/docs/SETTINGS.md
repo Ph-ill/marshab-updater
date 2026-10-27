@@ -1,4 +1,4 @@
-# Settings and Reset this ship
+# Settings, Change your code and Reset this ship
 
 Every signed-in screen has a gear at the top right of the top bar, after the battery and
 the flight day. It's a line icon drawn like the tab icons (20 px, 1.5 px strokes), with a
@@ -28,8 +28,64 @@ moved here. The old `#sw` and `#a2h` routes open Settings.
 4. **Battery** (`web/batt.js`): charge, voltage and whether it's charging. Only on a ship
    with a battery (`S.bat`).
 5. **This phone**: **Sign out**.
-6. **Reset this ship**, last, styled as a danger action (a rust border and rust text, under
+6. **Your code**: **Change your code** (below).
+7. **Reset this ship**, last, styled as a danger action (a rust border and rust text, under
    a rust rule).
+
+## Change your code
+
+Your crew code is the 4 digits you sign in with. Everyone starts with the same code on
+all eight ships (`tools/bench.py --code` writes it, or the updater's ship setup). Settings
+lets you change yours on the ship you're connected to.
+
+**On the phone.** Tap **Change your code**. The form asks for **Your code now**, then
+**New code** and **New code again**. All three use the numeric keypad, are masked, and
+take only digits; a field moves on after 4 digits and Enter moves on or saves. The page
+checks first, without asking the ship: every field must be 4 digits, the two new codes
+must match ("The two new codes don't match. Type them again."), and the new code must
+differ from the current one. Then it sends `POST /api/code {"old": "....", "new": "...."}`
+with its crew token. On success it says "Done. Sign in on LV-N with your new code from now
+on. You're still signed in here." **Cancel** closes the form; leaving Settings clears it.
+
+**Only this ship changes.** The other seven keep your old code. A later `bench.py --code` for
+you, or the updater's ship setup writing all the codes, puts a code back over yours
+(`bench.py --code` for someone else keeps yours).
+
+**On the ship.** `board/lvcode.py` (`change()`), routed from `board/main.py`'s `ota_route`
+next to `/api/reset`, imported per request and dropped afterwards, so it ships over the air,
+holds no RAM between requests, and the frozen core (`lvcodes`, `lvphone`, `lvweb`) is
+unchanged. It goes in `gen_lvfrozen` `BOARD` and `tools/fw/manifest.py` for the next core.
+Refusals, in this order, with nothing written:
+
+| Status | When | Message |
+|---|---|---|
+| 404 | not POST | |
+| 401 | no signed-in crew token | |
+| 400 | a body that isn't a JSON object | |
+| 400 | the new code isn't exactly 4 ASCII digits (sign-in's format) | "Your new code needs to be 4 digits." |
+| 400 | the current code isn't 4 digits | "Your current code is 4 digits." |
+| 400 | the new code is the same as the current one | "Your new code is the same as your current one." |
+| 403 `{left}` | the current code is wrong | "That isn't your current code." |
+| 429 `{wait}` | too many wrong tries | "Too many tries." |
+| 409 | no code set for you on this ship | |
+| 500 | the file couldn't be written | "The ship couldn't save it. Your current code still works." |
+
+The current code is checked with the same `CodeBook.check` sign-in uses, so wrong tries
+count against the same 5 tries and 5-minute pause as sign-in, per crew member: guessing
+here doesn't get extra tries, and a pause from either blocks both. Nothing checks whether
+another crew member already has the new code: sign-in is by name, then code, so two people
+may share one, and refusing it would tell you someone else's code.
+
+On success the ship works out the new digest (sha256 of the salt, your crew byte and the 4
+digits, as `lv/codes.py`) and swaps only your digest in `/data/crew.json`'s own text, so
+every other byte, everyone else's entry included, stays the same. The write is atomic:
+`crew.json.new`, read back and checked, then renamed over `crew.json` (if the rename can't
+replace, the old file moves to `crew.json.old` first and comes back if anything fails). On
+any failure the `.new` is removed and the old file is left as it was. Then the in-memory
+code book changes, so the new code works at once and your session stays. The ship never
+logs or prints a code.
+
+**Reset this ship** keeps `crew.json`, so a changed code survives a reset.
 
 ## Reset this ship
 
@@ -83,6 +139,23 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
 
 ## Tests
 
+- **`tests/test_code.py`**, on CPython, MicroPython and the game firmware's unix build:
+  - no session or a stale token: 401; GET: 404; not JSON: 400;
+  - bad formats (3 or 5 digits, letters, non-ASCII digits, numbers instead of strings,
+    missing fields): 400, file unchanged;
+  - the same code: 400;
+  - a wrong current code: 403 with the tries left, then 429 after 5, and sign-in paused too
+    (and the other way round);
+  - success: 200, the new code signs in and the old one doesn't, the session still works,
+    and every other byte of `crew.json` is the same;
+  - a failed write, read-back or rename: 500, `crew.json` unchanged, no `.new` left, the old
+    code still works;
+  - a code another crew member has: allowed;
+  - nothing printed; `tools/bench.py --code` afterwards sets the named code, keeps the
+    changed one and prints no codes.
+- **`tests/phone_heap.py --ota`** changes a code and back on the frozen build inside the
+  heap check (board peak under 80,000 B).
+
 - **`tests/test_reset.py`**, on CPython, MicroPython and the game firmware's unix build.
   The endpoint refuses, with no restart and every file byte-for-byte the same, when there's:
   - no session, or a stale token;
@@ -99,7 +172,9 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
   - the section order;
   - the crew page without the moved rows;
   - `/api/reset` returning 401 without a session, 403 without the confirm and 403 with
-    another ship's number, with the phone still signed in afterwards.
+    another ship's number, with the phone still signed in afterwards;
+  - `/api/code` returning 401, 400 and 403, then the form changing the code: the old code
+    refused, the new one signing in, and back again.
 - **`web/shots_settings.sh`**, against the mock (`sim/mockserver.py` `/api/reset`):
   - the gear's label, size and place;
   - every section;
@@ -108,6 +183,8 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
   - after a reset: storage empty, the old token refused, back at the sign-in, and the
     first-time flow on the next sign-in;
   - Sign out;
+  - Change your code: the row, the form, mismatched, short and same codes refused on the
+    phone, the ship's refusals, a wrong code with the tries left, success, Cancel;
   - a ship with no battery or OTA at 320 px, and the top bar fitting at 320 px with the
     battery.
 

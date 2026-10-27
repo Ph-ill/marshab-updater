@@ -16,3 +16,13 @@
 .rst .err{margin-top:var(--s2);min-height:0}
 .rst .err:empty{margin:0}
 .rstb{margin-top:var(--s3)}
+/* Change your code: three short fields, the sign-in's own digits (masked), no password manager. */
+.chgf{margin-top:var(--s3)}
+.chgf label{display:block;margin-top:var(--s3);font-size:16px;line-height:22px}
+.chgf label:first-child{margin-top:0}
+.pinf{display:block;width:100%;max-width:220px;height:56px;margin-top:var(--s2);padding:0 var(--s4);border:2px solid var(--ink);border-radius:0;background:var(--paper);color:var(--ink);font:700 24px var(--mono);letter-spacing:.4em;-webkit-text-security:disc;-webkit-appearance:none;appearance:none}
+.pinf.bad{border-color:var(--rust-t)}
+#set-code .err{margin-top:var(--s2);min-height:0}
+#set-code .err:empty{margin:0}
+#set-code .ok{margin-top:var(--s2);font:600 15px/1.45 var(--mono);color:var(--ink)}
+#set-code .ok::before{content:"";display:inline-block;width:8px;height:8px;margin-right:var(--s2);background:var(--rust);vertical-align:1px}

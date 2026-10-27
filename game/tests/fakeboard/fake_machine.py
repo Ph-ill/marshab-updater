@@ -21,12 +21,14 @@ class Pin:
 
     def __init__(self, name, mode=None, pull=None):
         self.name = name
+        self.pull = pull
         self.v = 0
 
     def value(self, v=None):
         if v is None:
             if self.name == 6:          # the UPS-Lite's "power plugged in" line (charger detect)
-                return 1 if BAT["on"] and BAT["chg"] else 0
+                # as measured on ship 5 (docs/BATTERY.md): the RP2040's pull-down masks it
+                return 1 if BAT["on"] and BAT["chg"] and self.pull != Pin.PULL_DOWN else 0
             return self.v
         self.v = 1 if v else 0
         writes[0] += 1

@@ -60,6 +60,28 @@ def ota_hooks(lvweb, web):
             d = n[:-4].split("x")
             if req.method == "GET" and n[-4:] == ".png" and len(d) == 2 and d[0].isdigit() and d[1].isdigit():
                 return await lvweb.send_file(w, web.root + "www/ls/" + n, "image/png", False)
+        if req.path == "/api/code":
+            # "Change your code" (board/lvcode.py, web/settings.js): a signed-in crew member
+            # sets a new sign-in code in data/crew.json. Loaded per request, like lvota.
+            if req.method != "POST":
+                return await lvweb.send_json(w, 404, {"err": "no such thing"})
+            import lvcode
+            try:
+                s, j = lvcode.change(web.get_phone(), req)
+            finally:
+                lvship.drop("lvcode")
+            return await lvweb.send_json(w, s, j)
+        if req.path == "/api/bat" and req.method == "GET":
+            # The page's poll every 5 s while it's showing (web/app.html startPoll): the
+            # state's version, as /api/v, and the battery, [percent, mV, charging] or null
+            # (lvbatt.py, web/batt.js). One small answer: no story, nothing to sign.
+            # Like every phone request in lvweb.route, it carries the phone's clock: learn it,
+            # so the flight day turns at 06:00 and v says so.
+            sh = web.ship
+            if sh.clock.learn_headers(req.header):
+                sh.day_check()
+            b = sh.bat
+            return await lvweb.send_json(w, 200, {"v": sh.v, "bat": b[:3] if b else None})
         if req.path == "/api/hello" and req.method == "GET":
             # The home-screen funnel (board/lvfunnel.py, web/funnel.js): has the ship seen
             # this phone open the game from its icon? Loaded per request, like lvota.
@@ -96,7 +118,7 @@ def ota_hooks(lvweb, web):
 # has seen, and which opened the game from the icon: board/lvfunnel.py). Sign-ins and
 # sessions live in RAM, so the restart forgets them.
 # Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
-# codes), the installed software and ota/ (the update state and rollback copy), maint/safe.
+# codes, including any changed in Settings: board/lvcode.py), the installed software and ota/ (the update state and rollback copy), maint/safe.
 RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin")
 reboot = None               # tests: called instead of machine.reset()
 
@@ -142,6 +164,74 @@ async def ota_ok():
         print("ota: update kept")
     lvship.drop("lvota")
 
+
+
+# ---- the charger line, watched (docs/BATTERY.md "Charging shows at once"). lvbatt reads the
+# gauge and the charger pin once a minute (I2C, loaded and dropped); this only reads the pin,
+# every CHG_EVERY_MS, and takes a new level once it has held CHG_STEADY_MS (a plug wiggling
+# in its socket doesn't flicker the bolt). On a flip: ship.bat[2] at once, and the gauge
+# read CHG_GAUGE_MS later (lvship's loop does it when bat[7] ms have passed since bat[6]),
+# so the percent and voltage follow without reading the gauge any more often otherwise.
+CHG_EVERY_MS = 100
+CHG_STEADY_MS = 300
+CHG_GAUGE_MS = 2000
+
+
+class Debounce:
+    def __init__(self, v):
+        self.v = v              # the level taken
+        self.new = None         # a different level seen, since self.t
+        self.t = 0
+
+    def step(self, v, now):
+        """One look at the pin (v) at ticks_ms now. True when the taken level changes."""
+        if v == self.v or v is None:
+            self.new = None
+            return False
+        if v != self.new:
+            self.new, self.t = v, now
+            return False
+        if lvship.ticks_diff(now, self.t) >= CHG_STEADY_MS:
+            self.v, self.new = v, None
+            return True
+        return False
+
+
+def charger(ship):
+    """The charger reader: () -> True/False, or None when there's no pin (bat_chg -1/null).
+    Tests set ship.bat_hw (lvbatt's fakes); on the board, one Pin set up as lvbatt does."""
+    h = getattr(ship, "bat_hw", None)
+    if h:
+        return h[1]
+    c = ship.cfg
+    p = c.get("bat_chg", 6)
+    if p is None or p < 0:
+        return None
+    from machine import Pin
+    u = c.get("bat_chg_pull", "none")   # as lvbatt: R2 pulls it low (PAD1)
+    pin = Pin(p, Pin.IN, Pin.PULL_DOWN if u == "down" else Pin.PULL_UP if u == "up" else None)
+    return lambda: bool(pin.value())
+
+
+async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
+    rd = rd or charger(ship)
+    if ship.bat is None or rd is None:
+        return
+    d = Debounce(ship.bat[2])
+    while not (stop and stop()):
+        await lvship.sleep_ms(every)
+        b = ship.bat
+        if b is None:
+            return
+        if d.new is None:
+            d.v = b[2]          # lvbatt's own reading may have moved it
+        try:
+            v = rd()
+        except Exception:
+            continue
+        if d.step(v, lvship.ticks_ms()):
+            b[2] = v
+            b[6], b[7] = lvship.ticks_ms(), CHG_GAUGE_MS
 
 def main():
     print("boot: The Long Voyage starts in %d s (Ctrl-C or any mpremote command stops it)" % (
@@ -203,6 +293,8 @@ def main():
             print("web: status only on http://%s/ (the phone game needs the game firmware)" % ip)
         if flag("ota/state.json"):
             asyncio.create_task(ota_ok())
+        if ship.bat:
+            asyncio.create_task(charger_watch(ship))
         await ship.loop()
     asyncio.run(run())
 

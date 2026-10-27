@@ -457,9 +457,9 @@ One board is enough. Tick each step.
    day"); **open** today's drop if there is one; look at the **crew** page and the
    **log**.
 10. **Second phone** as another crew member at the same time: both keep working; a tap on
-    one shows up on the other within about 15 s (the board has no WebSocket, so the page
-    polls `/api/v`; the page shows "Live link down · checking every 15 s", which is
-    expected here).
+    one shows up on the other within about 5 s (the board has no WebSocket, so the page
+    polls `/api/bat`, the version and the battery, and shows no banner for it; only
+    "No signal · last copy shown" means the ship can't be reached).
 
     **Who's in range**, with a second board (another ship number) powered next to this
     one: your crew page shows that ship's astronaut as **Nearby · in sync** (or
@@ -601,6 +601,6 @@ address 0x62 on GP4/GP5) once, and a board without one carries on exactly as bef
   the "How it works" briefing card. None of it shows on a board without a battery.
 - `ship.json` (all optional): `"battery": false` never looks, `true` always shows the
   battery (as "unknown" if the gauge doesn't answer); `bat_sda`, `bat_scl` (default 4, 5),
-  `bat_chg` (default 6, `-1` for none), `bat_chg_pull` (`"down"`, `"up"`, `"none"`),
+  `bat_chg` (default 6, `-1` for none), `bat_chg_pull` (`"none"`, the default: the UPS-Lite's R2 pulls the line low once PAD1 is bridged; `"down"`, `"up"`),
   `bat_every_s` (default 60), `bat_khz` (unset: 50 kHz, falling back to 10 kHz; the Pico's
   internal pull-ups are switched on, so the 4.7 kΩ resistors are optional).

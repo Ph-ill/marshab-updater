@@ -8,8 +8,15 @@
 // member who also types this ship's number; the ship deletes the players' progress and
 // restarts (keeps its settings, crew codes and software), then this page forgets everything
 // it kept in this browser and starts again at the sign-in.
+// Change your code (board/lvcode.py, POST /api/code {old, new}): under Sign out, above
+// Reset. Your code now, then the new one twice, 4 digits each (the sign-in's own rule). The
+// page checks the format and that the two new ones match before asking; the ship checks the
+// current code against the sign-in's tries and lockout, saves the new one in crew.json and
+// keeps this phone signed in. Only this ship's copy changes, and the row says so.
 const SET_GEAR="M15.9 8L18 8.4v3.2l-2.1.4-.4.8 1.3 1.7-2.3 2.3-1.7-1.3-.8.4-.4 2.1H8.4L8 15.9l-.8-.4-1.7 1.3-2.3-2.3 1.3-1.7-.4-.8L2 11.6V8.4L4.1 8l.4-.8-1.3-1.7 2.3-2.3 1.7 1.3.8-.4.4-2.1h3.2l.4 2.1.8.4 1.7-1.3 2.3 2.3-1.3 1.7ZM7 10a3 3 0 1 0 6 0a3 3 0 1 0-6 0Z";
 let RST=null;   // the reset row: null, "ask" (typing the number), "send", or an error message
+let CHG=null;   // the code row: null, "ask" (the form), "send", "done", or {err, f: the field to fix}
+let CHGV=null;  // what was typed, kept across a redraw while the form is open
 const shipTop1=shipTop;shipTop=function(){
   shipTop1();
   const s=$("top")&&$("top").querySelector("span");if(!s)return;
@@ -24,14 +31,46 @@ function setScreen(){
   o+=otaSect();
   o+=`<section id=set-a2h><div class=lab><span>Home screen icon</span>${k?`<span>${a2Steps(k).split("<li>").length-1} steps</span>`:""}</div>${k?`<p class=a2l>Keep the game one tap away. It opens ${a2Opens(k)}.</p>${a2Steps(k)}<p class=fine>${A2_WIFI}</p>`:`<p class=dim>${a2Std()?"You're already playing from your home screen.":"Open the game in your phone's browser to put it on your home screen."}</p>`}</section>`;
   if(S.led!=null)o+=`<section id=set-led><div class=lab><span>Ship light</span><span>${S.led?"on":"off"}</span></div><p class=dim>Your ship's light pulses softly when something's waiting, no phone needed.</p><button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>${S.led?"turn off":"turn on"}</i></button></section>`;
-  if(b)o+=`<section id=set-bat><div class=lab><span>Battery</span></div><dl class=facts><dt>Charge</dt><dd class=m>${b[0]==null?"—":b[0]+"%"}</dd><dt>Voltage</dt><dd class=m>${b[1]?(b[1]/1000).toFixed(2)+" V":"—"}</dd><dt>Charging</dt><dd>${b[2]?"Yes":"No"}</dd></dl></section>`;
+  if(b)o+=`<section id=set-bat><div class=lab><span>Battery</span></div>${batFacts(b)}</section>`;
   o+=`<section id=set-out><div class=lab><span>This phone</span></div><button class="btn sec" data-out=1><span>Not ${h(nm(S.you))}? Sign out</span><i>this phone</i></button></section>`;
+  o+=chgSect(n);
   o+=`<section id=set-rst class=rst><div class="lab r"><span>Reset this ship</span><span>can't be undone</span></div><p class=dim>Starts LV-${n} over: everyone's progress on it goes (the log, votes, gifts, sign-ins) and it restarts. Its name, Wi-Fi password and software stay. Ships in range may sync their records back.</p>`;
   if(RST==null)o+=`<button class="btn dgr" data-rst=ask><span>Reset this ship</span><i>LV-${n}</i></button>`;
   else o+=`<label class=rstl for=rstn>Type <b class=m>${n}</b>, this ship's number, to confirm</label><input id=rstn class=m inputmode=numeric autocomplete=off maxlength=2 aria-describedby=rste><p id=rste class=err role=alert>${RST!=="ask"&&RST!=="send"?h(RST):""}</p><div class=rstb><button class="btn dgr" data-rst=go disabled><span>${RST==="send"?"Resetting":"Reset"}</span><i>restarts</i></button><button class="btn sec" data-rst=no><span>Cancel</span></button></div>`;
   o+=`</section>`;
   $("v").innerHTML=o;
   dock("","set");
+}
+const CHG_F=[["chg0","Your code now"],["chg1","New code"],["chg2","New code again"]];
+function chgSect(n){
+  let o=`<section id=set-code><div class=lab><span>Your code</span><span>LV-${n} only</span></div>`;
+  if(CHG==null||CHG==="done"){
+    o+=CHG==="done"?`<p class=ok role=status>Done. Sign in on LV-${n} with your new code from now on. You're still signed in here.</p>`:`<p class=dim>The 4 digits you sign in with on LV-${n}. Other ships keep your current code.</p>`;
+    return o+`<button class="btn sec" data-chg=ask><span>Change your code</span><i>4 digits</i></button></section>`;
+  }
+  const e=CHG&&CHG.err,v=CHGV||["","",""];
+  o+=`<p class=dim>Type your current code, then the new one twice.</p><div class=chgf>`;
+  CHG_F.forEach(([id,l],i)=>{o+=`<label for=${id}>${l}</label><input id=${id} class="m pinf${e&&CHG.f===i?" bad":""}" type=text inputmode=numeric pattern="[0-9]*" maxlength=4 autocomplete=off autocorrect=off autocapitalize=off spellcheck=false enterkeyhint=${i<2?"next":"done"} aria-describedby=chge${e&&CHG.f===i?" aria-invalid=true":""} value="${h(v[i])}">`});
+  o+=`</div><p id=chge class=err role=alert>${e?h(e):""}</p><div class=rstb><button class="btn pri" data-chg=go${CHG==="send"?" disabled":""}><span>${CHG==="send"?"Saving":"Save"}</span><i>new code</i></button><button class="btn sec" data-chg=no><span>Cancel</span></button></div></section>`;
+  return o;
+}
+function chgVals(){return CHG_F.map(([id])=>($(id)?$(id).value:"").trim())}
+function chgErr(err,f){CHG={err,f};CHGV=chgVals();if(f===1||f===2){CHGV[1]=CHGV[2]=""}if(f===0)CHGV[0]="";view();const i=$(CHG_F[f][0]);if(i)i.focus()}
+async function chgGo(){
+  const [a,b,c]=chgVals(),four=(x)=>/^\d{4}$/.test(x);
+  if(!four(a))return chgErr("Your current code is 4 digits.",0);
+  if(!four(b))return chgErr("Your new code needs to be 4 digits.",1);
+  if(b!==c)return chgErr("The two new codes don't match. Type them again.",1);
+  if(a===b)return chgErr("Your new code is the same as your current one.",1);
+  CHGV=[a,b,c];CHG="send";view();
+  try{await api("/api/code",{old:a,new:b});CHG="done";CHGV=null;view();const r=document.querySelector("[data-chg=ask]");if(r)r.focus()}
+  catch(e){
+    if(!tok)return;
+    const s=e.status,j=e.j||{};
+    if(s===403)return chgErr("That isn't your current code. "+(j.left==null?"":j.left+" "+(j.left===1?"try":"tries")+" left."),0);
+    if(s===429){const m=Math.max(1,Math.ceil((j.wait||60)/60));return chgErr("Too many tries. Signing in and changing your code are paused for "+m+" min.",0)}
+    return chgErr(e.message||"That didn't work. Try again.",s===400&&/new/i.test(e.message)?1:0);
+  }
 }
 function setDone(ms){
   // The ship is restarting without anyone's progress: so does this page, signed out.
@@ -56,12 +95,22 @@ const view_set=view;view=function(){
     if(route!=="set"){route="set";history.replaceState(null,"","#set")}
     try{return OI?otaScreen():setScreen()}finally{if(net==="lost"&&!OI)$("v").insertAdjacentHTML("afterbegin","<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>")}
   }
-  if(route!=="set")RST=null;
+  if(route!=="set"){RST=null;CHG=null;CHGV=null}
   return view_set();
 };
 document.addEventListener("input",(ev)=>{
-  if(ev.target.id!=="rstn")return;
+  const t=ev.target;
+  if(/^chg[012]$/.test(t.id)){const d=t.value.replace(/\D/g,"").slice(0,4);if(d!==t.value)t.value=d;if(t.classList.contains("bad")){t.classList.remove("bad");t.removeAttribute("aria-invalid")}if(d.length===4&&t.id!=="chg2")$("chg"+(+t.id[3]+1))?.focus();return}
+  if(t.id!=="rstn")return;
   const b=document.querySelector("[data-rst=go]");if(b)b.disabled=RST==="send"||ev.target.value.trim()!==String(setNo());
+});
+document.addEventListener("keydown",(ev)=>{if(ev.key==="Enter"&&/^chg[012]$/.test(ev.target.id)){ev.preventDefault();if(ev.target.id==="chg2")chgGo();else $("chg"+(+ev.target.id[3]+1))?.focus()}});
+document.addEventListener("click",(ev)=>{
+  const el=ev.target.closest("button[data-chg]");if(!el||el.disabled)return;
+  const k=el.dataset.chg;
+  if(k==="ask"){CHG="ask";CHGV=null;view();return $("chg0")?.focus()}
+  if(k==="no"){CHG=null;CHGV=null;view();return document.querySelector("[data-chg=ask]")?.focus()}
+  if(k==="go"&&CHG!=="send")chgGo();
 });
 document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button[data-rst]");if(!el||el.disabled)return;

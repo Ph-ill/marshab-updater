@@ -57,7 +57,7 @@ calls the header P1). This guide calls them by those numbers. Pin 8 has no pogo 
 | GND (Pi pin 6) | black | **GND, pin 38** | any Pico GND works: pins 3, 8, 13, 18, 23, 28, 33, 38 |
 | SDA (Pi pin 3) | blue | **GP4, pin 6** | the fuel gauge's I2C data line |
 | SCL (Pi pin 5) | yellow | **GP5, pin 7** | the fuel gauge's I2C clock line |
-| GPIO4 "charger plugged in" (Pi pin 7) | green | **GP6, pin 9** | only works with PAD1 shorted (below) |
+| GPIO4 "charger plugged in" (Pi pin 7) | green | **GP6, pin 9** | **PAD1 must be shorted** (below) |
 | (optional) | 4.7 kΩ resistor | **3V3(OUT), pin 36** → GP4 pin 6 | only if needed: see "Pull-up resistors" |
 | (optional) | 4.7 kΩ resistor | **3V3(OUT), pin 36** → GP5 pin 7 | only if needed |
 
@@ -87,14 +87,67 @@ the charger line with the multimeter (section 5, checks A–D) before you solder
 to them.** SDA and SCL can't be told apart with a meter. If the gauge isn't found, swap
 those two wires; a swap does no harm.
 
-### PAD1: turning on the "charger plugged in" signal
+### PAD1: turning on the "charger plugged in" signal (required)
 
-On the back of the UPS-Lite are two small pads that must be shorted for the "power
-plugged in" signal. The vendor's schematic calls them **PAD1**. Join them with a blob of
-solder (or a short scrap of wire). Without this, the vendor says the signal is "unstable",
-so the bolt may flicker or never show. The battery percentage still works either way.
-**[UNVERIFIED: their exact position on v1.3; the vendor's notes show them in a photo of
-the back.]**
+**Bridging PAD1 is required** if the green wire goes to GP6. The firmware reads GP6 with
+no pull (`"bat_chg_pull": "none"`, the default), and relies on the UPS-Lite's R2 (75 kΩ)
+to hold the line low when unplugged. With PAD1 open, nothing holds it, the pin floats,
+and the bolt on the phones comes and goes at random. If you'd rather not bridge it, leave
+the green wire off and set `"bat_chg": -1` (no charger line; the percent still works).
+
+**Where it is.** Turn the UPS-Lite over to its **back**: the black side with the globe
+art and the "UPS-Lite" lettering, away from the cell and the parts. Hold it with the
+micro-USB edge at the top. Near the left edge, about level with the 中国制造 text, there
+is a block of bare pads, two columns by three rows. Five of them are big square pads.
+The sixth, **bottom left**, is split into **two tiny rectangles, one above the other,
+with a hair-thin gap**. That pair is PAD1. Join the two with one small blob of solder (or
+a short scrap of wire) across the gap. Nothing else needs doing.
+
+- Verified: the vendor's V1.3 instructions (p. 3) mark this pair in a photo as "The two
+  short pads", and the straight-on photo of the back on the vendor's Tindie listing shows
+  the same block.
+- Caveat: both photos show a board printed "V1.2". The vendor reuses them in the V1.3
+  manual, and the V1.3 front photo has the same pogo-pin layout, so expect the same
+  block. Look before you solder.
+- Inferred, not stated by the vendor: the five square pads look like the backs of the
+  five pogo pins. PAD1 sits behind the "(no pin)" spot in the table above, right next to
+  the GPIO4 pin.
+
+**What it does.** The vendor's schematic ("5V电源插入检测", "5 V supply plug-in
+detection") has a divider from the board's charger input, **5V-IN** (the micro-USB
+socket's 5 V): R1 39 kΩ to a node called POWER_IN, then R2 75 kΩ to GND. PAD1 sits
+between POWER_IN and the Pi's GPIO4 line (Pi pin 7, here the green wire to GP6). As
+shipped, PAD1 is open, so the pin is connected to nothing. That's why the vendor calls
+the reading "unstable": a floating input picks up noise. Bridged:
+
+| Charger in the UPS-Lite's micro-USB? | GP6 voltage, no pull (`"none"`, default) | reads, no pull | reads with the Pico's pull-down (`"down"`) |
+|---|---|---|---|
+| yes, 5.0 V | 5.0 × 75 / 114 ≈ **3.3 V** (3.45 V at 5.25 V) | **1** | **0** (measured on ship 5) |
+| no | about 0 V (R2 holds it low) | 0 | 0 |
+
+**Measured on ship 5** (UPS-Lite v1.3, PAD1 bridged, green wire to GP6), plugging the
+charger in and out repeatedly: with **no pull**, GP6 read 1 plugged in and 0 unplugged,
+following every change. With the RP2040's internal **pull-down** on, it read **0 every
+time**: the pull-down masks the signal on real hardware. That's why the default is
+`"none"` (it was `"down"` before 0.2.5-ota-phone).
+
+- The RP2040 needs 2.0 V or more for a 1 at 3.3 V (datasheet table 625), and its
+  pull-down is 50–80 kΩ. Seen from the pin, the divider is a 3.3 V source behind
+  39k ∥ 75k ≈ 25.7 kΩ. On paper the pull-down drags it to 2.2–2.5 V, still a 1 with
+  little margin; on ship 5 it read 0, so don't use `"down"` with this board. R2 already
+  holds the pin low when unplugged (the vendor's "floating input" setting), so no pull is
+  needed.
+- It's safe for the Pico: about 3.3 V, and 3.6 V only with an out-of-spec 5.5 V charger,
+  below the RP2040's 3.8 V absolute limit (IOVDD + 0.5 V). The divider limits the current
+  to well under 0.2 mA.
+- It means **"charger plugged in"**, not "charging": the signal stays high once the cell
+  is full (the LED turns green). The game's bolt follows the charger, not the cell.
+- It costs nothing on battery. The divider hangs off the charger input, so it draws
+  about 44 µA from the charger only while one is plugged in. Bridging changes nothing
+  else on the board, and the battery percent works either way.
+- Inferred: with the UPS-Lite switch off and a charger plugged in, the Pico is unpowered
+  but GP6 still sees the divider. The 25.7 kΩ limits that to roughly 0.1 mA, which is
+  harmless.
 
 ### The diode: why it's needed
 
@@ -178,7 +231,8 @@ and want the most margin.
 
 1. **Check the UPS-Lite first (section 5, checks A–E)** with the pogo pins still in and
    nothing soldered. Mark 5V-OUT, GND and the charger pin with a marker on the board.
-2. **PAD1**: solder the two PAD1 pads together on the UPS-Lite's back.
+2. **PAD1 (required)**: solder the two PAD1 pads together on the UPS-Lite's back (the
+   split pad at the bottom left of the pad block, section 2). Then do check C.
 3. **Shield the cell** with Kapton tape or a strip of card.
 4. **The UPS-Lite end.** Choose one of these:
 
@@ -231,14 +285,14 @@ they're out).
 |---|---|---|
 | A. 5V-OUT | UPS-Lite switch **on**: black probe on the micro-USB socket's metal shell, red on the pin/pad you think is 5V-OUT | about **5.0 V** (4.8–5.2). Switch off: about 0 V |
 | B. GND | continuity between the GND pin/pad and the micro-USB socket's metal shell | beep |
-| C. Charger line | PAD1 shorted, charger plugged into the UPS-Lite, black on GND, red on the Pi-pin-7 pin/pad | about **3.3 V** (the vendor's 39k/75k divider from 5 V); charger unplugged: about 0 V |
+| C. Charger line | PAD1 shorted, charger plugged into the UPS-Lite, black on GND, red on the Pi-pin-7 pin/pad | about **3.3 V** (the vendor's 39k/75k divider from 5 V, 5 × 75/114); charger unplugged: about 0 V. PAD1 open: 0 V or a wandering reading |
 | D. No other 5 V | switch on, black on GND: the SDA and SCL pins/pads | **under 3.6 V** (near 0 V is normal) |
 | E. Pull-ups on the board? | same as D | near 0 V or wandering: **no pull-ups on the board** (expected, section 2). A steady 3–3.3 V: the board has its own pull-ups. **More than 3.6 V: don't connect SDA/SCL to the Pico** before asking |
 | F. No shorts | switch **off**, nothing plugged in: continuity VSYS (pin 39) to GND (pin 38), and 3V3(OUT) (pin 36) to GND | **no** beep (a short beep that stops is the capacitor charging, that's OK) |
 | G. Diode | diode mode, red probe on the UPS-Lite's 5V-OUT pad, black on Pico pin 39 | 0.15–0.4 for a Schottky, 0.5–0.7 for a 1N400x; reversed: nothing |
 | H. If fitted, pull-ups | resistance from pin 6 to pin 36, and from pin 7 to pin 36 | about 4.7 kΩ each |
 | I. Powered | switch **on**, no USB: black on pin 38, red on pin 39 / pin 36 | about 4.6–4.8 V (4.2 V with a 1N400x) / 3.3 V |
-| J. Charger line at the Pico | charger in the UPS-Lite: pin 9 (GP6) to GND, with the game running | about 2–3.3 V plugged in, about 0 V unplugged |
+| J. Charger line at the Pico | black on GND (pin 38), red on pin 9 (GP6), with the game running (no pull, the default). Plug the charger into the UPS-Lite, then unplug it, a few times | plugged in: about **3.3 V**; unplugged: about **0 V**, settling within a second. A reading that wanders or sits between 0.5 and 2 V unplugged: PAD1 isn't bridged (the pin floats). About 0 V plugged in: PAD1 open, the green wire off GP6, or `"bat_chg_pull": "down"` in `ship.json` |
 
 If check A or B finds 5 V or GND on a different pad from the picture, trust the meter and
 rework the table in section 2 before soldering.
@@ -252,6 +306,17 @@ rework the table in section 2 before soldering.
 - The UPS-Lite's light: **red** while charging, **green** when full.
 - The **switch** on the UPS-Lite turns its 5 V output on and off. Off, the Pico runs only
   if its own USB is plugged in. The gauge stays powered by the cell either way.
+- **The bolt shows within a few seconds.** The ship watches GP6 every 100 ms
+  (`board/main.py`, `charger_watch`) and takes a change once it has held 300 ms, so a
+  plug wiggling in its socket doesn't flicker the bolt. The phones look at the battery
+  every 5 s while the page is showing (`GET /api/bat`), so the bolt appears or goes within
+  about 5 s of the cable. The gauge is read 2 s after a change, then once a minute as
+  before.
+- **The percent itself rises slowly.** It's the gauge's estimate of the charge in the
+  cell, so at the UPS-Lite's 400 mA it climbs about 1% every 1–2 minutes (a 1000 mAh
+  cell: 400 mA is about 40% an hour at best, less near full). Plugging in moves the bolt
+  at once, not the number. The voltage jumps by a few tenths of a volt when the charger
+  goes in.
 - Rough numbers, **[UNVERIFIED estimates, not measured]**: a full charge takes about 3
   hours (the charger gives up to 400 mA); a Pico W with Wi-Fi and Bluetooth on uses about
   60–100 mA, so a full battery should last very roughly 7–8 hours. Check the real number
@@ -287,7 +352,7 @@ UPS-Lite switch on.
    if i.readfrom_mem(0x62, 0x0A, 1)[0] & 0xC0: i.writeto_mem(0x62, 0x0A, b'\x30')
    time.sleep(2)
    v = i.readfrom_mem(0x62, 2, 2); s = i.readfrom_mem(0x62, 4, 2)
-   print('mV', ((v[0] & 0x3F) << 8 | v[1]) * 305 // 1000, 'percent', s[0], 'plugged in', Pin(6, Pin.IN, Pin.PULL_DOWN).value())
+   print('mV', ((v[0] & 0x3F) << 8 | v[1]) * 305 // 1000, 'percent', s[0], 'plugged in', Pin(6, Pin.IN).value())
    "
    ```
 
@@ -349,15 +414,23 @@ UPS-Lite switch on.
 - Still nothing: put `"battery": true` in `ship.json`. The phone then shows the battery as
   unknown, which at least confirms the firmware side.
 
+**The bolt flickers, or shows with no charger plugged in**
+
+- PAD1 isn't bridged (section 2): the pin floats and picks up noise. Bridge PAD1, or, if
+  you can't, set `"bat_chg": -1` in `ship.json` (section 9) so the firmware ignores the
+  line (no bolt, the percent still works). Check J tells you which: a wandering reading
+  on GP6 with the charger unplugged means PAD1 is open.
+
 **The bolt never shows while charging**
 
 - PAD1 isn't shorted (section 2), or check C fails.
 - The green wire isn't on GP6 (pin 9), or check J fails.
-- The vendor's notes use the pin as a floating input; this firmware adds a pull-down by
-  default so an unconnected pin reads "not charging". If the line reads 1 all the time,
-  set `"bat_chg_pull": "none"` in `ship.json` (section 9). **[UNVERIFIED: the signal
-  level on v1.3 with the Pico's pull-down; about 2.2–2.5 V expected when plugged in,
-  enough for a "1".]**
+- `"bat_chg_pull": "down"` in `ship.json`: on ship 5 the Pico's pull-down masked the
+  signal (it read 0 every time, section 2). Remove the key or set `"none"`.
+- The firmware before 0.2.5-ota-phone used the pull-down by default: update it, or set
+  `"bat_chg_pull": "none"`.
+- The bolt follows the phones' 5 s look: give it a few seconds. The percent rises slowly
+  (section 6).
 
 **The board resets or drops when Wi-Fi starts (on battery only)**
 
@@ -378,7 +451,7 @@ UPS-Lite switch on.
 | `bat_i2c` | `0` | the RP2040 I2C block for those pins |
 | `bat_khz` | (none) | I2C speed in kHz. Unset: 50, and 10 if the gauge doesn't answer at 50 (or after 3 failed readings). With resistors fitted, 100 is fine |
 | `bat_chg` | `6` | the charger-detect GP number; `-1` for none |
-| `bat_chg_pull` | `"down"` | `"down"`, `"up"` or `"none"` on that pin |
+| `bat_chg_pull` | `"none"` | `"none"`, `"down"` or `"up"` on that pin. Keep `"none"` with a UPS-Lite: R2 holds the line low with PAD1 bridged, and the pull-down masks the signal (measured on ship 5) |
 | `bat_every_s` | `60` | seconds between readings (5 at least) |
 
 ## Sources
@@ -389,7 +462,15 @@ UPS-Lite switch on.
   5 V 2 A charger, the LED colours, the 1000 mAh cell, 400 mA charging.
 - The vendor's schematic (in the UPS-Lite instructions; drawn for v1.2 with a MAX17040G
   gauge): SDA/SCL go straight from the gauge to the Pi's pins 3 and 5 with no pull-ups;
-  PAD1 and the 39k/75k divider on the charge-detect line; header P1 pins 3–7.
+  PAD1 and the 39k/75k divider on the charge-detect line (R1 39 kΩ from 5V-IN to
+  POWER_IN, R2 75 kΩ to GND, PAD1 from POWER_IN to Pi GPIO4); header P1 pins 3–7.
+- The V1.3 instructions, p. 3: the photo of the back marking "The two short pads", and
+  "the GPIO is set to the floating input state. If the pad is not shorted, the state of
+  the GPIO detection is unstable." The vendor's Tindie listing
+  (tindie.com/products/rachel/ups-lite-for-raspberry-pi-zero): a straight-on photo of
+  the back (printed V1.2) and the V1.3 front.
+- RP2040 datasheet, table 625: VIH 2.0 V minimum at IOVDD 3.3 V, pull-up and pull-down
+  50–80 kΩ; table 622: at most IOVDD + 0.5 V on an IO pin.
 - Raspberry Pi, "Using I2C on Raspberry Pi SBCs" (white paper): every Pi has 1.8 kΩ
   pull-ups on GPIO 2 and 3.
 - Cellwise CW2015 datasheet: the registers the firmware reads (VERSION 0x00, VCELL
@@ -413,8 +494,11 @@ UPS-Lite switch on.
 - That the gauge answers reliably with only the Pico's internal pull-ups.
 - That the pogo pins are through-hole and come out cleanly, and whether their barrels
   take solder.
-- The PAD1 pads' exact position on v1.3.
-- The GP6 voltage with the pull-down fitted.
+- PAD1's position on a real v1.3 board: the vendor photos are of a V1.2 back (section 2).
+- The GP6 voltage on hardware with a meter (3.3 V without a pull, worked out from the
+  schematic). The logic level is checked: on ship 5, no pull reads 1 plugged in and 0
+  unplugged; the pull-down reads 0 either way.
 - Charge time, run time and how accurate the percent is on this cell.
-- **None of this has been tried on hardware yet.** The firmware was tested against a
-  simulated gauge only. Please note what you find here.
+- Ship 5 runs on one (PAD1 bridged, green wire to GP6): the charger line is checked
+  there (section 2). Everything else above was tested against a simulated gauge. Please
+  note what you find here.

@@ -154,7 +154,7 @@ try {
     if (await click('[data-eng^="open:"]')) await until(`location.hash.includes('drop')||route.startsWith('drop')`, 4000, 'drop opened');
   }
   step('poll');
-  // A crewmate on another phone taps; this phone sees it by polling /api/v (no WebSocket on the board).
+  // A crewmate on another phone taps; this phone sees it by polling /api/bat ({v, bat}, every 5 s; no WebSocket on the board).
   const other = (C + 1) % 7 === 5 ? (C + 2) % 7 : (C + 1) % 7;
   const H = { 'User-Agent': 'other-phone', 'Content-Type': 'application/json' };
   const lg = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H, body: JSON.stringify({ crew: other, pin: '1234' }) })).json();
@@ -162,11 +162,12 @@ try {
   const r = await fetch(BASE + '/api/act', { method: 'POST', headers: { ...H, 'X-Crew-Token': lg.token }, body: JSON.stringify({ act: 0, param: 0, tgt: 0 }) });
   check(r.status === 200, 'other phone act: ' + r.status);
   check(await ev('net') === 'poll', 'no WebSocket on the board: the page should be polling');
-  await until(`S.v!==${vb}`, 20000, 'the poll picked up a crewmate\'s tap');
+  check(await ev(`!document.querySelector('.off')`), 'polling is the normal mode: no banner');
+  await until(`S.v!==${vb}`, 9000, 'the poll picked up a crewmate\'s tap');
   if (DAY < 42) {
     step('06:00');
     // The phone's clock crosses 06:00: the ship moves to the next flight day and the page,
-    // polling /api/v every 15 s, shows it (and the new day's story) without a reload.
+    // polling /api/bat ({v, bat}) every 5 s, shows it (and the new day's story) without a reload.
     await ev('go("home")');
     await ev('__shift(12*60000)');
     await until(`S.day===${DAY + 1}&&document.querySelector('#top').textContent.includes('FD ${String(DAY + 1).padStart(2, '0')}')`, 45000, 'the next flight day after 06:00');
@@ -197,11 +198,25 @@ try {
   check(await ev(`(b=>!!b&&b.getAttribute("aria-label")==="Settings"&&b.getBoundingClientRect().width>=44&&b.parentElement.textContent.includes("FD "))(document.querySelector('#top .gear'))`), 'gear in the top bar');
   await click('#top .gear');
   await until(`route==="set"&&!!document.querySelector('#set-rst')`, 4000, 'Settings open');
-  check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),"set-out","set-rst"].join()`)), 'Settings sections in order, Reset last');
+  check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),"set-out","set-code","set-rst"].join()`)), 'Settings sections in order, Your code above Reset, Reset last');
   // Reset this ship (main.py reset_ship on the board): refused without a session, without the
   // ship's number and with another; still signed in after (the success is tests/test_reset.py).
   const rst = JSON.parse(await ev(`(async()=>{const f=(b,t)=>fetch("/api/reset",{method:"POST",headers:t?{"X-Crew-Token":tok}:{},body:b}).then((r)=>r.status);const n=S.here+1;return JSON.stringify([await f(JSON.stringify({confirm:n}),0),await f("{}",1),await f(JSON.stringify({confirm:n%8+1}),1),await fetch("/api/state",{headers:{"X-Crew-Token":tok}}).then((r)=>r.status)])})()`));
   check(rst.join() === '401,403,403,200', 'reset refused without a session / confirm / the right number: ' + rst.join());
+  // Change your code (board/lvcode.py via main.py's ota_route on the board): refused without
+  // a session, for a bad format and for a wrong current code; then the page's own form
+  // changes it, the new code signs in and the old one doesn't; and back to 1234 for the rest.
+  const cq = `(b,t)=>fetch("/api/code",{method:"POST",headers:t?{"X-Crew-Token":tok}:{},body:JSON.stringify(b)}).then((r)=>r.status)`;
+  const cr = JSON.parse(await ev(`(async()=>{const f=${cq};return JSON.stringify([await f({old:"1234",new:"5678"},0),await f({old:"1234",new:"567"},1),await f({old:"1234",new:"1234"},1),await f({old:"0000",new:"5678"},1),await fetch("/api/state",{headers:{"X-Crew-Token":tok}}).then((r)=>r.status)])})()`));
+  check(cr.join() === '401,400,400,403,200', 'code change refused without a session / bad format / same code / wrong code, still signed in: ' + cr.join());
+  await click('[data-chg=ask]');
+  await until(`!!document.querySelector('#chg2')`, 4000, 'Change your code form');
+  await ev(`(["1234","5678","5678"].forEach((v,i)=>{const e=$("chg"+i);e.value=v;e.dispatchEvent(new Event("input",{bubbles:true}))}),1)`);
+  await click('[data-chg=go]');
+  await until(`!!document.querySelector('#set-code .ok')&&tok!==""`, 6000, 'code changed from the form, still signed in');
+  const lo = (pin) => `fetch("/api/login",{method:"POST",body:JSON.stringify({crew:${C},pin:"${pin}"})}).then((r)=>r.status)`;
+  const li = JSON.parse(await ev(`(async()=>JSON.stringify([await ${lo("1234")},await ${lo("5678")},await (${cq})({old:"5678",new:"1234"},1),await ${lo("1234")}]))()`));
+  check(li.join() === '403,200,200,200', 'after the change: old code 403, new 200; changed back: ' + li.join());
   check(await ev(`!!document.querySelector('[data-led]')`), 'Ship light button in Settings');
   await click('[data-led]');
   await until(`typeof S.led==="boolean"&&!document.querySelector('[data-led]').disabled&&document.querySelector('[data-led]').textContent.includes("Ship light: "+(S.led?"on":"off"))`, 4000, 'Ship light answered');
@@ -226,9 +241,10 @@ try {
   const pre = JSON.parse(await ev(`JSON.stringify({h:document.querySelector('.pre h1').textContent,p:document.querySelector('.pre p').textContent,on:document.querySelectorAll('[data-who]:not([disabled])').length})`));
   check(pre.h === 'Launch in 2 h 5 min' && /starts at 06:00/.test(pre.p) && pre.on === 0, 'pre-launch screen: ' + JSON.stringify(pre));
   await ev('(PRE=null,hello(),1)');
-  // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404).
+  // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404, the reset and
+  // code-change refusals asked for above)
   // (and /api/me's 401 when the page opens signed out).
-  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)));
+  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)) && !(p === '/api/code' && (s === 400 || s === 401 || s === 403)));
   check(bad.length === 0, 'HTTP errors: ' + JSON.stringify(bad));
   check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship about updates (web/ota.js)');
   check(wsTried, 'the page tried the WebSocket and fell back to polling');

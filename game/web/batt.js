@@ -13,6 +13,22 @@ function batTop(){
   const p=b[0],low=p!=null&&p<BAT_LOW&&!b[2];
   s.insertAdjacentHTML("afterbegin",`<span class="bat${low?" low":""}" role=img aria-label="Ship battery ${p==null?"reading unavailable":p+"%"}${b[2]?", charging":""}">${batIcon(b)}${p==null?"--":p}%</span>`);
 }
+function batFacts(b){
+  return `<dl class=facts><dt>Charge</dt><dd class=m>${b[0]==null?"—":b[0]+"%"}</dd><dt>Voltage</dt><dd class=m>${b[1]?(b[1]/1000).toFixed(2)+" V":"—"}</dd><dt>Charging</dt><dd>${b[2]?"Yes":"No"}</dd></dl>`;
+}
+// app.html's poll (every 5 s while the page shows: GET /api/bat, {v, bat}) hands the
+// battery here; when it changed, the top bar's figure and Settings' Battery facts are
+// redrawn in place (no full redraw: a form being typed in stays as it is). The ship sees
+// the cable go in within about 0.4 s (main.py charger_watch), so the bolt shows within a
+// few seconds; the percent itself rises slowly (docs/BATTERY.md).
+function batSet(n){
+  S.bat=n;
+  const o=document.querySelector("#top .bat");
+  if(o){o.remove();batTop()}
+  const f=document.querySelector("#set-bat dl");
+  if(f)f.outerHTML=batFacts(n);
+}
+function batNew(n){if(n&&S&&S.bat&&n.join()!==S.bat.join())batSet(n)}
 const shipTop0=shipTop;shipTop=function(){shipTop0();batTop()};
 const home0=home;home=function(){
   home0();

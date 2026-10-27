@@ -1,6 +1,6 @@
 #!/bin/sh
-# Settings (web/settings.js): the gear, every section, Reset this ship; light, story text
-# replaced; also a click-through test against the mock (sim/mockserver.py /api/reset).
+# Settings (web/settings.js): the gear, every section, Change your code, Reset this ship; light, story text
+# replaced; also a click-through test against the mock (sim/mockserver.py /api/reset, /api/code).
 #   PW=... CHROME=... game/web/shots_settings.sh OUTDIR
 set -e
 cd "$(dirname "$0")/.."
