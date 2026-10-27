@@ -96,6 +96,14 @@ git add firmware && git commit -m "firmware: package Long Voyage 0.0.2-coex" && 
   The updater writes files over USB only; the `.uf2` game firmware
   (`game/tools/build_firmware.sh`) is flashed by hand (BOOTSEL), see `game/docs/BENCH_TEST.md`.
 
+- **Over the air.** A ship that has had one USB install with `boot.py`, `lvboot`, `lvota`
+  and `lvsig` can also update from a phone. Sign the release
+  (`game/tools/ota/sign_release.py firmware/releases/<version>/release.json`; the key stays
+  outside the repo). Once it's pushed to `main`, the game page on any phone that reaches the
+  internet picks it up from `raw.githubusercontent.com` and offers it on the ship's Wi-Fi.
+  The ship checks the Ed25519 signature and every file, switches over at restart and rolls
+  back if the new version doesn't start. `data/` is never touched. See `game/docs/OTA.md`.
+
 To move to a newer MicroPython, update `firmware/runtime.json`: URL, size and sha256 from
 micropython.org. Then run `python3 tools/validate_firmware.py --online` to download both
 `.uf2` files and check them.
