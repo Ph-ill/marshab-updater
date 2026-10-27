@@ -26,6 +26,31 @@ async function shot(p, name, scheme) {
   await p.screenshot({ path: f });
   console.log(f);
 }
+// The phone / Wi-Fi / ship / Bluetooth / ship diagram (tFig(2)): one grid, so every label
+// is centred under its icon or link. Checked from 280 px (390 px at Safari's 140% text
+// size) to a tablet; shot at 320, 390 and 430 (light).
+let netFails = 0;
+async function netCheck(p, scheme) {
+  const vp0 = p.viewportSize();
+  for (const w of [280, 320, 360, 390, 430, 768]) {
+    await p.setViewportSize({ width: w, height: vp0.height });
+    await p.waitForTimeout(50);
+    const g = await p.evaluate(() => {
+      const n = document.querySelector(".net"), k = [...n.children], top = k.slice(0, 5), lab = k.slice(5);
+      const c = (e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.left, r.right, r.width]; };
+      return { off: top.map((e, i) => Math.abs(c(e)[0] - c(lab[i])[0])), links: [c(top[1])[3], c(top[3])[3]],
+        lab: lab.map((e) => c(e)), over: n.scrollWidth - n.clientWidth, txt: lab.map((e) => e.textContent).join() };
+    });
+    const ok = Math.max(...g.off) < 0.75 && g.over <= 0 && g.lab.every((l, i) => !i || l[1] >= g.lab[i - 1][2]) && (Math.abs(g.links[0] - g.links[1]) < 1 || Math.abs(g.links[1] - g.lab[3][3]) < 1);   // equal, unless BLUETOOTH needs more
+    console.log(`${ok ? "ok  " : "FAIL"} diagram ${scheme} ${w}px: labels off centre by at most ${Math.max(...g.off).toFixed(2)} px, links ${g.links.map((x) => x.toFixed(1)).join("/")} px, overflow ${g.over}`);
+    if (!ok) { netFails++; process.exitCode = 1; }
+    if (scheme === "light" && [320, 390, 430].includes(w)) {
+      const f = `${out}/04-diagram-phone-wifi-ship-bluetooth-${w}px-${scheme}.png`;
+      await (await p.$(".tut .fig:has(.net)")).screenshot({ path: f }); console.log(f);
+    }
+  }
+  await p.setViewportSize(vp0);
+}
 for (const [i, scheme] of ["light", "dark"].entries()) {
   const p = await page(scheme);
   await p.goto(`http://localhost:${8052 + i}/?day=8`);
@@ -44,6 +69,7 @@ for (const [i, scheme] of ["light", "dark"].entries()) {
   for (let c = 0; c < n; c++) {
     const k = await p.evaluate(() => TUT()[tutStep()][0].toLowerCase().replace(/[^a-z]+/g, "-"));
     await shot(p, `04-card-${String(c + 1).padStart(2, "0")}-${k}`, scheme);
+    if (k === "how-it-works") await netCheck(p, scheme);
     if (c < n - 1) { await p.click("[data-tut=next]"); await p.waitForFunction((c) => tutStep() === c, c + 1); }
   }
   await p.click("[data-tut=done]");

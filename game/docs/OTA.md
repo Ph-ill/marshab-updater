@@ -255,7 +255,7 @@ transfer arc and the ship, on the page's paper colour. The PNG is committed. The
 - `manifest` and `icon`;
 - `apple-touch-icon`;
 - `apple-mobile-web-app-capable` and `mobile-web-app-capable`;
-- `apple-mobile-web-app-title` ("Long Voyage");
+- `apple-mobile-web-app-title` ("The Long Voyage");
 - `apple-mobile-web-app-status-bar-style` (`default`);
 - `theme-color`, light and dark.
 
@@ -265,22 +265,46 @@ The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same
 decides where Share is:
 
 - **Bottom** and **Top** keep a Share button on the toolbar.
-- **Compact**, the default, has no Share button. It sits in a menu. Apple's guide and
-  most write-ups say that menu is ⋯ beside the address. A real iPhone on iOS 26 Compact
-  (back, the address pill with the page menu at its left, reload, tabs) had no ⋯ at all,
-  so there Share is behind the page menu.
+- **Compact**, the default, has no Share button. Apple's guide and most write-ups put
+  Share under ⋯ beside the address. Phill's iPhone on iOS 26 Compact has no ⋯ at all:
+  back, the address pill with the page menu (a box over two lines) at its left, reload,
+  tabs.
 
-So the card doesn't guess. It says: Share, or if there's no Share button, the page menu
-in the address bar or ⋯. It draws all three icons inline. If Add to Home Screen is
-missing from the Share sheet, Edit Actions at the bottom of the sheet adds it.
+On that phone the flow is:
 
-**The name is "Long Voyage", not the ship's name.**
+1. The page menu: **Share** is the first item, above Add to Bookmarks.
+2. The share sheet: the people row; then AirDrop, Messages, Mail, Notes; then round
+   buttons Copy, Add to Bookmarks, Add to Reading List and **View More**.
+3. **View More** opens a list: Add Bookmark to…, Add to Favorites, Add to Quick Note,
+   Find on Page, and **Add to Home Screen** last.
+
+The card's iOS 26 steps follow that exactly, with the page menu, Share and View More
+icons inline:
+
+1. Tap [page menu] in the address bar, then **Share** [share]. Share in Safari's
+   toolbar? Tap that.
+2. Tap **View More** [chevron], then **Add to Home Screen**.
+3. Keep **Open as Web App** on, then tap **Add**.
+
+The second sentence of step 1 covers the Bottom and Top layouts. The iOS 26 captive
+sheet's step 3 is the same in one line. The phone's screenshots are on the box in
+`/workspace/ui-shots/ios-ref/`. The share sheet's people row is blurred in every copy,
+and they're never committed.
+
+**The name is "The Long Voyage", not the ship's name.**
 
 - Every ship answers on the same address. So one icon opens whichever ship's Wi-Fi you're
   on, and a ship name on it would be wrong half the time.
-- The manifest is a fixed file built once for all ships.
-- "Long Voyage" is 11 characters, which fits under an iPhone icon without being cut off.
-- You can rename it in the Add dialog.
+- The manifest is a fixed file built once for all ships. `name` and `short_name` are both
+  "The Long Voyage" (Phill's choice), as are `apple-mobile-web-app-title` and the page
+  `<title>`. On iOS 26 the page title names the icon, because the Apple tags are left
+  out there (below).
+- At 15 characters it's wider than one line under an iPhone icon. It measures about
+  95-100 px in a 12 px system font. "Voice Memos", about the widest name of Apple's own
+  that fits, is about 77 px. So expect iOS to cut it to something like "The Long Voy…".
+  Android launchers cut it the same way or wrap it to two lines.
+- If that's too ugly, "Long Voyage" (11 characters, about 74 px) fits, and you can rename
+  the icon in the Add dialog.
 
 **The status bar is `default`, not `black-translucent`.** `black-translucent` draws the
 page under the status bar with white status text. That text would be unreadable on the
@@ -303,7 +327,7 @@ light paper colour.
 | Where you are | What the card says | What the icon does |
 | --- | --- | --- |
 | iOS Safari (18 and earlier) | Share (bottom; top on iPad) › Add to Home Screen › Add | Opens full screen in its own window (the `apple-mobile-web-app-capable` tag / manifest `display`) |
-| iOS 26 Safari | Share; if there's no Share button, the page menu (box over two lines) in the address bar, or ⋯, then Share › Add to Home Screen, keep **Open as Web App** on | The same; on iOS 26 every added site is a web app unless you turn that off |
+| iOS 26 Safari | Page menu (box over two lines) in the address bar › Share (or Share on the toolbar) › View More › Add to Home Screen, keep **Open as Web App** on › Add | The same; on iOS 26 every added site is a web app unless you turn that off |
 | Chrome / Firefox / Edge on iOS | Share (address bar or menu) › Add to Home Screen | iOS 16.4+ allows this from other browsers. **[NEEDS A REAL PHONE]** |
 | iOS captive sheet | Tap **Cancel**, then **Use Without Internet**. Open Safari, go to `192.168.4.1`, then Share › Add to Home Screen | The sheet has no Share button. A link can't leave it either: links only open Safari once iOS marks the network as connected, which needs the probe answered "Success", and the ship never does that (section 5). So the card shows the address in large type to read and type. **[NEEDS A REAL PHONE]**: the Cancel › Use Without Internet wording |
 | Android Chrome | ⋮ › Add to Home screen › Add | A plain shortcut that opens a Chrome tab, not full screen. Over http, Chrome can't make a WebAPK. The shortcut may use the page's icon or a letter, depending on the Chrome version. **[NEEDS A REAL PHONE]** |
@@ -355,8 +379,8 @@ indicator padding (meant), plus 62 px nothing could paint. The page was already 
   - where it opens;
   - that it works on the ship's Wi-Fi only;
   - that you sign in once.
-- The card adds 2050 B (gzip) to the page. With the iOS 26 tag script below (+228 B), the
-  page is 37193 B of the 128 KB budget.
+- The card and the iOS 26 tag script below add about 2.3 KB (gzip) to the page, which is
+  now 37466 B of the 128 KB budget.
   The game firmware's files on flash go from 79738 B to 84196 B.
 - `main.py`'s `home_screen()` adds the four routes to `lvweb.STATIC` at start. `lvweb` is
   frozen in the core, so changing it would ship it again as a RAM-loaded `.mpy`. That
@@ -468,8 +492,8 @@ Still to do on real hardware and phones:
      below it? Check with an icon added after this change, and with one added before.
    - On iOS 26, try each tab layout (Settings › Apps › Safari › Tabs: Compact, Bottom,
      Top) and check the card's first step finds Share in each.
-   - Add the game: check the icon, the name "Long Voyage", and that it opens full screen
-     with the status bar readable.
+   - Add the game: check the icon, the name "The Long Voyage" (and how it's cut), and
+     that it opens full screen with the status bar readable.
    - Sign in once, close it, then reopen it the next day: are you still signed in, and is
      the briefing flag kept?
    - With mobile data on, does **Check for updates** from the icon reach GitHub while

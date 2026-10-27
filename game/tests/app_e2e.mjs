@@ -210,7 +210,7 @@ try {
   // The home screen (web/a2hs.js): the manifest and icon the page's <head> names, from the ship.
   const mf = await fetch(BASE + '/app.webmanifest'), ic = await fetch(BASE + '/icon.png');
   const mj = mf.status === 200 ? await mf.json() : {}, ib = Buffer.from(await ic.arrayBuffer());
-  check(/manifest\+json/.test(mf.headers.get('content-type')) && mj.short_name === 'Long Voyage' && mj.start_url === '/' && mj.icons[0].src === '/icon.png', 'manifest: ' + mf.status + ' ' + JSON.stringify(mj));
+  check(/manifest\+json/.test(mf.headers.get('content-type')) && mj.name === 'The Long Voyage' && mj.short_name === 'The Long Voyage' && mj.start_url === '/' && mj.icons[0].src === '/icon.png', 'manifest: ' + mf.status + ' ' + JSON.stringify(mj));
   check(ic.status === 200 && ic.headers.get('content-type') === 'image/png' && ib.readUInt32BE(16) === 192 && ib.readUInt32BE(20) === 192, 'icon: ' + ic.status + ' ' + ib.length + ' B');
   const hd = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('head link[rel],head meta[name^=apple]')].map((e)=>e.rel||e.name+'='+e.content))`));
   // This browser says iPhone and has anchor positioning, so app.html takes it for iOS 26 and
