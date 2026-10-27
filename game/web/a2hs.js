@@ -21,17 +21,23 @@ function a2Kind(){
 function a2Done(){if(A2_OFF)return true;try{return localStorage.getItem(A2K)==="1"}catch(e){return false}}
 const A2_SH=`<svg class=a2i viewBox="0 0 16 16" aria-label=Share role=img><path d="M8 1.5v8.5M5 4.5l3-3 3 3M5.5 7H3v7.5h10V7h-2.5"/></svg>`;
 const A2_MV=`<svg class=a2i viewBox="0 0 16 16" aria-label=menu role=img><circle cx=8 cy=3 r=1.4 /><circle cx=8 cy=8 r=1.4 /><circle cx=8 cy=13 r=1.4 /></svg>`;
+// Safari's page menu (iOS 18+): a box over two lines, at the left of the address bar.
+const A2_PM=`<svg class=a2i viewBox="0 0 16 16" aria-label="page menu" role=img><path d="M2.5 2.5h11v5h-11zM2.5 10.5h11M2.5 13.5h7"/></svg>`;
 const A2_MH=`<svg class=a2i viewBox="0 0 16 16" aria-label=More role=img><circle cx=3 cy=8 r=1.4 /><circle cx=8 cy=8 r=1.4 /><circle cx=13 cy=8 r=1.4 /></svg>`;
+const A2_SH26=`Tap <b>Share</b> ${A2_SH}. No Share button? Tap ${A2_PM} in the address bar, or ${A2_MH}, and it's in there`;
 function a2Steps(k){
   const u=navigator.userAgent,v=+((u.match(/Version\/(\d+)/)||[])[1]||0),pad_=/iPad|Macintosh/.test(u);
   const at=`<b class="a2u m">${h(location.host||"192.168.4.1")}</b>`;
   const add="Tap <b>Add to Home Screen</b>, then <b>Add</b>.";
   const S_={
-    ios:[v>=26?`Tap ${A2_MH} beside the address, then <b>Share</b> ${A2_SH}.`:`Tap <b>Share</b> ${A2_SH} at the ${pad_?"top":"bottom"} of Safari.`,
-      v>=26?"Scroll down, tap <b>Add to Home Screen</b>, keep <b>Open as Web App</b> on, then tap <b>Add</b>.":"Scroll down. "+add],
+    // iOS 26 moves Share with the tab layout (Settings > Safari > Tabs): a toolbar button
+    // in Bottom and Top, inside a menu in Compact (the page menu in the address bar, or
+    // the ... button, depending on the release). One step that fits all three.
+    ios:[v>=26?A2_SH26+".":`Tap <b>Share</b> ${A2_SH} at the ${pad_?"top":"bottom"} of Safari.`,
+      v>=26?"Tap <b>Add to Home Screen</b> (scroll down for it), keep <b>Open as Web App</b> on, then <b>Add</b>.":"Scroll down. "+add],
     iosx:[`Tap <b>Share</b> ${A2_SH}: it's in the address bar or the browser's menu.`,"Scroll down. "+add],
     sheet:["This sign-in window can't add icons. Tap <b>Cancel</b> at the top, then <b>Use Without Internet</b>. You stay on the ship's Wi-Fi.",
-      `Open <b>Safari</b> and go to ${at}`,`Tap <b>Share</b> ${A2_SH} (on iOS 26 it's under ${A2_MH}), then <b>Add to Home Screen</b>.`],
+      `Open <b>Safari</b> and go to ${at}`,`Tap <b>Share</b> ${A2_SH} (or find it under ${A2_PM} in the address bar, or ${A2_MH}), then <b>Add to Home Screen</b>.`],
     and:[`Tap ${A2_MV} at the top right of Chrome.`,"Tap <b>Add to Home screen</b>, then <b>Add</b>."],
     sam:["Tap <b>☰</b> at the bottom of the screen.","Tap <b>Add page to</b>, then <b>Home screen</b>."],
     awv:["This sign-in screen can't add icons. Close it. Your phone stays on the ship's Wi-Fi.",

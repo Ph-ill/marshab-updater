@@ -261,6 +261,19 @@ transfer arc and the ship, on the page's paper colour. The PNG is committed. The
 
 The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same name.
 
+**Where Share is on iOS 26.** Safari's tab layout (Settings › Apps › Safari › Tabs)
+decides where Share is:
+
+- **Bottom** and **Top** keep a Share button on the toolbar.
+- **Compact**, the default, has no Share button. It sits in a menu. Apple's guide and
+  most write-ups say that menu is ⋯ beside the address. A real iPhone on iOS 26 Compact
+  (back, the address pill with the page menu at its left, reload, tabs) had no ⋯ at all,
+  so there Share is behind the page menu.
+
+So the card doesn't guess. It says: Share, or if there's no Share button, the page menu
+in the address bar or ⋯. It draws all three icons inline. If Add to Home Screen is
+missing from the Share sheet, Edit Actions at the bottom of the sheet adds it.
+
 **The name is "Long Voyage", not the ship's name.**
 
 - Every ship answers on the same address. So one icon opens whichever ship's Wi-Fi you're
@@ -290,13 +303,46 @@ light paper colour.
 | Where you are | What the card says | What the icon does |
 | --- | --- | --- |
 | iOS Safari (18 and earlier) | Share (bottom; top on iPad) › Add to Home Screen › Add | Opens full screen in its own window (the `apple-mobile-web-app-capable` tag / manifest `display`) |
-| iOS 26 Safari | ⋯ beside the address › Share › Add to Home Screen, keep **Open as Web App** on | The same; on iOS 26 every added site is a web app unless you turn that off |
+| iOS 26 Safari | Share; if there's no Share button, the page menu (box over two lines) in the address bar, or ⋯, then Share › Add to Home Screen, keep **Open as Web App** on | The same; on iOS 26 every added site is a web app unless you turn that off |
 | Chrome / Firefox / Edge on iOS | Share (address bar or menu) › Add to Home Screen | iOS 16.4+ allows this from other browsers. **[NEEDS A REAL PHONE]** |
 | iOS captive sheet | Tap **Cancel**, then **Use Without Internet**. Open Safari, go to `192.168.4.1`, then Share › Add to Home Screen | The sheet has no Share button. A link can't leave it either: links only open Safari once iOS marks the network as connected, which needs the probe answered "Success", and the ship never does that (section 5). So the card shows the address in large type to read and type. **[NEEDS A REAL PHONE]**: the Cancel › Use Without Internet wording |
 | Android Chrome | ⋮ › Add to Home screen › Add | A plain shortcut that opens a Chrome tab, not full screen. Over http, Chrome can't make a WebAPK. The shortcut may use the page's icon or a letter, depending on the Chrome version. **[NEEDS A REAL PHONE]** |
 | Samsung Internet | ☰ › Add page to › Home screen | A shortcut. **[NEEDS A REAL PHONE]** |
 | Android sign-in window | Close it (you stay on the Wi-Fi), open Chrome, go to `192.168.4.1`, then ⋮ › Add to Home screen | It's a WebView with no menu |
 | A computer, or already opened from the icon | Nothing | Hidden when `navigator.standalone` or `display-mode: standalone/fullscreen/minimal-ui` |
+
+**iOS 26: the icon's window is too short with the manifest in.** Opened from the home
+screen on iOS 26, the nav sat about 98 px above the bottom of the screen: 34 px of home
+indicator padding (meant), plus 62 px nothing could paint. The page was already right:
+`viewport-fit=cover`, the header padded by `env(safe-area-inset-top)`, the dock
+`position:fixed; bottom:0` with `env(safe-area-inset-bottom)` padding, `100dvh`.
+
+- The cause is iOS 26 itself. A page with a web app manifest or Apple's
+  `apple-mobile-web-app-*` tags opens from the icon on an older code path. Its window is
+  the screen's height minus the status bar, but starts at the top of the screen. So the
+  status bar's height (47 or 62 px) is missing at the bottom.
+- `innerHeight`, `visualViewport` and `getBoundingClientRect` all agree with that short
+  window. Script can't see the strip, and CSS can't paint into it.
+- A page with none of that markup gets the new path, which is right. iOS 26 opens a home
+  screen icon full screen anyway (**Open as Web App**), so the tags aren't needed there.
+- So `app.html` adds the manifest and the Apple tags from a small script, and skips them
+  on iOS 26+. It tells iOS 26 by a feature, as the user agent can't: Safari 26 says
+  `18_6`, and the icon's user agent has no `Version/`. The feature is CSS anchor
+  positioning, which arrived in Safari 26. The `apple-touch-icon` link stays, for the
+  icon. On iOS 26 the name under the icon defaults to the page title, The Long Voyage,
+  which you can edit in the Add dialog.
+- `web/shots_a2hs.mjs` checks the tags are there on iOS 18, Android and a computer, and
+  left out on iOS 26. It also checks the layout with Chrome's real safe-area emulation
+  (`Emulation.setSafeAreaInsetsOverride`), at 390x844 with insets 47/34 and at 402x874
+  with insets 62/34. In both: the header clears the status bar; the dock reaches the
+  bottom edge with the nav 34 px above it; the action button sits on the nav; the end of
+  the page scrolls clear of the dock. Safari tabs and Android Chrome (no insets) keep
+  the dock on the bottom edge.
+- Shots: `a2hs-10-ios26-icon-before-*-simulated` (the short window drawn on the full
+  screen; Chrome can't produce the bug itself) and `a2hs-11-ios26-icon-after-*`.
+- An icon added before this change may keep the old window. If the strip stays after an
+  update, remove the icon and add it again. Rotating the phone also fixes it until the
+  next launch.
 
 **The card.**
 
@@ -309,7 +355,8 @@ light paper colour.
   - where it opens;
   - that it works on the ship's Wi-Fi only;
   - that you sign in once.
-- The card adds 1982 B (gzip) to the page, which is now 36897 B of the 128 KB budget.
+- The card adds 2050 B (gzip) to the page. With the iOS 26 tag script below (+228 B), the
+  page is 37193 B of the 128 KB budget.
   The game firmware's files on flash go from 79738 B to 84196 B.
 - `main.py`'s `home_screen()` adds the four routes to `lvweb.STATIC` at start. `lvweb` is
   frozen in the core, so changing it would ship it again as a RAM-loaded `.mpy`. That
@@ -417,6 +464,10 @@ Still to do on real hardware and phones:
    Samsung phone.
 6. Android's sign-in notification view: same as 2.
 7. Home screen on an iPhone (Safari, iOS 18 and 26):
+   - On iOS 26, opened from the icon: does the nav sit on the home indicator, with no strip
+     below it? Check with an icon added after this change, and with one added before.
+   - On iOS 26, try each tab layout (Settings › Apps › Safari › Tabs: Compact, Bottom,
+     Top) and check the card's first step finds Share in each.
    - Add the game: check the icon, the name "Long Voyage", and that it opens full screen
      with the status bar readable.
    - Sign in once, close it, then reopen it the next day: are you still signed in, and is

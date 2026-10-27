@@ -5,13 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>The Long Voyage</title>
-<link rel="manifest" href="/app.webmanifest">
 <link rel="icon" href="/icon.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="/icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Long Voyage">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>
+// The manifest and Apple's web-app tags, except on iOS 26+. There, opened from the home
+// screen, either one puts the page in a window too short by the status bar's height:
+// the nav stops 62 px above the bottom and no CSS or script can reach the strip. With
+// neither, iOS 26 opens the icon full screen anyway. Safari 26 is told apart from 18 by
+// a feature (anchor positioning), as its user agent says 18_6 and the icon's has no Version.
+(function(){var u=navigator.userAgent,d=document.head;
+if((/iPhone|iPad|iPod/.test(u)||/Macintosh/.test(u)&&navigator.maxTouchPoints>1)&&window.CSS&&CSS.supports("anchor-name:--a"))return;
+function a(t,o){var e=document.createElement(t);for(var k in o)e.setAttribute(k,o[k]);d.appendChild(e)}
+a("link",{rel:"manifest",href:"/app.webmanifest"});
+a("meta",{name:"apple-mobile-web-app-capable",content:"yes"});
+a("meta",{name:"apple-mobile-web-app-title",content:"Long Voyage"});
+a("meta",{name:"apple-mobile-web-app-status-bar-style",content:"default"})})();
+</script>
 <meta name="theme-color" content="#F2ECDF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1C1B19" media="(prefers-color-scheme: dark)">
 <style>

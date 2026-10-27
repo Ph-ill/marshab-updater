@@ -30,13 +30,17 @@ function blank(x) {
   if (x && typeof x === "object") return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, blank(v)]));
   return x;
 }
-async function page(kind, { standalone = false, ctx = null } = {}) {
+async function page(kind, { standalone = false, ctx = null, insets = null, vp = null } = {}) {
   const android = /Android/.test(UA[kind]), desk = kind === "desk";
-  const vp = desk ? { width: 1280, height: 800 } : android ? { width: 412, height: 915 } : { width: 390, height: 844 };
+  vp = vp || (desk ? { width: 1280, height: 800 } : android ? { width: 412, height: 915 } : { width: 390, height: 844 });
   ctx = ctx || await browser.newContext({ userAgent: UA[kind] + ` a2/${n++}`, viewport: vp, deviceScaleFactor: desk ? 1 : 2,
     isMobile: !desk, hasTouch: !desk, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => { console.error("pageerror", e.message); fails++; });
+  // Safari 18 has no anchor positioning (app.html tells it from 26 by that); Chrome has.
+  if (kind === "ios") await p.addInitScript(() => { const s = CSS.supports.bind(CSS); CSS.supports = (...a) => /anchor-name/.test(a.join("")) ? false : s(...a); });
+  // The phone's safe areas (status bar, home indicator), as real env() values.
+  if (insets) await (await ctx.newCDPSession(p)).send("Emulation.setSafeAreaInsetsOverride", { insets });
   if (standalone === "ios") await p.addInitScript(() => Object.defineProperty(navigator, "standalone", { get: () => true }));
   // Chrome's media emulation has no display-mode, so answer that one query as an installed app would.
   if (standalone === "media") await p.addInitScript(() => { const m = matchMedia.bind(window);
@@ -48,14 +52,14 @@ async function page(kind, { standalone = false, ctx = null } = {}) {
     try { r = await route.fetch({ url: MOCK + u.pathname + u.search }); } catch { return; }   // page closed
     if (u.pathname === "/text.json" || u.pathname === "/engage.json") {
       const j = await r.json();
-      for (const k of ["cards", "epi", "reread", "notes", "reveal", "voice", "core", "drops", "jobs", "file"]) if (k in j) j[k] = blank(j[k]);
+      for (const k of ["cards", "epi", "reread", "notes", "reveal", "voice", "core", "drops", "jobs", "file", "patches"]) if (k in j) j[k] = blank(j[k]);
       if (j.cards) j.cards = j.cards.map((c) => ({ ...c, t: "Placeholder. " + PH, o: c.o.map((o) => ["Placeholder option", PH, ...o.slice(2)]) }));
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(j) });
     }
     await route.fulfill({ response: r });
   });
   await p.goto(SHIP + "/?day=22");
-  await p.addStyleTag({ content: ":root{--sb:34px}" });
+  if (!insets) await p.addStyleTag({ content: ":root{--sb:34px}" });
   await p.waitForSelector("[data-who], #dock nav");
   if (await p.$("[data-who]")) {
     await p.click('[data-who="0"]');
@@ -110,10 +114,12 @@ console.log("     Chrome installability on http://192.168.4.1: " + JSON.stringif
 ok("Chrome won't offer a one-tap install on http (not a secure origin)", ids.includes("not-from-secure-origin"));
 await close(p);
 
-// 2. iOS 26 Safari: Share sits under the ... menu; keep Open as Web App on.
+// 2. iOS 26 Safari: Share is a button (Bottom, Top) or in a menu (Compact: the page menu
+// in the address bar, or ...): one step names all three; keep Open as Web App on.
 p = await page("ios26");
 t = await card(p);
-ok("iOS 26: More, then Share; Open as Web App", !!t && /beside the address/.test(t) && /Open as Web App/.test(t));
+ok("iOS 26: Share, or the page menu / More; Open as Web App", !!t && /No Share button\? Tap .* in the address bar, or .*, and it's in there/.test(t) && /Open as Web App/.test(t) && !/beside the address/.test(t));
+ok("iOS 26: share, page menu and More icons inline", (await p.$$eval(".a2h li:first-child svg.a2i", (s) => s.map((e) => e.getAttribute("aria-label")))).join() === "Share,page menu,More");
 await center(p, ".a2h");
 await shot(p, "a2hs-04-ios26-safari-card");
 await close(p);
@@ -159,6 +165,59 @@ for (const [kind, sa, what] of [["sheet", "ios", "opened from the icon on iOS"],
   await goto(p, "crew");
   ok(`${what}: no card, no row`, !(await p.$(".a2h")) && !(await p.$("#v [data-go=a2h]")));
   if (kind === "sheet") { await goto(p, "home"); await shot(p, "a2hs-09-ios-opened-from-icon-home"); }
+  await close(p);
+}
+// 8. Where the manifest and Apple's web-app tags go: everywhere but iOS 26 (app.html).
+const tags = (p) => p.evaluate(() => [!!document.querySelector('link[rel=manifest]'), !!document.querySelector('meta[name=apple-mobile-web-app-capable]')].join());
+for (const [kind, want, what] of [["ios", "true,true", "iOS 18 Safari"], ["ios26", "false,false", "iOS 26 Safari"], ["sheet", "false,false", "iOS 26 sheet or icon"], ["and", "true,true", "Android Chrome"], ["desk", "true,true", "a computer"]]) {
+  p = await page(kind, kind === "sheet" ? { standalone: "ios" } : {});
+  ok(`${what}: manifest and web-app tags ${want === "true,true" ? "there" : "left out"}`, (await tags(p)) === want);
+  await close(p);
+}
+
+// 9. Opened from the icon on iOS 26, with the phone's real safe areas (an iPhone 390x844,
+// 47 px status bar, 34 px home indicator; and 402x874, 62/34, as on Phill's phone). The
+// header clears the status bar, the dock reaches the bottom edge with the nav right above
+// the home indicator, the action button sits on the nav, and nothing scrolls under them.
+async function frame(p, W, H, st, sb, what) {
+  const g = await p.evaluate(() => { const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+    const t = r("#top"), d = r("#dock"), nv = r("#dock nav"), a = r("#dock .act"), h = document.querySelector("#top > *").getBoundingClientRect();
+    scrollTo(0, 1e6); const m = document.querySelector("main"), l = m.lastElementChild.getBoundingClientRect();
+    const g = { top: t.top, topH: t.height, head: h.top, dock: d.bottom, dockTop: d.top, nav: nv.bottom, navTop: nv.top, act: a ? a.bottom : null, last: l.bottom, ih: innerHeight };
+    scrollTo(0, 0); return g; });
+  ok(`${what}: header under the status bar (${g.head} >= ${st})`, g.top === 0 && g.head >= st && Math.round(g.topH) === 48 + st);
+  ok(`${what}: dock to the bottom edge, nav ${sb} px above it (${g.nav}/${g.dock} of ${H})`, g.ih === H && Math.round(g.dock) === H && Math.round(g.nav) === H - sb);
+  ok(`${what}: the action button sits right on the nav`, g.act === null || Math.abs(g.act - g.navTop) <= 1);
+  ok(`${what}: the end of the page scrolls clear of the dock (${Math.round(g.last)} <= ${Math.round(g.dockTop)})`, g.last <= g.dockTop + 0.5);
+}
+for (const [W, H, st, sb] of [[390, 844, 47, 34], [402, 874, 62, 34]]) {
+  p = await page("sheet", { standalone: "ios", insets: { top: st, bottom: sb }, vp: { width: W, height: H } });
+  for (const r of ["home", "file"]) {
+    await goto(p, r); await p.waitForTimeout(100);
+    await frame(p, W, H, st, sb, `iOS 26 icon ${W}x${H} ${r}`);
+    if (W === 390) await shot(p, `a2hs-11-ios26-icon-after-${r}`);
+  }
+  await close(p);
+}
+// Before: the same page in the too-short window iOS 26 gave the old markup (the status bar's
+// height missing at the bottom), drawn on the full screen. Simulated: Chrome can't make it.
+p = await page("sheet", { standalone: "ios", insets: { top: 47, bottom: 34 }, vp: { width: 390, height: 844 - 47 } });
+for (const r of ["home", "file"]) {
+  await goto(p, r); await p.waitForTimeout(100);
+  await p.evaluate((ph) => { for (const li of document.querySelectorAll(".log li, .epi p")) li.textContent = ph; }, PH);
+  const png = (await p.screenshot()).toString("base64"), bg = await p.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const q = await p.context().newPage(); await q.setViewportSize({ width: 390, height: 844 });
+  await q.setContent(`<meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;background:${bg}"><img style="display:block;width:390px" src="data:image/png;base64,${png}">`);
+  const f = `${out}/a2hs-10-ios26-icon-before-${r}-simulated-light-390x844.png`;
+  await q.screenshot({ path: f }); console.log(f); await q.close();
+}
+await close(p);
+
+// Normal Safari tabs and Android Chrome: no insets, the dock on the bottom edge.
+for (const kind of ["ios26", "and"]) {
+  p = await page(kind, { insets: { top: 0, bottom: 0 } });
+  const v = p.viewportSize(), g = await p.evaluate(() => [document.querySelector("#dock").getBoundingClientRect().bottom, document.querySelector("#dock nav").getBoundingClientRect().bottom]);
+  ok(`${kind === "and" ? "Android Chrome" : "iOS 26 Safari tab"}: dock and nav on the bottom edge`, Math.round(g[0]) === v.height && Math.round(g[1]) === v.height);
   await close(p);
 }
 await browser.close();
