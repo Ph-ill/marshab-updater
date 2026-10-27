@@ -12,7 +12,8 @@ restart, and goes back by itself if the new version doesn't start.
 Your settings and the game (`data/`) are never touched.
 
 Anything marked **[NEEDS A REAL PHONE]** has only been reasoned about or tried in desktop
-Chrome. Section 6 lists the tests still to do.
+Chrome. Section 7 lists the tests still to do. Section 6 covers putting the game on
+your phone's home screen, which is how the release cache lasts best on an iPhone.
 
 ## 1. The parts
 
@@ -175,7 +176,9 @@ being opened with internet at some point, the release kept in `localStorage` for
 - So in the sheet the check fails quietly, and a release found elsewhere can't be waiting
   there. **The sheet alone can't do over-the-air updates.**
 
-**iOS, Safari.** If you open `http://192.168.4.1` in Safari, its `localStorage` lasts.
+**iOS, Safari.** If you open `http://192.168.4.1` in Safari, its `localStorage` lasts, unless
+you go 7 days of using Safari without touching the page; then Safari may clear it. The
+home-screen icon keeps its own copy, which isn't capped (section 6).
 - While a network counts as captive, iOS reportedly keeps cellular as the main route. So
   Safari may reach GitHub over mobile data while it talks to the ship over Wi-Fi.
   **[NEEDS A REAL PHONE]**
@@ -205,7 +208,122 @@ and the page polls `/api/ota` for up to 150 s.
   page tells you to rejoin and reload. **[NEEDS A REAL PHONE]**
 - The restart also forgets who's signed in, so the page says to sign in again.
 
-## 6. Tests
+## 6. On the home screen
+
+You can add the game to your phone's home screen and open it with one tap, like an app.
+The icon only works while your phone is on the ship's Wi-Fi, because `192.168.4.1` only
+answers there.
+
+**What the ship serves.** `web/build.py` writes these next to the page. `lvweb.STATIC`
+streams them from flash like the other `www/*.gz` files, and the mock serves them too.
+
+| Path | File | Type | Size (gzip) |
+| --- | --- | --- | --- |
+| `/app.webmanifest` | `www/app.webmanifest.gz` | `application/manifest+json` | 274 B (196 B) |
+| `/icon.png`, `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | `www/icon.png.gz` | `image/png` | 1737 B (1622 B) |
+
+The icon is 192×192 and drawn by `web/icon.py` with no image library: Earth, Mars, the
+transfer arc and the ship, on the page's paper colour. The PNG is committed. The page's
+`<head>` has these tags:
+
+- `manifest` and `icon`;
+- `apple-touch-icon`;
+- `apple-mobile-web-app-capable` and `mobile-web-app-capable`;
+- `apple-mobile-web-app-title` ("Long Voyage");
+- `apple-mobile-web-app-status-bar-style` (`default`);
+- `theme-color`, light and dark.
+
+The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same name.
+
+**The name is "Long Voyage", not the ship's name.**
+
+- Every ship answers on the same address. So one icon opens whichever ship's Wi-Fi you're
+  on, and a ship name on it would be wrong half the time.
+- The manifest is a fixed file built once for all ships.
+- "Long Voyage" is 11 characters, which fits under an iPhone icon without being cut off.
+- You can rename it in the Add dialog.
+
+**The status bar is `default`, not `black-translucent`.** `black-translucent` draws the
+page under the status bar with white status text. That text would be unreadable on the
+light paper colour.
+
+**No one-tap install, and nothing to customise when it fails.**
+
+- The page is plain `http://192.168.4.1`, which isn't a secure context. That rules out:
+  - a service worker;
+  - `beforeinstallprompt`;
+  - a WebAPK on Android.
+- `web/shots_a2hs.mjs` loads the page as `http://192.168.4.1/` and reads Chrome's
+  verdict: the manifest parses with no errors, and the installability errors include
+  `not-from-secure-origin`.
+- So every platform is a manual "Add to Home Screen". With no service worker, there's
+  also no offline page.
+
+**What each phone does** (the card in `web/a2hs.js` words its steps for each one):
+
+| Where you are | What the card says | What the icon does |
+| --- | --- | --- |
+| iOS Safari (18 and earlier) | Share (bottom; top on iPad) › Add to Home Screen › Add | Opens full screen in its own window (the `apple-mobile-web-app-capable` tag / manifest `display`) |
+| iOS 26 Safari | ⋯ beside the address › Share › Add to Home Screen, keep **Open as Web App** on | The same; on iOS 26 every added site is a web app unless you turn that off |
+| Chrome / Firefox / Edge on iOS | Share (address bar or menu) › Add to Home Screen | iOS 16.4+ allows this from other browsers. **[NEEDS A REAL PHONE]** |
+| iOS captive sheet | Tap **Cancel**, then **Use Without Internet**. Open Safari, go to `192.168.4.1`, then Share › Add to Home Screen | The sheet has no Share button. A link can't leave it either: links only open Safari once iOS marks the network as connected, which needs the probe answered "Success", and the ship never does that (section 5). So the card shows the address in large type to read and type. **[NEEDS A REAL PHONE]**: the Cancel › Use Without Internet wording |
+| Android Chrome | ⋮ › Add to Home screen › Add | A plain shortcut that opens a Chrome tab, not full screen. Over http, Chrome can't make a WebAPK. The shortcut may use the page's icon or a letter, depending on the Chrome version. **[NEEDS A REAL PHONE]** |
+| Samsung Internet | ☰ › Add page to › Home screen | A shortcut. **[NEEDS A REAL PHONE]** |
+| Android sign-in window | Close it (you stay on the Wi-Fi), open Chrome, go to `192.168.4.1`, then ⋮ › Add to Home screen | It's a WebView with no menu |
+| A computer, or already opened from the icon | Nothing | Hidden when `navigator.standalone` or `display-mode: standalone/fullscreen/minimal-ui` |
+
+**The card.**
+
+- It shows once, on the home screen under the flight-day header, until you tap **Got
+  it**. The dismissal is kept as `localStorage` key `lv.a2hs`.
+- The captive sheets forget their storage, so there it comes back each time the sheet
+  opens. That's the right place to keep explaining.
+- It stays out of the way while an update notice is up: one ask at a time.
+- **CREW › Add to home screen** shows the same steps any time, plus what to expect:
+  - where it opens;
+  - that it works on the ship's Wi-Fi only;
+  - that you sign in once.
+- The card adds 1982 B (gzip) to the page, which is now 36897 B of the 128 KB budget.
+  The game firmware's files on flash go from 79738 B to 84196 B.
+- `main.py`'s `home_screen()` adds the four routes to `lvweb.STATIC` at start. `lvweb` is
+  frozen in the core, so changing it would ship it again as a RAM-loaded `.mpy`. That
+  costs about 1.2 KB of heap on the frozen build (sync 36192 → 37424 B, two phones
+  50560 → 51744 B), and the cap is 80,000 B.
+
+**You sign in once more.** The ship remembers a phone by its address plus its
+User-Agent. An iOS home-screen app sends a different User-Agent from Safari, so the first
+launch from the icon asks for your crew code once.
+
+**Storage, and what it means for updates.**
+
+- An iOS home-screen web app has its own storage, separate from Safari's, even for the
+  same `http://192.168.4.1`.
+  - It is exempt from Safari's 7-day cap on script-writable storage. WebKit: home-screen
+    web apps "have their own counter of days of use… We do not expect the first-party in
+    such a web application to have its website data deleted."
+  - So the release cache (`lv.ota`), the briefing flag and the card's dismissal last
+    there.
+- Safari's own copy for `192.168.4.1` can be wiped after 7 days of Safari use without
+  your touching the page.
+- **The cost:** a release found by Safari isn't seen by the icon, and the other way
+  round. Each one checks GitHub for itself.
+- On Android, the shortcut is just Chrome, so it shares Chrome's storage.
+
+**Can the icon reach GitHub while it's on the ship's hotspot?** It uses the same
+networking as Safari, so this is the same open question as section 5. It is reported to
+work through mobile data while the Wi-Fi counts as captive, but that hasn't been
+measured. **[NEEDS A REAL PHONE]**
+
+**Opened away from the ship.**
+
+- On iOS, the icon opens its window and shows WebKit's own "can't connect to the server"
+  page. On Android, Chrome shows its "This site can't be reached" page.
+- Neither can be replaced: an offline page needs a service worker, and a service worker
+  needs HTTPS.
+- Join the ship's Wi-Fi and open the icon again. (On another ship's Wi-Fi, it opens that
+  ship's game.)
+
+## 7. Tests
 
 Automated (all in `game/tests/run.sh`):
 
@@ -246,6 +364,19 @@ Automated (all in `game/tests/run.sh`):
   - a check with no internet.
 
   It saves the screenshots too.
+- **`web/shots_a2hs.sh`.** Chrome with each phone browser's User-Agent, loading the page as
+  `http://192.168.4.1/` (requests handed to the mock). It checks:
+  - the card and its steps for iOS Safari 18 and 26, the iOS captive sheet, Android
+    Chrome, Android's sign-in window and Samsung Internet;
+  - that **Got it** hides the card and it stays hidden after a reload;
+  - the CREW row and the screen;
+  - that nothing shows on a computer or once opened from the icon (`navigator.standalone`
+    and `display-mode: standalone`);
+  - that Chrome parses the manifest and refuses to install from a non-secure origin.
+- **`tests/phone_flow.py`** (`phone_check`, `phone_heap`) fetches `/app.webmanifest`,
+  `/icon.png` and `/apple-touch-icon.png` from the real `lvweb` and checks the bytes, the
+  gzip encoding and the content type. **`tests/app_e2e.mjs`** checks the manifest's
+  fields, the icon's size and the `<head>` tags.
 
 Still to do on real hardware and phones:
 
@@ -259,8 +390,23 @@ Still to do on real hardware and phones:
 5. Android Chrome after "Stay connected", with mobile data on: same as 3 and 4. Repeat on a
    Samsung phone.
 6. Android's sign-in notification view: same as 2.
+7. Home screen on an iPhone (Safari, iOS 18 and 26):
+   - Add the game: check the icon, the name "Long Voyage", and that it opens full screen
+     with the status bar readable.
+   - Sign in once, close it, then reopen it the next day: are you still signed in, and is
+     the briefing flag kept?
+   - With mobile data on, does **Check for updates** from the icon reach GitHub while
+     you're on the hotspot?
+   - Away from the ship: what does the icon show?
+8. The iOS captive sheet: does **Cancel** offer **Use Without Internet** and keep the
+   Wi-Fi? Does Safari then load `192.168.4.1`?
+9. Android Chrome (and a Samsung phone):
+   - **Add to Home screen**: which icon and name does the shortcut get? Does it open a
+     Chrome tab?
+   - Close the sign-in window: does the phone stay on the Wi-Fi?
+10. Chrome on iOS: does Share › Add to Home Screen show up, and open as a web app?
 
-## 7. Releasing an update
+## 8. Releasing an update
 
 ```
 python3 tools/build_release.py ...                        # as before

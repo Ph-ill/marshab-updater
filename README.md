@@ -103,6 +103,12 @@ git add firmware && git commit -m "firmware: package Long Voyage 0.0.2-coex" && 
   internet picks it up from `raw.githubusercontent.com` and offers it on the ship's Wi-Fi.
   The ship checks the Ed25519 signature and every file, switches over at restart and rolls
   back if the new version doesn't start. `data/` is never touched. See `game/docs/OTA.md`.
+- **On the home screen.** The phone page has a web app manifest, an Apple touch icon
+  (192 px, 1.6 KB from flash) and a one-time card that shows how to add the game to your
+  home screen in the browser you're using. iOS Safari opens it full screen. Android Chrome
+  makes a shortcut to a Chrome tab. It only works on the ship's Wi-Fi, because the page is
+  plain http, so there is no one-tap install and no offline page. See section 6 of
+  `game/docs/OTA.md`.
 
 To move to a newer MicroPython, update `firmware/runtime.json`: URL, size and sha256 from
 micropython.org. Then run `python3 tools/validate_firmware.py --online` to download both
