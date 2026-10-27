@@ -152,8 +152,12 @@ class Split(unittest.TestCase):
             with open(os.path.join(ROOT, "tools", "fw", "cores", cores[-1])) as f:
                 core = json.load(f)
             # board modules newer than the newest core (the OTA ones after 0.2.0) ship as files too
-            new = [b + ".mpy" for b in G.BOARD if b not in core["board"]]
-            self.assertEqual(CM.changed_files(core, d), ["lvweb.mpy"] + new + ["pack.bin"])
+            # ...and the frozen ones fixed since (lvbatt: the VCELL-not-ready fix, ota-hwfix)
+            fixed = ("lvbatt",)
+            new = [b + ".mpy" for b in G.BOARD if b not in core["board"] or b in fixed]
+            self.assertEqual(CM.changed_files(core, d),
+                             [b + ".mpy" for b in G.BOARD if b not in core["board"] or b in fixed or b == "lvweb"]
+                             + ["pack.bin"])
             self.assertEqual(CM.changed_files(core), new, "otherwise board/ and the pack match the newest core")
             old = {"id": "lv-core", "version": "0.1.0", "core": "f1b383588e79", "modules": core["modules"],
                    "sha256": {k: v for k, v in core["sha256"].items() if k.startswith("lv")}}

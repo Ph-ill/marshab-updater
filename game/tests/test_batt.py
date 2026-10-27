@@ -150,6 +150,31 @@ g.soc = 120 * 256                             # nonsense above 100 %: capped
 lvbatt.poll(s)
 check("pct capped", s.bat[0] == 100, s.bat)
 
+# -- VCELL 0 just after a quick start (seen on ship 5: SOC 62 %, VCELL 0): not a reading,
+# so it never becomes the first value to smooth from; the next look takes the real one
+g = Gauge(62, 3882, mode=0)
+g.mv = 0
+s = Ship(g)
+check("VCELL 0: unknown, retry", lvbatt.start(s) == 5000 and s.bat[0] is None and s.bat[1] is None, s.bat)
+g.mv = 3882
+lvbatt.poll(s)
+check("VCELL back: real voltage", s.bat[0] == 62 and 3880 <= s.bat[1] <= 3882, s.bat)
+g.mv = 0
+lvbatt.poll(s)
+check("VCELL 0 later: last kept", s.bat[0] == 62 and 3880 <= s.bat[1] <= 3882 and s.bat[5] == 1, s.bat)
+g.mv = 4900                                   # above any lithium cell: not a reading either
+lvbatt.poll(s)
+check("VCELL too high: last kept", 3880 <= s.bat[1] <= 3882 and s.bat[5] == 2, s.bat)
+# a big real move (a new level, e.g. charging starts) is taken at once, not a quarter
+g.mv = 3882
+lvbatt.poll(s)
+g.mv = 4200
+lvbatt.poll(s)
+check("jump taken", 4199 <= s.bat[1] <= 4200, s.bat)
+# the decoding (the vendor's UPS_Lite_V1.3_CW2015.py: big-endian word * 0.305 mV), ship
+# 5's real registers 0x31 0xbb
+check("decode 31bb", (((0x31 & 0x3F) << 8) | 0xbb) * 305 // 1000 == 3882)
+
 # -- erroring: two misses keep the last numbers, the third blanks them; it comes back
 g = Gauge(66, 3880, mode=0)
 s = Ship(g)

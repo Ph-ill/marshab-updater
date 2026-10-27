@@ -47,6 +47,13 @@ from lv.clock import ticks_ms
 
 ADDR = 0x62
 EVERY = 60000
+# A lithium cell behind the UPS-Lite's protection reads 2.5-4.5 V. Outside that, VCELL is
+# not a reading: right after a quick start the gauge answers 0 there for a moment while it
+# still has an SOC, and on ship 5 that 0 was taken as the first reading, then smoothed
+# towards the real 3.88 V a quarter at a time (it showed 1698 mV after two more looks).
+MV_LO = 2500
+MV_HI = 4500
+MV_JUMP = 300           # smoothing is for Wi-Fi dips (~0.1-0.2 V); more than this: take it
 
 
 def _hw(ship):
@@ -135,8 +142,12 @@ def _poll(ship, b, bus):
         soc = min(s[0] << 8 | s[1], 25600)
         if soc == 0 and mv > 3600:                    # just woken: no estimate yet
             raise ValueError
+        if not MV_LO <= mv <= MV_HI:                  # VCELL not converted yet (reads 0)
+            raise ValueError
         if b[0] is None:                              # first good reading: no smoothing yet
             b[3], b[4] = soc, mv
+        elif abs(mv - b[4]) > MV_JUMP:                # far off: a new level, not a dip
+            b[4] = mv
         else:
             b[4] = (b[4] * 3 + mv) // 4               # Wi-Fi bursts dip the voltage
             if abs(soc - b[3]) > 160:                 # the percent moves when it has moved

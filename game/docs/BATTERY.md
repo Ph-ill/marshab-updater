@@ -319,6 +319,12 @@ UPS-Lite switch on.
 
 - Just after the gauge wakes (first power-up, or after the cell was disconnected), it
   needs a few seconds to estimate. The firmware tries again after 5 s. Wait a minute.
+  VCELL can also read 0 for a moment after a quick start while the percent is already
+  there; a voltage outside 2.5–4.5 V is treated the same way (not a reading, try again in
+  5 s). Older firmware took that 0 as the first reading and smoothed up from it, so it
+  showed a voltage far too low (1698 mV on ship 5 with the cell at 3.88 V and 62%) for a
+  few minutes. A real move of more than 0.3 V (the charger plugged in) is also taken at
+  once now rather than a quarter at a time.
 - Check the raw reading (section 7, step 2). If `mV` is about 3500 or lower, the cell
   really is flat: charge it.
 - `mV` near 0: the gauge has no power. The cell is disconnected, or the protection has
