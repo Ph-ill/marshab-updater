@@ -85,6 +85,14 @@ if LAUNCH:
         print("calendar says flight day %d, expected %d" % (ship.day, DAY))
         sys.exit(1)
 srv = lvweb.Server(ship, root=ROOT, ip="127.0.0.1:%d" % PORT, say=quiet)
+# main.py's over-the-air hooks as they are (/api/ota* to board/lvota.py; the page asks the
+# ship what it runs). Nothing here uploads, so nothing is written.
+_src = open("board/main.py").read()
+_src = _src[_src.index("def ota_hooks"):_src.index("\nasync def ota_ok")]
+_g = {"lvship": lvship, "asyncio": asyncio}
+exec(_src, _g)
+_g["ota_hooks"](lvweb, srv)
+_src = _g = None
 crew = 2
 for it in ship.st.pend:
     if it[0] == 4 and it[4] < 7 and it[4] != 5:

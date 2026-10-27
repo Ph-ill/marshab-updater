@@ -10,9 +10,13 @@
 # phones playing at once. The LED notifier's schedule (tests/test_led.py) and the bench
 # script (tools/bench.py, tests/test_bench.py: fake boards on the unix ports). The battery
 # reader (board/lvbatt.py, tests/test_batt.py: a fake fuel gauge) on all of them, and its
-# share of the heap (phone_heap.py ... --led --bat).
+# share of the heap (phone_heap.py ... --led --bat). Over-the-air updates (board/lvota.py,
+# lvboot.py, lvsig.py; tests/test_ota.py) on all of them, and an upload's share of the heap
+# (phone_heap.py ... --ota); signing and the release check (tests/test_ota_release.py);
+# the phone page's update notice and screens (web/ota.js) clicked through against the mock
+# (web/shots_ota.sh, needs playwright-core: PW=...).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
-#   LV_FROZEN_MP=/path/to/micropython-lv32 game/tests/run.sh
+#   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
 cd "$(dirname "$0")/.."
 python3 tools/lvc.py
@@ -40,6 +44,8 @@ python3 tests/test_phone.py
 python3 tests/test_cal.py
 python3 tests/test_led.py
 python3 tests/test_batt.py
+python3 tests/test_ota.py
+python3 tests/test_ota_release.py
 python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
@@ -51,6 +57,8 @@ if [ -n "$MP" ]; then
   "$MP" tests/test_led.py
   "$MP" tests/test_batt.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_batt.py; fi
+  "$MP" tests/test_ota.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_ota.py; fi
   # every ship id boots with a launch date (ship 2, 2026-10-25)
   "$MP" -X heapsize=512k tests/test_ships8.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi
@@ -79,6 +87,8 @@ if [ -n "$MP" ]; then
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led
       # ...and a UPS-Lite battery read while idle (board/lvbatt.py loaded and dropped each time).
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat
+      # ...and a third phone uploading a signed update meanwhile (board/lvota.py, lvsig.py).
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota
     fi
     # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
     # and, with LV_FROZEN_MP, the game firmware (install, settings, selftest, report).
@@ -98,6 +108,11 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
   BPY="${LV_FROZEN_MP:-$MP}"
   if [ -n "$BPY" ]; then
     CHROME="$CHROME" BOARD_PY="$BPY -X heapsize=1m" node --experimental-websocket tests/app_e2e.mjs 9
+  fi
+  if [ -n "$PW" ]; then
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_ota.sh "$O/ota"; rm -rf "$O"
+  else
+    echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi
 else
   echo "chrome or node not found: skipped tests/app_e2e.mjs (set CHROME=...)"

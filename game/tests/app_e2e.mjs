@@ -205,6 +205,7 @@ try {
   // (and /api/me's 401 when the page opens signed out).
   const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me'));
   check(bad.length === 0, 'HTTP errors: ' + JSON.stringify(bad));
+  check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship about updates (web/ota.js)');
   check(wsTried, 'the page tried the WebSocket and fell back to polling');
   check(problems.length === 0, 'page problems: ' + JSON.stringify(problems));
   console.log(`app e2e on ${py.split('/').pop()}, day ${DAY}, crew ${C}: ${http.length} requests, ` +

@@ -1,0 +1,11 @@
+/* Over-the-air updates (web/ota.js): the home-screen notice, the progress bar. */
+.otab{margin-top:var(--s4);padding:var(--s3) 0 0;border-top:2px solid var(--rust)}
+.otab p{margin:0;font-size:15px;line-height:22px;color:var(--ink2)}
+.otab b{font:700 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--rust-t)}
+.otab div{display:grid;grid-template-columns:3fr 2fr;gap:var(--s2);margin-top:var(--s3)}
+.otab .btn+.btn{margin-top:0}
+.otab .btn{min-height:48px}
+.otan i{color:var(--rust-t)}
+.otaf dd{overflow-wrap:anywhere}
+.otabar{height:8px;border:1px solid var(--ink);margin-top:var(--s3)}
+.otabar i{display:block;height:100%;background:var(--rust);transition:width .2s}

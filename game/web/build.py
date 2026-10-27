@@ -30,9 +30,11 @@ def main():
     js = re.sub(r"^export\s+", "", js, flags=re.M)
     html = html.replace("/*RENDER_JS*/", js)
     # Engagement screens and their styles (web/engage.js, web/engage.css), if present.
-    # The ship's battery (web/batt.js, .css) the same way.
+    # The ship's battery (web/batt.js, .css) and over-the-air updates (web/ota.js, .css)
+    # the same way.
     for name, mark in (("engage.js", "/*ENGAGE_JS*/"), ("engage.css", "/*ENGAGE_CSS*/"),
-                       ("batt.js", "/*BATT_JS*/"), ("batt.css", "/*BATT_CSS*/")):
+                       ("batt.js", "/*BATT_JS*/"), ("batt.css", "/*BATT_CSS*/"),
+                       ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/")):
         path = os.path.join(HERE, name)
         src = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
         if name.endswith(".css"):

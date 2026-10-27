@@ -3,6 +3,7 @@
 real engine and the simulated season, so the prototype shows engine-made story.
 
   python3 web/build.py && python3 sim/mockserver.py [--port 8042] [--day 23] [codes=1234,,5555,...] [bat=72,3950,0]
+      [ota=0.2.0[,back]]   (over-the-air updates and a stand-in GitHub: sim/mockota.py)
 
 Open http://localhost:8042/ (add ?day=8 to look at another flight day; mock only).
 
@@ -100,6 +101,7 @@ class Game:
         self.lock = threading.RLock()   # gift() checks, then taps
         self.led = False          # the Ship light switch (POST /api/led)
         self.bat = None           # the board's battery, [percent, mV, charging] (bat=72,3950,0)
+        self.ota = None           # over-the-air updates (ota=0.2.0[,back]: sim/mockota.py)
         self.changed = threading.Condition()
         self.version = 0
         self.etable = EN.load_table(os.path.join(BUILD, "engage.bin"))
@@ -282,6 +284,14 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        if G.ota and G.ota.down():   # restarting into an update: no answer
+            self.close_connection = True
+            return self.connection.close()
+        if u.path == "/api/ota" and G.ota:
+            return self.send(200, G.ota.status())
+        if u.path.startswith("/gh/") and G.ota:   # stands in for raw.githubusercontent.com
+            j = G.ota.idx if u.path.endswith("index.json") else G.ota.rel
+            return self.send(200, j, extra=[("Access-Control-Allow-Origin", "*")])
         if u.path in ("/", "/index.html"):
             return self.send(200, open(os.path.join(BUILD, "app.html.gz"), "rb").read(),
                              "text/html; charset=utf-8", gz=True)
@@ -347,6 +357,28 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        if u.path.startswith("/api/ota") and G.ota:
+            n = int(self.headers.get("Content-Length", 0) or 0)
+            raw = self.rfile.read(n)
+            if G.ota.down():
+                self.close_connection = True
+                return self.connection.close()
+            if self.who() is None:
+                return self.send(401, {"err": "signed out"})
+            with G.lock:
+                if u.path == "/api/ota/put":
+                    code, obj = G.ota.put(q, raw)
+                elif u.path == "/api/ota/apply":
+                    code, obj = G.ota.apply()
+                    if code == 200:   # a restart forgets who's signed in and remembered phones
+                        G.tokens.clear()
+                        G.book.phones = []
+                elif u.path == "/api/ota/cancel":
+                    G.ota.m = None
+                    code, obj = 200, {"ok": True}
+                else:
+                    code, obj = 404, {"err": "no such thing"}
+            return self.send(code, obj)
         b = self.body()
         if u.path == "/api/login":
             try:
@@ -417,6 +449,9 @@ def main(argv):
         if a.startswith("codes="):
             got = [k or None for k in a[6:].split(",")]
             G.book = K.CodeBook(K.make_config((got + [None] * N)[:N], b"mock-fleet-salt!"))
+        if a.startswith("ota="):   # ota=0.2.0[,back]: updates over the air (sim/mockota.py)
+            from sim.mockota import MockOta
+            G.ota = MockOta(a[4:])
         if a.startswith("bat="):   # bat=PERCENT,MV,CHARGING (1/0): a board with a battery
             p, mv, c = a[4:].split(",")
             G.bat = [int(p), int(mv), c == "1"]
