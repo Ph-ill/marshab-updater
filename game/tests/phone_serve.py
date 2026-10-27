@@ -11,6 +11,10 @@
 # With a launch date (board/lvcal.py) the day comes from the calendar instead: the ship is
 # told the phone time epoch_ms / tz_min before it starts, as a first phone request would,
 # and moves to the next day when a phone's clock crosses 06:00 (tests/app_e2e.mjs).
+# main.py's own routes are on it too (home_screen, ota_hooks): the manifest and icon, the
+# update hooks, Reset this ship (its restart only prints RESET here) and /api/hello, the
+# home-screen funnel (board/lvfunnel.py; funnel.bin is removed at start, so every run begins
+# with a ship that has seen no phone).
 import sys
 import os
 sys.path.append("board")
@@ -58,7 +62,7 @@ for n in os.listdir("web/launch"):
     copy("web/launch/" + n, ROOT + "www/ls/" + n)
 copy("build/pack.bin", ROOT + "pack.bin")
 copy("build/engage.bin", ROOT + "engage.bin")
-for n in ("local.bin", "days.bin", "clock.json"):
+for n in ("local.bin", "days.bin", "clock.json", "funnel.bin"):
     try:
         os.remove(DATA + "/" + n)
     except OSError:
@@ -94,6 +98,7 @@ _src = open("board/main.py").read()
 _src = _src[_src.index("def home_screen"):_src.index("\nasync def ota_ok")]
 _g = {"lvship": lvship, "asyncio": asyncio}
 exec(_src, _g)
+_g["reboot"] = lambda: print("RESET")     # "Reset this ship": the files go, no restart here
 _g["home_screen"](lvweb)    # and the home-screen manifest and icon
 _g["ota_hooks"](lvweb, srv)
 _src = _g = None

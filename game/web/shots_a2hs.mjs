@@ -42,6 +42,9 @@ async function page(kind, { standalone = false, ctx = null, insets = null, vp = 
   // The phone's safe areas (status bar, home indicator), as real env() values.
   if (insets) await (await ctx.newCDPSession(p)).send("Emulation.setSafeAreaInsetsOverride", { insets });
   if (init) await p.addInitScript(init);
+  // Past the install guide (web/funnel.js): "Play in this browser this time", as a tab
+  // would be after one tap. The captive sheet and sign-in window ignore it (they can't play).
+  await p.addInitScript(() => sessionStorage.setItem("lv.here", "1"));
   if (standalone === "ios") await p.addInitScript(() => Object.defineProperty(navigator, "standalone", { get: () => true }));
   // Chrome's media emulation has no display-mode, so answer that one query as an installed app would.
   if (standalone === "media") await p.addInitScript(() => { const m = matchMedia.bind(window);
@@ -61,7 +64,8 @@ async function page(kind, { standalone = false, ctx = null, insets = null, vp = 
   });
   await p.goto(SHIP + "/?day=22");
   if (!insets) await p.addStyleTag({ content: ":root{--sb:34px}" });
-  await p.waitForSelector("[data-who], #dock nav");
+  await p.waitForSelector("[data-who], #dock nav, .fn");
+  if (await p.$(".fn")) return p;
   if (await p.$("[data-who]")) {
     await p.click('[data-who="0"]');
     for (const k of "1234") await p.click(`[data-key="${k}"]`);
@@ -127,14 +131,13 @@ await center(p, ".a2h");
 await shot(p, "a2hs-04-ios26-safari-card");
 await close(p);
 
-// 3. The iOS captive sheet: get to Safari first, with the address to type.
+// 3. The iOS captive sheet: it can't keep the game, so the page only routes the player to
+// Safari (web/funnel.js): Cancel, Use Without Internet, the address; no game, no card.
 p = await page("sheet");
-t = await card(p);
-ok("iOS sheet: Cancel, Use Without Internet, Safari, the address", !!t && /Cancel/.test(t) && /Use Without Internet/.test(t) && /192\.168\.4\.1/.test(t) && /3 steps/.test(t));
-await center(p, ".a2h");
-await shot(p, "a2hs-05-ios-captive-sheet-card");
-await p.click("[data-a2h=ok]");
-ok("sheet: Got it hides it this visit", !(await p.$(".a2h")));
+t = await p.$eval(".fn", (e) => e.textContent.replace(/\s+/g, " "));
+ok("iOS sheet: routed to Safari: Cancel, Use Without Internet, the address", /Open the game in Safari/.test(t) && /Cancel/.test(t) && /Use Without Internet/.test(t) && /192\.168\.4\.1/.test(t));
+ok("iOS sheet: no game behind it, no home-screen card", !(await p.$("#dock nav")) && !(await p.$(".a2h")));
+await shot(p, "a2hs-05-ios-captive-sheet-route-to-safari");
 await close(p);
 
 // 4. Android Chrome: menu > Add to Home screen; opens in a Chrome tab.
@@ -177,8 +180,8 @@ await p.waitForFunction(() => !document.fullscreenElement, null, { timeout: 3000
 await p.waitForTimeout(150);
 ok("leaving full screen brings the button back", (await fsb(p))?.[1] === true);
 await close(p);
-// Samsung Internet has it too; iOS, the Android sign-in window and computers don't.
-for (const [kind, want] of [["sam", true], ["ios", false], ["ios26", false], ["awv", false], ["desk", false]]) {
+// Samsung Internet has it too; iOS and computers don't (the Android sign-in window has no game: 5.).
+for (const [kind, want] of [["sam", true], ["ios", false], ["ios26", false], ["desk", false]]) {
   p = await page(kind);
   ok(`${kind}: ${want ? "a" : "no"} Full screen button`, !!(await fsb(p)) === want);
   await close(p);
@@ -193,12 +196,12 @@ await p.click("#top .fsb"); await p.waitForTimeout(300);
 ok("refused: fails silently, the button stays", fails === f0 && (await fsb(p))?.[1] === true && !(await p.evaluate(() => document.fullscreenElement)));
 await close(p);
 
-// 5. Android's sign-in window: close it, open Chrome, type the address.
+// 5. Android's sign-in window: routed to Chrome the same way.
 p = await page("awv");
-t = await card(p);
-ok("Android sign-in window: close it, Chrome, the address", !!t && /Close it/.test(t) && /Open Chrome/.test(t) && /192\.168\.4\.1/.test(t));
-await center(p, ".a2h");
-await shot(p, "a2hs-08-android-sign-in-window-card");
+t = await p.$eval(".fn", (e) => e.textContent.replace(/\s+/g, " "));
+ok("Android sign-in window: routed to Chrome: close it, the address", /Open the game in Chrome/.test(t) && /Close this screen/.test(t) && /192\.168\.4\.1/.test(t));
+ok("Android sign-in window: no game behind it, no home-screen card", !(await p.$("#dock nav")) && !(await p.$(".a2h")));
+await shot(p, "a2hs-08-android-sign-in-window-route-to-chrome");
 await close(p);
 
 // 6. Samsung Internet.

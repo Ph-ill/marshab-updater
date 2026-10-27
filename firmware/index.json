@@ -3,10 +3,21 @@
   "project": "LongVoyage",
   "latest": "0.0.2-coex",
   "channels": {
-    "test": "0.2.3-ota-phone",
+    "test": "0.2.4-ota-phone",
     "bench": "0.0.2-coex"
   },
   "releases": [
+    {
+      "version": "0.2.4-ota-phone",
+      "channel": "test",
+      "date": "2026-10-27",
+      "label": "Home-screen install guide test",
+      "path": "/firmware/releases/0.2.4-ota-phone/release.json",
+      "bytes": 149255,
+      "files": 21,
+      "frozen": "2661c2144844",
+      "ota": "2111b2e9"
+    },
     {
       "version": "0.2.3-ota-phone",
       "channel": "test",

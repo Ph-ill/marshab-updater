@@ -43,7 +43,8 @@ def main():
                        ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/"),
                        ("a2hs.js", "/*A2HS_JS*/"), ("a2hs.css", "/*A2HS_CSS*/"),
                        ("settings.js", "/*SET_JS*/"), ("settings.css", "/*SET_CSS*/"),
-                       ("fullscreen.js", "/*FS_JS*/"), ("fullscreen.css", "/*FS_CSS*/")):
+                       ("fullscreen.js", "/*FS_JS*/"), ("fullscreen.css", "/*FS_CSS*/"),
+                       ("funnel.js", "/*FUN_JS*/"), ("funnel.css", "/*FUN_CSS*/")):
         path = os.path.join(HERE, name)
         src = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
         if name.endswith(".css"):
@@ -66,8 +67,9 @@ def main():
 # every ship answers on the same address, so one icon opens whichever ship's Wi-Fi you're
 # on. It's a little wide for one line under an iPhone icon (docs/OTA.md section 6). The
 # background is dark, like the launch screens (web/launch.py): it's what a launcher shows
-# while the page starts.
-MANIFEST = {"name": "The Long Voyage", "short_name": "The Long Voyage", "id": "/", "start_url": "/",
+# while the page starts. start_url carries ?src=icon, the marker web/funnel.js takes as
+# "opened from the icon" (Android's shortcut opens a plain Chrome tab; iOS runs standalone).
+MANIFEST = {"name": "The Long Voyage", "short_name": "The Long Voyage", "id": "/", "start_url": "/?src=icon",
             "scope": "/", "display": "standalone", "orientation": "portrait",
             "background_color": "#1C1B19", "theme_color": "#F2ECDF",
             "icons": [{"src": "/icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}]}

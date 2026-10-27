@@ -1,0 +1,80 @@
+/* The home-screen funnel (web/funnel.js): its cards reuse the crew briefing's (.tut, .tsteps,
+   .bl, .fig); the drawings (.fx) are the phone's own screens, simplified, in the game's
+   colours: rounded like the phone, so they read as "your phone", never as the game. */
+.fnl{display:flex;justify-content:space-between;gap:var(--s3)}
+.fn .lead b{font-weight:600}
+.fnx{margin-top:var(--s4)}
+.fnx button{min-height:44px;padding:0;font:15px/22px var(--sans);color:var(--ink2);text-decoration:underline;text-underline-offset:3px}
+.fn .a2s{margin-top:var(--s4)}
+.fx{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--s3);margin-top:var(--s4);padding:var(--s5) var(--s4);background:var(--tint);border:1px solid var(--rule);font:15px/20px var(--sans);color:var(--ink);overflow:hidden}
+.fx.low{padding-bottom:var(--s4)}
+.fx .ui{background:var(--paper);border:1px solid var(--rule);border-radius:16px;box-shadow:0 1px 0 var(--rule)}
+.fx .a2i{width:17px;height:17px;flex:none}
+.fx .hl{position:relative;box-shadow:0 0 0 2px var(--rust)}
+.fx .fnn{position:absolute;top:-9px;right:-9px;z-index:1;width:18px;height:18px;background:var(--rust);color:var(--paper);font:700 11px/18px var(--mono);text-align:center}
+.fx .u{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* a menu or a list of rows */
+.fx .mn,.fx .ls,.fx .as{width:100%;max-width:280px;padding:var(--s1) 0}
+.fx .mn .r,.fx .ls .r,.fx .as .r{display:flex;align-items:center;gap:var(--s3);margin:0 var(--s1);padding:10px var(--s3);border-radius:12px}
+.fx .mn .r:not(.hl),.fx .ls .r:not(.hl){opacity:.55}
+/* Safari's bottom bar, iOS 26 */
+.fx .sfb{display:flex;align-items:center;gap:var(--s2);width:100%;max-width:300px}
+.fx .sfb .c{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:22px}
+.fx .sfb .ad{display:flex;align-items:center;gap:var(--s2);flex:1;min-width:0;height:44px;padding:0 var(--s3) 0 6px;border-radius:22px;font-size:14px}
+.fx .sfb .ad .u{flex:1;text-align:center}
+.fx .pm{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:16px}
+/* Safari's toolbar, iOS 18 */
+.fx .tbr{display:flex;justify-content:space-around;align-items:center;width:100%;max-width:300px;height:48px;border-radius:24px}
+.fx .tbr span{display:grid;place-items:center;width:36px;height:36px;border-radius:18px}
+/* the share sheet */
+.fx .sh{width:100%;max-width:300px;padding:var(--s3);border-radius:22px}
+.fx .hd{display:flex;align-items:center;gap:var(--s3);padding-bottom:var(--s3);border-bottom:1px solid var(--rule)}
+.fx .hd span:not(.c){flex:1;min-width:0;display:flex;flex-direction:column}
+.fx .hd b,.fx .di b{font-weight:600}
+.fx .hd i,.fx .di i{font-style:normal;font-size:13px;color:var(--ink2)}
+.fx .c{display:grid;place-items:center;width:30px;height:30px;border-radius:15px;background:var(--tint)}
+.fx .fnic{display:block;flex:none;width:44px;height:44px;border-radius:10px}
+.fx .rb{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s1);padding:var(--s3) 0}
+.fx .rb span{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;line-height:13px;text-align:center;color:var(--ink2)}
+.fx .rb .c{width:44px;height:44px;border-radius:22px;color:var(--ink)}
+.fx .rb .hl1{color:var(--ink);font-weight:600}
+.fx .sh .ls{max-width:none;padding:var(--s1) 0;background:var(--tint);border-radius:14px}
+/* Add to Home Screen */
+.fx .dl{width:100%;max-width:300px;padding:var(--s3);border-radius:22px}
+.fx .dh{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);font-size:14px;color:var(--ink2)}
+.fx .dh b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx .ok{padding:2px 10px;border-radius:12px;color:var(--ink);font-weight:700}
+.fx .di{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s3);padding:var(--s3);background:var(--tint);border-radius:14px}
+.fx .di span{flex:1;min-width:0;display:flex;flex-direction:column}
+.fx .tg{display:flex;align-items:center;justify-content:space-between;margin-top:var(--s3);padding:10px var(--s3);background:var(--tint);border-radius:14px}
+.fx .sw{position:relative;width:44px;height:26px;border-radius:13px;background:var(--rust)}
+.fx .sw::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:10px;background:var(--paper)}
+/* Chrome, Android */
+.fx .cb{display:flex;align-items:center;gap:var(--s3);width:100%;max-width:300px;height:48px;padding:0 var(--s2) 0 var(--s3);border-radius:24px}
+.fx .cb .ad{display:flex;align-items:center;gap:var(--s2);flex:1;min-width:0;height:34px;padding:0 var(--s3);border-radius:17px;background:var(--tint);font-size:14px}
+.fx .cb .tb{display:grid;place-items:center;flex:none;width:20px;height:20px;border:1.5px solid currentColor;border-radius:4px;font:700 11px var(--mono)}
+.fx .cb .mv{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:16px}
+.fx .am{align-self:flex-end;max-width:220px;border-radius:12px}
+.fx .da .dt{display:block;font-size:17px;font-weight:600}
+.fx .da .fld{flex:1;padding-bottom:2px;border-bottom:2px solid var(--rust)}
+.fx .bt{display:flex;justify-content:flex-end;gap:var(--s4);margin-top:var(--s3);font-weight:600}
+.fx .bt span{padding:6px 12px;border-radius:16px}
+/* the captive pop-up */
+.fx .cn{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:var(--s2);width:100%;max-width:300px;height:48px;padding:0 var(--s3);border-radius:14px;font-size:14px;color:var(--ink2)}
+.fx .cn b{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx .cn span:last-child{justify-self:end}
+.fx .cn .hl{padding:4px 8px;border-radius:12px;color:var(--ink);font-weight:600}
+.fx .cn .hl:has(svg){display:grid;place-items:center;width:32px;height:32px;padding:0;border-radius:16px}
+.fx .as{border-radius:16px;text-align:center}
+.fx .as .r{justify-content:center;font-weight:600}
+.fx .as .r:not(.hl){opacity:.5;font-weight:400}
+/* the home screen */
+.fx.hsf{padding:var(--s5) var(--s3) var(--s4)}
+.fx .hs{display:grid;grid-template-columns:repeat(4,60px);justify-content:center;gap:var(--s4) var(--s3);width:100%}
+.fx .hs span{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.fx .hs em{width:52px;height:52px;border-radius:13px;background:var(--rule);opacity:.6}
+.fx .hs i{width:36px;height:6px;margin:2px 0;border-radius:3px;background:var(--rule);opacity:.6}
+.fx .hs .me{padding:4px;margin:-4px;border-radius:14px}
+.fx .hs .me .fnic{width:52px;height:52px;border-radius:13px}
+.fx .hs .me i{width:auto;max-width:64px;height:auto;margin:0;background:none;opacity:1;font:600 11px/14px var(--sans);font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:359px){.fx{padding:var(--s4) var(--s3)}.fx .hs{grid-template-columns:repeat(4,52px);gap:var(--s3) var(--s2)}.fx .hs em,.fx .hs .me .fnic{width:46px;height:46px}.fx .rb span{font-size:10px}.fx .rb .c{width:40px;height:40px}}

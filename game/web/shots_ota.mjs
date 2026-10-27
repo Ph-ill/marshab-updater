@@ -22,10 +22,12 @@ function blank(x) {
 }
 const GHB = "https://raw.githubusercontent.com/Ph-ill/marshab-updater/";
 async function page(port, { online = true, src = null, asked = null } = {}) {
-  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ota/${ua++}`,
+  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 ota/${ua++}`,
     viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => { console.error("pageerror", e.message); fails++; });
+  // Past the install guide (web/funnel.js), as after "Play in this browser this time".
+  await p.addInitScript(() => sessionStorage.setItem("lv.here", "1"));
   for (const [path, keys] of [["/text.json", ["cards", "epi", "reread", "notes", "reveal", "voice", "core"]], ["/engage.json", ["drops", "jobs", "file"]]]) {
     await p.route(`**${path}*`, async (route) => {
       const j = await (await route.fetch()).json();
