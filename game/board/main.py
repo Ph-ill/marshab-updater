@@ -72,10 +72,16 @@ def ota_hooks(lvweb, web):
                 lvship.drop("lvcode")
             return await lvweb.send_json(w, s, j)
         if req.path == "/api/bat" and req.method == "GET":
-            # The battery figure alone, [percent, mV, charging] or null (lvbatt.py), for the
-            # page's 5 s look while it's showing (web/batt.js): no story, nothing to sign.
-            b = web.ship.bat
-            return await lvweb.send_json(w, 200, {"bat": b[:3] if b else None})
+            # The page's poll every 5 s while it's showing (web/app.html startPoll): the
+            # state's version, as /api/v, and the battery, [percent, mV, charging] or null
+            # (lvbatt.py, web/batt.js). One small answer: no story, nothing to sign.
+            # Like every phone request in lvweb.route, it carries the phone's clock: learn it,
+            # so the flight day turns at 06:00 and v says so.
+            sh = web.ship
+            if sh.clock.learn_headers(req.header):
+                sh.day_check()
+            b = sh.bat
+            return await lvweb.send_json(w, 200, {"v": sh.v, "bat": b[:3] if b else None})
         if req.path == "/api/hello" and req.method == "GET":
             # The home-screen funnel (board/lvfunnel.py, web/funnel.js): has the ship seen
             # this phone open the game from its icon? Loaded per request, like lvota.

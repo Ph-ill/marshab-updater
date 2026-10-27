@@ -3,7 +3,8 @@
 # (a plug wiggling in its socket doesn't flicker the bolt), ship.bat[2] set at once and a
 # gauge read asked for CHG_GAUGE_MS later (and not more often otherwise). Then the pin set
 # up with no pull by default (bat_chg_pull "none", in main.py and lvbatt.py alike: on ship 5
-# the RP2040's pull-down masked the UPS-Lite's signal, docs/BATTERY.md), and /api/bat.
+# the RP2040's pull-down masked the UPS-Lite's signal, docs/BATTERY.md), and /api/bat
+# (the page's 5 s poll: {v, bat}, learning the phone's clock as every phone request does).
 # Runs on CPython and MicroPython:  python3 tests/test_charger.py   (from game/)
 import sys
 import os
@@ -82,6 +83,16 @@ class Ship:
     def __init__(self, chg=False):
         self.cfg = {}
         self.bat = [72, 3950, chg, 72 * 256, 3950, 0, 0, 60000, 50]
+        self.clock = PhoneClock()
+        self.days = 0
+
+    def day_check(self):
+        self.days += 1
+
+
+class PhoneClock:
+    def learn_headers(self, hd):
+        return hd("x-phone-time") is not None
 
 
 class Pin:
@@ -207,6 +218,7 @@ class FakeLvweb:
 
 class Server:
     ship = Ship(True)
+    ship.v = 7
     routed = []
 
     async def route(self, req, w):
@@ -218,7 +230,7 @@ class Req:
         self.method, self.path, self.q, self.body, self.hdr = method, path, {}, b"", {}
 
     def header(self, k):
-        return None
+        return self.hdr.get(k)
 
 
 class Wr:
@@ -244,10 +256,15 @@ def http(req):
 
 
 c, j = http(Req("GET", "/api/bat"))
-check("/api/bat: percent, mV, charging", c == 200 and j == {"bat": [72, 3950, True]}, (c, j))
+check("/api/bat: the version, and percent, mV, charging", c == 200 and j == {"v": 7, "bat": [72, 3950, True]}, (c, j))
+check("/api/bat: no phone clock, no day check", srv.ship.days == 0, srv.ship.days)
+r = Req("GET", "/api/bat")
+r.hdr["x-phone-time"] = "1"
+http(r)
+check("/api/bat: the phone's clock learnt, the flight day checked (06:00)", srv.ship.days == 1, srv.ship.days)
 srv.ship.bat = None
 c, j = http(Req("GET", "/api/bat"))
-check("/api/bat: null without a battery", c == 200 and j == {"bat": None}, (c, j))
+check("/api/bat: null without a battery", c == 200 and j == {"v": 7, "bat": None}, (c, j))
 asyncio.run(srv.route(Req("POST", "/api/bat"), Wr()))
 check("/api/bat: POST goes on to the game (404 there)", Server.routed == ["/api/bat"], Server.routed)
 

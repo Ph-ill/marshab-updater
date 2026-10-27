@@ -457,9 +457,9 @@ One board is enough. Tick each step.
    day"); **open** today's drop if there is one; look at the **crew** page and the
    **log**.
 10. **Second phone** as another crew member at the same time: both keep working; a tap on
-    one shows up on the other within about 15 s (the board has no WebSocket, so the page
-    polls `/api/v`; the page shows "Live link down · checking every 15 s", which is
-    expected here).
+    one shows up on the other within about 5 s (the board has no WebSocket, so the page
+    polls `/api/bat`, the version and the battery, and shows no banner for it; only
+    "No signal · last copy shown" means the ship can't be reached).
 
     **Who's in range**, with a second board (another ship number) powered next to this
     one: your crew page shows that ship's astronaut as **Nearby · in sync** (or

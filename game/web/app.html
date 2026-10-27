@@ -271,17 +271,34 @@ async function api(path,body){
   return j;
 }
 
-// ---- live updates: WebSocket, falling back to polling ---------------------------------
+// ---- live updates: polling (the ship has no WebSocket: lvweb answers /ws 404) ------------
+// One small request every POLL_MS while the page is showing (none while it's hidden):
+// GET /api/bat (board/main.py: {v, bat}), so a crewmate's tap and the battery bolt
+// (web/batt.js batNew) both show within about 5 s. A ship without /api/bat (404): /api/v.
+// The WebSocket is tried once, for the dev mock; a ship never has one. Polling is the
+// normal mode and shows no banner; only "lost" (the ship can't be reached) does. No poll
+// while an update installs (ota.js OI): the upload has the ship's connections to itself.
+const POLL_MS=5000;
+let noBat=0;
 function live(){
+  startPoll();
   try{
     ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws");
+    ws.onopen=()=>{if(net==="poll")net="live"};
     ws.onmessage=(m)=>{const v=JSON.parse(m.data).v;if(S&&v!==S.v)refresh().catch(lost)};
-    ws.onclose=ws.onerror=()=>{ws=null;startPoll()};
-  }catch(e){startPoll()}
+    ws.onclose=ws.onerror=()=>{ws=null;if(net==="live")net="poll"};
+  }catch(e){}
+}
+async function pollV(){
+  if(noBat)return api("/api/v");
+  try{return await api("/api/bat")}catch(e){if(e.status!==404)throw e;noBat=1;return api("/api/v")}
 }
 function startPoll(){
-  if(poll)return;net="poll";
-  poll=setInterval(async()=>{try{const j=await api("/api/v");if(S&&(net==="lost"||j.v!==S.v))await refresh()}catch(e){lost(e)}},15000);
+  if(poll)return;if(net!=="lost")net="poll";
+  poll=setInterval(async()=>{
+    if(document.hidden||!tok||(typeof OI!=="undefined"&&OI))return;  // installing (ota.js): the ship's busy, then restarts
+    try{const j=await pollV();if(j.bat!==undefined&&typeof batNew==="function")batNew(j.bat);if(S&&(net==="lost"||j.v!==S.v))await refresh()}catch(e){lost(e)}
+  },POLL_MS);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tok)refresh().catch(lost)});
 // The ship went quiet (out of Wi-Fi range, or rebooting): keep showing the last copy and say so.
@@ -770,7 +787,7 @@ function view(){
     if(a==="end")return S.ending!==NONE?ending():home();
     if(a==="epilogue")return epilogue();
     return home();
-  }finally{if(net!=="live"&&tok&&S)$("v").insertAdjacentHTML("afterbegin",net==="lost"?"<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>":"<div class=off role=status>Live link down · checking every 15 s</div>")}
+  }finally{if(net==="lost"&&tok&&S)$("v").insertAdjacentHTML("afterbegin","<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>")}
 }
 // Lockout countdown: the ship decides when it ends; the phone's clock only draws the minutes.
 function lockLeft(){const u=lockUntil[me];return u?Math.max(0,Math.ceil((u-Date.now())/1000)):0}
