@@ -69,7 +69,7 @@ mkdir(ROOT)
 mkdir(ROOT + "www")
 mkdir(DATA)
 ASSETS = {}
-for n in ("app.html.gz", "text.json.gz", "engage.json.gz"):
+for n in ("app.html.gz", "text.json.gz", "engage.json.gz", "app.webmanifest.gz", "icon.png.gz"):
     ASSETS[n] = copy("build/" + n, ROOT + "www/" + n)
 copy("build/pack.bin", ROOT + "pack.bin")
 copy("build/engage.bin", ROOT + "engage.bin")
@@ -94,6 +94,12 @@ quiet = lambda s: None  # noqa: E731
 ship = lvship.Ship(cfg, root=ROOT, data=DATA, say=quiet, radio=False,
                    days=lvdays.Days(DATA + "/days.bin"))
 srv = lvweb.Server(ship, root=ROOT, say=quiet)
+# main.py's home_screen(): the manifest and icon routes, as on the board.
+_src = open("board/main.py").read()
+_g = {}
+exec(_src[_src.index("def home_screen"):_src.index("\ndef ota_hooks")], _g)
+_g["home_screen"](lvweb)
+_src = _g = None
 n0 = len(ship.log)
 
 

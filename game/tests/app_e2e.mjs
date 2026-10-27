@@ -207,6 +207,13 @@ try {
   check(bad.length === 0, 'HTTP errors: ' + JSON.stringify(bad));
   check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship about updates (web/ota.js)');
   check(wsTried, 'the page tried the WebSocket and fell back to polling');
+  // The home screen (web/a2hs.js): the manifest and icon the page's <head> names, from the ship.
+  const mf = await fetch(BASE + '/app.webmanifest'), ic = await fetch(BASE + '/icon.png');
+  const mj = mf.status === 200 ? await mf.json() : {}, ib = Buffer.from(await ic.arrayBuffer());
+  check(/manifest\+json/.test(mf.headers.get('content-type')) && mj.short_name === 'Long Voyage' && mj.start_url === '/' && mj.icons[0].src === '/icon.png', 'manifest: ' + mf.status + ' ' + JSON.stringify(mj));
+  check(ic.status === 200 && ic.headers.get('content-type') === 'image/png' && ib.readUInt32BE(16) === 192 && ib.readUInt32BE(20) === 192, 'icon: ' + ic.status + ' ' + ib.length + ' B');
+  const hd = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('head link[rel],head meta[name^=apple]')].map((e)=>e.rel||e.name+'='+e.content))`));
+  check(['manifest', 'icon', 'apple-touch-icon', 'apple-mobile-web-app-capable=yes', 'apple-mobile-web-app-title=Long Voyage'].every((x) => hd.includes(x)), 'home-screen tags: ' + JSON.stringify(hd));
   check(problems.length === 0, 'page problems: ' + JSON.stringify(problems));
   console.log(`app e2e on ${py.split('/').pop()}, day ${DAY}, crew ${C}: ${http.length} requests, ` +
     `${voted ? 'voted card ' + voted[0] : 'nothing to vote on'}, gift sent${drop ? ', drop ' + drop : ''}, poll saw a crewmate, briefing ${cards} cards, 8 portraits${DAY < 42 ? ', FD ' + DAY + ' -> ' + (DAY + 1) + ' at 06:00' : ''}, pre-launch screen, signed out: ${fails.length ? 'FAIL' : 'ok'}`);

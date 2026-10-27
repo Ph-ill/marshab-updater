@@ -51,7 +51,7 @@ def copy(src, dst):
 mkdir(ROOT)
 mkdir(ROOT + "www")
 mkdir(DATA)
-for n in ("app.html.gz", "text.json.gz", "engage.json.gz"):
+for n in ("app.html.gz", "text.json.gz", "engage.json.gz", "app.webmanifest.gz", "icon.png.gz"):
     copy("build/" + n, ROOT + "www/" + n)
 copy("build/pack.bin", ROOT + "pack.bin")
 copy("build/engage.bin", ROOT + "engage.bin")
@@ -88,9 +88,10 @@ srv = lvweb.Server(ship, root=ROOT, ip="127.0.0.1:%d" % PORT, say=quiet)
 # main.py's over-the-air hooks as they are (/api/ota* to board/lvota.py; the page asks the
 # ship what it runs). Nothing here uploads, so nothing is written.
 _src = open("board/main.py").read()
-_src = _src[_src.index("def ota_hooks"):_src.index("\nasync def ota_ok")]
+_src = _src[_src.index("def home_screen"):_src.index("\nasync def ota_ok")]
 _g = {"lvship": lvship, "asyncio": asyncio}
 exec(_src, _g)
+_g["home_screen"](lvweb)    # and the home-screen manifest and icon
 _g["ota_hooks"](lvweb, srv)
 _src = _g = None
 crew = 2

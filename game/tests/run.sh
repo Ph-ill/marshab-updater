@@ -14,7 +14,8 @@
 # lvboot.py, lvsig.py; tests/test_ota.py) on all of them, and an upload's share of the heap
 # (phone_heap.py ... --ota); signing and the release check (tests/test_ota_release.py);
 # the phone page's update notice and screens (web/ota.js) clicked through against the mock
-# (web/shots_ota.sh, needs playwright-core: PW=...).
+# (web/shots_ota.sh, needs playwright-core: PW=...); the home-screen card for each phone
+# browser (web/shots_a2hs.sh, the same).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
@@ -111,6 +112,7 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
   fi
   if [ -n "$PW" ]; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_ota.sh "$O/ota"; rm -rf "$O"
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_a2hs.sh "$O/a2hs"; rm -rf "$O"
   else
     echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Build the phone page: inline web/render.js (and engage.js/.css, batt.js/.css) into web/app.html, strip comments and
-indentation, gzip it. Writes build/app.html and build/app.html.gz (what the Pico serves).
+"""Build the phone page: inline web/render.js (and engage.js/.css, batt.js/.css, ota.js/.css, a2hs.js/.css) into web/app.html, strip comments and
+indentation, gzip it. Writes build/app.html and build/app.html.gz (what the Pico serves),
+plus build/app.webmanifest.gz and build/icon.png.gz for the home screen.
 
   python3 web/build.py
 """
@@ -34,7 +35,8 @@ def main():
     # the same way.
     for name, mark in (("engage.js", "/*ENGAGE_JS*/"), ("engage.css", "/*ENGAGE_CSS*/"),
                        ("batt.js", "/*BATT_JS*/"), ("batt.css", "/*BATT_CSS*/"),
-                       ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/")):
+                       ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/"),
+                       ("a2hs.js", "/*A2HS_JS*/"), ("a2hs.css", "/*A2HS_CSS*/")):
         path = os.path.join(HERE, name)
         src = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
         if name.endswith(".css"):
@@ -48,6 +50,27 @@ def main():
     open(os.path.join(BUILD, "app.html.gz"), "wb").write(gz)
     print("app.html %d B, gzip %d B (%.1f%% of the %d KB budget)" % (len(raw), len(gz), 100 * len(gz) / BUDGET, BUDGET // 1024))
     assert len(gz) < BUDGET
+    home_screen()
+
+
+# What a phone fetches to put the game on its home screen (web/a2hs.js): the manifest and
+# one 192 px icon (web/icon.png, drawn by web/icon.py), gzipped like everything the board
+# serves. Short name "Long Voyage": every ship answers on the same address, so one icon
+# opens whichever ship's Wi-Fi you're on, and 11 letters fit under an iPhone icon.
+MANIFEST = {"name": "The Long Voyage", "short_name": "Long Voyage", "id": "/", "start_url": "/",
+            "scope": "/", "display": "standalone", "orientation": "portrait",
+            "background_color": "#F2ECDF", "theme_color": "#F2ECDF",
+            "icons": [{"src": "/icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}]}
+
+
+def home_screen():
+    import json
+    m = json.dumps(MANIFEST, separators=(",", ":")).encode()
+    icon = open(os.path.join(HERE, "icon.png"), "rb").read()
+    for name, raw in (("app.webmanifest", m), ("icon.png", icon)):
+        gz = gzip.compress(raw, 9, mtime=0)
+        open(os.path.join(BUILD, name + ".gz"), "wb").write(gz)
+        print("%s %d B, gzip %d B" % (name, len(raw), len(gz)))
 
 
 if __name__ == "__main__":

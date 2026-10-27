@@ -174,14 +174,25 @@ async def client(port):
 if WEB:
     web = lvweb.Server(ship, root=ROOT, say=lambda s: None)
     lvweb.probe = sample
+    # main.py's home_screen() (the manifest and icon) always, and its ota_hooks() with
+    # --ota, as they are (main.py itself starts a board, so only those parts).
+    # Read line by line, so the measured heap holds only those functions, not main.py's text.
+    src, on = [], False
+    with open("board/main.py") as f:
+        for ln in f:
+            if ln.startswith("def home_screen"):
+                on = True
+            elif ln.startswith("async def ota_ok") or (ln.startswith("def ota_hooks") and not OTA):
+                break
+            if on:
+                src.append(ln)
+    g = {"lvship": lvship, "asyncio": asyncio}
+    exec("".join(src), g)
+    g["home_screen"](lvweb)
     if OTA:
-        # main.py's ota_hooks() as it is (main.py itself starts a board, so only that part)
-        src = open("board/main.py").read()
-        src = src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")]
-        g = {"lvship": lvship, "asyncio": asyncio}
-        exec(src, g)
         g["ota_hooks"](lvweb, web)
-        src = g = None
+    src = g = None
+    gc.collect()
     handler = web.handle
 else:
     handler = lvstat.server(ship)

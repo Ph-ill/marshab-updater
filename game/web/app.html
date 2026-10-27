@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>The Long Voyage</title>
+<link rel="manifest" href="/app.webmanifest">
+<link rel="icon" href="/icon.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="/icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Long Voyage">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F2ECDF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1B19" media="(prefers-color-scheme: dark)">
 <style>
 :root{--paper:#F2ECDF;--ink:#1C1B19;--graph:#8A867E;--ink2:#57534C;--rule:#CBC3B2;--rust:#C8552B;--rust-t:#A8441F;--tint:#E7DFCE;
 --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;
@@ -174,6 +183,7 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 /*ENGAGE_CSS*/
 /*BATT_CSS*/
 /*OTA_CSS*/
+/*A2HS_CSS*/
 .off{display:flex;align-items:center;gap:var(--s2);min-height:44px;padding:var(--s1) 0;font:600 13px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule)}
 .off::before{content:"";flex:none;width:8px;height:8px;background:var(--rust);animation:blink 2s steps(1) infinite}
 .off button{margin-left:auto;min-height:44px;padding:0 0 0 var(--s4);text-decoration:underline;text-underline-offset:3px}
@@ -211,6 +221,7 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 /*ENGAGE_JS*/
 /*BATT_JS*/
 /*OTA_JS*/
+/*A2HS_JS*/
 const N=8;
 const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];

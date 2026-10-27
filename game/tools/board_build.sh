@@ -53,7 +53,7 @@ done
 cp board/main.py "$OUT/main.py"      # the boot files stay .py (they are tiny)
 cp board/boot.py "$OUT/boot.py"
 cp build/pack.bin build/engage.bin "$OUT/"
-cp build/app.html.gz build/text.json.gz build/engage.json.gz "$OUT/www/"
+cp build/app.html.gz build/text.json.gz build/engage.json.gz build/app.webmanifest.gz build/icon.png.gz "$OUT/www/"
 # The game firmware's set: what the frozen core the boards run doesn't have as it is now.
 FROZEN_CORE="${FROZEN_CORE:-$(ls tools/fw/cores/lv-core-*.json 2>/dev/null | sort -V | tail -1)}"
 cp "$OUT/main.py" "$OUT/boot.py" "$OUT/engage.bin" "$FW/"

@@ -142,9 +142,15 @@ async def session(req, ua, crew, pin, fail, assets=None, wrong="0000", log=None)
     # The captive sheet probes, then loads the page and its two data files.
     s, hd, _ = await call("GET", "/hotspot-detect.html")
     check(s == 302 and hd.get("location", "").startswith("http://"), "probe: want 302 to the board, got %d" % s)
-    for path, name in (("/", "app.html.gz"), ("/text.json", "text.json.gz"), ("/engage.json", "engage.json.gz")):
+    # Then the home-screen manifest and icon (Chrome reads the manifest on load; iOS reads
+    # the touch icon when you add the game to your home screen).
+    for path, name, ct in (("/", "app.html.gz", "text/html"), ("/text.json", "text.json.gz", "application/json"),
+                           ("/engage.json", "engage.json.gz", "application/json"),
+                           ("/app.webmanifest", "app.webmanifest.gz", "application/manifest+json"),
+                           ("/icon.png", "icon.png.gz", "image/png"), ("/apple-touch-icon.png", "icon.png.gz", "image/png")):
         s, hd, b = await call("GET", path)
         check(s == 200 and hd.get("content-encoding") == "gzip", "%s: status %d / encoding %s" % (path, s, hd.get("content-encoding")))
+        check(hd.get("content-type", "").startswith(ct), "%s: content type %s, want %s" % (path, hd.get("content-type"), ct))
         check(int(hd.get("content-length", -1)) == len(b), "%s: length header %s, body %d" % (path, hd.get("content-length"), len(b)))
         if assets is not None:
             check(b == assets[name], "%s: not the bytes of %s" % (path, name))

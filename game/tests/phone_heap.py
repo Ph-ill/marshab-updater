@@ -147,7 +147,7 @@ def main(argv):
     if port is None:
         print(p.stdout.read())
         sys.exit("board side never started its server")
-    assets = {n: open("build/" + n, "rb").read() for n in ("app.html.gz", "text.json.gz", "engage.json.gz")}
+    assets = {n: open("build/" + n, "rb").read() for n in ("app.html.gz", "text.json.gz", "engage.json.gz", "app.webmanifest.gz", "icon.png.gz")}
 
     async def phones():
         req = F.tcp(port)

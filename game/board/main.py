@@ -36,6 +36,16 @@ def flag(path):
         return False
 
 
+def home_screen(lvweb):
+    # The phone's home-screen manifest and icon (web/build.py, web/a2hs.js), streamed from
+    # flash like the page. Added here rather than in lvweb.STATIC so the frozen core stays
+    # as it is (lvweb would otherwise ship again as a RAM-loaded .mpy). iOS also asks for
+    # /apple-touch-icon*.png by name.
+    i = ("www/icon.png.gz", "image/png")
+    lvweb.STATIC.update({"/app.webmanifest": ("www/app.webmanifest.gz", "application/manifest+json"),
+                         "/icon.png": i, "/apple-touch-icon.png": i, "/apple-touch-icon-precomposed.png": i})
+
+
 def ota_hooks(lvweb, web):
     lvweb.MAX_BODY = 1024                       # update pieces (lvota.CHUNK)
     route = web.route
@@ -115,6 +125,7 @@ def main():
         if game:
             import lvweb
             web = lvweb.Server(ship, ip=ip)
+            home_screen(lvweb)
             ota_hooks(lvweb, web)
             await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
             asyncio.create_task(web.tick())

@@ -51,6 +51,11 @@ from lv.state import State, N                 # noqa: E402
 from sim.season import (FLEET_KEY, Ship, deliver, reference_season)  # noqa: E402
 
 BUILD = os.path.join(ROOT, "build")
+# The board's lvweb.STATIC home-screen files: path -> (build file, content type).
+HOME_SCREEN = {"/app.webmanifest": ("app.webmanifest.gz", "application/manifest+json"),
+               "/icon.png": ("icon.png.gz", "image/png"),
+               "/apple-touch-icon.png": ("icon.png.gz", "image/png"),
+               "/apple-touch-icon-precomposed.png": ("icon.png.gz", "image/png")}
 
 
 def visible(out):
@@ -295,6 +300,9 @@ class H(BaseHTTPRequestHandler):
         if u.path in ("/", "/index.html"):
             return self.send(200, open(os.path.join(BUILD, "app.html.gz"), "rb").read(),
                              "text/html; charset=utf-8", gz=True)
+        if u.path in HOME_SCREEN:   # the home-screen manifest and icon (web/build.py)
+            n, t = HOME_SCREEN[u.path]
+            return self.send(200, open(os.path.join(BUILD, n), "rb").read(), t, gz=True)
         if u.path == "/text.json":
             return self.send(200, gzip.compress(json.dumps(G.text, ensure_ascii=False).encode()),
                              gz=True)

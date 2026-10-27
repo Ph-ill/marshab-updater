@@ -1,0 +1,11 @@
+/* The home-screen card and steps (web/a2hs.js). */
+.a2l{font-size:16px;line-height:22px}
+.a2s{list-style:none;margin:var(--s3) 0 0;padding:0;border-top:1px solid var(--rule)}
+.a2s li{display:grid;grid-template-columns:28px 1fr;gap:var(--s2);padding:var(--s2) 0;border-bottom:1px solid var(--rule);font-size:16px;line-height:24px}
+.a2s li>b{font:600 13px/24px var(--mono);letter-spacing:.08em;color:var(--rust-t)}
+.a2i{display:inline-block;width:18px;height:18px;vertical-align:-3px;margin:0 1px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:square}
+.a2i circle{fill:currentColor;stroke:none}
+.a2u{display:block;margin-top:var(--s1);font-size:20px;line-height:28px;font-weight:700;letter-spacing:.04em;user-select:all;-webkit-user-select:all}
+.a2h .fine{margin-top:var(--s3)}
+.a2b{margin-top:var(--s3)}
+.a2b .btn{min-height:48px}
