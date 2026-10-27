@@ -221,6 +221,7 @@ streams them from flash like the other `www/*.gz` files, and the mock serves the
 | --- | --- | --- | --- |
 | `/app.webmanifest` | `www/app.webmanifest.gz` | `application/manifest+json` | 274 B (196 B) |
 | `/icon.png`, `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | `www/icon.png.gz` | `image/png` | 1737 B (1622 B) |
+| `/ls/<W>x<H>.png` (7 sizes) | `www/ls/<W>x<H>.png`, served as they are by `main.py` | `image/png` | 4.4-7.8 KB each, 49651 B in all |
 
 The icon is 192×192 and drawn by `web/icon.py` with no image library: Earth, Mars, the
 transfer arc and the ship, on the page's paper colour. The PNG is committed. The page's
@@ -231,9 +232,53 @@ transfer arc and the ship, on the page's paper colour. The PNG is committed. The
 - `apple-mobile-web-app-capable` and `mobile-web-app-capable`;
 - `apple-mobile-web-app-title` ("The Long Voyage");
 - `apple-mobile-web-app-status-bar-style` (`default`);
-- `theme-color`, light and dark.
+- `theme-color`, light and dark;
+- seven `apple-touch-startup-image` links (the launch screens, below).
 
-The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same name.
+The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same name. Its
+`background_color` is dark (`#1C1B19`), like the launch screens; `theme_color` stays paper.
+
+**The launch screen (an experiment).** Opened away from the ship, the icon can't load
+anything: with no service worker over http there is no offline page. What iOS can show is
+the web app's launch image, which it keeps with the icon. So the page names one:
+
+- `web/launch.py` draws them: dark (`#1C1B19`), the icon's chart (Earth, the arc, the ship,
+  Mars), THE LONG VOYAGE and "Connect to your ship's Wi-Fi to play". No story text. The
+  PNGs are committed (`web/launch/`); `web/build.py` writes the links from the same size list.
+- iOS uses one only if it is exactly the screen's size, so there is one per current iPhone
+  portrait size, each with a `(device-width) and (device-height) and
+  (-webkit-device-pixel-ratio) and (orientation:portrait)` media query:
+
+  | File | Points, scale | iPhones |
+  | --- | --- | --- |
+  | `1320x2868.png` | 440×956 @3 | 16 Pro Max, 17 Pro Max |
+  | `1290x2796.png` | 430×932 @3 | 14 Pro Max, 15 Plus / Pro Max, 16 Plus |
+  | `1206x2622.png` | 402×874 @3 | 16 Pro, 17, 17 Pro |
+  | `1179x2556.png` | 393×852 @3 | 14 Pro, 15, 15 Pro, 16 |
+  | `1284x2778.png` | 428×926 @3 | 12/13 Pro Max, 14 Plus |
+  | `1170x2532.png` | 390×844 @3 | 12, 13, 14, 16e |
+  | `750x1334.png` | 375×667 @2 | SE (2nd/3rd), 6-8 |
+
+  Not covered (they get no launch image, as before): X/XS/11 Pro/12-13 mini (1125×2436),
+  XR/11 (828×1792), XS Max/11 Pro Max (1242×2688), iPhone Air (1260×2736), iPads, landscape.
+- Cost: 4-colour palette PNGs, 2 bits a pixel, 49651 B of flash for all seven (and of an
+  update the first time they ship). The page grows by about 190 B gzip. They are plain
+  files under `www/ls/`; `main.py` answers `GET /ls/<digits>x<digits>.png` from flash with
+  one 512 B buffer, so they take no RAM until a phone asks, and only Safari asks, when an
+  icon is added. Browsers other than iOS Safari ignore the links; nothing else changes.
+- **Re-add the icon to see it.** iOS fetches the launch image when you add the icon and
+  keeps that copy. An icon added before this change has none: delete it and add it again
+  while on the ship's Wi-Fi.
+- **It may not show on iOS 26.** iOS has only ever used launch images for pages with
+  `apple-mobile-web-app-capable`, and `app.html` leaves that out on iOS 26 (the short
+  window, below). On iOS 18 and earlier, where the tag is in, it should work. On iOS 26 it
+  needs a real phone: re-add the icon, open it off the Wi-Fi, and check the nav still
+  reaches the bottom on the Wi-Fi. If iOS 26 ignores the image, the only way to get it is
+  the capable tag, which brings the short window back, so it stays out.
+- **After the launch screen, iOS still tries the page.** Off the ship's Wi-Fi that load
+  fails, and iOS may replace the launch screen with its own "can't connect" page after a
+  few seconds. The launch screen is what you see first, not a lasting offline page.
+  **[NEEDS A REAL PHONE]**
 
 **Where Share is on iOS 26.** Safari's tab layout (Settings › Apps › Safari › Tabs)
 decides where Share is:

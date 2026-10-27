@@ -222,6 +222,24 @@ try {
   const mj = mf.status === 200 ? await mf.json() : {}, ib = Buffer.from(await ic.arrayBuffer());
   check(/manifest\+json/.test(mf.headers.get('content-type')) && mj.name === 'The Long Voyage' && mj.short_name === 'The Long Voyage' && mj.start_url === '/' && mj.icons[0].src === '/icon.png', 'manifest: ' + mf.status + ' ' + JSON.stringify(mj));
   check(ic.status === 200 && ic.headers.get('content-type') === 'image/png' && ib.readUInt32BE(16) === 192 && ib.readUInt32BE(20) === 192, 'icon: ' + ic.status + ' ' + ib.length + ' B');
+  // The iOS launch screens (web/launch.py): one link per iPhone size, each served from flash by
+  // main.py as a plain PNG of exactly that size. Any other /ls/ name is not a file: a missing
+  // size is a 404, anything else falls through to the game (the page, as for any address).
+  const ls = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('link[rel=apple-touch-startup-image]')].map((e)=>[e.media,e.getAttribute('href')]))`));
+  check(ls.length === 7 && ls.every(([m, h]) => /^\(device-width:\d+px\) and \(device-height:\d+px\) and \(-webkit-device-pixel-ratio:[23]\) and \(orientation:portrait\)$/.test(m) && /^\/ls\/\d+x\d+\.png$/.test(h)), 'launch-screen links: ' + JSON.stringify(ls));
+  let lsB = 0;
+  for (const [m, h] of ls) {
+    const r = await fetch(BASE + h), b = Buffer.from(await r.arrayBuffer());
+    const [, pw, ph, k] = m.match(/width:(\d+)px.*height:(\d+)px.*ratio:(\d)/).map(Number), [w, hh] = h.match(/(\d+)x(\d+)/).slice(1).map(Number);
+    lsB += b.length;
+    check(r.status === 200 && r.headers.get('content-type') === 'image/png' && !r.headers.get('content-encoding') && b.readUInt32BE(16) === w && b.readUInt32BE(20) === hh && pw * k === w && ph * k === hh && b.length < 9000, 'launch screen ' + h + ': ' + r.status + ' ' + b.length + ' B');
+  }
+  check(lsB < 60000, 'launch screens ' + lsB + ' B in all');
+  for (const h of ['/ls/1x1.png', '/ls/../main.py', '/ls/main.py', '/ls/12x34x5.png', '/ls/1206x2622.png.gz', '/ls/']) {
+    const r = await fetch(BASE + h);
+    check(!/^image/.test(r.headers.get('content-type') || '') && (h !== '/ls/1x1.png' || r.status === 404), 'no launch screen at ' + h + ': ' + r.status + ' ' + r.headers.get('content-type'));
+  }
+  check(mj.background_color === '#1C1B19', 'manifest background is dark: ' + mj.background_color);
   const hd = JSON.parse(await ev(`JSON.stringify([...document.querySelectorAll('head link[rel],head meta[name^=apple]')].map((e)=>e.rel||e.name+'='+e.content))`));
   // This browser says iPhone and has anchor positioning, so app.html takes it for iOS 26 and
   // leaves out the manifest and Apple's web-app tags (they give the icon a too-short window

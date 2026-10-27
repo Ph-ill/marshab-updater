@@ -27,6 +27,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import secrets
 import socket
 import struct
@@ -304,6 +305,10 @@ class H(BaseHTTPRequestHandler):
         if u.path in HOME_SCREEN:   # the home-screen manifest and icon (web/build.py)
             n, t = HOME_SCREEN[u.path]
             return self.send(200, open(os.path.join(BUILD, n), "rb").read(), t, gz=True)
+        if re.fullmatch(r"/ls/\d+x\d+\.png", u.path):   # iOS launch screens (web/launch.py)
+            f = os.path.join(ROOT, "web", "launch", u.path[4:])
+            if os.path.exists(f):
+                return self.send(200, open(f, "rb").read(), "image/png")
         if u.path == "/text.json":
             return self.send(200, gzip.compress(json.dumps(G.text, ensure_ascii=False).encode()),
                              gz=True)
