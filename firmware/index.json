@@ -3,10 +3,21 @@
   "project": "LongVoyage",
   "latest": "0.0.2-coex",
   "channels": {
-    "test": "0.2.0-lv-test",
+    "test": "0.2.2-ota-phone",
     "bench": "0.0.2-coex"
   },
   "releases": [
+    {
+      "version": "0.2.2-ota-phone",
+      "channel": "test",
+      "date": "2026-10-26",
+      "label": "Phone OTA test: 0.2.2 over the air",
+      "path": "/firmware/releases/0.2.2-ota-phone/release.json",
+      "bytes": 86711,
+      "files": 13,
+      "frozen": "2661c2144844",
+      "ota": "2111b2e9"
+    },
     {
       "version": "0.2.0-lv-test",
       "channel": "test",
