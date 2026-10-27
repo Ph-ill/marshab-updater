@@ -10,7 +10,8 @@ version, signed with a test key) in pieces while the two play, the way web/ota.j
 a refused envelope first, a piece at a wrong offset, then everything; the board checks
 the signature and each file, and the heap peak includes all of it. Then it cancels
 (applying restarts the board: tests/test_ota.py covers that). The home-screen funnel's
-/api/hello (board/lvfunnel.py, main.py's ota_route) is asked three times meanwhile."""
+/api/hello (board/lvfunnel.py, main.py's ota_route) is asked three times meanwhile, and a
+fourth phone changes a crew code and back (board/lvcode.py, POST /api/code)."""
 import asyncio
 import json
 import os
@@ -144,6 +145,46 @@ async def funnel_hello(req, fail, log):
     log("funnel: a tab, an icon launch, a tab again: the ship remembered the icon")
 
 
+async def code_change(req, fail, log):
+    """Change your code (board/lvcode.py, loaded and dropped per request) while the others
+    play: crew 3 signs in, gets the current code wrong once, changes it, signs in with the
+    new one, and changes it back (crew.json rewritten through crew.json.new each time)."""
+    H = {"User-Agent": "heapC", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+
+    async def call(path, obj, tok=None):
+        h = dict(H)
+        if tok:
+            h["X-Crew-Token"] = tok
+        for _ in range(50):
+            # Four phones at once on the board's 4 connections: a busy board answers 503
+            # and closes before reading the body, which can reach us as a reset instead.
+            try:
+                s, _, b = await req("POST", path, bytes(json.dumps(obj), "utf-8"), h)
+            except OSError:
+                s, b = 503, b"reset"
+            if s != 503:
+                break
+            await asyncio.sleep(0.2)
+        return s, b
+    s, b = await call("/api/login", {"crew": 3, "pin": "1234"})
+    if s != 200:
+        return fail("code: sign-in %d %s" % (s, b))
+    tok = json.loads(b)["token"]
+    steps = ((("1111", "5678"), 403), (("1234", "5678"), 200), (("5678", "1234"), 200))
+    s, _ = await call("/api/code", {"old": "1234", "new": "5678"})
+    if s != 401:
+        return fail("code: without a session %d, want 401" % s)
+    for i, ((old, new), want) in enumerate(steps):
+        s, b = await call("/api/code", {"old": old, "new": new}, tok)
+        if s != want:
+            return fail("code: step %d %d %s, want %d" % (i, s, b, want))
+        if i == 1:
+            s2, _ = await call("/api/login", {"crew": 3, "pin": "5678"})
+            if s2 != 200:
+                return fail("code: the new code didn't sign in (%d)" % s2)
+    log("code: wrong current code refused, changed, signed in with the new one, changed back")
+
+
 def main(argv):
     mp, mode = argv[0], argv[1:]
     os.makedirs(DATA, exist_ok=True)
@@ -175,6 +216,7 @@ def main(argv):
         if ota:
             jobs.append(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print))
             jobs.append(funnel_hello(req, fails.append, print))
+            jobs.append(code_change(req, fails.append, print))
         return await asyncio.gather(*jobs)
     try:
         asyncio.run(phones())

@@ -4,7 +4,7 @@ A ship can update its game software from a phone, without a USB cable or a file 
 download yourself. The phone looks for a newer signed release on GitHub whenever it can
 reach the internet. It keeps the release, and when it's on the ship's Wi-Fi it offers
 to install it: a notice on the home screen (**Install** / **Later**), and
-**Settings › Ship software** (the gear at the top right; docs/SETTINGS.md), which shows what's installed, what's available, when it last
+**Settings › Ship software** (the gear at the top right; docs/SETTINGS.md, which also covers Change your code), which shows what's installed, what's available, when it last
 checked, and a **Check for updates** button. Installing sends the release to the ship
 in small pieces. The ship checks the signature and every file, switches over at
 restart, and goes back by itself if the new version doesn't start.
