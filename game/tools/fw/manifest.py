@@ -37,3 +37,5 @@ module("selftest.py", base_path="../../board", opt=3)
 module("lvota.py", base_path="../../board", opt=3)
 module("lvsig.py", base_path="../../board", opt=3)
 module("lvboot.py", base_path="../../board", opt=3)
+# The home-screen funnel (after 0.2.2; on older cores releases ship it as lvfunnel.mpy).
+module("lvfunnel.py", base_path="../../board", opt=3)

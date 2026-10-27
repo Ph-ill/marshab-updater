@@ -22,10 +22,12 @@ function blank(x, deep) {
 const STORY_T = ["cards", "epi", "reread", "notes", "reveal", "voice", "core"];
 const STORY_E = ["drops", "jobs", "file"];
 async function page(port, day, when, fresh = false) {
-  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 you/${ua++}`,
+  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 you/${ua++}`,
     viewport: { width: size.width, height: size.height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light",
     timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
+  // Past the install guide (web/funnel.js), as after "Play in this browser this time".
+  await p.addInitScript(() => sessionStorage.setItem("lv.here", "1"));
   p.on("pageerror", (e) => { console.error("pageerror", e.message); process.exitCode = 1; });
   for (const [path, keys] of [["/text.json", STORY_T], ["/engage.json", STORY_E]]) {
     await p.route(`**${path}*`, async (route) => {

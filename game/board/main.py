@@ -60,6 +60,14 @@ def ota_hooks(lvweb, web):
             d = n[:-4].split("x")
             if req.method == "GET" and n[-4:] == ".png" and len(d) == 2 and d[0].isdigit() and d[1].isdigit():
                 return await lvweb.send_file(w, web.root + "www/ls/" + n, "image/png", False)
+        if req.path == "/api/hello" and req.method == "GET":
+            # The home-screen funnel (board/lvfunnel.py, web/funnel.js): has the ship seen
+            # this phone open the game from its icon? Loaded per request, like lvota.
+            import lvfunnel
+            try:
+                return await lvweb.send_json(w, 200, lvfunnel.api(web, req))
+            finally:
+                lvship.drop("lvfunnel")
         if req.path.startswith("/api/ota"):
             import lvota
             try:
@@ -84,11 +92,12 @@ def ota_hooks(lvweb, web):
 # Deleted from /data: log.bin (every record this ship holds: taps, votes, gifts; other ships
 # in range sync theirs back), days.bin (the days told), clock.json (the saved flight day and
 # time; the launch date in ship.json brings the day back once a phone tells the time),
-# local.bin (what phones opened and saw), and the funnel's seen-phones store once there is
-# one (add it to RESET). Sign-ins and sessions live in RAM, so the restart forgets them.
+# local.bin (what phones opened and saw), and funnel.bin (the phones the home-screen funnel
+# has seen, and which opened the game from the icon: board/lvfunnel.py). Sign-ins and
+# sessions live in RAM, so the restart forgets them.
 # Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
 # codes), the installed software and ota/ (the update state and rollback copy), maint/safe.
-RESET = ("log.bin", "days.bin", "clock.json", "local.bin")
+RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin")
 reboot = None               # tests: called instead of machine.reset()
 
 
@@ -180,6 +189,7 @@ def main():
         if game:
             import lvweb
             web = lvweb.Server(ship, ip=ip)
+            web.ap = ap                 # board/lvfunnel.py: MAC mode, where the firmware lists leases
             home_screen(lvweb)
             ota_hooks(lvweb, web)
             await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])

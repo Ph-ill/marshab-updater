@@ -21,6 +21,8 @@ async function page(port, { width = 390, height = 844, signin = true, android = 
     viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => { console.error("pageerror", e.message); fails++; });
+  // Past the install guide (web/funnel.js), as after "Play in this browser this time".
+  await p.addInitScript(() => sessionStorage.setItem("lv.here", "1"));
   await p.addInitScript(() => { const s = CSS.supports.bind(CSS); CSS.supports = (...a) => /anchor-name/.test(a.join("")) ? false : s(...a); });
   for (const [path, keys] of [["/text.json", ["cards", "epi", "reread", "notes", "reveal", "voice", "core", "patches"]], ["/engage.json", ["drops", "jobs", "file"]]]) {
     await p.route(`**${path}*`, async (route) => {

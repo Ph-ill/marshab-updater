@@ -33,7 +33,7 @@ DATA = ROOT + "/data"
 SHIP = b'{"ship_id": 4, "hotspot_password": "placeholder-pass", "ota_src": "placeholder"}'
 CREW = b'{"schema": 1, "salt": "00", "codes": []}'
 GONE = {"log.bin": bytes(range(256)) * 2, "days.bin": b"\x01\x02\x03", "clock.json": b'{"t": 1}',
-        "local.bin": b"\x05\x06"}
+        "local.bin": b"\x05\x06", "funnel.bin": b"ip\x7f\x00\x00\x01\x03\x10" * 2}
 KEEP = {"data/ship.json": SHIP, "data/crew.json": CREW, "data/safe": b"",
         "main.py": b"# main\n", "www/app.html.gz": b"page", "ota/state.json": b'{"phase": "ok"}',
         "ota/old/main.py": b"# old main\n"}

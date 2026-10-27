@@ -261,7 +261,8 @@ transfer arc and the ship, on the page's paper colour. The PNG is committed. The
 - `theme-color`, light and dark;
 - seven `apple-touch-startup-image` links (the launch screens, below).
 
-The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same name. Its
+The manifest sets `display: standalone`, `start_url: /?src=icon` (the funnel's Android
+marker, below), `scope: /` and the same name. Its
 `background_color` is dark (`#1C1B19`), like the launch screens; `theme_color` stays paper.
 
 **The launch screen (an experiment).** Opened away from the ship, the icon can't load
@@ -490,6 +491,67 @@ measured. **[NEEDS A REAL PHONE]**
 - Join the ship's Wi-Fi and open the icon again. (On another ship's Wi-Fi, it opens that
   ship's game.)
 
+### The home-screen funnel
+
+Joining the ship's Wi-Fi is everyone's first contact with the game, so the first visit has
+one job: put the game on the phone's home screen, smoothly, once. `web/funnel.js` (with
+`web/funnel.css`) runs before the game loads (`await fnGate()` in `app.html`'s boot) and
+`board/lvfunnel.py` is the ship's memory of which phones have done it.
+
+**What the page shows.** The page asks `GET /api/hello?ctx=<context>[&m=icon]` (4 s timeout,
+with the phone's clock headers) and picks one screen:
+
+| Where it runs | The ship has seen this phone open the icon? | Screen |
+| --- | --- | --- |
+| iOS captive sheet, Android sign-in window | no | **Open the game in Safari / Chrome**: how to leave the pop-up (Cancel › Use Without Internet; close it and stay connected) and the address in large type. No game, no "play here": the pop-up forgets everything when it closes. |
+| the same | yes | **Open the game from your icon**, with the address as a fallback. |
+| a browser tab (Safari 18/26, Chrome, Samsung Internet, Chrome on iOS) | no | The guide: the intro card (the goal; Wi-Fi, Bluetooth, daily check-ins, the icon), then this browser's steps drawn as SVG/CSS cards in the game's style (iOS 26: page menu › Share; View More › Add to Home Screen; keep Open as Web App on, Add. iOS 18: Share; Add to Home Screen; Add. Android: ⋮ › Add to Home screen; Add), then **Open it from the icon**. "Play in this browser this time" on every card. |
+| the same | yes | **You have the icon**: Play here anyway, or "No icon on this phone? Show me how to add it" (the guide). |
+| the icon itself, a computer, or "play here" this tab | — | the game |
+
+The captive pop-up is never told "internet OK": the ship still answers the OS's checks
+with the redirect (section 5), so the pop-up only routes the player to the real browser.
+The cards use no screenshots; they are drawings of the browser's UI, named in its words.
+The guide's step cards also suppress the old home-screen card (`web/a2hs.js`) for that tab.
+
+**What marks a phone installed.** Only an icon launch:
+
+- iOS: the page runs standalone (`navigator.standalone`, or `display-mode: standalone`).
+- Android: the shortcut is just Chrome opening the address it was added from, so while the
+  guide shows the address carries `?src=icon` (`history.replaceState`, other parameters and
+  the hash kept), and the manifest's `start_url` has it too. A marked load counts only as a
+  new navigation (not a reload or back/forward) in a tab that never showed the guide
+  (`sessionStorage` `lv.fnadd`); the page then takes the marker off and remembers the
+  launch for the tab and, as a hint, in `localStorage`.
+
+iOS doesn't use a marker: a restored Safari tab would replay it and count as a launch.
+If the page sees the icon appear while the guide is up (it comes back to the foreground),
+it asks again and switches to **You have the icon**.
+
+**The ship's memory.** `/data/funnel.bin`: 32 records of 8 bytes (256 B), key (`ip` + the
+IPv4 address, or a MAC), flags (installed, tab, sheet, MAC) and a stamp (4-hour units of the
+phone-taught clock, mod 256). Phones are told apart by client address for now. The hotspot
+leases an address for 24 hours, so an address record is trusted for at most that long
+(after it, another phone may hold the address). The hook for MAC mode is `lvfunnel.mac_of`:
+firmware that lists its DHCP leases (`ap.status("leases")`, not stock MicroPython 1.29) keys
+phones by MAC, and those records don't go stale (iOS and Android keep one private MAC per
+network). A full store gives the stalest record that isn't installed to a new phone. The
+file is written whole (`.new`, then a rename) and only when a record changes. **Reset this
+ship** deletes it (`main.py` `RESET`).
+
+`main.py`'s `ota_route` answers `/api/hello`, importing `lvfunnel` per request and dropping
+it after (as `lvota`), so it holds no RAM between requests. It is not frozen: on lv-core
+0.2.0 it ships over the air as `lvfunnel.mpy`, and it is in `gen_lvfrozen.py` `BOARD` and
+`manifest.py` for the next core. Page cost: 5.3 KB gzip (the page went from 39.6 to 44.9 KB
+gzip, 34% of the 128 KB budget). Heap: within the noise of the `--ota` run (board peak 70.5-71.5 KB of
+the 80,000 B cap with it, 71.2 KB without).
+
+**[NEEDS A REAL PHONE]**: whether an iPhone keeps one address across sheet, Safari and
+icon (private Wi-Fi address on); the Android shortcut's URL (does it keep `?src=icon`, or
+use the manifest's `start_url`?); the pop-ups' wording (Cancel › Use Without Internet, the
+Android sign-in window's close and "stay connected"); the iOS 26 Add to Home Screen sheet's
+labels; the foreground re-check; MAC mode needs firmware with a lease list.
+
 ## 7. Tests
 
 Automated (all in `game/tests/run.sh`):
@@ -540,10 +602,24 @@ Automated (all in `game/tests/run.sh`):
   - that nothing shows on a computer or once opened from the icon (`navigator.standalone`
     and `display-mode: standalone`);
   - that Chrome parses the manifest and refuses to install from a non-secure origin.
+- **`tests/test_funnel.py`** (CPython, the unix port, and the frozen-core build).
+  `board/lvfunnel.py`: address mode and its 24 h trust, MAC mode, a full store and who is
+  evicted, writes only on a change and a damaged file; `main.py`'s `/api/hello` hook (the
+  clock learned, the module dropped, MAC mode from `web.ap`).
+- **`web/shots_funnel.sh`.** Chrome with phone User-Agents against the board's own server
+  (`tests/phone_serve.py`), loaded as `http://192.168.4.1/`, at 390x844, 320x640 (iOS) and
+  412x915 (Android). It checks each screen and the order of events: the captive sheet and
+  sign-in window route to the browser; a first tab shows the guide; an icon launch (iOS
+  standalone, Android `?src=icon`) marks the phone and plays; the next tab says **You have
+  the icon**; a reload or the guide's own tab doesn't count; Reset this ship forgets the
+  phone. It saves the screenshots too.
 - **`tests/phone_flow.py`** (`phone_check`, `phone_heap`) fetches `/app.webmanifest`,
   `/icon.png` and `/apple-touch-icon.png` from the real `lvweb` and checks the bytes, the
   gzip encoding and the content type. **`tests/app_e2e.mjs`** checks the manifest's
-  fields, the icon's size and the `<head>` tags.
+  fields, the icon's size and the `<head>` tags. It plays as iOS 26 Safari, so it starts on
+  the guide, and ends with the funnel: an icon launch marks the phone, the next tab shows
+  **You have the icon**, the captive sheet sends it to the icon, Reset this ship forgets it,
+  and an Android launch from `?src=icon`.
 
 Still to do on real hardware and phones:
 
@@ -576,6 +652,9 @@ Still to do on real hardware and phones:
      Chrome tab?
    - Close the sign-in window: does the phone stay on the Wi-Fi?
 10. Chrome on iOS: does Share › Add to Home Screen show up, and open as a web app?
+11. The home-screen funnel (see "The home-screen funnel" above): one iPhone and one
+    Android phone through sheet › browser › guide › icon; then a second phone on the same
+    ship; then the next day.
 
 ## 8. Releasing an update
 

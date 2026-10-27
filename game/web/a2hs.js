@@ -60,7 +60,7 @@ const home_a2=home;home=function(){
   home_a2();
   const k=a2Kind(),top=document.querySelector("#v>.kick");
   // One thing at a time: an update notice wins this visit.
-  if(!k||a2Done()||!top||S.ending!==NONE||document.querySelector("#v .otab"))return;
+  if(!k||a2Done()||fnSeen()||!top||S.ending!==NONE||document.querySelector("#v .otab"))return;
   top.insertAdjacentHTML("afterend",`<section class=a2h aria-labelledby=a2t><div class=lab><span id=a2t>Home screen</span><span>${a2Steps(k).split("<li>").length-1} steps</span></div><p class=a2l>Keep the game one tap away. It opens ${a2Opens(k)}.</p>${a2Steps(k)}<p class=fine>${A2_WIFI}</p><div class=a2b><button class="btn sec" data-a2h=ok><span>Got it</span><i>hide this</i></button></div></section>`);
 };
 document.addEventListener("click",(ev)=>{
