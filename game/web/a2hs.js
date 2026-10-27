@@ -2,7 +2,8 @@
 // The page is plain http on the ship's own address, so browsers won't offer a one-tap
 // install (that needs HTTPS and a service worker). What they do allow by hand: iOS Safari
 // (Share > Add to Home Screen) opens it full screen like an app; Android Chrome
-// (menu > Add to Home screen) makes a shortcut that opens a Chrome tab. This shows how,
+// (menu > Add to Home screen) makes a shortcut that opens a Chrome tab, which the top bar's
+// button (web/fullscreen.js) makes full screen. This shows how,
 // once, on the home screen (and any time in Settings: web/settings.js), worded for the browser
 // you're in. The captive sign-in windows can't add icons, so there it says how to get to
 // a real browser first. Not shown once the game runs from the icon.
@@ -26,10 +27,14 @@ const A2_PM=`<svg class=a2i viewBox="0 0 16 16" aria-label="page menu" role=img>
 const A2_MH=`<svg class=a2i viewBox="0 0 16 16" aria-label=More role=img><circle cx=3 cy=8 r=1.4 /><circle cx=8 cy=8 r=1.4 /><circle cx=13 cy=8 r=1.4 /></svg>`;
 // The share sheet's View More button (a chevron in a circle; iOS 26).
 const A2_VM=`<svg class=a2i viewBox="0 0 16 16" aria-label="View More" role=img><path d="M3.5 6l4.5 4.5 4.5-4.5"/></svg>`;
+// Full screen (web/fullscreen.js): the four corners, as on the top-bar button.
+const A2_FS=`<svg class=a2i viewBox="0 0 16 16" aria-label="Full screen" role=img><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>`;
 function a2Steps(k){
   const u=navigator.userAgent,v=+((u.match(/Version\/(\d+)/)||[])[1]||0),pad_=/iPad|Macintosh/.test(u);
   const at=`<b class="a2u m">${h(location.host||"192.168.4.1")}</b>`;
   const add="Tap <b>Add to Home Screen</b>, then <b>Add</b>.";
+  // Android opens the icon in a browser tab; the top bar's button makes it full screen.
+  const fs=`Open the game from the icon, then tap ${A2_FS} at the top for <b>full screen</b>. Back leaves it.`;
   // Safari 26 (app.html tells it by anchor positioning too: its user agent says 18_6).
   const i26=v>=26||!!(window.CSS&&CSS.supports("anchor-name:--a"));
   const S_={
@@ -43,13 +48,13 @@ function a2Steps(k){
     iosx:[`Tap <b>Share</b> ${A2_SH}: it's in the address bar or the browser's menu.`,"Scroll down. "+add],
     sheet:["This sign-in window can't add icons. Tap <b>Cancel</b> at the top, then <b>Use Without Internet</b>. You stay on the ship's Wi-Fi.",
       `Open <b>Safari</b> and go to ${at}`,i26?`Tap ${A2_PM} in the address bar, then <b>Share</b>, <b>View More</b> ${A2_VM} and <b>Add to Home Screen</b>.`:`Tap <b>Share</b> ${A2_SH}, then <b>Add to Home Screen</b>.`],
-    and:[`Tap ${A2_MV} at the top right of Chrome.`,"Tap <b>Add to Home screen</b>, then <b>Add</b>."],
-    sam:["Tap <b>☰</b> at the bottom of the screen.","Tap <b>Add page to</b>, then <b>Home screen</b>."],
+    and:[`Tap ${A2_MV} at the top right of Chrome.`,"Tap <b>Add to Home screen</b>, then <b>Add</b>.",fs],
+    sam:["Tap <b>☰</b> at the bottom of the screen.","Tap <b>Add page to</b>, then <b>Home screen</b>.",fs],
     awv:["This sign-in screen can't add icons. Close it. Your phone stays on the ship's Wi-Fi.",
-      `Open <b>Chrome</b> and go to ${at}`,`Tap ${A2_MV}, then <b>Add to Home screen</b>.`]};
+      `Open <b>Chrome</b> and go to ${at}`,`Tap ${A2_MV}, then <b>Add to Home screen</b>.`,fs]};
   return `<ol class=a2s>${S_[k].map((s,i)=>`<li><b class=m>${pad(i+1)}</b><span>${s}</span></li>`).join("")}</ol>`;
 }
-function a2Opens(k){return /^(ios|iosx|sheet)$/.test(k)?"full screen, like an app":"in a Chrome tab"}
+function a2Opens(k){return /^(ios|iosx|sheet)$/.test(k)?"full screen, like an app":`in a ${k==="sam"?"browser":"Chrome"} tab; one tap makes it full screen`}
 const A2_WIFI="The icon only works while your phone is on the ship's Wi-Fi. Anywhere else it opens to a can't-connect page.";
 const home_a2=home;home=function(){
   home_a2();

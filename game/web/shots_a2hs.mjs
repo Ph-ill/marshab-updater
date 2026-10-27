@@ -30,7 +30,7 @@ function blank(x) {
   if (x && typeof x === "object") return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, blank(v)]));
   return x;
 }
-async function page(kind, { standalone = false, ctx = null, insets = null, vp = null } = {}) {
+async function page(kind, { standalone = false, ctx = null, insets = null, vp = null, init = null } = {}) {
   const android = /Android/.test(UA[kind]), desk = kind === "desk";
   vp = vp || (desk ? { width: 1280, height: 800 } : android ? { width: 412, height: 915 } : { width: 390, height: 844 });
   ctx = ctx || await browser.newContext({ userAgent: UA[kind] + ` a2/${n++}`, viewport: vp, deviceScaleFactor: desk ? 1 : 2,
@@ -41,6 +41,7 @@ async function page(kind, { standalone = false, ctx = null, insets = null, vp = 
   if (kind === "ios") await p.addInitScript(() => { const s = CSS.supports.bind(CSS); CSS.supports = (...a) => /anchor-name/.test(a.join("")) ? false : s(...a); });
   // The phone's safe areas (status bar, home indicator), as real env() values.
   if (insets) await (await ctx.newCDPSession(p)).send("Emulation.setSafeAreaInsetsOverride", { insets });
+  if (init) await p.addInitScript(init);
   if (standalone === "ios") await p.addInitScript(() => Object.defineProperty(navigator, "standalone", { get: () => true }));
   // Chrome's media emulation has no display-mode, so answer that one query as an installed app would.
   if (standalone === "media") await p.addInitScript(() => { const m = matchMedia.bind(window);
@@ -139,13 +140,57 @@ await close(p);
 // 4. Android Chrome: menu > Add to Home screen; opens in a Chrome tab.
 p = await page("and");
 t = await card(p);
-ok("Android Chrome: menu, Add to Home screen, Chrome tab", !!t && /top right of Chrome/.test(t) && /Add to Home screen/.test(t) && /Chrome tab/.test(t));
+ok("Android Chrome: menu, Add to Home screen, Chrome tab", !!t && /top right of Chrome/.test(t) && /Add to Home screen/.test(t) && /Chrome tab/.test(t) && /full screen/.test(t));
 await center(p, ".a2h");
 await shot(p, "a2hs-06-android-chrome-card");
 await goto(p, "set");
 await p.waitForSelector("#set-a2h .a2s");
 await center(p, "#set-a2h");
 await shot(p, "a2hs-07-android-chrome-settings-section");
+await close(p);
+
+// 4b. Android full screen (web/fullscreen.js): the card's third step, the button beside the
+// gear; a tap goes full screen and hides it, leaving brings it back. The dock still sits on
+// the bottom edge with the nav above the gesture bar (Android's insets: 24 px status bar,
+// 16 px gesture bar), and the header clears the status bar.
+const fsb = (p) => p.evaluate(() => { const b = document.querySelector("#top .fsb"); return b ? [b.getAttribute("aria-label"), getComputedStyle(b).display !== "none", Math.round(b.getBoundingClientRect().width), !!b.nextElementSibling?.matches(".gear")] : null; });
+p = await page("and", { insets: { top: 24, bottom: 16 } });
+t = await card(p);
+ok("Android Chrome: step 3, open from the icon and tap full screen", !!t && /3 steps/.test(t) && /tap\s+at the top for full screen\. Back leaves it\./.test(t) && /one tap makes it full screen/.test(t));
+ok("Android Chrome: the card shows the full-screen icon", (await p.$$eval(".a2h .a2s svg.a2i", (s) => s.map((e) => e.getAttribute("aria-label")))).join() === "menu,Full screen");
+ok("Android Chrome: a Full screen button, 44 px, just before the gear", JSON.stringify(await fsb(p)) === JSON.stringify(["Full screen", true, 44, true]));
+await shot(p, "a2hs-12-android-chrome-fullscreen-button");
+await p.click("#top .fsb");
+await p.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 3000 }).catch(() => {});
+ok("tap: the page goes full screen", await p.evaluate(() => document.fullscreenElement === document.documentElement));
+await p.waitForTimeout(150);
+ok("full screen: the button hides", (await fsb(p))?.[1] === false);
+await goto(p, "file"); await p.waitForTimeout(100);
+ok("full screen: still hidden after moving screens", (await fsb(p))?.[1] === false);
+await frame(p, 412, 915, 24, 16, "Android full screen 412x915 file");
+await shot(p, "a2hs-13-android-chrome-fullscreen-file");
+await goto(p, "home"); await p.waitForTimeout(100);
+await frame(p, 412, 915, 24, 16, "Android full screen 412x915 home");
+await shot(p, "a2hs-14-android-chrome-fullscreen-home");
+await p.evaluate(() => document.exitFullscreen());
+await p.waitForFunction(() => !document.fullscreenElement, null, { timeout: 3000 }).catch(() => {});
+await p.waitForTimeout(150);
+ok("leaving full screen brings the button back", (await fsb(p))?.[1] === true);
+await close(p);
+// Samsung Internet has it too; iOS, the Android sign-in window and computers don't.
+for (const [kind, want] of [["sam", true], ["ios", false], ["ios26", false], ["awv", false], ["desk", false]]) {
+  p = await page(kind);
+  ok(`${kind}: ${want ? "a" : "no"} Full screen button`, !!(await fsb(p)) === want);
+  await close(p);
+}
+// Where the API is missing, no button; where Chrome refuses, nothing breaks.
+p = await page("and", { ctx: await browser.newContext({ userAgent: UA.and + " fs/none", viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light" }), init: () => { Object.defineProperty(Document.prototype, "fullscreenEnabled", { get: () => false }); } });
+ok("no Fullscreen API: no button", !(await fsb(p)));
+await close(p);
+p = await page("and", { init: () => { Element.prototype.requestFullscreen = () => Promise.reject(new TypeError("Permissions check failed")); } });
+const f0 = fails;
+await p.click("#top .fsb"); await p.waitForTimeout(300);
+ok("refused: fails silently, the button stays", fails === f0 && (await fsb(p))?.[1] === true && !(await p.evaluate(() => document.fullscreenElement)));
 await close(p);
 
 // 5. Android's sign-in window: close it, open Chrome, type the address.
@@ -159,7 +204,7 @@ await close(p);
 // 6. Samsung Internet.
 p = await page("sam");
 t = await card(p);
-ok("Samsung Internet: Add page to > Home screen", !!t && /Add page to/.test(t));
+ok("Samsung Internet: Add page to > Home screen, then full screen", !!t && /Add page to/.test(t) && /3 steps/.test(t) && /browser tab/.test(t));
 await close(p);
 
 // 7. Already on the home screen (iOS navigator.standalone, Android display-mode), or a computer: nothing.

@@ -15,8 +15,9 @@ let fails = 0, ua = 0;
 const ok = (what, c) => { console.log((c ? "ok   " : "FAIL ") + what); if (!c) fails++; };
 const blank = (x) => typeof x === "string" ? (x.length > 18 && x.includes(" ") ? PH : x) : Array.isArray(x) ? x.map(blank)
   : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, blank(v)])) : x;
-async function page(port, { width = 390, height = 844, signin = true } = {}) {
-  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1 set/${ua++}`,
+const ANDROID = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36";
+async function page(port, { width = 390, height = 844, signin = true, android = false } = {}) {
+  const ctx = await browser.newContext({ userAgent: `${android ? ANDROID : "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"} set/${ua++}`,
     viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => { console.error("pageerror", e.message); fails++; });
@@ -154,6 +155,11 @@ await p.context().close();
 p = await page(8060 - 1, { width: 320, height: 640 });
 ok("320 px with the battery: the top bar fits", await p.$eval("#top", (e) => !!e.querySelector(".bat") && e.scrollWidth <= e.clientWidth && e.querySelector(".gear").getBoundingClientRect().right <= innerWidth + 0.5));
 await shot(p, "set-09-home-gear-battery");
+await p.context().close();
+// ...and on Android, where the Full screen button (web/fullscreen.js) sits before the gear.
+p = await page(8060 - 1, { width: 320, height: 640, android: true });
+ok("320 px Android with the battery: the top bar fits, Full screen and gear included", await p.$eval("#top", (e) => !!e.querySelector(".bat") && !!e.querySelector(".fsb") && e.scrollWidth <= e.clientWidth && e.querySelector(".gear").getBoundingClientRect().right <= innerWidth + 0.5 && e.querySelector("b").getBoundingClientRect().right < e.querySelector("span").getBoundingClientRect().left));
+await shot(p, "set-10-android-home-fullscreen-gear-battery");
 await p.context().close();
 await browser.close();
 console.log(fails ? `FAIL ${fails}` : "settings shots: all ok");
