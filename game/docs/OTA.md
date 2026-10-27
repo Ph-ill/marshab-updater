@@ -4,7 +4,7 @@ A ship can update its game software from a phone, without a USB cable or a file 
 download yourself. The phone looks for a newer signed release on GitHub whenever it can
 reach the internet. It keeps the release, and when it's on the ship's Wi-Fi it offers
 to install it: a notice on the home screen (**Install** / **Later**), and
-**CREW › Ship software**, which shows what's installed, what's available, when it last
+**Settings › Ship software** (the gear at the top right; docs/SETTINGS.md), which shows what's installed, what's available, when it last
 checked, and a **Check for updates** button. Installing sends the release to the ship
 in small pieces. The ship checks the signature and every file, switches over at
 restart, and goes back by itself if the new version doesn't start.
@@ -349,12 +349,10 @@ indicator padding (meant), plus 62 px nothing could paint. The page was already 
 - The captive sheets forget their storage, so there it comes back each time the sheet
   opens. That's the right place to keep explaining.
 - It stays out of the way while an update notice is up: one ask at a time.
-- **CREW › Add to home screen** shows the same steps any time, plus what to expect:
-  - where it opens;
-  - that it works on the ship's Wi-Fi only;
-  - that you sign in once.
+- **Settings › Home screen icon** (the gear at the top right) shows the same steps any
+  time, with where it opens and that it works on the ship's Wi-Fi only.
 - The card and the iOS 26 tag script below add about 2.3 KB (gzip) to the page, which is
-  now 37466 B of the 128 KB budget.
+  then 37466 B of the 128 KB budget (with Settings, docs/SETTINGS.md: 38.9 KB).
   The game firmware's files on flash go from 79738 B to 84196 B.
 - `main.py`'s `home_screen()` adds the four routes to `lvweb.STATIC` at start. `lvweb` is
   frozen in the core, so changing it would ship it again as a RAM-loaded `.mpy`. That
@@ -427,8 +425,8 @@ Automated (all in `game/tests/run.sh`):
 - **`web/shots_ota.sh`.** Desktop Chrome against the mock ship (`sim/mockota.py`) and a
   stand-in GitHub, clicking through:
   - the notice and Later;
-  - the Ship software row on your crew page;
-  - the Ship software screen;
+  - the gear's update dot, and no Ship software row on the crew page;
+  - Settings' Ship software section, and the notice's Install opening Settings;
   - an install with progress;
   - "installed" after the restart;
   - an update that went back;
@@ -440,7 +438,7 @@ Automated (all in `game/tests/run.sh`):
   - the card and its steps for iOS Safari 18 and 26, the iOS captive sheet, Android
     Chrome, Android's sign-in window and Samsung Internet;
   - that **Got it** hides the card and it stays hidden after a reload;
-  - the CREW row and the screen;
+  - the steps in Settings (from the gear), and no row on the crew page;
   - that nothing shows on a computer or once opened from the icon (`navigator.standalone`
     and `display-mode: standalone`);
   - that Chrome parses the manifest and refuses to install from a non-secure origin.

@@ -15,7 +15,8 @@
 # (phone_heap.py ... --ota); signing and the release check (tests/test_ota_release.py);
 # the phone page's update notice and screens (web/ota.js) clicked through against the mock
 # (web/shots_ota.sh, needs playwright-core: PW=...); the home-screen card for each phone
-# browser (web/shots_a2hs.sh, the same).
+# browser (web/shots_a2hs.sh, the same); Settings and Reset this ship (board/main.py
+# reset_ship: tests/test_reset.py on all of them; web/shots_settings.sh against the mock).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
@@ -47,6 +48,7 @@ python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py
 python3 tests/test_ota_release.py
+python3 tests/test_reset.py
 python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
@@ -60,6 +62,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_batt.py; fi
   "$MP" tests/test_ota.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_ota.py; fi
+  "$MP" tests/test_reset.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_reset.py; fi
   # every ship id boots with a launch date (ship 2, 2026-10-25)
   "$MP" -X heapsize=512k tests/test_ships8.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi
@@ -113,6 +117,7 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
   if [ -n "$PW" ]; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_ota.sh "$O/ota"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_a2hs.sh "$O/a2hs"; rm -rf "$O"
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_settings.sh "$O/settings"; rm -rf "$O"
   else
     echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi

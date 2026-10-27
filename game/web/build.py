@@ -36,7 +36,8 @@ def main():
     for name, mark in (("engage.js", "/*ENGAGE_JS*/"), ("engage.css", "/*ENGAGE_CSS*/"),
                        ("batt.js", "/*BATT_JS*/"), ("batt.css", "/*BATT_CSS*/"),
                        ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/"),
-                       ("a2hs.js", "/*A2HS_JS*/"), ("a2hs.css", "/*A2HS_CSS*/")):
+                       ("a2hs.js", "/*A2HS_JS*/"), ("a2hs.css", "/*A2HS_CSS*/"),
+                       ("settings.js", "/*SET_JS*/"), ("settings.css", "/*SET_CSS*/")):
         path = os.path.join(HERE, name)
         src = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
         if name.endswith(".css"):

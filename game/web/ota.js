@@ -3,10 +3,10 @@
 // ship's channel, from the public repo on GitHub, whenever this phone can reach it (on mobile
 // data or other Wi-Fi; on the ship's hotspot it usually can't, and fails quietly). The
 // release waits in this browser's storage until you're back on the ship's Wi-Fi, then a
-// notice on the home screen offers to install it, and CREW › Ship software shows what runs
-// and what's available. Installing sends it to the ship in small pieces; the ship checks the
+// notice on the home screen offers to install it, and Settings › Ship software (web/settings.js)
+// shows what runs and what's available. Installing sends it to the ship in small pieces; the ship checks the
 // signature and every file, restarts into it and goes back by itself if it doesn't start.
-// Hooked onto app.html's refresh/view/crew/home from here, like batt.js.
+// Hooked onto app.html's refresh/home from here, like batt.js; settings.js shows the screens.
 const OTA_SRC="https://raw.githubusercontent.com/Ph-ill/marshab-updater/main";
 const OTA_KEY="lv.ota",OTA_EVERY=6*3600e3,OTA_RETRY=120e3,OTA_WAIT=8000;
 let OS_=null,OB=null,OI=null,OTA_LATER="",OTA_BUSY=false,OTA_NONE=false;  // ship's status, update here, install progress; a ship without OTA
@@ -52,7 +52,7 @@ async function otaCheck(force){
   b.at=Date.now();
   if(!otaSave(b)){b.rel=null;b.err="full";otaSave(b)}
   OB=b;
-  if(route==="sw"||route==="home")view();
+  if(route==="set"||route==="home")view();
 }
 // ---- installing: the signed envelope, then each file, in pieces the ship takes (chunk) ----
 async function otaPut(q,body){
@@ -85,7 +85,7 @@ function otaBar(){
 async function otaInstall(){
   const r=otaFor(OS_);if(!r||OTA_BUSY)return;
   OTA_BUSY=true;OI={v:r.v,prev:OS_.v,step:"env",f:0,o:0,sizes:JSON.parse(JSON.parse(r.env).m).files.map((f)=>f[1]),msg:""};
-  go("sw");view();
+  go("set");view();
   try{
     const st=await otaStatus();if(!st)throw new Error("Your ship didn't answer. Stay close and try again.");
     const n=st.chunk||1024,enc=new TextEncoder(),env=enc.encode(r.env);
@@ -116,48 +116,37 @@ async function otaInstall(){
 // An update that already went back on this ship isn't pushed again (the screen still offers it).
 function otaNag(){const r=otaFor(OS_),l=OS_&&OS_.last;return r&&!(l&&l.result==="rolled back"&&l.v===r.v)?r:null}
 function otaAgo(t){if(!t)return"never";const m=(Date.now()-t)/6e4|0;return m<1?"just now":m<60?m+" min ago":m<1440?(m/60|0)+" h ago":(m/1440|0)+" d ago"}
+// While installing (and its outcome): Settings shows only this (settings.js).
 function otaScreen(){
   shipTop();
-  const st=OS_,b=OB||otaLoad(),r=otaFor(st),I=OI;
-  let o=`<div class=kick><div class=lab>Ship systems</div><h1>Ship software</h1></div>`;
-  if(I){
-    o+=`<section><div class=lab><span>${I.step==="done"?I.ok?"Installed":"Not installed":"Installing"}</span><span class=m>${h(I.v)}</span></div>`;
-    if(I.step!=="done")o+=otaBar()+`<p class=dim>Keep this screen open and stay close to your ship. It restarts at the end, so the game drops for about half a minute.</p>`;
-    else o+=I.ok?`<p class=lead>Your ship runs ${h(I.v)} now.</p><p class=dim>It restarted, so sign in again to carry on. Your crew, log and votes are kept on the ship.</p>`:`<p class=lead>${h(I.msg)}</p><p class=dim>Your crew, log and votes are kept on the ship either way.</p>`;
-    o+=`</section>`;
-    $("v").innerHTML=o;
-    return dock(I.step!=="done"?`<button class="btn sec" disabled><span>Installing</span><i>${I.step==="wait"?"restarting":"sending"}</i></button>`:I.ok||!OS_?`<button class="btn pri" data-ota=reload><span>Back aboard</span><i>reload</i></button>`:`<button class="btn sec" data-ota=clear><span>Back</span><i>←</i></button>`,"crew");
-  }
-  const last=st&&st.last;
-  o+=`<section><div class=lab><span>This ship</span></div><dl class="facts otaf"><dt>Installed</dt><dd class=m>${st?h(st.v||"unknown"):"—"}</dd><dt>Channel</dt><dd>${st?h(st.ch||"—"):"—"}</dd><dt>Available</dt><dd class=m>${r?h(r.v):b.seen&&st&&vcmp(b.seen,st.v)<=0?"Up to date":b.seen?h(b.seen)+" (not signed for this ship)":"—"}</dd><dt>Checked</dt><dd>${otaAgo(b.at)}${b.at&&!b.ok?" · no internet":""}</dd></dl>`;
+  const I=OI;
+  let o=`<div class=kick><div class=lab>Settings</div><h1>Ship software</h1></div><section><div class=lab><span>${I.step==="done"?I.ok?"Installed":"Not installed":"Installing"}</span><span class=m>${h(I.v)}</span></div>`;
+  if(I.step!=="done")o+=otaBar()+`<p class=dim>Keep this screen open and stay close to your ship. It restarts at the end, so the game drops for about half a minute.</p>`;
+  else o+=I.ok?`<p class=lead>Your ship runs ${h(I.v)} now.</p><p class=dim>It restarted, so sign in again to carry on. Your crew, log and votes are kept on the ship.</p>`:`<p class=lead>${h(I.msg)}</p><p class=dim>Your crew, log and votes are kept on the ship either way.</p>`;
+  $("v").innerHTML=o+`</section>`;
+  dock(I.step!=="done"?`<button class="btn sec" disabled><span>Installing</span><i>${I.step==="wait"?"restarting":"sending"}</i></button>`:I.ok||!OS_?`<button class="btn pri" data-ota=reload><span>Back aboard</span><i>reload</i></button>`:`<button class="btn sec" data-ota=clear><span>Back</span><i>←</i></button>`,"set");
+}
+// Settings' Ship software section: what runs, what's ready, Install and Check for updates.
+function otaSect(){
+  const st=OS_,b=OB||otaLoad(),r=otaFor(st),last=st&&st.last;
+  let o=`<section id=set-sw><div class=lab><span>Ship software</span>${otaNag()?`<span class=otan><i>update ready</i></span>`:""}</div><dl class="facts otaf"><dt>Installed</dt><dd class=m>${st?h(st.v||"unknown"):"—"}</dd><dt>Channel</dt><dd>${st?h(st.ch||"—"):"—"}</dd><dt>Available</dt><dd class=m>${r?h(r.v):b.seen&&st&&vcmp(b.seen,st.v)<=0?"Up to date":b.seen?h(b.seen)+" (not signed for this ship)":"—"}</dd><dt>Checked</dt><dd>${otaAgo(b.at)}${b.at&&!b.ok?" · no internet":""}</dd></dl>`;
   if(last&&last.result==="rolled back")o+=`<p class=upd><b>Went back</b> · ${h(last.v)} didn't start, so your ship returned to ${h(last.prev)}.</p>`;
   else if(last&&last.result==="installed"&&last.v===(st&&st.v))o+=`<p class=fine>${h(last.v)} installed over the air.</p>`;
   if(!st)o+=`<p class=dim>Your ship can't take updates over the air yet. It needs one install over USB first.</p>`;
   else if(r)o+=`<p>${h(r.v)} is on this phone, ready for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p><p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
   else o+=`<p class=dim>This phone looks for updates on the internet. On your ship's Wi-Fi it usually can't, so if the check fails, try again on mobile data or another network and come back. Whatever it finds waits on this phone.</p>`;
-  o+=`</section>`;
-  $("v").innerHTML=o;
-  dock((r?`<button class="btn pri" data-ota=install><span>${otaNag()?"Install":"Try again:"} ${h(r.v)}</span><i>${Math.round(r.bytes/1024)} KB</i></button>`:"")+(st?`<button class="btn sec" data-ota=check><span>Check for updates</span><i>${b.at&&Date.now()-b.at<OTA_WAIT+2000&&!b.ok&&!b.err?"checking":"github"}</i></button>`:""),"crew");
+  if(st)o+=`<div class=otas>${r?`<button class="btn pri" data-ota=install><span>${otaNag()?"Install":"Try again:"} ${h(r.v)}</span><i>${Math.round(r.bytes/1024)} KB</i></button>`:""}<button class="btn sec" data-ota=check><span>Check for updates</span><i>${b.at&&Date.now()-b.at<OTA_WAIT+2000&&!b.ok&&!b.err?"checking":"github"}</i></button></div>`;
+  return o+`</section>`;
 }
-const view_o=view;view=function(){
-  if(route==="sw"&&tok&&S){try{return otaScreen()}finally{if(net==="lost"&&!OI)$("v").insertAdjacentHTML("afterbegin","<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>")}}
-  return view_o();
-};
-const crew_o=crew;crew=function(c){
-  crew_o(c);
-  const out=document.querySelector("#v [data-out]");if(!out||!OS_)return;
-  const r=otaNag();
-  out.insertAdjacentHTML("beforebegin",`<button class="btn sec${r?" otan":""}" data-go="sw"><span>Ship software</span><i>${r?"update ready":h(OS_.v||"")}</i></button>`);
-};
 const home_o=home;home=function(){
   home_o();
   const r=otaNag();
   if(!r||OTA_LATER===r.v||OTA_BUSY||S.ending!==NONE)return;
-  $("v").insertAdjacentHTML("afterbegin",`<div class=otab role=status><p><b>Update ready</b> · Ship software ${h(r.v)} is on this phone. Install it now? Your ship restarts for about half a minute.</p><div><button class="btn pri" data-ota=install><span>Install</span><i>${Math.round(r.bytes/1024)} KB</i></button><button class="btn sec" data-ota=later><span>Later</span></button></div></div>`);
+  $("v").insertAdjacentHTML("afterbegin",`<div class=otab role=status><p><b>Update ready</b> · Ship software ${h(r.v)} is on this phone. Install it now? Your ship restarts for about half a minute. It's in Settings too.</p><div><button class="btn pri" data-ota=install><span>Install</span><i>${Math.round(r.bytes/1024)} KB</i></button><button class="btn sec" data-ota=later><span>Later</span></button></div></div>`);
 };
 const refresh_o=refresh;refresh=async function(){
   await refresh_o();
-  if(!OS_&&!OTA_NONE&&!OTA_BUSY){await otaStatus();if(OS_){if(route==="home"||route==="crew")view();otaCheck(false)}}
+  if(!OS_&&!OTA_NONE&&!OTA_BUSY){await otaStatus();if(OS_){if(route==="home"||route==="set")view();otaCheck(false)}}
 };
 document.addEventListener("click",(ev)=>{
   const el=ev.target.closest("button[data-ota]");if(!el||el.disabled)return;

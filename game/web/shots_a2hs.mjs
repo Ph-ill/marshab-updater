@@ -1,4 +1,4 @@
-// The home-screen card and screen (web/a2hs.js), clicked through against the mock Pico with
+// The home-screen card and Settings' Home screen icon section (web/a2hs.js, settings.js), clicked through against the mock Pico with
 // each phone browser's user agent: iOS Safari (18 and 26), the iOS captive sheet, Chrome
 // and the sign-in window on Android, Samsung Internet; and none of it on a computer or
 // once the game runs from the icon. The page is loaded as http://192.168.4.1/ (requests
@@ -97,13 +97,16 @@ await p.reload();
 await p.waitForSelector("#dock nav");
 ok("dismissed stays dismissed after a reload", !(await p.$(".a2h")) && (await p.evaluate(() => localStorage.getItem("lv.a2hs"))) === "1");
 await goto(p, "crew");
-ok("your page still has Add to home screen", !!(await p.$("#v [data-go=a2h]")));
-await center(p, "#v [data-go=a2h]");
-await shot(p, "a2hs-02-ios-your-page-row");
-await p.click("#v [data-go=a2h]");
-await p.waitForSelector(".a2s");
-ok("the screen has the steps and what to expect", await p.$eval("#v", (e) => /One tap to come aboard/.test(e.textContent) && /Sign in once/.test(e.textContent)));
-await shot(p, "a2hs-03-ios-safari-screen");
+ok("your crew page has no Add to home screen row", !(await p.$("#v [data-go=a2h]")));
+await p.click("#top .gear");
+await p.waitForSelector("#set-a2h .a2s");
+ok("Settings has the steps and what to expect", await p.$eval("#set-a2h", (e) => /Home screen icon/.test(e.textContent) && /2 steps/.test(e.textContent) && /bottom of Safari/.test(e.textContent) && /only works while your phone is on the ship's Wi-Fi/.test(e.textContent)));
+await center(p, "#set-a2h");
+await shot(p, "a2hs-02-ios-settings-gear");
+await goto(p, "a2h");
+ok("the old #a2h route lands in Settings", await p.evaluate(() => route === "set" && location.hash === "#set"));
+await center(p, "#set-a2h");
+await shot(p, "a2hs-03-ios-safari-settings-section");
 // What Chrome makes of the ship's address: the manifest parses, no install offered.
 const cdp = await p.context().newCDPSession(p);
 const mf = await cdp.send("Page.getAppManifest", {});
@@ -139,9 +142,10 @@ t = await card(p);
 ok("Android Chrome: menu, Add to Home screen, Chrome tab", !!t && /top right of Chrome/.test(t) && /Add to Home screen/.test(t) && /Chrome tab/.test(t));
 await center(p, ".a2h");
 await shot(p, "a2hs-06-android-chrome-card");
-await goto(p, "a2h");
-await p.waitForSelector(".a2s");
-await shot(p, "a2hs-07-android-chrome-screen");
+await goto(p, "set");
+await p.waitForSelector("#set-a2h .a2s");
+await center(p, "#set-a2h");
+await shot(p, "a2hs-07-android-chrome-settings-section");
 await close(p);
 
 // 5. Android's sign-in window: close it, open Chrome, type the address.
@@ -161,8 +165,9 @@ await close(p);
 // 7. Already on the home screen (iOS navigator.standalone, Android display-mode), or a computer: nothing.
 for (const [kind, sa, what] of [["sheet", "ios", "opened from the icon on iOS"], ["and", "media", "opened from the icon on Android"], ["desk", false, "a computer"]]) {
   p = await page(kind, { standalone: sa });
-  await goto(p, "crew");
-  ok(`${what}: no card, no row`, !(await p.$(".a2h")) && !(await p.$("#v [data-go=a2h]")));
+  ok(`${what}: no card`, !(await p.$(".a2h")));
+  await goto(p, "set");
+  ok(`${what}: Settings has no steps, says why`, !(await p.$("#set-a2h .a2s")) && await p.$eval("#set-a2h", (e, d) => (d ? /phone's browser/ : /already playing from your home screen/).test(e.textContent), kind === "desk"));
   if (kind === "sheet") { await goto(p, "home"); await shot(p, "a2hs-09-ios-opened-from-icon-home"); }
   await close(p);
 }
