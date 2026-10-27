@@ -60,6 +60,17 @@ def ota_hooks(lvweb, web):
             d = n[:-4].split("x")
             if req.method == "GET" and n[-4:] == ".png" and len(d) == 2 and d[0].isdigit() and d[1].isdigit():
                 return await lvweb.send_file(w, web.root + "www/ls/" + n, "image/png", False)
+        if req.path == "/api/code":
+            # "Change your code" (board/lvcode.py, web/settings.js): a signed-in crew member
+            # sets a new sign-in code in data/crew.json. Loaded per request, like lvota.
+            if req.method != "POST":
+                return await lvweb.send_json(w, 404, {"err": "no such thing"})
+            import lvcode
+            try:
+                s, j = lvcode.change(web.get_phone(), req)
+            finally:
+                lvship.drop("lvcode")
+            return await lvweb.send_json(w, s, j)
         if req.path == "/api/hello" and req.method == "GET":
             # The home-screen funnel (board/lvfunnel.py, web/funnel.js): has the ship seen
             # this phone open the game from its icon? Loaded per request, like lvota.
@@ -96,7 +107,7 @@ def ota_hooks(lvweb, web):
 # has seen, and which opened the game from the icon: board/lvfunnel.py). Sign-ins and
 # sessions live in RAM, so the restart forgets them.
 # Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
-# codes), the installed software and ota/ (the update state and rollback copy), maint/safe.
+# codes, including any changed in Settings: board/lvcode.py), the installed software and ota/ (the update state and rollback copy), maint/safe.
 RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin")
 reboot = None               # tests: called instead of machine.reset()
 

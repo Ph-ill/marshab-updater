@@ -39,3 +39,5 @@ module("lvsig.py", base_path="../../board", opt=3)
 module("lvboot.py", base_path="../../board", opt=3)
 # The home-screen funnel (after 0.2.2; on older cores releases ship it as lvfunnel.mpy).
 module("lvfunnel.py", base_path="../../board", opt=3)
+# Change your code (after 0.2.4; on older cores releases ship it as lvcode.mpy).
+module("lvcode.py", base_path="../../board", opt=3)

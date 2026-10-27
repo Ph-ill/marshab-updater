@@ -424,6 +424,23 @@ class H(BaseHTTPRequestHandler):
         you = self.who()
         if you is None:
             return self.send(401, {"err": "signed out"})
+        if u.path == "/api/code":    # Change your code: board/lvcode.py itself, the file kept in memory
+            sys.path.insert(0, os.path.join(ROOT, "board"))
+            import lvcode
+            sys.path.pop(0)
+            lvcode.save = lambda path, old, new: True
+
+            class _Phone:
+                book, data = G.book, None
+
+                def who(self, req):
+                    return you
+
+            class _Req:
+                body = json.dumps(b).encode()
+            with G.lock:
+                code, obj = lvcode.change(_Phone(), _Req())
+            return self.send(code, obj)
         if u.path == "/api/reset":   # board/main.py reset_ship: the confirm is this ship's number
             try:
                 good = int(b["confirm"]) == you + 1
