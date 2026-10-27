@@ -23,7 +23,9 @@
 #   bat_i2c        the RP2040 I2C block for those pins, default 0
 #   bat_khz        I2C speed; default: try 50 kHz, then 10 kHz (below)
 #   bat_chg        the charger-detect GPIO, default 6 (Pico pin 9); -1 or null: none
-#   bat_chg_pull   "down" (default), "up" or "none" for that pin
+#   bat_chg_pull   "none" (default), "down" or "up" for that pin. "none": with PAD1 bridged the
+#                  UPS-Lite's R2 (75 kOhm) holds the line low; the RP2040's pull-down (50-80
+#                  kOhm) masked the signal on ship 5 (read 0 plugged in; docs/BATTERY.md)
 #   bat_every_s    seconds between readings, default 60
 #
 # The CW2015 (Cellwise datasheet CW2015CHBD v1.2; the UPS-Lite vendor script):
@@ -66,7 +68,7 @@ def _hw(ship):
         p = c.get("bat_chg", 6)
         if p is None or p < 0:
             return None
-        u = c.get("bat_chg_pull", "down")
+        u = c.get("bat_chg_pull", "none")
         return bool(Pin(p, Pin.IN, Pin.PULL_DOWN if u == "down" else Pin.PULL_UP if u == "up" else None).value())
     return bus, chg
 

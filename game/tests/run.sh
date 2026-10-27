@@ -22,7 +22,10 @@
 # run; web/funnel.js in tests/app_e2e.mjs and web/shots_funnel.sh against the board's server).
 # Change your code (board/lvcode.py, POST /api/code from main.py's ota_route: tests/test_code.py
 # on all of them, a crew code changed and back in the --ota heap run, the Settings form in
-# web/shots_settings.sh against the mock, which answers with lvcode itself).
+# web/shots_settings.sh against the mock, which answers with lvcode itself). The charging
+# bolt at once (main.py charger_watch: the charger pin debounced, GET /api/bat; the pin with
+# no pull by default: tests/test_charger.py on all of them, the watch and /api/bat looks in
+# the --bat --ota heap run, web/batt.js's 5 s look in web/shots_settings.sh).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
@@ -57,6 +60,7 @@ python3 tests/test_ota_release.py
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
 python3 tests/test_code.py
+python3 tests/test_charger.py
 python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
@@ -76,6 +80,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_funnel.py; fi
   "$MP" tests/test_code.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_code.py; fi
+  "$MP" tests/test_charger.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_charger.py; fi
   # every ship id boots with a launch date (ship 2, 2026-10-25)
   "$MP" -X heapsize=512k tests/test_ships8.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi

@@ -315,6 +315,11 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/engage.json":
             return self.send(200, gzip.compress(json.dumps(G.etext, ensure_ascii=False).encode()),
                              gz=True)
+        if u.path == "/api/bat":    # the battery figure alone (board/main.py; web/batt.js's 5 s look)
+            if "set" in q:          # mock only: /api/bat?set=PERCENT,MV,CHARGING (1/0)
+                p, mv, c = q["set"][0].split(",")
+                G.bat = [int(p), int(mv), c == "1"]
+            return self.send(200, {"bat": G.bat})
         if u.path == "/api/crew":
             return self.send(200, {"set": [G.book.is_set(c) for c in range(N)], "day": self.day(q)})
         if u.path == "/api/me":     # remembered phone: sign straight back in

@@ -11,7 +11,8 @@ a refused envelope first, a piece at a wrong offset, then everything; the board 
 the signature and each file, and the heap peak includes all of it. Then it cancels
 (applying restarts the board: tests/test_ota.py covers that). The home-screen funnel's
 /api/hello (board/lvfunnel.py, main.py's ota_route) is asked three times meanwhile, and a
-fourth phone changes a crew code and back (board/lvcode.py, POST /api/code)."""
+fourth phone changes a crew code and back (board/lvcode.py, POST /api/code). With --bat
+too, main.py's charger watch runs on the board and a phone asks /api/bat twelve times."""
 import asyncio
 import json
 import os
@@ -185,6 +186,27 @@ async def code_change(req, fail, log):
     log("code: wrong current code refused, changed, signed in with the new one, changed back")
 
 
+async def bat_look(req, fail, log):
+    """The page's battery look (web/batt.js: GET /api/bat every 5 s while showing), faster:
+    twelve looks while the others play, each [percent, mV, charging] from main.py."""
+    n = 0
+    for _ in range(12):
+        await asyncio.sleep(0.5)
+        try:
+            s, _, b = await req("GET", "/api/bat", None, {})
+        except OSError:
+            continue
+        if s == 503:
+            continue
+        j = json.loads(b) if s == 200 else None
+        if not j or not j.get("bat") or j["bat"][0] != 72 or j["bat"][2] is not True:
+            return fail("bat: /api/bat %d %s" % (s, b))
+        n += 1
+    if n < 6:
+        return fail("bat: only %d of 12 looks answered" % n)
+    log("bat: /api/bat answered %d looks, 72%% and charging" % n)
+
+
 def main(argv):
     mp, mode = argv[0], argv[1:]
     os.makedirs(DATA, exist_ok=True)
@@ -217,6 +239,8 @@ def main(argv):
             jobs.append(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print))
             jobs.append(funnel_hello(req, fails.append, print))
             jobs.append(code_change(req, fails.append, print))
+            if "--bat" in mode:
+                jobs.append(bat_look(req, fails.append, print))
         return await asyncio.gather(*jobs)
     try:
         asyncio.run(phones())
