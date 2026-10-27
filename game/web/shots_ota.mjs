@@ -1,5 +1,5 @@
 // Over-the-air update screens (web/ota.js), clicked through against the mock Pico (sim/mockota.py):
-// the home-screen notice, your page's Ship software row, the Ship software screen, installing,
+// the home-screen notice, the gear's update dot, Settings' Ship software section, installing,
 // installed, an update that went back, and a check with no internet. GitHub is stood in for by
 // the mock's /gh/ (a release signed with the TEST key, filler files). Every story line on
 // screen is swapped for placeholder text, as in shots_you.mjs. Exits non-zero if a step fails.
@@ -77,14 +77,19 @@ ok("home shows the update notice", await p.$eval(".otab", (e) => e.textContent.i
 await shot(p, "ota-01-home-update-ready");
 await p.click("[data-ota=later]");
 ok("Later hides the notice", !(await p.$(".otab")));
+ok("the gear shows the update dot", await p.$eval("#top .gear", (e) => e.classList.contains("dot") && e.getAttribute("aria-label") === "Settings, update ready"));
 await goto(p, "crew");
-await p.evaluate(() => document.querySelector("#v [data-go=sw]").scrollIntoView({ block: "center" }));
-ok("your page has Ship software, update ready", await p.$eval("#v [data-go=sw]", (e) => e.textContent.includes("update ready")));
-await shot(p, "ota-02-your-page-ship-software");
-await p.click("#v [data-go=sw]");
+ok("your crew page has no Ship software row", !(await p.$("#v [data-go=sw], #v [data-ota]")));
+await shot(p, "ota-02-gear-update-dot");
+await p.click("#top .gear");
+ok("the gear opens Settings", await p.evaluate(() => route === "set") && await p.$eval("#v h1", (e) => e.textContent === "Settings"));
+ok("Settings' Ship software says update ready", await p.$eval("#set-sw", (e) => e.textContent.includes("update ready") && e.textContent.includes("0.2.1")));
 await p.waitForSelector("[data-ota=install]");
-await shot(p, "ota-03-ship-software-update-ready");
-await p.click("[data-ota=install]");
+await shot(p, "ota-03-settings-ship-software-update-ready");
+await goto(p, "home");
+await p.evaluate(() => { OTA_LATER = ""; view(); });
+await p.click(".otab [data-ota=install]");
+ok("the notice's Install opens Settings", await p.evaluate(() => route === "set"));
 await p.waitForFunction(() => OI && OI.step === "send" && OI.f >= 4);
 await shot(p, "ota-04-installing");
 await p.waitForSelector("[data-ota=reload]", { timeout: 60000 });
@@ -99,13 +104,14 @@ await p.context().close();
 // 2. An update that doesn't start: the ship goes back by itself.
 p = await page(8057);
 await goto(p, "sw");
+ok("the old #sw route lands in Settings", await p.evaluate(() => route === "set" && location.hash === "#set"));
 await p.waitForSelector("[data-ota=install]", { timeout: 15000 });
 await p.click("[data-ota=install]");
 await p.waitForSelector("[data-ota=clear]", { timeout: 60000 });
 ok("rolled back: says so", await p.$eval("#v", (e) => e.textContent.includes("went back to 0.2.0")));
 await shot(p, "ota-06-went-back");
 await p.click("[data-ota=clear]");
-ok("Ship software shows the rollback", await p.$eval("#v", (e) => e.textContent.includes("didn't start")));
+ok("Settings shows the rollback", await p.$eval("#set-sw", (e) => e.textContent.includes("didn't start")));
 await shot(p, "ota-07-ship-software-after-rollback");
 await p.context().close();
 
@@ -113,7 +119,7 @@ await p.context().close();
 p = await page(8056, { online: false });
 await p.waitForTimeout(1500);
 ok("no internet: no notice, no error", !(await p.$(".otab")) && !(await p.$(".off")));
-await goto(p, "sw");
+await goto(p, "set");
 await p.click("[data-ota=check]");
 await p.waitForFunction(() => document.querySelector("#v").textContent.includes("no internet"));
 ok("Check for updates with no internet says so", true);

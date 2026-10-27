@@ -53,6 +53,9 @@ mkdir(ROOT + "www")
 mkdir(DATA)
 for n in ("app.html.gz", "text.json.gz", "engage.json.gz", "app.webmanifest.gz", "icon.png.gz"):
     copy("build/" + n, ROOT + "www/" + n)
+mkdir(ROOT + "www/ls")                  # the iOS launch screens (tools/board_build.sh)
+for n in os.listdir("web/launch"):
+    copy("web/launch/" + n, ROOT + "www/ls/" + n)
 copy("build/pack.bin", ROOT + "pack.bin")
 copy("build/engage.bin", ROOT + "engage.bin")
 for n in ("local.bin", "days.bin", "clock.json"):

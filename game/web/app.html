@@ -5,13 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>The Long Voyage</title>
-<link rel="manifest" href="/app.webmanifest">
 <link rel="icon" href="/icon.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="/icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<!--LAUNCH-->
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Long Voyage">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>
+// The manifest and Apple's web-app tags, except on iOS 26+. There, opened from the home
+// screen, either one puts the page in a window too short by the status bar's height:
+// the nav stops 62 px above the bottom and no CSS or script can reach the strip. With
+// neither, iOS 26 opens the icon full screen anyway. Safari 26 is told apart from 18 by
+// a feature (anchor positioning), as its user agent says 18_6 and the icon's has no Version.
+(function(){var u=navigator.userAgent,d=document.head;
+if((/iPhone|iPad|iPod/.test(u)||/Macintosh/.test(u)&&navigator.maxTouchPoints>1)&&window.CSS&&CSS.supports("anchor-name:--a"))return;
+function a(t,o){var e=document.createElement(t);for(var k in o)e.setAttribute(k,o[k]);d.appendChild(e)}
+a("link",{rel:"manifest",href:"/app.webmanifest"});
+a("meta",{name:"apple-mobile-web-app-capable",content:"yes"});
+a("meta",{name:"apple-mobile-web-app-title",content:"The Long Voyage"});
+a("meta",{name:"apple-mobile-web-app-status-bar-style",content:"default"})})();
+</script>
 <meta name="theme-color" content="#F2ECDF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1C1B19" media="(prefers-color-scheme: dark)">
 <style>
@@ -184,6 +195,8 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 /*BATT_CSS*/
 /*OTA_CSS*/
 /*A2HS_CSS*/
+/*SET_CSS*/
+/*FS_CSS*/
 .off{display:flex;align-items:center;gap:var(--s2);min-height:44px;padding:var(--s1) 0;font:600 13px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule)}
 .off::before{content:"";flex:none;width:8px;height:8px;background:var(--rust);animation:blink 2s steps(1) infinite}
 .off button{margin-left:auto;min-height:44px;padding:0 0 0 var(--s4);text-decoration:underline;text-underline-offset:3px}
@@ -202,6 +215,12 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 .fig{margin-top:var(--s4);padding:var(--s3);border:1px solid var(--rule)}
 .fig svg{display:block;width:100%;height:auto;overflow:visible}
 .fig .lab{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s2);margin:var(--s2) 0 0;font-size:12px}
+.net{display:grid;grid-template-columns:auto 1fr auto 1fr auto;align-items:end;column-gap:var(--s2);row-gap:var(--s2);padding:var(--s2) var(--s1) 0}
+.net .ni{display:block;height:44px;justify-self:center;overflow:visible}
+.net .nl{display:block;height:2px;margin-bottom:13px;background:repeating-linear-gradient(90deg,var(--ink) 0 6px,transparent 6px 10px)}
+.net span{grid-row:2;justify-self:center;text-align:center;white-space:nowrap;font:600 12px/16px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.fig:has(.net){container-type:inline-size}
+@container (max-width:300px){.net{column-gap:var(--s1)}.net span{font-size:10px;letter-spacing:.04em}}
 .bl{list-style:none;margin:var(--s4) 0 0;padding:0;border-top:1px solid var(--ink)}
 .bl li{display:grid;grid-template-columns:104px 1fr;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--rule);font-size:16px;line-height:22px}
 .bl b{font:600 12px/22px var(--mono);letter-spacing:.08em;text-transform:uppercase}
@@ -222,6 +241,8 @@ nav .bd{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16p
 /*BATT_JS*/
 /*OTA_JS*/
 /*A2HS_JS*/
+/*SET_JS*/
+/*FS_JS*/
 const N=8;
 const POLES=[["Careful","Brave"],["Settled","Curious"],["Blunt","Warm"]];
 const COND=["Fit for duty","Injured","Sent home"];
@@ -485,7 +506,7 @@ function crew(c){
   const mentions=[];
   for(let d=S.day;d>0&&mentions.length<3;d--)for(const x of (story()[d]||{big:[]}).big)if((mine?x.me:x.s.includes(nm(c)))&&mentions.length<3)mentions.push([d,x.s]);
   o+=`<section><div class=lab><span>Lately</span></div><ul class=log>${mentions.map(([d,s])=>`<li><span class="m dim" style="font-size:14px">FD ${pad(d)}</span><br>${h(s)}</li>`).join("")||"<li class=fold>Nothing logged yet.</li>"}</ul></section>`;
-  if(mine)o+=`<section>${EG?"":`<button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button>`}${S.led!=null?`<button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>the board's LED</i></button>`:""}<button class="btn sec" data-out=1><span>Not ${h(nm(c))}? Sign out</span><i>this phone</i></button></section>`;
+  if(mine&&!EG)o+=`<section><button class="btn sec" data-go="how"><span>How to play</span><i>briefing</i></button></section>`;
   $("v").innerHTML=o;
   dock(mine?actDock():`<button class="btn sec" data-go="crew"><span>Back to you</span><i>←</i></button>`,"crew");
 }
@@ -651,8 +672,14 @@ function briefDone(){try{localStorage.setItem(TK,"1")}catch(e){}tutDue=false;go(
 function tFig(kind){
   if(kind===1){let t="";const Q=S.season;for(let i=1;i<=Q;i++){const x=(i-.5)*100/Q,on=S&&i<=S.day,now=S&&i===S.day;t+=`<line x1="${x}" x2="${x}" y1="${now?2:i%7?10:6}" y2="22" stroke="${now?PR:on?PI:"var(--rule)"}" stroke-width="${now?2:1}" vector-effect="non-scaling-stroke"/>`}
     return `<div class=fig><svg viewBox="0 0 100 24" preserveAspectRatio="none" style="height:24px">${t}</svg><div class=lab><span>FD 01</span><span>Today FD ${pad(S.day)}</span><span>FD ${pad(Q)}</span></div></div>`}
-  if(kind===2){const sp=(x)=>`<path d="M${x} 19V7Q${x+3} 0 ${x+6} 7V19Z" fill="none" stroke="${PI}" stroke-width="1"/>`,dl=(a,b)=>`<path d="M${a} 13H${b}" stroke="${PI}" stroke-dasharray="1.5 1.5" stroke-width=".75"/>`;
-    return `<div class=fig><svg viewBox="0 0 100 20"><rect x="2" y="5" width="8" height="14" rx="1.5" fill="none" stroke="${PI}" stroke-width="1"/>${dl(12,33)}${sp(36)}${dl(45,82)}${sp(86)}<rect x="38" y="10" width="2" height="2" fill="${PR}"/></svg><div class=lab><span>Phone</span><span>Wi-Fi</span><span>Ship</span><span>Bluetooth</span><span>Ship</span></div></div>`}
+  // Phone, Wi-Fi, ship, Bluetooth, ship. One grid: five columns that the icon row and the
+  // label row share, so each label is centred under its own icon or link at any width or
+  // text size. Icon columns are as wide as the icon or its label; the two links split
+  // what's left equally (1fr each, growing only if a label needs more).
+  if(kind===2){const ic=(w,b)=>`<svg class=ni viewBox="0 0 ${w} 20" style="width:${w*2.2}px" aria-hidden=true>${b}</svg>`,
+      ship=(o)=>ic(8,`<path d="M1 19V7Q4 0 7 7V19Z" fill="none" stroke="${PI}" stroke-width="1"/>${o?`<rect x="2" y="10" width="2" height="2" fill="${PR}"/>`:""}`);
+    const cells=[ic(10,`<rect x="1" y="5" width="8" height="14" rx="1.5" fill="none" stroke="${PI}" stroke-width="1"/>`),"",ship(1),"",ship(0)];
+    return `<div class=fig><div class=net role=img aria-label="Your phone joins its ship by Wi-Fi; ships reach each other by Bluetooth">${cells.map((c)=>c?c:"<i class=nl></i>").join("")}${["Phone","Wi-Fi","Ship","Bluetooth","Ship"].map((t)=>`<span>${t}</span>`).join("")}</div></div>`}
   let t="";["w","w","c","w","w","w","t"].forEach((k,i)=>{t+=`<rect x="${1+i*14}" y="1" width="12" height="12" fill="${k==="w"?PI:"none"}" stroke="${k==="t"?PR:PI}" stroke-width="${k==="t"?2:1}"${k==="c"?' stroke-dasharray="2 1.5"':""}/>`});
   return `<div class=fig><svg viewBox="0 0 100 14">${t}</svg><div class=lab><span>Solid: watch</span><span>Dashed: covered</span><span>Rust: today</span></div></div>`;
 }
@@ -680,7 +707,7 @@ function TUT(){
     ["Watch duty","Keeping watch",`Anything you send on a flight day counts as a watch: a plan, a ballot, an answer, a gift or an ask. Days in a row make a run.`,tFig(5),
       [["Grace days","Miss a day and it's covered, up to twice a flight week. Today never counts against you."],["Badges",`Awarded at ${EG.badges.map((b)=>b[0]).join(", ").replace(/, (\d+)$/," and $1")} days.`],["Broken run","A new run starts with your next tap. No harm done."]]]);
   if(S.led!=null)st.push(
-    ["Ship light","A light on the ship",`Your ship's light can glow, softly pulsing, to say something's waiting, no phone needed. It's off until someone turns it on: CREW › Ship light.`,"",
+    ["Ship light","A light on the ship",`Your ship's light can glow, softly pulsing, to say something's waiting, no phone needed. It's off until someone turns it on: Settings (the gear, top right) › Ship light.`,"",
       [["One slow pulse","Every few seconds: today's page hasn't been opened here yet."],["Double pulse","A crewmate's gift has reached this ship."],["Three quick","A new flight day has begun."],["Off again","Opening the game here clears it. Dark at night, 22:00 to 07:00."]]]);
   st.push(["The log","Missed a few days?",`No problem. The log reads newest page first, and pages new since your last visit carry a rust square. Catch up whenever you like.`,"",
     [["While away","You carry on in character, and votes close with whoever voted."],["Late signals","Today's and yesterday's pages can still change as word arrives from other ships. That's normal."],["Filed under",`${file} › How to play, for when you need it again.`]]]);

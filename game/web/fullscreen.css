@@ -1,0 +1,6 @@
+/* Full screen on Android (web/fullscreen.js): a line icon beside the gear, the same size. */
+#top .fsb{display:grid;place-items:center;width:44px;height:44px;margin:0 -8px 0 0;color:var(--ink)}
+#top .fsb[hidden],:root:fullscreen #top .fsb{display:none}
+#top .fsb svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+/* A narrow phone with a battery figure: the two icons close up so SHIP NN keeps its room. */
+@media (max-width:359px){#top .fsb{width:36px;margin:0 -10px 0 -2px}}

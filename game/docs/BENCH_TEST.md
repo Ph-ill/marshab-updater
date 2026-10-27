@@ -471,7 +471,7 @@ One board is enough. Tick each step.
 11. **A phone that stops**: lock one phone mid-game or walk out of range. The other
     phone must not stall (the board drops a silent connection after 5 s and serves up to
     4 requests at once; a fifth at the same moment gets "busy, try again": tap again).
-12. **Sign out** from your astronaut's page; reopening the sheet asks for the code again.
+12. **Sign out** in Settings (the gear at the top right); reopening the sheet asks for the code again.
     Reopening without signing out the same flight day goes straight back in.
 13. **Status and heap**: `http://192.168.4.1/status` shows the STAT line (it ends with
     `day=<flight day>/<source>`: `phone`, `saved`, `peer`, `none` or `manual`);
@@ -529,8 +529,8 @@ time T a few minutes from now (e.g. `21:30`).
 The Pico W's onboard LED as a quiet "something is waiting" light (`board/lvled.py`). Game
 firmware only (on stock MicroPython its code would push the heap past the cap, so it stays
 dark there). **Off unless switched on**, three ways: tick "Pulse the onboard light…" in
-section 4 of the updater page and Save; the **Ship light** button on your own astronaut's
-page on the phone (CREW → you; kept in `ship.json` too); or `bench.py --led on`.
+section 4 of the updater page and Save; the **Ship light** button in Settings on the
+phone (the gear at the top right; kept in `ship.json` too); or `bench.py --led on`.
 
 Every pattern **breathes**: the LED has no dimmer (it is a pin on the radio chip, on or
 off), so the board flicks it 100 times a second, lit for part of each 10 ms frame, the lit

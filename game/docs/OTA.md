@@ -4,7 +4,7 @@ A ship can update its game software from a phone, without a USB cable or a file 
 download yourself. The phone looks for a newer signed release on GitHub whenever it can
 reach the internet. It keeps the release, and when it's on the ship's Wi-Fi it offers
 to install it: a notice on the home screen (**Install** / **Later**), and
-**CREW › Ship software**, which shows what's installed, what's available, when it last
+**Settings › Ship software** (the gear at the top right; docs/SETTINGS.md), which shows what's installed, what's available, when it last
 checked, and a **Check for updates** button. Installing sends the release to the ship
 in small pieces. The ship checks the signature and every file, switches over at
 restart, and goes back by itself if the new version doesn't start.
@@ -247,6 +247,7 @@ streams them from flash like the other `www/*.gz` files, and the mock serves the
 | --- | --- | --- | --- |
 | `/app.webmanifest` | `www/app.webmanifest.gz` | `application/manifest+json` | 274 B (196 B) |
 | `/icon.png`, `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | `www/icon.png.gz` | `image/png` | 1737 B (1622 B) |
+| `/ls/<W>x<H>.png` (7 sizes) | `www/ls/<W>x<H>.png`, served as they are by `main.py` | `image/png` | 4.4-7.8 KB each, 49651 B in all |
 
 The icon is 192×192 and drawn by `web/icon.py` with no image library: Earth, Mars, the
 transfer arc and the ship, on the page's paper colour. The PNG is committed. The page's
@@ -255,23 +256,131 @@ transfer arc and the ship, on the page's paper colour. The PNG is committed. The
 - `manifest` and `icon`;
 - `apple-touch-icon`;
 - `apple-mobile-web-app-capable` and `mobile-web-app-capable`;
-- `apple-mobile-web-app-title` ("Long Voyage");
+- `apple-mobile-web-app-title` ("The Long Voyage");
 - `apple-mobile-web-app-status-bar-style` (`default`);
-- `theme-color`, light and dark.
+- `theme-color`, light and dark;
+- seven `apple-touch-startup-image` links (the launch screens, below).
 
-The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same name.
+The manifest sets `display: standalone`, `start_url: /`, `scope: /` and the same name. Its
+`background_color` is dark (`#1C1B19`), like the launch screens; `theme_color` stays paper.
 
-**The name is "Long Voyage", not the ship's name.**
+**The launch screen (an experiment).** Opened away from the ship, the icon can't load
+anything: with no service worker over http there is no offline page. What iOS can show is
+the web app's launch image, which it keeps with the icon. So the page names one:
+
+- `web/launch.py` draws them: dark (`#1C1B19`), the icon's chart (Earth, the arc, the ship,
+  Mars), THE LONG VOYAGE and "Connect to your ship's Wi-Fi to play". No story text. The
+  PNGs are committed (`web/launch/`); `web/build.py` writes the links from the same size list.
+- iOS uses one only if it is exactly the screen's size, so there is one per current iPhone
+  portrait size, each with a `(device-width) and (device-height) and
+  (-webkit-device-pixel-ratio) and (orientation:portrait)` media query:
+
+  | File | Points, scale | iPhones |
+  | --- | --- | --- |
+  | `1320x2868.png` | 440×956 @3 | 16 Pro Max, 17 Pro Max |
+  | `1290x2796.png` | 430×932 @3 | 14 Pro Max, 15 Plus / Pro Max, 16 Plus |
+  | `1206x2622.png` | 402×874 @3 | 16 Pro, 17, 17 Pro |
+  | `1179x2556.png` | 393×852 @3 | 14 Pro, 15, 15 Pro, 16 |
+  | `1284x2778.png` | 428×926 @3 | 12/13 Pro Max, 14 Plus |
+  | `1170x2532.png` | 390×844 @3 | 12, 13, 14, 16e |
+  | `750x1334.png` | 375×667 @2 | SE (2nd/3rd), 6-8 |
+
+  Not covered (they get no launch image, as before): X/XS/11 Pro/12-13 mini (1125×2436),
+  XR/11 (828×1792), XS Max/11 Pro Max (1242×2688), iPhone Air (1260×2736), iPads, landscape.
+- Cost: 4-colour palette PNGs, 2 bits a pixel, 49651 B of flash for all seven (and of an
+  update the first time they ship). The page grows by about 190 B gzip. They are plain
+  files under `www/ls/`; `main.py` answers `GET /ls/<digits>x<digits>.png` from flash with
+  one 512 B buffer, so they take no RAM until a phone asks, and only Safari asks, when an
+  icon is added. Browsers other than iOS Safari ignore the links; nothing else changes.
+- **Re-add the icon to see it.** iOS fetches the launch image when you add the icon and
+  keeps that copy. An icon added before this change has none: delete it and add it again
+  while on the ship's Wi-Fi.
+- **It may not show on iOS 26.** iOS has only ever used launch images for pages with
+  `apple-mobile-web-app-capable`, and `app.html` leaves that out on iOS 26 (the short
+  window, below). On iOS 18 and earlier, where the tag is in, it should work. On iOS 26 it
+  needs a real phone: re-add the icon, open it off the Wi-Fi, and check the nav still
+  reaches the bottom on the Wi-Fi. If iOS 26 ignores the image, the only way to get it is
+  the capable tag, which brings the short window back, so it stays out.
+- **After the launch screen, iOS still tries the page.** Off the ship's Wi-Fi that load
+  fails, and iOS may replace the launch screen with its own "can't connect" page after a
+  few seconds. The launch screen is what you see first, not a lasting offline page.
+  **[NEEDS A REAL PHONE]**
+
+**Where Share is on iOS 26.** Safari's tab layout (Settings › Apps › Safari › Tabs)
+decides where Share is:
+
+- **Bottom** and **Top** keep a Share button on the toolbar.
+- **Compact**, the default, has no Share button. Apple's guide and most write-ups put
+  Share under ⋯ beside the address. Phill's iPhone on iOS 26 Compact has no ⋯ at all:
+  back, the address pill with the page menu (a box over two lines) at its left, reload,
+  tabs.
+
+On that phone the flow is:
+
+1. The page menu: **Share** is the first item, above Add to Bookmarks.
+2. The share sheet: the people row; then AirDrop, Messages, Mail, Notes; then round
+   buttons Copy, Add to Bookmarks, Add to Reading List and **View More**.
+3. **View More** opens a list: Add Bookmark to…, Add to Favorites, Add to Quick Note,
+   Find on Page, and **Add to Home Screen** last.
+
+The card's iOS 26 steps follow that exactly, with the page menu, Share and View More
+icons inline:
+
+1. Tap [page menu] in the address bar, then **Share** [share]. Share in Safari's
+   toolbar? Tap that.
+2. Tap **View More** [chevron], then **Add to Home Screen**.
+3. Keep **Open as Web App** on, then tap **Add**.
+
+The second sentence of step 1 covers the Bottom and Top layouts. The iOS 26 captive
+sheet's step 3 is the same in one line. The phone's screenshots are on the box in
+`/workspace/ui-shots/ios-ref/`. The share sheet's people row is blurred in every copy,
+and they're never committed.
+
+**The name is "The Long Voyage", not the ship's name.**
 
 - Every ship answers on the same address. So one icon opens whichever ship's Wi-Fi you're
   on, and a ship name on it would be wrong half the time.
-- The manifest is a fixed file built once for all ships.
-- "Long Voyage" is 11 characters, which fits under an iPhone icon without being cut off.
-- You can rename it in the Add dialog.
+- The manifest is a fixed file built once for all ships. `name` and `short_name` are both
+  "The Long Voyage" (Phill's choice), as are `apple-mobile-web-app-title` and the page
+  `<title>`. On iOS 26 the page title names the icon, because the Apple tags are left
+  out there (below).
+- At 15 characters it's wider than one line under an iPhone icon. It measures about
+  95-100 px in a 12 px system font. "Voice Memos", about the widest name of Apple's own
+  that fits, is about 77 px. So expect iOS to cut it to something like "The Long Voy…".
+  Android launchers cut it the same way or wrap it to two lines.
+- If that's too ugly, "Long Voyage" (11 characters, about 74 px) fits, and you can rename
+  the icon in the Add dialog.
 
 **The status bar is `default`, not `black-translucent`.** `black-translucent` draws the
 page under the status bar with white status text. That text would be unreadable on the
 light paper colour.
+
+**The game stays on http.** The HTTPS study (branch `https-probe`) came out no-go, so
+everything below assumes plain `http://192.168.4.1`.
+
+**Full screen on Android.** With no WebAPK, the Android icon opens a Chrome tab. The
+Fullscreen API still works over http, from a tap, so `web/fullscreen.js` puts a small
+**Full screen** button (four corners, a 44 px target, `aria-label="Full screen"`) in the
+top bar just before the gear:
+
+- Only on Android browsers that have the API (`document.fullscreenEnabled` and
+  `requestFullscreen`): Chrome and Samsung Internet. Not in the Android sign-in window
+  (a WebView), not on iOS (its icon already opens full screen), not on computers.
+- A tap calls `document.documentElement.requestFullscreen({navigationUI: "hide"})`. If the
+  browser refuses, nothing happens and nothing is logged.
+- It hides while the page is full screen (`fullscreenchange`, and `:root:fullscreen` in
+  the CSS) and comes back when Back or a swipe leaves full screen.
+- Chrome needs a tap every time: full screen ends when the page reloads or the tab is
+  reopened. So it's one tap each time you open the game.
+- The Android home-screen steps get a third one: "Open the game from the icon, then tap
+  [corners] at the top for **full screen**. Back leaves it." The card's lead says "It opens
+  in a Chrome tab; one tap makes it full screen".
+- The safe areas still hold in full screen: `web/shots_a2hs.mjs` goes full screen with
+  Android insets (24 px status bar, 16 px gesture bar) and checks the header clears the
+  status bar and the dock reaches the bottom edge with the nav right above the gesture
+  bar, on the home and file screens (`a2hs-12`..`14`). At 320 px with a battery figure the
+  two icons close up so the bar still fits (`set-10`). **[NEEDS A REAL PHONE]**: the
+  gesture bar and cutout insets Chrome really reports in full screen.
 
 **No one-tap install, and nothing to customise when it fails.**
 
@@ -290,13 +399,46 @@ light paper colour.
 | Where you are | What the card says | What the icon does |
 | --- | --- | --- |
 | iOS Safari (18 and earlier) | Share (bottom; top on iPad) › Add to Home Screen › Add | Opens full screen in its own window (the `apple-mobile-web-app-capable` tag / manifest `display`) |
-| iOS 26 Safari | ⋯ beside the address › Share › Add to Home Screen, keep **Open as Web App** on | The same; on iOS 26 every added site is a web app unless you turn that off |
+| iOS 26 Safari | Page menu (box over two lines) in the address bar › Share (or Share on the toolbar) › View More › Add to Home Screen, keep **Open as Web App** on › Add | The same; on iOS 26 every added site is a web app unless you turn that off |
 | Chrome / Firefox / Edge on iOS | Share (address bar or menu) › Add to Home Screen | iOS 16.4+ allows this from other browsers. **[NEEDS A REAL PHONE]** |
 | iOS captive sheet | Tap **Cancel**, then **Use Without Internet**. Open Safari, go to `192.168.4.1`, then Share › Add to Home Screen | The sheet has no Share button. A link can't leave it either: links only open Safari once iOS marks the network as connected, which needs the probe answered "Success", and the ship never does that (section 5). So the card shows the address in large type to read and type. **[NEEDS A REAL PHONE]**: the Cancel › Use Without Internet wording |
-| Android Chrome | ⋮ › Add to Home screen › Add | A plain shortcut that opens a Chrome tab, not full screen. Over http, Chrome can't make a WebAPK. The shortcut may use the page's icon or a letter, depending on the Chrome version. **[NEEDS A REAL PHONE]** |
-| Samsung Internet | ☰ › Add page to › Home screen | A shortcut. **[NEEDS A REAL PHONE]** |
+| Android Chrome | ⋮ › Add to Home screen › Add; then, opened from the icon, tap the Full screen button at the top | A plain shortcut that opens a Chrome tab; the top bar's Full screen button (below) hides Chrome's bars. Over http, Chrome can't make a WebAPK. The shortcut may use the page's icon or a letter, depending on the Chrome version. **[NEEDS A REAL PHONE]** |
+| Samsung Internet | ☰ › Add page to › Home screen; then the Full screen button | A shortcut; the Full screen button works the same. **[NEEDS A REAL PHONE]** |
 | Android sign-in window | Close it (you stay on the Wi-Fi), open Chrome, go to `192.168.4.1`, then ⋮ › Add to Home screen | It's a WebView with no menu |
 | A computer, or already opened from the icon | Nothing | Hidden when `navigator.standalone` or `display-mode: standalone/fullscreen/minimal-ui` |
+
+**iOS 26: the icon's window is too short with the manifest in.** Opened from the home
+screen on iOS 26, the nav sat about 98 px above the bottom of the screen: 34 px of home
+indicator padding (meant), plus 62 px nothing could paint. The page was already right:
+`viewport-fit=cover`, the header padded by `env(safe-area-inset-top)`, the dock
+`position:fixed; bottom:0` with `env(safe-area-inset-bottom)` padding, `100dvh`.
+
+- The cause is iOS 26 itself. A page with a web app manifest or Apple's
+  `apple-mobile-web-app-*` tags opens from the icon on an older code path. Its window is
+  the screen's height minus the status bar, but starts at the top of the screen. So the
+  status bar's height (47 or 62 px) is missing at the bottom.
+- `innerHeight`, `visualViewport` and `getBoundingClientRect` all agree with that short
+  window. Script can't see the strip, and CSS can't paint into it.
+- A page with none of that markup gets the new path, which is right. iOS 26 opens a home
+  screen icon full screen anyway (**Open as Web App**), so the tags aren't needed there.
+- So `app.html` adds the manifest and the Apple tags from a small script, and skips them
+  on iOS 26+. It tells iOS 26 by a feature, as the user agent can't: Safari 26 says
+  `18_6`, and the icon's user agent has no `Version/`. The feature is CSS anchor
+  positioning, which arrived in Safari 26. The `apple-touch-icon` link stays, for the
+  icon. On iOS 26 the name under the icon defaults to the page title, The Long Voyage,
+  which you can edit in the Add dialog.
+- `web/shots_a2hs.mjs` checks the tags are there on iOS 18, Android and a computer, and
+  left out on iOS 26. It also checks the layout with Chrome's real safe-area emulation
+  (`Emulation.setSafeAreaInsetsOverride`), at 390x844 with insets 47/34 and at 402x874
+  with insets 62/34. In both: the header clears the status bar; the dock reaches the
+  bottom edge with the nav 34 px above it; the action button sits on the nav; the end of
+  the page scrolls clear of the dock. Safari tabs and Android Chrome (no insets) keep
+  the dock on the bottom edge.
+- Shots: `a2hs-10-ios26-icon-before-*-simulated` (the short window drawn on the full
+  screen; Chrome can't produce the bug itself) and `a2hs-11-ios26-icon-after-*`.
+- An icon added before this change may keep the old window. If the strip stays after an
+  update, remove the icon and add it again. Rotating the phone also fixes it until the
+  next launch.
 
 **The card.**
 
@@ -305,11 +447,10 @@ light paper colour.
 - The captive sheets forget their storage, so there it comes back each time the sheet
   opens. That's the right place to keep explaining.
 - It stays out of the way while an update notice is up: one ask at a time.
-- **CREW › Add to home screen** shows the same steps any time, plus what to expect:
-  - where it opens;
-  - that it works on the ship's Wi-Fi only;
-  - that you sign in once.
-- The card adds 1982 B (gzip) to the page, which is now 36897 B of the 128 KB budget.
+- **Settings › Home screen icon** (the gear at the top right) shows the same steps any
+  time, with where it opens and that it works on the ship's Wi-Fi only.
+- The card and the iOS 26 tag script below add about 2.3 KB (gzip) to the page, which is
+  then 37466 B of the 128 KB budget (with Settings, docs/SETTINGS.md: 38.9 KB).
   The game firmware's files on flash go from 79738 B to 84196 B.
 - `main.py`'s `home_screen()` adds the four routes to `lvweb.STATIC` at start. `lvweb` is
   frozen in the core, so changing it would ship it again as a RAM-loaded `.mpy`. That
@@ -382,8 +523,8 @@ Automated (all in `game/tests/run.sh`):
 - **`web/shots_ota.sh`.** Desktop Chrome against the mock ship (`sim/mockota.py`) and a
   stand-in GitHub, clicking through:
   - the notice and Later;
-  - the Ship software row on your crew page;
-  - the Ship software screen;
+  - the gear's update dot, and no Ship software row on the crew page;
+  - Settings' Ship software section, and the notice's Install opening Settings;
   - an install with progress;
   - "installed" after the restart;
   - an update that went back;
@@ -395,7 +536,7 @@ Automated (all in `game/tests/run.sh`):
   - the card and its steps for iOS Safari 18 and 26, the iOS captive sheet, Android
     Chrome, Android's sign-in window and Samsung Internet;
   - that **Got it** hides the card and it stays hidden after a reload;
-  - the CREW row and the screen;
+  - the steps in Settings (from the gear), and no row on the crew page;
   - that nothing shows on a computer or once opened from the icon (`navigator.standalone`
     and `display-mode: standalone`);
   - that Chrome parses the manifest and refuses to install from a non-secure origin.
@@ -417,8 +558,12 @@ Still to do on real hardware and phones:
    Samsung phone.
 6. Android's sign-in notification view: same as 2.
 7. Home screen on an iPhone (Safari, iOS 18 and 26):
-   - Add the game: check the icon, the name "Long Voyage", and that it opens full screen
-     with the status bar readable.
+   - On iOS 26, opened from the icon: does the nav sit on the home indicator, with no strip
+     below it? Check with an icon added after this change, and with one added before.
+   - On iOS 26, try each tab layout (Settings › Apps › Safari › Tabs: Compact, Bottom,
+     Top) and check the card's first step finds Share in each.
+   - Add the game: check the icon, the name "The Long Voyage" (and how it's cut), and
+     that it opens full screen with the status bar readable.
    - Sign in once, close it, then reopen it the next day: are you still signed in, and is
      the briefing flag kept?
    - With mobile data on, does **Check for updates** from the icon reach GitHub while

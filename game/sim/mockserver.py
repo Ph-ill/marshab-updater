@@ -27,6 +27,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import secrets
 import socket
 import struct
@@ -106,6 +107,7 @@ class Game:
         self.lock = threading.RLock()   # gift() checks, then taps
         self.led = False          # the Ship light switch (POST /api/led)
         self.bat = None           # the board's battery, [percent, mV, charging] (bat=72,3950,0)
+        self.resets = 0           # POST /api/reset that went through (the board restarts)
         self.ota = None           # over-the-air updates (ota=0.2.0[,back]: sim/mockota.py)
         self.changed = threading.Condition()
         self.version = 0
@@ -303,6 +305,10 @@ class H(BaseHTTPRequestHandler):
         if u.path in HOME_SCREEN:   # the home-screen manifest and icon (web/build.py)
             n, t = HOME_SCREEN[u.path]
             return self.send(200, open(os.path.join(BUILD, n), "rb").read(), t, gz=True)
+        if re.fullmatch(r"/ls/\d+x\d+\.png", u.path):   # iOS launch screens (web/launch.py)
+            f = os.path.join(ROOT, "web", "launch", u.path[4:])
+            if os.path.exists(f):
+                return self.send(200, open(f, "rb").read(), "image/png")
         if u.path == "/text.json":
             return self.send(200, gzip.compress(json.dumps(G.text, ensure_ascii=False).encode()),
                              gz=True)
@@ -418,6 +424,23 @@ class H(BaseHTTPRequestHandler):
         you = self.who()
         if you is None:
             return self.send(401, {"err": "signed out"})
+        if u.path == "/api/reset":   # board/main.py reset_ship: the confirm is this ship's number
+            try:
+                good = int(b["confirm"]) == you + 1
+            except (KeyError, TypeError, ValueError):
+                good = False
+            if not good:
+                return self.send(403, {"err": "Type this ship's number to confirm."})
+            with G.lock:          # progress gone, sign-ins forgotten (the restart), codes kept
+                G.tokens.clear()
+                G.book.phones = []
+                G.book.seen = [False] * N
+                G.mine = []
+                G.cache = {}
+                G.local = EN.Local(G.pack.season)
+                G.resets += 1
+                G.bump()
+            return self.send(200, {"ok": True, "restart_ms": 1500})
         d = self.day(q)
         self.minute(q)
         try:

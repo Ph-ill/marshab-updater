@@ -9,3 +9,4 @@
 .otaf dd{overflow-wrap:anywhere}
 .otabar{height:8px;border:1px solid var(--ink);margin-top:var(--s3)}
 .otabar i{display:block;height:100%;background:var(--rust);transition:width .2s}
+.otas{margin-top:var(--s3)}
