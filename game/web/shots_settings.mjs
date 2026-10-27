@@ -97,6 +97,18 @@ ok("Ship software: installed, channel, available, checked, check button", await 
 ok("Home screen icon: the steps for this browser", await p.$eval("#set-a2h", (e) => !!e.querySelector(".a2s") && /Add to Home Screen/.test(e.textContent)));
 ok("Battery: 72 %, 3.95 V, charging", await p.$eval("#set-bat", (e) => /Charge\s*72%/.test(e.textContent) && /3\.95 V/.test(e.textContent) && /Charging\s*Yes/.test(e.textContent)));
 ok("Reset: a danger button", await p.$eval("#set-rst [data-rst=ask]", (e) => e.classList.contains("dgr") && getComputedStyle(e).color !== getComputedStyle(document.body).color));
+// The charging bolt follows the cable within seconds (web/batt.js's 5 s look at /api/bat),
+// redrawn in place: the rest of the page stays the same nodes.
+await p.evaluate(() => { window.__keep = document.querySelector("#set-sw"); return fetch("/api/bat?set=72,3950,0"); });
+const bolt = () => p.evaluate(() => !!document.querySelector("#top .bat .bati path"));
+ok("Battery: charging shows the bolt", await bolt());
+await p.waitForFunction(() => !document.querySelector("#top .bat .bati path") && /Charging\s*No/.test(document.querySelector("#set-bat").textContent), null, { timeout: 12000 }).then(() => true, () => false).then((r) => ok("Battery: unplugged, no bolt within 12 s, two 5 s looks (top bar and Settings)", r));
+await p.evaluate(() => fetch("/api/bat?set=73,4010,1"));
+const t0 = Date.now();
+await p.waitForFunction(() => !!document.querySelector("#top .bat .bati path") && /Charging\s*Yes/.test(document.querySelector("#set-bat").textContent) && /73%/.test(document.querySelector("#top .bat").textContent), null, { timeout: 12000 }).then(() => true, () => false).then((r) => ok("Battery: plugged in, the bolt and 73% back within 12 s (" + (Date.now() - t0) + " ms)", r));
+ok("Battery: redrawn in place, not the whole page", await p.evaluate(() => window.__keep === document.querySelector("#set-sw")));
+await p.evaluate(() => fetch("/api/bat?set=72,3950,1"));
+await p.waitForFunction(() => /72%/.test(document.querySelector("#top .bat").textContent), null, { timeout: 12000 });
 await shot(p, "set-02-settings-top");
 await shot(p, "set-03-settings", true);
 // The Ship light from here.

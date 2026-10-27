@@ -171,6 +171,7 @@ async def client(port):
     http_ok[0] = body.startswith(b"HTTP/1.0 200") and b'"digest"' in body
 
 
+chg_watch = [None]
 if WEB:
     web = lvweb.Server(ship, root=ROOT, say=lambda s: None)
     lvweb.probe = sample
@@ -191,6 +192,20 @@ if WEB:
     g["home_screen"](lvweb)
     if OTA:
         g["ota_hooks"](lvweb, web)
+    if BAT:
+        # and main.py's charger watch (the pin read every 100 ms, the bolt at once), as the
+        # board runs it next to lvship's loop
+        src, on = [], False
+        with open("board/main.py") as f:
+            for ln in f:
+                if ln.startswith("# ---- the charger line"):
+                    on = True
+                elif ln.startswith("def main():"):
+                    break
+                if on:
+                    src.append(ln)
+        exec("".join(src), g)
+        chg_watch[0] = g["charger_watch"]
     src = g = None
     gc.collect()
     handler = web.handle
@@ -220,6 +235,8 @@ async def heap_run():
         except OSError:
             pass
     sample()
+    if chg_watch[0] and ship.bat:
+        asyncio.create_task(chg_watch[0](ship))
     if srv:
         await client(port)
     if PHONE:

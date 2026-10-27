@@ -152,7 +152,8 @@ class Split(unittest.TestCase):
             with open(os.path.join(ROOT, "tools", "fw", "cores", cores[-1])) as f:
                 core = json.load(f)
             # board modules newer than the newest core (the OTA ones after 0.2.0) ship as files too
-            # ...and the frozen ones fixed since (lvbatt: the VCELL-not-ready fix, ota-hwfix)
+            # ...and the frozen ones fixed since (lvbatt: the VCELL-not-ready fix on ota-hwfix,
+            # and the charger pin read with no pull by default)
             fixed = ("lvbatt",)
             new = [b + ".mpy" for b in G.BOARD if b not in core["board"] or b in fixed]
             self.assertEqual(CM.changed_files(core, d),
