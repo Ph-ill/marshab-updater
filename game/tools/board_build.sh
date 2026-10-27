@@ -58,6 +58,9 @@ cp build/app.html.gz build/text.json.gz build/engage.json.gz build/app.webmanife
 FROZEN_CORE="${FROZEN_CORE:-$(ls tools/fw/cores/lv-core-*.json 2>/dev/null | sort -V | tail -1)}"
 cp "$OUT/main.py" "$OUT/boot.py" "$OUT/engage.bin" "$FW/"
 cp "$OUT"/www/*.gz "$FW/www/"
+mkdir -p "$OUT/www/ls" "$FW/www/ls"     # the iOS launch screens (web/launch.py)
+cp web/launch/*.png "$OUT/www/ls/"
+cp web/launch/*.png "$FW/www/ls/"
 LVX=""
 if [ -n "$FROZEN_CORE" ]; then
   LVX=$(python3 tools/fw/changed_modules.py "$FROZEN_CORE")

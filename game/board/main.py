@@ -53,6 +53,13 @@ def ota_hooks(lvweb, web):
     async def ota_route(req, w):
         if req.path == "/api/reset":
             return await reset_ship(lvweb, web, req, w)
+        if req.path.startswith("/ls/"):
+            # iOS launch screens, www/ls/<W>x<H>.png (web/launch.py), as they are (a PNG
+            # doesn't gzip). A prefix rather than seven STATIC entries: no RAM until asked.
+            n = req.path[4:]
+            d = n[:-4].split("x")
+            if req.method == "GET" and n[-4:] == ".png" and len(d) == 2 and d[0].isdigit() and d[1].isdigit():
+                return await lvweb.send_file(w, web.root + "www/ls/" + n, "image/png", False)
         if req.path.startswith("/api/ota"):
             import lvota
             try:
