@@ -52,6 +52,17 @@ A release is offered only when:
 
 `test` and `bench` builds follow their own channels, so a stable ship never sees them.
 
+**A test ship on a test branch.** The phone reads `main` unless the ship says otherwise:
+`"ota_src": "<branch>"` in that ship's `/data/ship.json` (by hand, or with mpremote) makes
+`/api/ota` report `src`, and the page then fetches `index.json` and the release from
+`https://raw.githubusercontent.com/<repo>/<branch>/firmware/...` instead. Push a signed
+test release and its index entry to that branch (never `main`) and only the ship pointed
+at it sees it; every other ship, and this one with the key removed, stays on `main`. It
+is a branch name only (letters, digits, `. _ - /`, at most 64, no `..`), never a URL, so
+a ship can't point a phone at another site, and what's fetched still has to be signed by
+a key in `KEYS`. When `src` changes, the phone forgets the release it had cached and
+checks again. `data/` is otherwise untouched: `lvota.status()` reads that one key.
+
 The phone checks at most every 6 hours, or every 2 minutes after a failed check. It also
 checks when the page comes back to the foreground (`visibilitychange`), when the browser
 says it's online again (`online`), and when you tap **Check for updates**. Every fetch
@@ -121,7 +132,7 @@ The peak is during the verify: `lvota` itself (about 7.5 KB) plus `lvsig` at wor
 ## 4. On the ship
 
 `/api/ota` (GET, open to anyone on the hotspot) returns
-`{ota, v, ch, core, chunk, free, last, phase, staged}`. Every POST needs a signed-in crew
+`{ota, v, ch, core, chunk, free, last, phase, staged, src}`. Every POST needs a signed-in crew
 member's `X-Crew-Token`, otherwise it gets 401.
 
 1. **`POST /api/ota/put?f=0&n=<envelope bytes>&o=<offset>`, then
@@ -139,6 +150,20 @@ member's `X-Crew-Token`, otherwise it gets 401.
      be deleted. Moves the current copies to `ota/old/` and puts the new files in place.
    - **swap → trial.** Counts this boot and arms a 120 s one-shot timer that restarts the
      board if the game never reports in.
+   - **Soft resets don't count.** `boot.py` runs again on every soft reset too: Ctrl-D,
+     and every `mpremote` command, `bench.py` and the web updater, which soft-reset the
+     board before they talk to it. Those aren't the update failing, so a soft reset of a
+     ship already on trial is neither counted nor given a new deadline (`lvboot.run()`
+     returns `"soft"`), and plugging the ship into a computer in the minute after an update
+     can't roll a good update back. `machine.reset_cause()` can't tell them apart (a soft
+     reset leaves it as it was, `WDT_RESET` after `machine.reset()`), so `lvboot` uses the
+     chip's uptime: `boot.py` runs about 25 ms after a real start, and a soft reset over
+     USB comes after the board has enumerated (530 ms at the earliest, measured on ship 5),
+     so more than `SOFT_MS` (400 ms) means soft. Real starts still count: power-up, the
+     deadline and the apply (`machine.reset()`), the watchdog, the RUN pin, a crash that
+     resets the chip. The swap itself, and the undo, still run on any reset, so the
+     power-cut safety (6.) is unchanged. A soft reset on trial is harmless the other way
+     too: `main.py` still calls `good()` 30 s after the game is up.
 4. **`main.py`, 30 s after the game is up.** Calls `lvota.good()`. That writes
    `ota/last.json` `{result: "installed"}` and removes `ota/old` and the state.
 5. **Rollback.** If a trial reaches its 2nd boot without reporting in, `lvboot` puts every
@@ -150,7 +175,8 @@ member's `X-Crew-Token`, otherwise it gets 401.
    `state.json.tmp`. The swap and the undo can each be re-run from any point: the tests
    cut the power at 12 points in each and check the board ends up on exactly the old set
    or exactly the new one.
-7. **`data/`** is never read, written or deleted by any of this.
+7. **`data/`** is never written or deleted by any of this (`status()` reads `ota_src` from
+   `ship.json`, see 2).
 
 The ship's DNS answers `REFUSED` for `github.com` and `githubusercontent.com` (everything
 else still points at the ship, which is how the captive portal works). A phone on the

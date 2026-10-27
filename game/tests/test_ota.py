@@ -201,6 +201,21 @@ r = lvota.put({"f": "0", "n": n, "o": str(len(raw) - 50)}, raw[-50:])
 check("env: wrong offset -> 409 have", r[0] == 409 and r[1]["have"] == 300, r)
 r = send_env(FX["env"][V1])     # starts again from 0
 check("env accepted", r[0] == 200 and r[1]["v"] == V1, r)
+check("src: main unless ship.json says", lvota.status()["src"] is None)
+with open(lvota.SHIP, "rb") as f:
+    ship0 = f.read()
+for val, want in (("ota-phonetest", "ota-phonetest"), ("feature/x.y_2", "feature/x.y_2"),
+                  ("", None), ("../main", None), ("a..b", None), ("/main", None), ("-x", None),
+                  ("https://example.invalid/x", None), ("a b", None), ("x" * 65, None), (7, None),
+                  (["main"], None)):
+    with open(lvota.SHIP, "w") as f:
+        json.dump({"ship": 2, "ota_src": val}, f)
+    check("src %r -> %r" % (val, want), lvota.src() == want and lvota.status()["src"] == want)
+with open(lvota.SHIP, "w") as f:
+    f.write("{broken")
+check("src: broken ship.json -> main", lvota.src() is None)
+with open(lvota.SHIP, "wb") as f:
+    f.write(ship0)
 st = lvota.status()
 check("status: staged, nothing yet", st["staged"]["v"] == V1 and sum(st["staged"]["have"]) == 0, st)
 m = lvota.manifest()
@@ -263,7 +278,42 @@ ship_runs(FILES[V2], "0.2.2 on trial")
 write("data/maint", b"")
 check("bench boot (maint): not counted", lvboot.run() == "trial" and lvota.read_json(lvota.STATE)["boots"] == 1)
 os.remove("data/maint")
-check("2: boot 2", lvboot.run() == "trial" and lvota.read_json(lvota.STATE)["boots"] == 2)
+# soft resets (Ctrl-D, mpremote, bench.py, the updater page over USB) on trial: the chip
+# has been up a while, so they don't count and arm no deadline, however many there are
+armed = []
+real_arm = lvboot.arm
+lvboot.arm = lambda ms=lvboot.TRIAL_MS: armed.append(ms)
+lvboot.uptime = lambda: 45000
+for i in range(5):
+    check("soft reset %d on trial: not counted" % i, lvboot.run() == "soft"
+          and lvota.read_json(lvota.STATE)["boots"] == 1 and lvota.read_json(lvota.STATE)["phase"] == "trial")
+check("soft resets: no deadline armed", armed == [], armed)
+ship_runs(FILES[V2], "0.2.2 on trial after soft resets")
+lvboot.uptime = lambda: lvboot.SOFT_MS + 1
+check("just past SOFT_MS: soft", lvboot.run() == "soft" and lvota.read_json(lvota.STATE)["boots"] == 1)
+lvboot.uptime = lambda: 25                    # a real start: ~25 ms after power-up
+check("real boot after soft resets: counted", lvboot.run() == "trial"
+      and lvota.read_json(lvota.STATE)["boots"] == 2 and armed == [lvboot.TRIAL_MS], armed)
+lvboot.uptime = lambda: 45000
+check("soft reset at boot 2: not counted", lvboot.run() == "soft" and lvota.read_json(lvota.STATE)["boots"] == 2)
+lvboot.uptime = lambda: 25
+check("2: boot 3 (real) -> rolled back", lvboot.run() == "undo")
+ship_runs(FILES[V1], "rolled back to 0.2.1 (real boots only)")
+check("soft test: last", lvota.read_json(lvota.LAST)["result"] == "rolled back"
+      and lvota.read_json(lvota.LAST)["boots"] == 3)
+data_same("after soft resets and a rollback")
+# the swap itself on a soft reset (apply, then Ctrl-D before its own restart): it swaps
+# in and that boot counts, with a deadline, as any start of a trial does
+stage(V2)
+lvboot.uptime = lambda: 45000
+armed[:] = []
+check("swap on a soft reset: counted", lvboot.run() == "trial"
+      and lvota.read_json(lvota.STATE)["boots"] == 1 and armed == [lvboot.TRIAL_MS], armed)
+check("then soft: not counted", lvboot.run() == "soft" and lvota.read_json(lvota.STATE)["boots"] == 1)
+lvboot.uptime = lambda: 25
+check("boot 2 real", lvboot.run() == "trial" and lvota.read_json(lvota.STATE)["boots"] == 2)
+lvboot.arm = real_arm
+check("2: boot 2", True)
 check("2: boot 3 -> rolled back", lvboot.run() == "undo")
 ship_runs(FILES[V1], "rolled back to 0.2.1")
 check("rollback: last", lvota.read_json(lvota.LAST)["result"] == "rolled back"

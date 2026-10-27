@@ -17,6 +17,17 @@
 #           module frozen into the firmware is used again), write ota/last.json
 #           {"result": "rolled back"}, clean up. Also resumable.
 # data/ is never touched: lvota refuses update paths under it.
+# Only a real start of the chip counts as a trial boot: power-up, machine.reset() (the
+# deadline, the apply), the watchdog, the RUN pin. A soft reset (Ctrl-D, and every mpremote
+# command, bench.py and the updater page, which soft-reset the board before they talk to
+# it) runs boot.py again too, but the game it was testing didn't crash: those carry on on
+# trial without counting and without a new deadline (soft reset clears the old one with
+# the rest of the heap), so plugging a ship into a computer in the minute after an update
+# can't roll a good update back. machine.reset_cause() can't tell them apart (a soft reset
+# leaves it as it was: WDT_RESET after machine.reset(), on a Pico W), but the chip's uptime
+# can: boot.py runs ~25 ms after a real start, and a soft reset over USB can't come before
+# the board has enumerated (530 ms at the earliest on ship 5), so uptime > SOFT_MS is soft.
+# (ticks_ms wraps every ~12 days; a soft reset in the 0.4 s after a wrap counts, as before.)
 # A boot that main.py skips on purpose (data/maint, data/safe: the bench) isn't counted
 # and has no deadline. A hang inside C code (the scheduler never runs) isn't caught until
 # the board is power-cycled; then that boot counts.
@@ -29,8 +40,22 @@ NEW = "ota/new"
 OLD = "ota/old"
 TRIAL_MS = 120000
 MAX_BOOTS = 2
+SOFT_MS = 400
 timer = None
 say = print
+uptime = None             # tests: ms since the chip started; None: ticks_ms on a board
+
+
+def soft():
+    """True if this boot is a soft reset of a chip that was already running."""
+    f = uptime
+    if f is None:
+        import sys
+        if sys.platform != "rp2":            # CPython, the unix ports: every run is a boot
+            return False
+        import time
+        f = time.ticks_ms
+    return f() > SOFT_MS
 
 
 def _exists(p):
@@ -177,6 +202,7 @@ def run():
     if not s:
         return None
     ph = s.get("phase")
+    was = ph                                 # on trial already (not swapped in just now)
     try:
         if ph == "ready":
             prepare(s)
@@ -190,6 +216,10 @@ def run():
         if ph == "trial":
             if _exists("data/maint") or _exists("data/safe"):
                 return "trial"               # the bench: not a real boot
+            if was == "trial" and soft():
+                say("ota: soft reset on trial: not counted (boot %d of %d)" % (
+                    s.get("boots", 0), MAX_BOOTS))
+                return "soft"                # no new deadline; main.py still calls good()
             s["boots"] = s.get("boots", 0) + 1
             if s["boots"] > MAX_BOOTS:
                 say("ota: %s failed to start %d times" % (s.get("v"), MAX_BOOTS))

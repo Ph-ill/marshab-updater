@@ -7,7 +7,10 @@
 // and what's available. Installing sends it to the ship in small pieces; the ship checks the
 // signature and every file, restarts into it and goes back by itself if it doesn't start.
 // Hooked onto app.html's refresh/view/crew/home from here, like batt.js.
-const OTA_SRC="https://raw.githubusercontent.com/Ph-ill/marshab-updater/main";
+// Releases come from the repo's main branch, unless the ship names another (its ship.json
+// "ota_src", in /api/ota's "src": a test ship on a test branch). A branch name only.
+const OTA_REPO="https://raw.githubusercontent.com/Ph-ill/marshab-updater/";
+function otaSrc(b){const s=b&&b.src;return OTA_REPO+(typeof s==="string"&&/^[\w][\w.\/-]{0,63}$/.test(s)&&s.indexOf("..")<0?s:"main")}
 const OTA_KEY="lv.ota",OTA_EVERY=6*3600e3,OTA_RETRY=120e3,OTA_WAIT=8000;
 let OS_=null,OB=null,OI=null,OTA_LATER="",OTA_BUSY=false,OTA_NONE=false;  // ship's status, update here, install progress; a ship without OTA
 function otaLoad(){try{return JSON.parse(localStorage.getItem(OTA_KEY))||{}}catch(e){return{}}}
@@ -28,7 +31,7 @@ function otaFor(st){
 }
 async function otaStatus(){
   try{const r=await fetch("/api/ota",{cache:"no-store"});if(r.status===404)OTA_NONE=true;OS_=r.ok?await r.json():null}catch(e){if(e instanceof SyntaxError)OTA_NONE=true}
-  if(OS_&&OS_.ch){const b=otaLoad();if(b.ch!==OS_.ch||b.core!==OS_.core){b.ch=OS_.ch;b.core=OS_.core;otaSave(b);OB=b}}
+  if(OS_&&OS_.ch){const b=otaLoad();const src=OS_.src||null;if(b.ch!==OS_.ch||b.core!==OS_.core||(b.src||null)!==src){if((b.src||null)!==src){b.at=0;b.rel=null}b.ch=OS_.ch;b.core=OS_.core;b.src=src;otaSave(b);OB=b}}
   return OS_;
 }
 // Look on GitHub. Quiet unless asked (force): a phone on the ship's hotspot has no internet.
@@ -38,11 +41,11 @@ async function otaCheck(force){
   if(!force&&b.at&&Date.now()-b.at<(b.ok?OTA_EVERY:OTA_RETRY))return;
   b.at=Date.now();b.ok=false;otaSave(b);
   try{
-    const idx=await otaGet(OTA_SRC+"/firmware/index.json");
+    const base=otaSrc(b),idx=await otaGet(base+"/firmware/index.json");
     const v=(idx.channels||{})[b.ch],e=(idx.releases||[]).find((r)=>r.version===v);
     b.ok=true;b.seen=v||null;
     if(e&&e.ota&&e.frozen===b.core&&(!b.rel||b.rel.v!==v)){
-      const rel=await otaGet(OTA_SRC+e.path),env=rel.ota;
+      const rel=await otaGet(base+e.path),env=rel.ota;
       const m=JSON.parse(env.m),by={};for(const f of rel.files)by[f.path]=f.data;
       if(m.version!==v||m.files.some((f)=>!by[f[0]]))throw new Error("incomplete release");
       b.rel={v,ch:m.channel,core:m.core,label:rel.label||"",bytes:m.files.reduce((s,f)=>s+f[1],0),env:JSON.stringify(env),files:m.files.map((f)=>by[f[0]])};

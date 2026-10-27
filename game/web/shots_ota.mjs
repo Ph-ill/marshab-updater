@@ -20,7 +20,8 @@ function blank(x) {
   if (x && typeof x === "object") return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, blank(v)]));
   return x;
 }
-async function page(port, { online = true } = {}) {
+const GHB = "https://raw.githubusercontent.com/Ph-ill/marshab-updater/";
+async function page(port, { online = true, src = null, asked = null } = {}) {
   const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ota/${ua++}`,
     viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
@@ -34,10 +35,20 @@ async function page(port, { online = true } = {}) {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(j) });
     });
   }
-  await p.route(GH + "**", async (route) => {
+  // GitHub: main, or (a ship whose ship.json has ota_src) that branch; every URL asked for is noted
+  const gh = src ? GHB + src + "/" : GH;
+  await p.route(GHB + "**", async (route) => {
+    const u = route.request().url();
+    if (asked) asked.push(u);
     if (!online) return route.abort("internetdisconnected");
-    const r = await route.fetch({ url: `http://localhost:${port}/gh/` + route.request().url().slice(GH.length) });
+    if (!u.startsWith(gh)) return route.fulfill({ status: 404, body: "" });
+    const r = await route.fetch({ url: `http://localhost:${port}/gh/` + u.slice(gh.length) });
     await route.fulfill({ response: r });
+  });
+  if (src) await p.route(/\/api\/ota$/, async (route) => {
+    const r = await route.fetch();
+    const j = await r.json();
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...j, src }) });
   });
   await p.goto(`http://localhost:${port}/?day=22`);
   await p.addStyleTag({ content: ":root{--sb:34px}" });
@@ -107,6 +118,18 @@ await p.click("[data-ota=check]");
 await p.waitForFunction(() => document.querySelector("#v").textContent.includes("no internet"));
 ok("Check for updates with no internet says so", true);
 await shot(p, "ota-08-check-no-internet");
+await p.context().close();
+
+// 4. A test ship reading a test branch (ship.json "ota_src"): the page fetches from that
+// branch of the repo, never main, and offers what's there.
+const asked = [];
+// (8056 runs 0.2.1 by now and 8057 went back from it: look at what the phone fetched)
+p = await page(8057, { src: "ota-phonetest", asked });
+await p.waitForFunction(() => { const b = JSON.parse(localStorage.getItem("lv.ota") || "{}"); return b.rel && b.rel.v; }, null, { timeout: 15000 });
+ok("test branch: the release fetched from the branch", await p.evaluate(() => {
+  const b = JSON.parse(localStorage.getItem("lv.ota")); return b.src === "ota-phonetest" && b.rel.v === "0.2.1"; }));
+ok("test branch: index and release from ota-phonetest only", asked.length >= 2
+   && asked.every((u) => u.startsWith(GHB + "ota-phonetest/firmware/")) && asked.some((u) => u.endsWith("/firmware/index.json")));
 await p.context().close();
 await browser.close();
 console.log(fails ? `FAIL ${fails}` : "ota shots: all ok");

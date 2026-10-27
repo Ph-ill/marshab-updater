@@ -4,7 +4,7 @@
 # (everything it needs between requests is on flash, under ota/), so a ship nobody is
 # updating never carries it.
 #
-#   GET  /api/ota                 {ota, v, ch, core, chunk, free, staged, last}
+#   GET  /api/ota                 {ota, v, ch, core, chunk, free, staged, last, src}
 #   POST /api/ota/put?f=0&n=N&o=O the signed envelope, in pieces of at most `chunk` bytes
 #   POST /api/ota/put?f=I&o=O     file I of the manifest (1-based), raw bytes from offset O
 #   POST /api/ota/apply           everything staged and checked: restart into it
@@ -49,6 +49,22 @@ SPARE = 16 * 1024         # flash left free after staging (littlefs needs room t
 # Ed25519 public keys allowed to sign an update: key id (first 8 hex of sha256(key)) -> key.
 KEYS = {"2111b2e9": unhexlify("0478d983c1a756c32acf10215359e6f0361ea4800ede2b50031256bcf0f4b58f")}
 reset = None              # tests: called instead of machine.reset()
+# Where the phone looks for releases: a branch of the public repo, main unless this ship's
+# /data/ship.json says "ota_src": "<branch>" (a test ship reading a test branch, so a test
+# release published there reaches it and no other ship). Only a branch name, never a URL:
+# the page builds the address from it, so a ship can't point a phone anywhere else, and
+# whatever is fetched still has to carry a signature from KEYS.
+SHIP = "data/ship.json"
+SRC_OK = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-/"
+
+
+def src():
+    """The branch the phone fetches releases from: ship.json "ota_src", or None (main)."""
+    b = (read_json(SHIP) or {}).get("ota_src")
+    if not isinstance(b, str) or not 0 < len(b) <= 64 or ".." in b or b[0] in "/-." \
+            or any(c not in SRC_OK for c in b):
+        return None
+    return b
 
 
 def _exists(p):
@@ -259,6 +275,7 @@ def status():
     st["last"] = read_json(LAST)
     s = read_json(STATE)
     st["phase"] = s.get("phase") if s else None
+    st["src"] = src()
     m = manifest()
     if m:
         have = []
