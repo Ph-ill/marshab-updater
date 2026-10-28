@@ -31,6 +31,9 @@ import lvdays
 from lv import codes as K
 from lv import record as R
 
+SAFE = "--safe" in sys.argv           # board/lvsafe.py's safe-mode server instead (web/safe.js)
+if SAFE:
+    sys.argv.remove("--safe")
 DAY = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8099
 LAUNCH = sys.argv[3:6] if len(sys.argv) > 5 else None
@@ -77,6 +80,28 @@ with open(DATA + "/log.bin", "wb") as f:
             f.write(raw[i:i + R.LEN])
 raw = None
 
+if SAFE:
+    import lvsafe
+    _src = open("board/main.py").read()
+    _src = _src[_src.index("def home_screen"):_src.index("\nasync def ota_ok")]
+    _g = {"lvship": lvship, "asyncio": asyncio}
+    exec(_src, _g)
+    srv, _sh = lvsafe.server(lvweb, {"ship_id": 3}, "2 crashes in a row (MemoryError())", "127.0.0.1:%d" % PORT,
+                             lambda: print("RESTART"), DATA, ROOT)
+    _g["home_screen"](lvweb)
+    _g["net_hooks"](lvweb, srv)
+
+    async def safe_main():
+        await asyncio.start_server(srv.handle, "127.0.0.1", PORT)
+        print("READY %d" % PORT)
+        try:
+            sys.stdout.flush()
+        except AttributeError:
+            pass
+        while True:
+            await asyncio.sleep(1)
+    asyncio.run(safe_main())
+    sys.exit(0)
 cfg = lvship.load_config("/nonexistent")
 cfg["day"] = DAY
 cfg["ship_id"] = 3

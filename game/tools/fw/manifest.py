@@ -43,3 +43,5 @@ module("lvfunnel.py", base_path="../../board", opt=3)
 module("lvcode.py", base_path="../../board", opt=3)
 # Test light (after 0.2.5; on older cores releases ship it as lvledtest.mpy).
 module("lvledtest.py", base_path="../../board", opt=3)
+# Safe mode and the fault notes (after 0.2.6; on older cores releases ship it as lvsafe.mpy).
+module("lvsafe.py", base_path="../../board", opt=3)
