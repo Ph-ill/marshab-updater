@@ -65,9 +65,59 @@ def switch(ship, on):
     return bool(on)
 
 
+fail = None             # tests: called at "write", "read" and "rename" to simulate a failure
+
+
+def _hit(where):
+    if fail:
+        fail(where)
+
+
+def save(path, c):
+    """Write the settings dict c to path whole, as lvcode.save does crew.json: the text to
+    path.new, read back and compared, then renamed over path (one step on littlefs and
+    POSIX), so ship.json is always the old file or the new one, never a half-written one
+    (0.2.6 and before wrote it in place: a restart mid-write could leave it unreadable,
+    and the ship would come up as a default ship 1). True, or False (path as it was)."""
+    import json
+    import os
+    text = json.dumps(c)
+    tmp = path + ".new"
+    try:
+        _hit("write")
+        with open(tmp, "w") as f:
+            f.write(text)
+        _hit("read")
+        with open(tmp) as f:
+            if f.read() != text:
+                raise OSError("ship.json.new reads back wrong")
+        try:
+            _hit("rename")
+            os.rename(tmp, path)
+        except OSError:
+            old = path + ".old"         # a filesystem that won't rename onto a file
+            os.rename(path, old)
+            try:
+                _hit("rename2")
+                os.rename(tmp, path)
+            except OSError:
+                os.rename(old, path)
+                raise
+            os.remove(old)
+        return True
+    except OSError:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return False
+
+
 def toggle(phone, on):
     """The phone's Ship light switch (CREW > your page; lvphone.Phone, POST /api/led): on
-    or off now and after a restart (led_notify in /data/ship.json, the rest kept)."""
+    or off now and after a restart (led_notify in /data/ship.json, the rest kept). A
+    ship.json that can't be read is left alone: the switch works until the restart, and
+    the ship's identity, hotspot password and the rest are never replaced by {}."""
     sh = phone.ship
     on = sh.led_on(on)
     sh.v += 1
@@ -77,14 +127,18 @@ def toggle(phone, on):
         try:
             with open(p) as f:
                 c = json.load(f)
+            if not isinstance(c, dict):
+                raise ValueError
+        except OSError:
+            c = {}                      # no file yet: the bench's defaults plus this one
         except Exception:
-            c = {}
-        c["led_notify"] = on
-        try:
-            with open(p, "w") as f:
-                json.dump(c, f)
-        except OSError as e:
-            sh.say("led: setting not saved %s" % e)
+            c = None
+        if c is None:
+            sh.say("led: ship.json not readable, setting kept until restart")
+        else:
+            c["led_notify"] = on
+            if not save(p, c):
+                sh.say("led: setting not saved")
     sh.say("led: notifier %s (from a phone)" % ("on" if on else "off"))
     import lvship
     lvship.drop("lvledcfg")          # (Ship.led_on drops it too, unless it had nothing to do)

@@ -59,6 +59,7 @@ python3 tests/test_cal.py
 python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py
+python3 tests/test_safe.py
 python3 tests/test_ota_release.py
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
@@ -78,6 +79,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_batt.py; fi
   "$MP" tests/test_ota.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_ota.py; fi
+  "$MP" tests/test_safe.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_safe.py; fi
   "$MP" tests/test_reset.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_reset.py; fi
   "$MP" tests/test_funnel.py
@@ -146,6 +149,7 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_a2hs.sh "$O/a2hs"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_settings.sh "$O/settings"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_funnel.sh "$O/funnel"; rm -rf "$O"
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_v03.sh "$O/v03"; rm -rf "$O"
   else
     echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi
