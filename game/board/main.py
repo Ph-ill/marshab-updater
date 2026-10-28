@@ -12,7 +12,12 @@
 # the captive DNS leaves GitHub's names unanswered so a phone with another route can still
 # fetch an update; and after an update this file reports in (lvota.good()) once the game
 # has run OTA_OK_MS, or boot.py's deadline rolls the update back. Every release's main.py
-# has to keep that call.
+# has to keep that call. An update is kept only once the game has run OTA_OK_MS AND served
+# a phone at least one 2xx answer (ota_ok, ok2xx), so a set that starts but can't serve the
+# page goes back too (lvboot's deadline restarts it until MAX_BOOTS, then rolls back).
+# Crashes (board/lvsafe.py): anything main() or one of its tasks lets escape is noted in
+# /data/fault.json and the ship restarts; SAFE_AFTER in a row and the next boot is safe
+# mode (hotspot + update page only). An unreadable ship.json is put back from its backup.
 import os
 import time
 
@@ -26,6 +31,7 @@ import lvship
 
 BOOT_WINDOW_MS = 2000
 OTA_OK_MS = 30000
+reboot = None               # tests: called instead of machine.reset()
 
 
 def flag(path):
@@ -47,7 +53,7 @@ def home_screen(lvweb):
 
 
 def ota_hooks(lvweb, web):
-    lvweb.MAX_BODY = 1024                       # update pieces (lvota.CHUNK)
+    net_hooks(lvweb, web)
     route = web.route
 
     async def ota_route(req, w):
@@ -109,6 +115,22 @@ def ota_hooks(lvweb, web):
                 lvship.drop("lvota")
         return await route(req, w)
     web.route = ota_route
+
+
+def net_hooks(lvweb, web):
+    # For the game and for safe mode: update pieces (lvota.CHUNK) fit a request; the
+    # 2xx answers are counted (ota_ok keeps an update only once a phone got one); GitHub
+    # is left unanswered by the captive DNS.
+    lvweb.MAX_BODY = 1024
+    web.ok2xx = 0
+    head = getattr(lvweb, "head", None)     # (the tests' stand-ins may have none)
+
+    def counted(code, *a, **k):
+        if 200 <= code < 300:
+            web.ok2xx += 1
+        return head(code, *a, **k)
+    if head:
+        lvweb.head = counted
     answer = lvweb.dns_answer
 
     def dns_answer(q, ip):
@@ -131,7 +153,6 @@ def ota_hooks(lvweb, web):
 # Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
 # codes, including any changed in Settings: board/lvcode.py), the installed software and ota/ (the update state and rollback copy), maint/safe.
 RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin")
-reboot = None               # tests: called instead of machine.reset()
 
 
 async def reset_ship(lvweb, web, req, w):
@@ -168,12 +189,83 @@ async def reset_ship(lvweb, web, req, w):
     asyncio.create_task(later())
 
 
-async def ota_ok():
+async def ota_ok(web=None):
+    # Keep the update: OTA_OK_MS up and (with the phone game) one 2xx answer to a phone.
+    # Until then lvboot's deadline (USB-only, TRIAL_MS) restarts the ship and counts the boot.
     await lvship.sleep_ms(OTA_OK_MS)
+    while web is not None and not web.ok2xx:
+        await lvship.sleep_ms(500)
     import lvota
     if lvota.good():
         print("ota: update kept")
+        try:
+            os.remove("/data/fault.json")       # the new set starts with a clean count
+        except OSError:
+            pass
     lvship.drop("lvota")
+
+
+def restart():
+    if reboot:
+        return reboot()
+    import machine
+    machine.reset()
+
+
+def crashed(e, trial, t0):
+    # Whatever main() or a task let escape: note it (not on an update's trial: lvboot's
+    # boot count decides that one), say it, restart. Never raises.
+    try:
+        import sys
+        sys.print_exception(e)
+    except Exception:
+        print("crash: %r" % (e,))
+    try:
+        import lvsafe
+        lvsafe.crashed(repr(e), trial, time.ticks_diff(time.ticks_ms(), t0))
+    except Exception as e2:
+        print("crash: not noted %r" % (e2,))
+    print("crash: restarting")
+    restart()
+
+
+async def healthy(ship):
+    await lvship.sleep_ms(600000)               # lvsafe.HEALTHY_MS
+    import lvsafe
+    try:
+        lvsafe.healthy(say=ship.say)
+    finally:
+        lvship.drop("lvsafe")
+
+
+def safe_mode(cfg, why):
+    # Hotspot + the phone page, sign-in and Settings > Ship software (lvsafe.server).
+    print("safe: " + why)
+    if why.startswith("off:"):
+        return
+    import lvwifi
+    import lvweb
+    import lvsafe
+    ap = lvwifi.hotspot(cfg)
+    ip = "192.168.4.1"
+    try:
+        a = ap.ifconfig()[0]
+        if a and a != "0.0.0.0":
+            ip = a
+    except Exception:
+        pass
+
+    async def run():
+        web, sh = lvsafe.server(lvweb, cfg, why[6:], ip, reboot)
+        home_screen(lvweb)
+        net_hooks(lvweb, web)
+        await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
+        if cfg["captive_dns"]:
+            asyncio.create_task(lvweb.dns(ip))
+        print("safe: update page on http://%s/" % ip)
+        while True:
+            await lvship.sleep_ms(60000)
+    asyncio.run(run())
 
 
 
@@ -251,7 +343,6 @@ def main():
     if flag("/data/safe"):
         print("safe: /data/safe found, not starting (remove it to play)")
         return
-    cfg = lvship.load_config()
     try:
         os.stat("/data/maint")
         os.remove("/data/maint")
@@ -263,6 +354,13 @@ def main():
         os.mkdir("/data")
     except OSError:
         pass
+    trial = flag("ota/state.json")
+    import lvsafe
+    why = lvsafe.check(trial)
+    lvship.drop("lvsafe")
+    cfg = lvship.load_config()
+    if why:
+        return safe_mode(cfg, why)
     try:
         import lv
         print("firmware: " + lv.describe())
@@ -285,8 +383,11 @@ def main():
         import lvdays
         days = lvdays.Days("/data/days.bin")
     ship = lvship.Ship(cfg, days=days)
+    web = None
 
     async def run():
+        nonlocal web
+        asyncio.get_event_loop().set_exception_handler(lambda loop, ctx: crashed(ctx["exception"], trial, T0))
         if game:
             import lvweb
             web = lvweb.Server(ship, ip=ip)
@@ -302,12 +403,19 @@ def main():
             import lvstat
             await asyncio.start_server(lvstat.server(ship), "0.0.0.0", cfg["http_port"])
             print("web: status only on http://%s/ (the phone game needs the game firmware)" % ip)
-        if flag("ota/state.json"):
-            asyncio.create_task(ota_ok())
+        if trial:
+            asyncio.create_task(ota_ok(web))
+        asyncio.create_task(healthy(ship))
         if ship.bat:
             asyncio.create_task(charger_watch(ship))
         await ship.loop()
     asyncio.run(run())
 
 
-main()
+T0 = time.ticks_ms()
+try:
+    main()
+except KeyboardInterrupt:
+    print("stopped (Ctrl-C)")
+except Exception as e:
+    crashed(e, flag("ota/state.json"), T0)

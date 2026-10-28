@@ -153,8 +153,9 @@ class Split(unittest.TestCase):
                 core = json.load(f)
             # board modules newer than the newest core (the OTA ones after 0.2.0) ship as files too
             # ...and the frozen ones fixed since (lvbatt: the VCELL-not-ready fix on ota-hwfix,
-            # and the charger pin read with no pull by default)
-            fixed = ("lvbatt",)
+            # and the charger pin read with no pull by default; lvledcfg: ship.json written
+            # whole, temp file + read back + rename, since 0.2.7)
+            fixed = ("lvbatt", "lvledcfg")
             new = [b + ".mpy" for b in G.BOARD if b not in core["board"] or b in fixed]
             self.assertEqual(CM.changed_files(core, d),
                              [b + ".mpy" for b in G.BOARD if b not in core["board"] or b in fixed or b == "lvweb"]

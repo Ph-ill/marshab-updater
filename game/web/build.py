@@ -40,7 +40,7 @@ def main():
     # the same way.
     for name, mark in (("engage.js", "/*ENGAGE_JS*/"), ("engage.css", "/*ENGAGE_CSS*/"),
                        ("batt.js", "/*BATT_JS*/"), ("batt.css", "/*BATT_CSS*/"),
-                       ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/"),
+                       ("safe.js", "/*SAFE_JS*/"), ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/"),
                        ("a2hs.js", "/*A2HS_JS*/"), ("a2hs.css", "/*A2HS_CSS*/"),
                        ("settings.js", "/*SET_JS*/"), ("settings.css", "/*SET_CSS*/"),
                        ("fullscreen.js", "/*FS_JS*/"), ("fullscreen.css", "/*FS_CSS*/"),
