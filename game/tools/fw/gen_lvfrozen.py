@@ -40,12 +40,12 @@ MICROPYTHON = "v1.29.0"
 
 # The board modules frozen since lv-core 0.2.0 (top-level modules, from board/). main.py
 # and boot.py stay files: they are the boot entries, and they are tiny. lvota, lvsig and
-# lvboot (over-the-air updates), lvfunnel (the home-screen funnel) and lvcode (Change your
-# code) came after lv-core 0.2.0: on that core they ship as .mpy. tools/board_build.sh, the manifest
+# lvboot (over-the-air updates), lvfunnel (the home-screen funnel), lvcode (Change your
+# code) and lvledtest (Test light) came after lv-core 0.2.0: on that core they ship as .mpy. tools/board_build.sh, the manifest
 # (tools/fw/manifest.py) and the tests take the list from here.
 BOARD = ("lvship", "lvreport", "lvcal", "lvled", "lvledcfg", "lvbatt", "lvdays", "lvweb",
          "lvphone", "lvstat", "lvwifi", "selftest", "lvota", "lvsig", "lvboot",
-         "lvfunnel", "lvcode")
+         "lvfunnel", "lvcode", "lvledtest")
 PACK = os.path.join(ROOT, "build", "pack.bin")
 
 

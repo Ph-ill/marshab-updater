@@ -26,3 +26,14 @@
 #set-code .err:empty{margin:0}
 #set-code .ok{margin-top:var(--s2);font:600 15px/1.45 var(--mono);color:var(--ink)}
 #set-code .ok::before{content:"";display:inline-block;width:8px;height:8px;margin-right:var(--s2);background:var(--rust);vertical-align:1px}
+/* Test light: under the Ship light switch; while the ship plays, a thin rust bar fills the
+   button's foot for exactly as long (the ship's ms), so "Testing" never sits there unexplained. */
+.btn.ledt{position:relative;overflow:hidden}
+.btn.ledt:disabled{opacity:1;cursor:default}
+.btn.ledt[aria-busy] span{color:var(--ink)}
+.ledbar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--rust);transform-origin:0 50%;animation:ledbar linear forwards}
+@keyframes ledbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.ledbar{animation:none;transform:none;opacity:.6}}
+#set-ledt{margin-top:var(--s2)}
+#set-ledt .fine{margin-top:var(--s2)}
+#set-ledt .err{margin-top:var(--s2);min-height:0}
