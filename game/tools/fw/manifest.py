@@ -41,3 +41,5 @@ module("lvboot.py", base_path="../../board", opt=3)
 module("lvfunnel.py", base_path="../../board", opt=3)
 # Change your code (after 0.2.4; on older cores releases ship it as lvcode.mpy).
 module("lvcode.py", base_path="../../board", opt=3)
+# Test light (after 0.2.5; on older cores releases ship it as lvledtest.mpy).
+module("lvledtest.py", base_path="../../board", opt=3)

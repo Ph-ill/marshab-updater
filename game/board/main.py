@@ -71,6 +71,17 @@ def ota_hooks(lvweb, web):
             finally:
                 lvship.drop("lvcode")
             return await lvweb.send_json(w, s, j)
+        if req.path == "/api/led/test":
+            # "Test light" (board/lvledtest.py, web/settings.js): a signed-in crew member makes
+            # the light play ~4 s of blinks and a breath, on or off. Loaded per request.
+            if req.method != "POST":
+                return await lvweb.send_json(w, 404, {"err": "no such thing"})
+            import lvledtest
+            try:
+                s, j = lvledtest.start(web, req)
+            finally:
+                lvship.drop("lvledtest")
+            return await lvweb.send_json(w, s, j)
         if req.path == "/api/bat" and req.method == "GET":
             # The page's poll every 5 s while it's showing (web/app.html startPoll): the
             # state's version, as /api/v, and the battery, [percent, mV, charging] or null

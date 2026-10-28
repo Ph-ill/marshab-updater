@@ -13,7 +13,7 @@ const { chromium } = require(process.env.PW || "playwright-core");
 const out = process.argv[2] || "shots";
 const browser = await chromium.launch({ executablePath: process.env.CHROME });
 const PH = "Placeholder text: story hidden from this screenshot.";
-let fails = 0, ua = 0;
+let fails = 0, ua = 0, jj0;
 const ok = (what, c, why) => { console.log((c ? "ok   " : "FAIL ") + what + (c || why === undefined ? "" : " (" + why + ")")); if (!c) fails++; };
 const blank = (x) => typeof x === "string" ? (x.length > 18 && x.includes(" ") ? PH : x) : Array.isArray(x) ? x.map(blank)
   : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, blank(v)])) : x;
@@ -117,6 +117,56 @@ await p.waitForFunction(() => S.led === true && document.querySelector("#set-led
 ok("Ship light: on from Settings", true);
 await center(p, "#set-led");
 await shot(p, "set-04-ship-light-on-battery");
+await p.click("#set-led [data-led]");
+await p.waitForFunction(() => S.led === false && document.querySelector("#set-led [data-led]")?.textContent.includes("Ship light: off"));
+// 2a. Test light (board/lvledtest.py; the mock answers as the ship does): under the switch,
+// works with the light off; "Testing" with a bar for the ship's ms, repainted in place; a
+// tap meanwhile does nothing and the ship says 429; back to "Test light" after.
+const ledReq = (p, token = true) => p.evaluate(async (t) => {
+  const r = await fetch("/api/led/test", { method: "POST", headers: t ? { "X-Crew-Token": tok, "Content-Type": "application/json" } : { "Content-Type": "application/json" }, body: "{}" });
+  return [r.status, await r.json()];
+}, token);
+await center(p, "#set-led");
+ok("Test light: under the Ship light switch, a quiet button", await p.$eval("#set-led", (e) => { const b = e.querySelector("[data-ledt]"), t = e.querySelector("[data-led]"); return !!b && b.classList.contains("sec") && /Test light/i.test(b.textContent) && !!(t.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) && !b.disabled; }));
+ok("Test light: says what it does, and that it works with the light off", await p.$eval("#ledts", (e) => /three blinks/i.test(e.textContent) && /light off/i.test(e.textContent)));
+ok("Test light: the light is off and the button is there", await p.evaluate(() => S.led === false && !!document.querySelector("[data-ledt]")));
+let [lst] = await ledReq(p, false);
+ok("Test light: refused without a session (401)", lst === 401);
+await shot(p, "set-l1-test-light");
+const t0l = Date.now();
+await p.evaluate(() => { window.__keep = document.querySelector("#set-sw"); });
+await p.click("[data-ledt]");
+await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && b.disabled && b.getAttribute("aria-busy") === "true" && /Testing/i.test(b.textContent) && !!b.querySelector(".ledbar"); });
+ok("Test light: \"Testing\" at once, disabled, a progress bar", true);
+ok("Test light: tells you to look at the ship", await p.$eval("#ledts", (e) => /Look at LV-\d now/.test(e.textContent)));
+await p.waitForTimeout(900);
+await center(p, "#set-led");
+await shot(p, "set-l2-testing");
+await p.emulateMedia({ colorScheme: "dark" });
+await p.waitForTimeout(150);
+await p.screenshot({ path: `${out}/set-l2-testing-dark-390x844.png` });
+console.log(`${out}/set-l2-testing-dark-390x844.png`);
+await p.emulateMedia({ colorScheme: "light" });
+[lst, jj0] = await ledReq(p);
+ok("Test light: a second tap while it plays is 429 with the ms left", lst === 429 && jj0.ms > 0 && jj0.ms <= 4000, [lst, jj0]);
+await p.click("[data-ledt]", { force: true });
+ok("Test light: still testing after another tap", await p.$eval("[data-ledt]", (b) => b.disabled));
+await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && !b.disabled && /Test light/i.test(b.textContent); }, null, { timeout: 8000 });
+const tl = Date.now() - t0l;
+ok("Test light: back after about 4 s (" + tl + " ms)", tl >= 3800 && tl <= 6500);
+ok("Test light: says it's finished and what the light is back to", await p.$eval("#ledts", (e) => /Finished\. The light is back to off\./.test(e.textContent)));
+ok("Test light: repainted in place, not the whole page", await p.evaluate(() => window.__keep === document.querySelector("#set-sw")));
+await center(p, "#set-led");
+await shot(p, "set-l3-test-finished");
+// With the light on, the same button; the switch and the test don't get in each other's way.
+await p.click("#set-led [data-led]");
+await p.waitForFunction(() => S.led === true);
+await p.click("[data-ledt]");
+await p.waitForFunction(() => document.querySelector("[data-ledt]")?.disabled);
+await center(p, "#set-led");
+await shot(p, "set-l4-testing-light-on");
+await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && !b.disabled && /back to on/.test(document.querySelector("#ledts").textContent); }, null, { timeout: 8000 });
+ok("Test light: with the light on, finished and back to on", true);
 await p.click("#set-led [data-led]");
 await p.waitForFunction(() => S.led === false && document.querySelector("#set-led [data-led]")?.textContent.includes("Ship light: off"));
 // 2b. Change your code: under Sign out, above Reset; the old code, then the new one twice.
@@ -246,6 +296,9 @@ await p.context().close();
 p = await page(8060 - 1, { width: 320, height: 640 });
 ok("320 px with the battery: the top bar fits", await p.$eval("#top", (e) => !!e.querySelector(".bat") && e.scrollWidth <= e.clientWidth && e.querySelector(".gear").getBoundingClientRect().right <= innerWidth + 0.5));
 await shot(p, "set-09-home-gear-battery");
+await goto(p, "set");
+await p.waitForSelector("[data-ledt]");
+ok("320 px: Test light fits on one line", await p.$eval("[data-ledt]", (b) => b.scrollWidth <= b.clientWidth && b.getBoundingClientRect().height <= 60));
 await p.context().close();
 // ...and on Android, where the Full screen button (web/fullscreen.js) sits before the gear.
 p = await page(8060 - 1, { width: 320, height: 640, android: true });

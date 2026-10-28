@@ -25,7 +25,10 @@
 # web/shots_settings.sh against the mock, which answers with lvcode itself). The charging
 # bolt at once (main.py charger_watch: the charger pin debounced, GET /api/bat; the pin with
 # no pull by default: tests/test_charger.py on all of them, the watch and /api/bat looks in
-# the --bat --ota heap run, web/batt.js's 5 s look in web/shots_settings.sh).
+# the --bat --ota heap run, web/batt.js's 5 s look in web/shots_settings.sh). Test light
+# (board/lvledtest.py, POST /api/led/test from main.py's ota_route: tests/test_ledtest.py on
+# all of them in real time on a fake pin; two tests on a counted pin in the --ota heap run;
+# the button in tests/app_e2e.mjs against the board's server and web/shots_settings.sh).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
@@ -61,6 +64,7 @@ python3 tests/test_reset.py
 python3 tests/test_funnel.py
 python3 tests/test_code.py
 python3 tests/test_charger.py
+python3 tests/test_ledtest.py
 python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
@@ -82,6 +86,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_code.py; fi
   "$MP" tests/test_charger.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_charger.py; fi
+  "$MP" tests/test_ledtest.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_ledtest.py; fi
   # every ship id boots with a launch date (ship 2, 2026-10-25)
   "$MP" -X heapsize=512k tests/test_ships8.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi
@@ -112,7 +118,8 @@ if [ -n "$MP" ]; then
       python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat
       # ...and a third phone uploading a signed update meanwhile (board/lvota.py, lvsig.py),
       # and the home-screen funnel's /api/hello (board/lvfunnel.py, loaded and dropped).
-      # and a fourth phone changing a crew code and back (board/lvcode.py, loaded and dropped).
+      # and a fourth phone changing a crew code and back (board/lvcode.py, loaded and dropped),
+      # and a fifth tapping Test light twice (board/lvledtest.py: its ~4 s pattern a task).
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota
     fi
     # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
