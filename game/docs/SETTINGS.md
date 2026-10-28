@@ -128,8 +128,8 @@ may share one, and refusing it would tell you someone else's code.
 On success the ship works out the new digest (sha256 of the salt, your crew byte and the 4
 digits, as `lv/codes.py`) and swaps only your digest in `/data/crew.json`'s own text, so
 every other byte, everyone else's entry included, stays the same. The write is atomic:
-`crew.json.new`, read back and checked, then renamed over `crew.json` (if the rename can't
-replace, the old file moves to `crew.json.old` first and comes back if anything fails). On
+`crew.json.new`, read back and checked, then renamed over `crew.json` (a rename that fails is a failure; 0.2.5/0.2.6 moved the old
+file to `crew.json.old` first, and `board/lvsafe.py` still puts one back from there). On
 any failure the `.new` is removed and the old file is left as it was. Then the in-memory
 code book changes, so the new code works at once and your session stays. The ship never
 logs or prints a code.

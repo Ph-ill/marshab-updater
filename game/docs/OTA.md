@@ -164,7 +164,9 @@ member's `X-Crew-Token`, otherwise it gets 401.
      resets the chip. The swap itself, and the undo, still run on any reset, so the
      power-cut safety (6.) is unchanged. A soft reset on trial is harmless the other way
      too: `main.py` still calls `good()` 30 s after the game is up.
-4. **`main.py`, 30 s after the game is up.** Calls `lvota.good()`. That writes
+4. **`main.py`, 30 s after the game is up**, once it has answered a phone with a 2xx or
+   (0.2.7, no phone needed) its own check of `/`, `/api/crew` and `/api/ota` through the
+   ship's own server passes, retried every 5 s. Calls `lvota.good()`. That writes
    `ota/last.json` `{result: "installed"}` and removes `ota/old` and the state.
 5. **Rollback.** If a trial reaches its 2nd boot without reporting in, `lvboot` puts every
    old file back, removes the files the update added and writes `{result: "rolled back"}`.
