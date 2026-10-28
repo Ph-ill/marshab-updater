@@ -26,9 +26,10 @@
 # salt, every other crew member's entry and anything else in it stay byte-for-byte. The
 # new text is written to crew.json.new, read back and checked, and only then renamed over
 # crew.json (littlefs and POSIX replace the target in one step, so crew.json is always
-# either the old file or the new one). Where a rename can't replace a file, the old one is
-# moved to crew.json.old first and put back if the second rename fails. The in-memory book
-# changes only after the file has. Codes are never printed or logged.
+# either the old file or the new one). A rename that fails is a failure (crew.json as it
+# was): 0.2.5/0.2.6 then moved crew.json to crew.json.old first, which left a moment with
+# no crew.json at all; board/lvsafe.py still puts a crew.json back from a .old left by that.
+# The in-memory book changes only after the file has. Codes are never printed or logged.
 # Only this ship's file changes: the other ships keep the old code until bench.py or the
 # updater's ship setup writes theirs. Reset this ship keeps crew.json (main.py RESET).
 from lv import codes as K
@@ -67,20 +68,8 @@ def save(path, old_digest, new_digest):
             ok = f.read() == new
         if not ok:
             raise OSError("crew.json.new reads back wrong")
-        try:
-            _hit("rename")
-            os.rename(tmp, path)
-        except OSError:
-            # A filesystem that won't rename onto a file: move the old one aside first.
-            old = path + ".old"
-            os.rename(path, old)
-            try:
-                _hit("rename2")
-                os.rename(tmp, path)
-            except OSError:
-                os.rename(old, path)
-                raise
-            os.remove(old)
+        _hit("rename")
+        os.rename(tmp, path)
         return True
     except OSError:
         try:

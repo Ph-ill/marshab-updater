@@ -1,9 +1,10 @@
 # "Reset this ship" on the ship (board/main.py reset_ship, POST /api/reset): refused without
 # a signed-in crew session, refused without the right confirm (no number, a wrong one, a
-# GET), and on success it deletes only the players' progress in /data (main.RESET) and
-# restarts, leaving ship.json and crew.json byte-for-byte as they were, and the installed
-# software and ota/ (update state, rollback copy) untouched. The game's other requests and
-# /api/ota* still go where they went. Runs on CPython and MicroPython:
+# GET), and on success it deletes only the players' progress and the crash count in /data
+# (main.RESET) and restarts, leaving ship.json and crew.json (and their .bak) byte-for-byte
+# as they were, and the installed software and ota/ (update state, rollback copy)
+# untouched. The game's other requests and /api/ota* still go where they went. Runs on
+# CPython and MicroPython:
 #   python3 tests/test_reset.py && micropython tests/test_reset.py        (from game/)
 import sys
 import os
@@ -33,8 +34,10 @@ DATA = ROOT + "/data"
 SHIP = b'{"ship_id": 4, "hotspot_password": "placeholder-pass", "ota_src": "placeholder"}'
 CREW = b'{"schema": 1, "salt": "00", "codes": []}'
 GONE = {"log.bin": bytes(range(256)) * 2, "days.bin": b"\x01\x02\x03", "clock.json": b'{"t": 1}',
-        "local.bin": b"\x05\x06", "funnel.bin": b"ip\x7f\x00\x00\x01\x03\x10" * 2}
+        "local.bin": b"\x05\x06", "funnel.bin": b"ip\x7f\x00\x00\x01\x03\x10" * 2,
+        "fault.json": b'{"n": 1, "why": "ValueError: x"}'}        # 0.2.7: the crash count too
 KEEP = {"data/ship.json": SHIP, "data/crew.json": CREW, "data/safe": b"",
+        "data/ship.json.bak": SHIP, "data/crew.json.bak": CREW,      # lvsafe's backups stay
         "main.py": b"# main\n", "www/app.html.gz": b"page", "ota/state.json": b'{"phase": "ok"}',
         "ota/old/main.py": b"# old main\n"}
 

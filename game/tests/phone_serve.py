@@ -86,7 +86,7 @@ if SAFE:
     _src = _src[_src.index("def home_screen"):_src.index("\nasync def ota_ok")]
     _g = {"lvship": lvship, "asyncio": asyncio}
     exec(_src, _g)
-    srv, _sh = lvsafe.server(lvweb, {"ship_id": 3}, "2 crashes in a row (MemoryError())", "127.0.0.1:%d" % PORT,
+    srv, _sh = lvsafe.server(lvweb, {"ship_id": 3}, "2 crashes in a row (MemoryError)", "127.0.0.1:%d" % PORT,
                              lambda: print("RESTART"), DATA, ROOT)
     _g["home_screen"](lvweb)
     _g["net_hooks"](lvweb, srv)

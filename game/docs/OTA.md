@@ -139,7 +139,9 @@ member's `X-Crew-Token`, otherwise it gets 401.
      be deleted. Moves the current copies to `ota/old/` and puts the new files in place.
    - **swap → trial.** Counts this boot and arms a 120 s one-shot timer that restarts the
      board if the game never reports in.
-4. **`main.py`, 30 s after the game is up.** Calls `lvota.good()`. That writes
+4. **`main.py`, 30 s after the game is up**, once it has answered a phone with a 2xx or
+   (0.2.7, no phone needed) its own check of `/`, `/api/crew` and `/api/ota` through the
+   ship's own server passes, retried every 5 s. Calls `lvota.good()`. That writes
    `ota/last.json` `{result: "installed"}` and removes `ota/old` and the state.
 5. **Rollback.** If a trial reaches its 2nd boot without reporting in, `lvboot` puts every
    old file back, removes the files the update added and writes `{result: "rolled back"}`.
