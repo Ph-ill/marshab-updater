@@ -13,6 +13,7 @@
 // page checks the format and that the two new ones match before asking; the ship checks the
 // current code against the sign-in's tries and lockout, saves the new one in crew.json and
 // keeps this phone signed in. Only this ship's copy changes, and the row says so.
+// Test light, under the Ship light switch: see ledtHTML below.
 const SET_GEAR="M15.9 8L18 8.4v3.2l-2.1.4-.4.8 1.3 1.7-2.3 2.3-1.7-1.3-.8.4-.4 2.1H8.4L8 15.9l-.8-.4-1.7 1.3-2.3-2.3 1.3-1.7-.4-.8L2 11.6V8.4L4.1 8l.4-.8-1.3-1.7 2.3-2.3 1.7 1.3.8-.4.4-2.1h3.2l.4 2.1.8.4 1.7-1.3 2.3 2.3-1.3 1.7ZM7 10a3 3 0 1 0 6 0a3 3 0 1 0-6 0Z";
 let RST=null;   // the reset row: null, "ask" (typing the number), "send", or an error message
 let CHG=null;   // the code row: null, "ask" (the form), "send", "done", or {err, f: the field to fix}
@@ -30,7 +31,7 @@ function setScreen(){
   let o=`<div class=kick><div class=lab>This phone · LV-${n}</div><h1>Settings</h1></div>`;
   o+=otaSect();
   o+=`<section id=set-a2h><div class=lab><span>Home screen icon</span>${k?`<span>${a2Steps(k).split("<li>").length-1} steps</span>`:""}</div>${k?`<p class=a2l>Keep the game one tap away. It opens ${a2Opens(k)}.</p>${a2Steps(k)}<p class=fine>${A2_WIFI}</p>`:`<p class=dim>${a2Std()?"You're already playing from your home screen.":"Open the game in your phone's browser to put it on your home screen."}</p>`}</section>`;
-  if(S.led!=null)o+=`<section id=set-led><div class=lab><span>Ship light</span><span>${S.led?"on":"off"}</span></div><p class=dim>Your ship's light pulses softly when something's waiting, no phone needed.</p><button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>${S.led?"turn off":"turn on"}</i></button></section>`;
+  if(S.led!=null)o+=`<section id=set-led><div class=lab><span>Ship light</span><span>${S.led?"on":"off"}</span></div><p class=dim>Your ship's light pulses softly when something's waiting, no phone needed.</p><button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>${S.led?"turn off":"turn on"}</i></button>${ledtHTML(n)}</section>`;
   if(b)o+=`<section id=set-bat><div class=lab><span>Battery</span></div>${batFacts(b)}</section>`;
   o+=`<section id=set-out><div class=lab><span>This phone</span></div><button class="btn sec" data-out=1><span>Not ${h(nm(S.you))}? Sign out</span><i>this phone</i></button></section>`;
   o+=chgSect(n);
@@ -41,6 +42,36 @@ function setScreen(){
   $("v").innerHTML=o;
   dock("","set");
 }
+// Test light (board/lvledtest.py, POST /api/led/test): the ship plays three blinks and one
+// slow pulse (~4 s), on or off, then goes back to what its light was doing. The button says
+// "Testing" with a thin bar for as long as the ship says it plays; repainted in place (never a
+// whole redraw: the code form keeps what's typed), and a tap meanwhile does nothing.
+let LEDT=0,LEDS=0,LEDE="",LEDK=0;   // test: ends at (Date.now ms), started at, last error, timer
+function ledtHTML(n){
+  const now=Date.now(),on=LEDT>now,ms=LEDT-LEDS;
+  let o=`<div id=set-ledt><button class="btn sec ledt" data-ledt=1${on?" disabled aria-busy=true":""} aria-describedby=ledts><span>${on?"Testing\u2026":"Test light"}</span><i>${on?"watch LV-"+n:"about 4 s"}</i>${on?`<b class=ledbar style="animation-duration:${ms}ms;animation-delay:-${now-LEDS}ms" aria-hidden=true></b>`:""}</button>`;
+  o+=`<p id=ledts class=${LEDE?"err":"fine"} role=status>${LEDE?h(LEDE):on?`Look at LV-${n} now: three blinks, then one slow pulse.`:LEDS?`Finished. The light is back to ${S.led?"on":"off"}.`:"Three blinks, then one slow pulse. Works with the light off too."}</p></div>`;
+  return o;
+}
+function ledtPaint(){
+  const d=$("set-ledt");if(!d)return;
+  const f=d.contains(document.activeElement);d.outerHTML=ledtHTML(setNo());
+  if(f)document.querySelector("[data-ledt]")?.focus();
+}
+function ledtFor(ms){
+  ms=Math.max(0,+ms||0);LEDS=Date.now();LEDT=LEDS+ms;clearTimeout(LEDK);
+  LEDK=setTimeout(()=>{LEDT=0;ledtPaint()},ms+250);ledtPaint();
+}
+document.addEventListener("click",async(ev)=>{
+  const el=ev.target.closest("button[data-ledt]");if(!el||el.disabled||LEDT>Date.now())return;
+  LEDE="";ledtFor(4000);
+  try{const j=await api("/api/led/test",{});ledtFor(j.ms)}
+  catch(e){
+    if(!tok)return;
+    if(e.status===429)return ledtFor(e.j&&e.j.ms);
+    clearTimeout(LEDK);LEDT=LEDS=0;LEDE=e.message||"That didn't work. Try again.";ledtPaint();
+  }
+});
 const CHG_F=[["chg0","Your code now"],["chg1","New code"],["chg2","New code again"]];
 function chgSect(n){
   let o=`<section id=set-code><div class=lab><span>Your code</span><span>LV-${n} only</span></div>`;
@@ -95,7 +126,7 @@ const view_set=view;view=function(){
     if(route!=="set"){route="set";history.replaceState(null,"","#set")}
     try{return OI?otaScreen():setScreen()}finally{if(net==="lost"&&!OI)$("v").insertAdjacentHTML("afterbegin","<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>")}
   }
-  if(route!=="set"){RST=null;CHG=null;CHGV=null}
+  if(route!=="set"){RST=null;CHG=null;CHGV=null;if(!(LEDT>Date.now()))LEDS=0,LEDE=""}
   return view_set();
 };
 document.addEventListener("input",(ev)=>{

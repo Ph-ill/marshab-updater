@@ -11,7 +11,9 @@ a refused envelope first, a piece at a wrong offset, then everything; the board 
 the signature and each file, and the heap peak includes all of it. Then it cancels
 (applying restarts the board: tests/test_ota.py covers that). The home-screen funnel's
 /api/hello (board/lvfunnel.py, main.py's ota_route) is asked three times meanwhile, and a
-fourth phone changes a crew code and back (board/lvcode.py, POST /api/code). With --bat
+fourth phone changes a crew code and back (board/lvcode.py, POST /api/code), and a fifth
+taps Test light twice (board/lvledtest.py, POST /api/led/test: ~4 s of blinks and a
+software-PWM breath on a counted pin, a tap meanwhile refused). With --bat
 too, main.py's charger watch runs on the board and a phone asks /api/bat twelve times."""
 import asyncio
 import json
@@ -186,6 +188,47 @@ async def code_change(req, fail, log):
     log("code: wrong current code refused, changed, signed in with the new one, changed back")
 
 
+async def led_test(req, fail, log):
+    """Test light (board/lvledtest.py, loaded per request; its pattern a task for ~4 s) while
+    the others play: crew 4 taps it, taps again while it plays (429), waits it out, and
+    taps once more; a tap with no session is 401. The board counts the pin's writes."""
+    H = {"User-Agent": "heapL", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+
+    async def call(path, obj, tok=None):
+        h = dict(H)
+        if tok:
+            h["X-Crew-Token"] = tok
+        for _ in range(50):
+            try:
+                s, _, b = await req("POST", path, bytes(json.dumps(obj), "utf-8"), h)
+            except OSError:
+                s, b = 503, b"reset"
+            if s != 503:
+                break
+            await asyncio.sleep(0.2)
+        return s, b
+    # After the two players have their page and data: the board takes 4 connections, and
+    # their own requests don't retry a busy board's reset.
+    await asyncio.sleep(3)
+    s, b = await call("/api/login", {"crew": 4, "pin": "1234"})
+    if s != 200:
+        return fail("led test: sign-in %d %s" % (s, b))
+    tok = json.loads(b)["token"]
+    s, _ = await call("/api/led/test", {})
+    if s != 401:
+        return fail("led test: without a session %d, want 401" % s)
+    for i in range(2):
+        s, b = await call("/api/led/test", {}, tok)
+        if s != 200 or json.loads(b).get("ms") != 4000:
+            return fail("led test: tap %d %d %s" % (i, s, b))
+        await asyncio.sleep(0.5)
+        s, b = await call("/api/led/test", {}, tok)
+        if s != 429:
+            return fail("led test: a tap while it plays %d %s, want 429" % (s, b))
+        await asyncio.sleep(4.2)
+    log("led test: played twice, a tap meanwhile refused each time, none without a session")
+
+
 async def bat_look(req, fail, log):
     """The page's battery look (web/batt.js: GET /api/bat every 5 s while showing), faster:
     twelve looks while the others play, each [percent, mV, charging] from main.py."""
@@ -239,6 +282,7 @@ def main(argv):
             jobs.append(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print))
             jobs.append(funnel_hello(req, fails.append, print))
             jobs.append(code_change(req, fails.append, print))
+            jobs.append(led_test(req, fails.append, print))
             if "--bat" in mode:
                 jobs.append(bat_look(req, fails.append, print))
         return await asyncio.gather(*jobs)

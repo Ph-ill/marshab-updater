@@ -106,6 +106,8 @@ class Game:
         self.cache = {}
         self.lock = threading.RLock()   # gift() checks, then taps
         self.led = False          # the Ship light switch (POST /api/led)
+        self.ledtest = 0.0        # Test light (POST /api/led/test): when the pattern ends (monotonic s)
+        self.ledtests = 0         # tests started (a tap during one is 429 and doesn't count)
         self.bat = None           # the board's battery, [percent, mV, charging] (bat=72,3950,0)
         self.resets = 0           # POST /api/reset that went through (the board restarts)
         self.ota = None           # over-the-air updates (ota=0.2.0[,back]: sim/mockota.py)
@@ -429,6 +431,15 @@ class H(BaseHTTPRequestHandler):
         you = self.who()
         if you is None:
             return self.send(401, {"err": "signed out"})
+        if u.path == "/api/led/test":   # Test light: board/lvledtest.py's answers, nothing to blink
+            import time as _time
+            with G.lock:
+                left = int((G.ledtest - _time.monotonic()) * 1000)
+                if left > 0:
+                    return self.send(429, {"err": "The light is already testing.", "ms": left})
+                G.ledtest = _time.monotonic() + 4.0
+                G.ledtests += 1
+            return self.send(200, {"ok": True, "ms": 4000})
         if u.path == "/api/code":    # Change your code: board/lvcode.py itself, the file kept in memory
             sys.path.insert(0, os.path.join(ROOT, "board"))
             import lvcode

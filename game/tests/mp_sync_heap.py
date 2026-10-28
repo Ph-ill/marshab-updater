@@ -172,6 +172,16 @@ async def client(port):
 
 
 chg_watch = [None]
+
+
+class TestPin:
+    # --ota: POST /api/led/test (board/lvledtest.py) drives this instead of the LED
+    n = 0
+
+    def value(self, v):
+        TestPin.n += 1
+
+
 if WEB:
     web = lvweb.Server(ship, root=ROOT, say=lambda s: None)
     lvweb.probe = sample
@@ -192,6 +202,7 @@ if WEB:
     g["home_screen"](lvweb)
     if OTA:
         g["ota_hooks"](lvweb, web)
+        ship.led_pin = TestPin         # Test light (board/lvledtest.py): the LED, counted
     if BAT:
         # and main.py's charger watch (the pin read every 100 ms, the bolt at once), as the
         # board runs it next to lvship's loop
@@ -371,6 +382,12 @@ if BAT:
     ok = ok and bat_ok
     print("battery: %s after %d readings while idle, lvbatt %s: %s" % (
         B, bat[1], "loaded" if "lvbatt" in sys.modules else "dropped", "ok" if bat_ok else "FAIL"))
+if OTA and WEB:
+    # Test light played its ~4 s pattern twice (blinks and a software-PWM breath), then went
+    lt_ok = TestPin.n >= 200 and "lvledtest" not in sys.modules
+    ok = ok and lt_ok
+    print("test light: pin writes %d, lvledtest %s: %s" % (
+        TestPin.n, "loaded" if "lvledtest" in sys.modules else "dropped", "ok" if lt_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:

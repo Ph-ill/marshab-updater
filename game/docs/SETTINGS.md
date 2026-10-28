@@ -1,4 +1,4 @@
-# Settings, Change your code and Reset this ship
+# Settings, Test light, Change your code and Reset this ship
 
 Every signed-in screen has a gear at the top right of the top bar, after the battery and
 the flight day. It's a line icon drawn like the tab icons (20 px, 1.5 px strokes), with a
@@ -23,14 +23,63 @@ moved here. The old `#sw` and `#a2h` routes open Settings.
    the progress.
 2. **Home screen icon** (`web/a2hs.js`): the steps for the browser you're in. In a browser
    that can't add one, or once the game runs from the icon, it says so instead.
-3. **Ship light**: the LED notifier switch (`POST /api/led`). Shown when the ship reports
-   one (`S.led` isn't null).
+3. **Ship light**: the LED notifier switch (`POST /api/led`), and under it **Test light**
+   (below). Shown when the ship reports one (`S.led` isn't null).
 4. **Battery** (`web/batt.js`): charge, voltage and whether it's charging. Only on a ship
    with a battery (`S.bat`).
 5. **This phone**: **Sign out**.
 6. **Your code**: **Change your code** (below).
 7. **Reset this ship**, last, styled as a danger action (a rust border and rust text, under
    a rust rule).
+
+## Test light
+
+So you can see a ship's LED works without opening the case, whether the Ship light is on
+or off.
+
+**On the phone.** Under the Ship light switch, a secondary button: **Test light · about 4 s**,
+with "Three blinks, then one slow pulse. Works with the light off too." under it. Tapping
+it shows **Testing… · watch LV-N** at once (disabled, `aria-busy`), "Look at LV-N now: three
+blinks, then one slow pulse.", and a thin rust bar along the button's foot that fills for
+exactly as long as the ship says it plays (`ms` from the answer; no bar with reduced
+motion). Then it's back to **Test light**, with "Finished. The light is back to on/off."
+Only that row is repainted (`ledtPaint()`), never the whole page, so a half-typed code in
+Your code is kept. A tap while it plays does nothing; a refusal from the ship shows in rust
+under the button.
+
+**On the ship.** `board/lvledtest.py` (`start()`, `play()`), routed from `board/main.py`'s
+`ota_route` as `POST /api/led/test`, loaded per request and dropped, so it ships over the air
+and the frozen core (`lvled`, `lvledcfg`, `lvweb`, `lvphone`) is unchanged. The pattern is
+its own asyncio task, about 4 s (`TEST_MS` = 4000):
+
+| ms from the tap | the LED |
+|---|---|
+| 0–1500 | three blinks, 250 ms fully on, 250 ms off (one pin write each edge) |
+| 1500–1800 | dark |
+| 1800–4000 | one breath, 1 s up and 1.2 s down: software PWM in 10 ms frames as `lvled.py` breathes, lit (x/100)² of each frame |
+| 4000 | dark; the light goes back to what it was doing |
+
+Every edge is an `await`, except a dim on-part under 1.5 ms (a short busy-wait, as in
+`lvled.py`), so the web server, the DNS, the BLE sync and the charger watch (every 100 ms)
+all keep running. While a BLE sync or an HTTP request is in progress, the breath plays as a
+plain blink through its bright middle, as `lvled.py` does.
+
+With the Ship light on, `lvled.Led` is held dark for the test: its pattern dropped and its
+next look pushed past the test, refreshed every frame, so only one of them ever writes the
+pin. At the end it's let go and looks again at once. Its gift, new-day and waiting flags,
+quiet hours and budget are untouched. With the light off, the test drives the LED pin on
+its own (`machine.Pin("LED")`, or `lvled.Led`'s pin once it has one) and leaves it dark.
+
+| Answer | When |
+|---|---|
+| 200 `{ok, ms}` | started |
+| 401 | no session, or a stale token |
+| 404 | not a POST |
+| 429 `{ms}` | a test is already playing; `ms` left, nothing else plays |
+| 500 | no LED to drive (no `machine.Pin`), nothing left running |
+
+A pin that fails mid-pattern ends the test (logged), and the next tap is taken. A test that
+somehow never finished stops blocking taps 5 s after it should have ended.
 
 ## Change your code
 
@@ -155,6 +204,23 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
     changed one and prints no codes.
 - **`tests/phone_heap.py --ota`** changes a code and back on the frozen build inside the
   heap check (board peak under 80,000 B).
+- **`tests/test_ledtest.py`**, in real time on a fake pin, on CPython, MicroPython and the
+  game firmware's unix build:
+  - GET: 404; no session or a stale token: 401, nothing played;
+  - the pattern: three blinks of ~250 ms fully on, the dark gap, a breath that swells and
+    fades (software PWM: 100+ short pulses), dark at the end, done in about 4 s;
+  - a second tap while it plays: 429 with the ms left, and nothing more plays; a new tap
+    after it ends plays again;
+  - the event loop stays free: a 100 ms ticker is never more than 60 ms late, and
+    `main.py`'s own `charger_watch` catches the charger plugged in mid-test;
+  - with the Ship light on (`lvled.Led`, a gift waiting): the notifier never writes during
+    the test, then its gift pulses come back, still on, the gift still waiting;
+  - a busy radio: the breath as a plain blink;
+  - no `machine.Pin`: 500, nothing running; a pin failing mid-pattern: the test ends,
+    said so, and the next tap is taken; `lvledtest` dropped after each request; other
+    paths (including `/api/led`) still reach the game.
+- **`tests/phone_heap.py --ota`** taps Test light twice (a tap meanwhile refused) on a
+  counted pin on the frozen build inside the heap check (board peak under 80,000 B).
 
 - **`tests/test_reset.py`**, on CPython, MicroPython and the game firmware's unix build.
   The endpoint refuses, with no restart and every file byte-for-byte the same, when there's:
@@ -175,6 +241,8 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
     another ship's number, with the phone still signed in afterwards;
   - `/api/code` returning 401, 400 and 403, then the form changing the code: the old code
     refused, the new one signing in, and back again.
+  - Test light: the button showing Testing, `/api/led/test` 429 meanwhile and 401 without
+    a session.
 - **`web/shots_settings.sh`**, against the mock (`sim/mockserver.py` `/api/reset`):
   - the gear's label, size and place;
   - every section;
@@ -183,6 +251,8 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
   - after a reset: storage empty, the old token refused, back at the sign-in, and the
     first-time flow on the next sign-in;
   - Sign out;
+  - Test light: under the switch, with the light off and on; Testing, the bar, the 429 for
+    a tap meanwhile, back after about 4 s, repainted in place; it fits at 320 px;
   - Change your code: the row, the form, mismatched, short and same codes refused on the
     phone, the ship's refusals, a wrong code with the tries left, success, Cancel;
   - a ship with no battery or OTA at 320 px, and the top bar fitting at 320 px with the

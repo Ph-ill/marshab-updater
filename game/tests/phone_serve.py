@@ -92,6 +92,17 @@ if LAUNCH:
         print("calendar says flight day %d, expected %d" % (ship.day, DAY))
         sys.exit(1)
 srv = lvweb.Server(ship, root=ROOT, ip="127.0.0.1:%d" % PORT, say=quiet)
+
+
+class _Led:
+    # Test light (board/lvledtest.py): the board's LED, here a pin that counts its writes
+    n = 0
+
+    def value(self, v):
+        _Led.n += 1
+
+
+ship.led_pin = _Led
 # main.py's over-the-air hooks as they are (/api/ota* to board/lvota.py; the page asks the
 # ship what it runs). Nothing here uploads, so nothing is written.
 _src = open("board/main.py").read()

@@ -224,6 +224,12 @@ try {
     await click('[data-led]');
     await until(`S.led===false&&document.querySelector('[data-led]').textContent.includes("Ship light: off")`, 4000, 'Ship light off again');
   }
+  // Test light (board/lvledtest.py via main.py's ota_route on the board, a fake pin): the
+  // button starts it ("Testing", disabled); another POST meanwhile is 429; none without a session.
+  await click('[data-ledt]');
+  await until(`(()=>{const b=document.querySelector('[data-ledt]');return b&&b.disabled&&/Testing/.test(b.textContent)})()`, 4000, 'Test light: Testing');
+  const lt = JSON.parse(await ev(`(async()=>{const f=(t)=>fetch("/api/led/test",{method:"POST",headers:t?{"X-Crew-Token":tok}:{},body:"{}"}).then(async(r)=>[r.status,(await r.json()).ms]);return JSON.stringify([await f(1),await f(0)])})()`));
+  check(lt[0][0] === 429 && lt[0][1] > 0 && lt[1][0] === 401, 'Test light: 429 while playing, 401 without a session: ' + JSON.stringify(lt));
   await click('[data-out]');
   await until(`tok===""&&document.querySelectorAll('[data-who]').length===8`, 4000, 'signed out');
   step('second sign-in');
@@ -242,9 +248,9 @@ try {
   check(pre.h === 'Launch in 2 h 5 min' && /starts at 06:00/.test(pre.p) && pre.on === 0, 'pre-launch screen: ' + JSON.stringify(pre));
   await ev('(PRE=null,hello(),1)');
   // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404, the reset and
-  // code-change refusals asked for above)
+  // code-change and Test light refusals asked for above)
   // (and /api/me's 401 when the page opens signed out).
-  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)) && !(p === '/api/code' && (s === 400 || s === 401 || s === 403)));
+  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)) && !(p === '/api/code' && (s === 400 || s === 401 || s === 403)) && !(p === '/api/led/test' && (s === 401 || s === 429)));
   check(bad.length === 0, 'HTTP errors: ' + JSON.stringify(bad));
   check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship about updates (web/ota.js)');
   check(wsTried, 'the page tried the WebSocket and fell back to polling');
