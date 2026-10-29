@@ -141,8 +141,11 @@ await p.context().close();
 p = await page(8056, { online: false });
 await p.waitForTimeout(1500);
 await goto(p, "set");
+// (the page's own first look is in the background since review 3 m4: let it finish first,
+// or its result lands on top of the earlier good look set up here)
+await p.waitForFunction(() => typeof OS_ !== "undefined" && OS_ && !document.querySelector("#set-sw").textContent.includes("Checking"), null, { timeout: 15000 });
 await p.evaluate(() => { const b = otaLoad(); b.seen = OS_.v; b.ok = true; b.err = ""; b.at = Date.now() - 7 * 3600e3; otaSave(b); OB = b; view(); });
-ok("an earlier good look: Up to date", await p.$eval("#set-sw", (e) => /Available\s*Up to date/.test(e.textContent)));
+ok("an earlier good look: Up to date", await p.$eval("#set-sw", (e) => /Available\s*Up to date/.test(e.textContent)), await p.$eval("#set-sw", (e) => e.textContent));
 await p.click("[data-ota=check]");
 await p.waitForFunction(() => document.querySelector("#v").textContent.includes("couldn't reach GitHub"));
 ok("then a failed check: Couldn't check, not Up to date, with network steps", await p.$eval("#set-sw", (e) => /Available\s*Couldn't check/.test(e.textContent) && !e.textContent.includes("Up to date") && /Checked\s*just now/.test(e.textContent) && e.textContent.includes("Turn Wi-Fi off") && e.textContent.includes("storage is separate")));
@@ -263,13 +266,13 @@ for (const [w, ht, android] of [[390, 844, false], [412, 915, true]]) {
   await p.context().close();
 }
 // What's new is text: markup in index.json's notes shows as typed, never runs; at most 3 lines
-// of 160 characters; anything not a string is dropped.
+// of NOTE_LEN (120, tools/ota/whatsnew.py) characters; anything not a string is dropped.
 p = await page(8066, { idx: (j) => { j.releases[0].notes = ["<b>bold</b> & <img src=x onerror=\"window.PWN=1\">", 7, "x".repeat(500), "four", "five"]; return j; } });
 await goto(p, "set");
 await p.waitForSelector("#set-sw .otaw li", { timeout: 15000 });
 const li = await p.$$eval("#set-sw .otaw li", (l) => l.map((x) => [x.textContent, x.children.length]));
 ok("notes are text: no markup made, no script run", li[0][0] === '<b>bold</b> & <img src=x onerror="window.PWN=1">' && li[0][1] === 0 && !(await p.$("#set-sw .otaw b, #set-sw .otaw img")) && await p.evaluate(() => window.PWN === undefined), JSON.stringify(li));
-ok("notes capped: 3 strings, 160 characters each", li.length === 3 && li[1][0] === "x".repeat(160) && li[2][0] === "four", JSON.stringify(li.map((x) => x[0].length)));
+ok("notes capped: 3 strings, 120 characters each (whatsnew.NOTE_LEN)", li.length === 3 && li[1][0] === "x".repeat(120) && li[2][0] === "four", JSON.stringify(li.map((x) => x[0].length)));
 await p.context().close();
 await browser.close();
 console.log(fails ? `FAIL ${fails}` : "ota shots: all ok");
