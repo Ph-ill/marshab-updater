@@ -225,7 +225,11 @@ def check_index():
     by_version = {r.get("version"): r for r in idx.get("releases", [])}
     if idx.get("latest") in by_version and by_version[idx["latest"]].get("channel") in NOT_LATEST:
         err(f"index.json: latest {idx['latest']} is a {by_version[idx['latest']].get('channel')} release")
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "game" / "tools" / "ota"))
+    import whatsnew                     # (this checker's own copy, whatever --root says)
     for r in idx.get("releases", []):
+        if "notes" in r and whatsnew.check(r["notes"]):
+            err(f"index.json {r.get('version')}: notes: {whatsnew.check(r['notes'])}")
         if r.get("channel") not in CHANNELS:
             err(f"index.json {r.get('version')}: unknown channel {r.get('channel')!r}")
         if not SEMVER.match(r.get("version", "")):

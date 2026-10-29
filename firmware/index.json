@@ -15,7 +15,10 @@
       "path": "/firmware/releases/0.2.0-lv-test/release.json",
       "bytes": 62392,
       "files": 6,
-      "frozen": "2661c2144844"
+      "frozen": "2661c2144844",
+      "notes": [
+        "The game now runs from your ship's built-in software, so more of the crew can play at the same time."
+      ]
     },
     {
       "version": "0.1.0-lv-test",
@@ -25,7 +28,12 @@
       "path": "/firmware/releases/0.1.0-lv-test/release.json",
       "bytes": 98993,
       "files": 19,
-      "frozen": "f1b383588e79"
+      "frozen": "f1b383588e79",
+      "notes": [
+        "The Long Voyage on your ship: sign in on your phone with your code and play.",
+        "Your phone speaks to you as you, and your first day starts with a briefing.",
+        "The ship's light breathes softly when something is waiting for you."
+      ]
     },
     {
       "version": "0.0.2-coex",

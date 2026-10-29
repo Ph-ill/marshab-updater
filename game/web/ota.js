@@ -11,8 +11,11 @@
 // "ota_src", in /api/ota's "src": a test ship on a test branch). A branch name only.
 const OTA_REPO="https://raw.githubusercontent.com/Ph-ill/marshab-updater/";
 function otaSrc(b){const s=b&&b.src;return OTA_REPO+(typeof s==="string"&&/^[\w][\w.\/-]{0,63}$/.test(s)&&s.indexOf("..")<0?s:"main")}
+// What's new (0.3.0): each release's few plain lines (game/tools/ota/whatsnew.json) show with
+// an update that's ready in Settings, and Version history lists them all; see otaHist below.
 const OTA_KEY="lv.ota",OTA_EVERY=6*3600e3,OTA_RETRY=120e3,OTA_WAIT=8000;
 let OS_=null,OB=null,OI=null,OTA_LATER="",OTA_BUSY=false,OTA_NONE=false;  // ship's status, update here, install progress; a ship without OTA
+let OH=null;    // Version history, while it's open: {st: "load" | "on" | "off", list, mine}
 function otaLoad(){try{return JSON.parse(localStorage.getItem(OTA_KEY))||{}}catch(e){return{}}}
 function otaSave(o){try{localStorage.setItem(OTA_KEY,JSON.stringify(o));return true}catch(e){return false}}
 function vcmp(a,b){
@@ -48,8 +51,8 @@ async function otaCheck(force){
       const rel=await otaGet(base+e.path),env=rel.ota;
       const m=JSON.parse(env.m),by={};for(const f of rel.files)by[f.path]=f.data;
       if(m.version!==v||m.files.some((f)=>!by[f[0]]))throw new Error("incomplete release");
-      b.rel={v,ch:m.channel,core:m.core,label:rel.label||"",bytes:m.files.reduce((s,f)=>s+f[1],0),env:JSON.stringify(env),files:m.files.map((f)=>by[f[0]])};
-    }
+      b.rel={v,ch:m.channel,core:m.core,label:rel.label||"",notes:otaClean(e.notes),bytes:m.files.reduce((s,f)=>s+f[1],0),env:JSON.stringify(env),files:m.files.map((f)=>by[f[0]])};
+    }else if(e&&b.rel&&b.rel.v===v)b.rel.notes=otaClean(e.notes);   // (fetched before it had any)
     b.err="";
   }catch(e){b.ok=false;b.err=e.name==="AbortError"||e instanceof TypeError?"offline":"failed"}
   b.at=Date.now();
@@ -161,6 +164,60 @@ async function otaInstall(){
   }catch(e){OI.step="done";OI.ok=false;OI.msg=e.message||"That didn't work. Try again."}
   OTA_BUSY=false;view();
 }
+// ---- what's new ----------------------------------------------------------------------
+// A release's lines come from index.json's "notes" (online; tools/build_release.py writes them,
+// game/tools/ota/whatsnew.py fills older entries) or, offline, from OTA_WN: whatsnew.json as
+// web/build.py baked it into this page, which the ship serves from its own (signed) release.
+// The ship itself never reads them: nothing on its update path holds notes (0.3.0, heap).
+// Display text only: cleaned here (strings only, at most 3 lines of 160 characters) and
+// always put on the page through h(), never as markup.
+const OTA_WN=/*WHATSNEW*/{};
+function otaClean(n){return Array.isArray(n)?n.filter((x)=>typeof x==="string"&&x.trim()).slice(0,3).map((x)=>x.trim().slice(0,160)):[]}
+function otaNotes(n){n=otaClean(n);return n.length?`<ul class=otaw>${n.map((x)=>`<li>${h(x)}</li>`).join("")}</ul>`:""}
+// Version history (Settings › Ship software › Version history): every release on this
+// ship's channel that has notes, newest first, the one installed and the one ready marked.
+// Online it reads index.json; offline (the usual case on the ship's own Wi-Fi) it shows the
+// installed version's lines from this page and says how to see the rest.
+async function otaHistOpen(){
+  OH={st:"load"};view();scrollTo(0,0);
+  let list=null;
+  try{
+    const idx=await otaGet(otaSrc(OS_)+"/firmware/index.json"),ch=OS_&&OS_.ch;
+    list=(idx.releases||[]).filter((e)=>e&&typeof e.version==="string"&&(!ch||e.channel===ch)).map((e)=>({v:e.version,d:typeof e.date==="string"?e.date:"",n:otaClean(e.notes)}));
+  }catch(e){}
+  const iv0=OS_&&OS_.v,mn={v:iv0,n:otaClean(iv0&&Object.prototype.hasOwnProperty.call(OTA_WN,iv0)?OTA_WN[iv0]:null)};
+  if(!OH)return;                                   // closed meanwhile
+  if(list){
+    const iv=OS_&&OS_.v,x=list.find((e)=>e.v===iv);
+    if(x&&!x.n.length)x.n=mn.n;                    // this page's lines, if the index has none
+    list=list.filter((e)=>e.n.length||e.v===iv).sort((a,b)=>vcmp(b.v,a.v)).slice(0,12);
+    OH={st:"on",list};
+  }else OH={st:"off",mine:mn};
+  if(route==="set")view();
+}
+function otaDay(d){const t=Date.parse(d+"T12:00:00Z");return isNaN(t)?"":new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"})}
+function otaHistRow(e,iv,rv,short){
+  const tag=e.v===iv?"Installed":e.v===rv?"Ready to install":otaDay(e.d);
+  const nm=short?e.v.split("-")[0]:e.v;
+  return `<section class="otahv${e.v===iv?" on":""}"><div class=lab><span class=m>${h(nm)}</span>${tag?`<span>${h(tag)}</span>`:""}</div>${e.n.length?otaNotes(e.n):`<p class=dim>No notes for this version.</p>`}</section>`;
+}
+function otaHist(){
+  shipTop();
+  const H=OH,iv=OS_&&OS_.v,r=otaFor(OS_),rv=r&&r.v;
+  let o=`<div class=kick><div class=lab>Settings · Ship software</div><h1>Version history</h1><p class=dim>What changed in each version of your ship's software, newest first.</p></div>`;
+  if(H.st==="load")o+=`<p class="dim otahl" role=status>Looking up versions…</p>`;
+  else if(H.st==="on"){
+    // the short number (0.3.0) unless two releases share it
+    const b=H.list.map((e)=>e.v.split("-")[0]),short=new Set(b).size===b.length;
+    o+=H.list.length?H.list.map((e)=>otaHistRow(e,iv,rv,short)).join(""):`<p class=dim>No versions with notes yet.</p>`;
+  }else{
+    const mn=H.mine;
+    o+=mn.v?otaHistRow({v:mn.v,d:"",n:mn.n},iv,rv,false):"";
+    o+=`<div class=otahc><p class=dim>Older versions are listed online. Check again on mobile data or another Wi-Fi network.</p><button class="btn sec" data-ota=hist><span>Check again</span><i>github</i></button></div>`;
+  }
+  $("v").innerHTML=o;
+  dock(`<button class="btn sec" data-ota=back><span>Back</span><i>settings</i></button>`,"set");
+}
 // ---- what you see ---------------------------------------------------------------------
 // An update that already went back on this ship isn't pushed again (the screen still offers it).
 function otaNag(){const r=otaFor(OS_),l=OS_&&OS_.last;return r&&!(l&&l.result==="rolled back"&&l.v===r.v)?r:null}
@@ -192,9 +249,9 @@ function otaSect(){
   if(last&&last.result==="rolled back")o+=`<p class=upd><b>Went back</b> · ${h(last.v)} didn't start, so your ship returned to ${h(last.prev)}.</p>`;
   else if(last&&last.result==="installed"&&last.v===(st&&st.v))o+=`<p class=fine>${h(last.v)} installed over the air.</p>`;
   if(!st)o+=`<p class=dim>Your ship can't take updates over the air yet. It needs one install over USB first.</p>`;
-  else if(r)o+=`<p>${h(r.v)} is on this phone, ready for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p><p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
+  else if(r)o+=`<p>${h(r.v)} is on this phone, ready for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p>${otaClean(r.notes).length?`<div class=otawn><div class=otawh>What's new</div>${otaNotes(r.notes)}</div>`:""}<p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
   else o+=`<p class=dim>This phone looks for updates on the internet. On your ship's Wi-Fi it usually can't, so if the check fails, try again on mobile data or another network and come back. Whatever it finds waits on this phone.</p>`;
-  if(st)o+=`<div class=otas>${r?`<button class="btn pri" data-ota=install><span>${otaNag()?"Install":"Try again:"} ${h(r.v)}</span><i>${Math.round(r.bytes/1024)} KB</i></button>`:""}<button class="btn sec" data-ota=check><span>Check for updates</span><i>${otaChecking(b)?"checking":"github"}</i></button></div>`;
+  if(st)o+=`<div class=otas>${r?`<button class="btn pri" data-ota=install><span>${otaNag()?"Install":"Try again:"} ${h(r.v)}</span><i>${Math.round(r.bytes/1024)} KB</i></button>`:""}<button class="btn sec" data-ota=check><span>Check for updates</span><i>${otaChecking(b)?"checking":"github"}</i></button><button class="btn sec" data-ota=hist><span>Version history</span><i>what's new</i></button></div>`;
   return o+`</section>`;
 }
 const home_o=home;home=function(){
@@ -215,6 +272,8 @@ document.addEventListener("click",(ev)=>{
   if(k==="check"){el.disabled=true;el.querySelector("i").textContent="checking";return otaCheck(true).then(()=>otaStatus()).then(view)}
   if(k==="reload")return location.reload();
   if(k==="clear"){OI=null;return view()}
+  if(k==="hist")return otaHistOpen();
+  if(k==="back"){OH=null;view();scrollTo(0,0);return document.querySelector("[data-ota=hist]")?.focus()}
 });
 // Internet back (left the hotspot, or the phone found another route): look again.
 addEventListener("online",()=>otaCheck(false));

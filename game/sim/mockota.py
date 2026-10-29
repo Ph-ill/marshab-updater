@@ -24,6 +24,18 @@ import ed25519  # noqa: E402
 
 TEST_SEED = bytes(range(32))
 NEW = "0.2.1"
+# What's new (game/tools/ota/whatsnew.json's real 0.3.0 / 0.2.x lines, on the mock's versions),
+# in the index's "notes", as tools/build_release.py writes them.
+NOTES = {
+    NEW: ["Hail a crewmate: send a short hail, and your ship passes it to theirs when the two are in range.",
+          "Your ship's light flickers when a hail lands. Turn that off in Settings with Flicker for hails.",
+          "Test light now runs for 10 seconds, Settings shows what's new in each version, and updates install more reliably."],
+    "0.2.0": ["If something goes wrong, your ship starts in a simple safe mode, so it can still take an update.",
+              "Turning the Ship light on or off is now safe even if the power cuts out at that moment."],
+    "0.1.9": ["Updates from your phone pick up where they left off if the connection drops."],
+    "0.1.8": ["Your ship can now update over the air from your phone: open Settings when an update is ready."],
+}
+DATES = {NEW: "2026-10-29", "0.2.0": "2026-10-24", "0.1.9": "2026-10-21", "0.1.8": "2026-10-18"}
 
 
 def release(core):
@@ -46,6 +58,10 @@ def release(core):
                          "frozen": core, "ota": env["kid"]},
                         {"version": "0.2.0", "channel": "stable", "path": "/firmware/releases/0.2.0/release.json",
                          "frozen": core}]}
+    idx["releases"] += [{"version": v, "channel": "stable", "path": "/firmware/releases/%s/release.json" % v,
+                         "frozen": core} for v in ("0.1.9", "0.1.8")]
+    for e in idx["releases"]:
+        e["date"], e["notes"] = DATES[e["version"]], NOTES[e["version"]]
     return idx, rel
 
 

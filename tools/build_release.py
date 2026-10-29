@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import gzip
 import datetime as dt
 import hashlib
 import json
@@ -78,6 +79,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--runtime", default="1.29.0", help="minimum MicroPython version")
     ap.add_argument("--boards", default="RPI_PICO_W,RPI_PICO2_W")
     ap.add_argument("--notes", default="", help="short operator notes shown in the UI")
+    ap.add_argument("--whats-new", default=None, type=Path,
+                    help="what's new for players (Settings on the phone): a JSON list or a text file, one line each, "
+                         "1-3 lines of at most 120 characters; default: this version's lines in game/tools/ota/whatsnew.json")
     ap.add_argument("--date", default=dt.date.today().isoformat())
     ap.add_argument("--build-time", default=None, help="ISO timestamp stored in version.json (default: now); pin it for reproducible builds")
     ap.add_argument("--mpy-cross", default=None, help="path to mpy-cross for a syntax check of every .py")
@@ -271,6 +275,17 @@ def main() -> None:
         raise SystemExit("lvx/ overrides only work on the game firmware: give --frozen <core manifest>")
 
     created = a.build_time or dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
+    # What's new, for players (game/tools/ota/whatsnew.py): in the index entry (the phone's
+    # Settings and Version history, online) and release.json's "whats_new". Never in
+    # version.json or the signed manifest: the ship reads those while it updates, and its heap
+    # has no room for them (0.3.0). Offline, the phone shows the installed version's lines
+    # from the page the ship serves (www/app.html.gz, signed with the release: game/web/
+    # build.py bakes whatsnew.json into it), checked below.
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "game" / "tools" / "ota"))
+    import whatsnew
+    news = whatsnew.read_file(a.whats_new) if a.whats_new else whatsnew.lines_for(a.version)
+    if news is None and frozen:
+        print(f"note: no what's new for {a.version} (game/tools/ota/whatsnew.json or --whats-new)", file=sys.stderr)
     version_meta = {
         "schema": 2, "project": PROJECT, "version": a.version,
         "channel": a.channel, "runtime": "micropython", "min_runtime": a.runtime, "build": created,
@@ -278,6 +293,16 @@ def main() -> None:
     }
     payload: list[tuple[str, bytes]] = [(r.as_posix(), (source / r).read_bytes()) for r in rels if r.as_posix() != "version.json"]
     payload.append(("version.json", (json.dumps(version_meta, separators=(",", ":")) + "\n").encode()))
+
+    page = dict(payload).get("www/app.html.gz")
+    if news and page:
+        try:
+            html = gzip.decompress(page).decode("utf-8")
+        except (OSError, EOFError, UnicodeDecodeError):
+            html = None
+        if html is not None and json.dumps(news[0])[1:-1] not in html:
+            raise SystemExit(f"www/app.html.gz doesn't carry {a.version}'s what's new: add it to "
+                             "game/tools/ota/whatsnew.json, rebuild the page (game/web/build.py), then build")
 
     preserve = sorted(set(["data/"] + a.preserve + a.log))
     for path, _ in payload:
@@ -312,6 +337,7 @@ def main() -> None:
         "channel": a.channel,
         "label": a.label,
         "notes": a.notes,
+        **({"whats_new": news} if news else {}),
         "date": a.date,
         "created_at": created,
         "device": "raspberry-pi-pico-w",
@@ -340,7 +366,8 @@ def main() -> None:
     index = json.loads(index_path.read_text()) if index_path.exists() else {"schema": 2, "project": PROJECT, "latest": None, "channels": {}, "releases": []}
     entry = {"version": a.version, "channel": a.channel, "date": a.date, "label": a.label,
              "path": "/" + (rel_dir / "release.json").as_posix(), "bytes": total, "files": len(files),
-             **({"frozen": frozen["requires"]} if frozen else {})}
+             **({"frozen": frozen["requires"]} if frozen else {}),
+             **({"notes": news} if news else {})}
     releases = [r for r in index.get("releases", []) if r.get("version") != a.version] + [entry]
     releases.sort(key=lambda r: vkey(r["version"]), reverse=True)
     index["releases"] = releases

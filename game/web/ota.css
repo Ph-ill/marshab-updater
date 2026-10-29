@@ -10,3 +10,16 @@
 .otabar{height:8px;border:1px solid var(--ink);margin-top:var(--s3)}
 .otabar i{display:block;height:100%;background:var(--rust);transition:width .2s}
 .otas{margin-top:var(--s3)}
+/* What's new (web/ota.js otaNotes): a release's few plain lines, a small rust square each,
+   with the update that's ready in Settings and in Version history. */
+.otawn{margin-top:var(--s3)}
+.otawh{font:600 13px/18px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.otaw{margin:var(--s2) 0 0;padding:0;list-style:none}
+.otaw li{position:relative;padding-left:var(--s4);font-size:16px;line-height:23px}
+.otaw li+li{margin-top:var(--s2)}
+.otaw li::before{content:"";position:absolute;left:1px;top:9px;width:6px;height:6px;background:var(--rust)}
+.otahv .otaw{margin-top:var(--s1)}
+.otahv .lab span+span{color:var(--ink2);font-weight:400}
+.otahv.on .lab span+span{color:var(--rust-t);font-weight:600}
+.otahc{margin-top:var(--s5)}
+.otahc .btn{margin-top:var(--s3)}

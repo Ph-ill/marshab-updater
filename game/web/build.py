@@ -6,6 +6,7 @@ plus build/app.webmanifest.gz and build/icon.png.gz for the home screen.
   python3 web/build.py
 """
 import gzip
+import json
 import os
 import re
 import sys
@@ -51,6 +52,12 @@ def main():
         if name.endswith(".css"):
             src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
         html = html.replace(mark, src)
+    # What's new (game/tools/ota/whatsnew.json) into web/ota.js's OTA_WN: the page ships in
+    # every release, so a ship offline still has its own version's lines (0.3.0).
+    sys.path.insert(0, os.path.join(ROOT, "tools", "ota"))
+    import whatsnew
+    wn = {k: v for k, v in whatsnew.table().items() if not whatsnew.check(v)}
+    html = html.replace("OTA_WN=/*WHATSNEW*/{}", "OTA_WN=" + json.dumps(wn, separators=(",", ":")), 1)
     html = squeeze(html)
     os.makedirs(BUILD, exist_ok=True)
     raw = html.encode("utf-8")
