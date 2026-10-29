@@ -578,14 +578,17 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
             b[2] = v
             b[6], b[7] = lvship.ticks_ms(), CHG_GAUGE_MS
 
-def no_setup(e):
+def no_setup(e, waited=False):
     # lvsetup.mpy (0.3.0: the boot steps moved out of main.py) damaged or missing, outside an
     # update's trial (a trial's lvboot count rolls back by itself): safe mode, the way a
     # damaged game module gets there, rather than a crash loop with no hotspot that only
-    # USB could end (0.3.0 review 2 m1). Still the boot window first, and /data/safe.
+    # USB could end (0.3.0 review 2 m1). Also when it imports but its boot() raises
+    # (review 3 nit-4: a missing name, say), before lvsafe.check could choose safe mode.
+    # Still the boot window first (waited: boot() began with it), and /data/safe.
     print("safe: no boot code %r" % (e,))
     lvship.drop("lvsetup")
-    time.sleep_ms(BOOT_WINDOW_MS)
+    if not waited:
+        time.sleep_ms(BOOT_WINDOW_MS)
     if flag("/data/safe"):
         print("safe: /data/safe found, not starting (remove it to play)")
         return
@@ -597,11 +600,16 @@ def main():
         import lvsetup
     except Exception as e:
         return no_setup(e)
+    bad = None
     try:
         setup = lvsetup.boot(BOOT_WINDOW_MS, flag, safe_mode)
+    except Exception as e:          # imports, but its boot() fails: as a failed import
+        bad, setup = e, None
     finally:
         lvsetup = None
         lvship.drop("lvsetup")
+    if bad is not None:
+        return no_setup(bad, True)
     if setup is None:
         return
     if setup[0] is None:            # safe mode: lvsafe.check's reason, lvsetup dropped first

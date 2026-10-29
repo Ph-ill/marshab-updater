@@ -1379,6 +1379,25 @@ for _src, _e in (("raise ImportError('damaged')\n", "ImportError"), ("x = (\n", 
     check("review2 m1: lvsetup %s: safe mode, not a crash" % _e,
           _got == [("load_config", "boot code damaged (lvsetup: %s)" % _e, False)], _got)
     check("review2 m1: ... after the boot window (%s)" % _e, T.slept == [g["BOOT_WINDOW_MS"]], T.slept)
+# review 3 nit-4: an lvsetup that imports but whose boot() raises (before lvsafe.check could
+# choose safe mode) goes to safe mode too, lvsetup dropped first, with no second boot window
+put(_sh + "/lvsetup.py", "def boot(ms, flag, safe_mode):\n    raise AttributeError('no such name')\n")
+sys.path.insert(0, _sh)
+sys.modules.pop("lvsetup", None)
+if sys.implementation.name == "cpython":
+    import importlib
+    importlib.invalidate_caches()
+_got = []
+g["safe_mode"] = lambda cfg, why: _got.append((cfg, why, "lvsetup" in sys.modules))
+T.slept = []
+try:
+    g["main"]()
+finally:
+    sys.path.remove(_sh)
+    sys.modules.pop("lvsetup", None)
+check("review3 nit-4: lvsetup.boot() raises: safe mode, not a crash",
+      _got == [("load_config", "boot code damaged (lvsetup: AttributeError)", False)], _got)
+check("review3 nit-4: ... no second boot window", T.slept == [], T.slept)
 put(_sh + "/lvsetup.py", "def boot(ms, flag, safe_mode):\n    return None, 'cfg', 'safe: 2 crashes in a row'\n")
 sys.path.insert(0, _sh)
 sys.modules.pop("lvsetup", None)

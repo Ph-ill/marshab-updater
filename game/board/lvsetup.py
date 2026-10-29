@@ -1,5 +1,9 @@
 # Boot-only configuration; not retained while serving phones.
+import os
+import time
+
 import lvship
+
 
 def wanted(cfg):
     # Should the phone game be running? phone_game true, or "auto" on a firmware that has a
@@ -28,12 +32,6 @@ def config(got, board=lvship):
     except (TypeError, ValueError):
         c["ship_id"] = 1
     return c
-
-
-
-
-import os
-import time
 
 
 def boot(BOOT_WINDOW_MS, flag, safe_mode):
