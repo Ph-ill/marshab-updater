@@ -82,17 +82,23 @@ try {
   // The Ship light switch works in the countdown (review 3 m1: it was a silent 409), and a
   // refusal shows under it instead of being swallowed.
   await until(`!!document.querySelector('#set-led [data-led]')`, 4000, 'Ship light switch in the countdown');
-  const ledWas = await ev(`!!S.led`);
+  // (the simulated ship may keep its light off: the switch shows what the ship answered)
+  const ledOk = `typeof S.led==="boolean"&&!document.querySelector('#set-led [data-led]').disabled&&document.querySelector('#set-led [data-led]').textContent.includes("Ship light: "+(S.led?"on":"off"))`;
   await click('#set-led [data-led]');
-  await until(`S.led===${!ledWas}&&!document.querySelector('#ledw')&&route==="set"`, 8000, 'Ship light switch turns in the countdown');
+  await until(`${ledOk}&&!document.querySelector('#ledw')&&route==="set"`, 8000, 'Ship light switch answered in the countdown');
   check(http.some(([s, p]) => s === 200 && p === '/api/led'), 'POST /api/led answered 200 in the countdown');
+  const ledNow = await ev(`S.led`);
   await ev(`(()=>{const f=window.fetch;window.__f=f;window.fetch=(u,o)=>String(u).startsWith("/api/led?")||u==="/api/led"?Promise.resolve(new Response(JSON.stringify({err:"The ship said no."}),{status:409})):f(u,o)})()`);
   await click('#set-led [data-led]');
   await until(`/The ship said no/.test(document.querySelector('#ledw')?.textContent||'')`, 6000, 'a Ship light refusal is shown under the switch');
-  check(await ev(`S.led===${!ledWas}`), 'a refused switch keeps its state');
+  check(await ev(`S.led===${ledNow}`), 'a refused switch keeps its state');
   await ev(`window.fetch=window.__f`);
   await click('#set-led [data-led]');
-  await until(`S.led===${ledWas}&&!document.querySelector('#ledw')`, 8000, 'Ship light switch back, error cleared');
+  await until(`${ledOk}&&!document.querySelector('#ledw')`, 8000, 'Ship light switch again, error cleared');
+  if (await ev('S.led')) {
+    await click('#set-led [data-led]');
+    await until(`S.led===false&&${ledOk}`, 8000, 'Ship light off again');
+  }
   await ev(`go("home")`);
   await until(`!!document.querySelector('.kick.pre')`, 4000, 'back to the countdown');
   // 3. This phone's clock set right: its next check moves the ship to flight day 2
