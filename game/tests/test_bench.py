@@ -149,7 +149,7 @@ def args(**kw):
 
 check("codes: by name", bench.parse_codes(args(code=["phill=1234", "Kim=0007"])) == {0: "1234", 2: "0007"})
 check("codes: roster", bench.parse_codes(args(codes="1111,,2222,,,,,9999")) == {0: "1111", 2: "2222", 7: "9999"})
-for bad in (args(code=["Wes=1234"]), args(code=["Phill=12a4"]), args(codes="1,2")):
+for bad in (args(code=["Zed=1234"]), args(code=["Phill=12a4"]), args(codes="1,2")):
     try:
         bench.parse_codes(bad)
         check("codes rejects", False, bad)
