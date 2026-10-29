@@ -133,10 +133,14 @@ if [ -n "$MP" ]; then
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live
       # Hail on both ships (board/lvlive.py), now with the season where all eight crew
-      # play every day (sim/season.py --everyone): everything checked, the cap reported only
-      # (the frozen core keeps the whole log in RAM: over 80,000 B with or without Hail).
+      # play every day (sim/season.py --everyone): the cap checked too (0.3.0: the upload
+      # through board/lvotap.py, ~1 KB to spare; 0.2.7 was ~84.5 KB here).
       python3 sim/season.py --everyone
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live --everyone
+      # Safe mode (board/lvsafe.py: a ship that keeps crashing) takes a whole signed update
+      # while another phone looks around (tests/mp_safe_heap.py): where an update that ran
+      # out of heap with the game loaded is tried again, so it must fit with room to spare.
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" --safe
     fi
     # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
     # and, with LV_FROZEN_MP, the game firmware (install, settings, selftest, report).

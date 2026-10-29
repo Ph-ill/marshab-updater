@@ -21,6 +21,7 @@ your phone's home screen, which is how the release cache lasts best on an iPhone
 |---|---|---|
 | Update check, notice, screen, upload | `web/ota.js`, `web/ota.css` (built into `app.html`) | runs on the phone |
 | Upload, checks, staging | `board/lvota.py` | `/api/ota*` on the ship |
+| Upload pieces (0.3.0) | `board/lvotap.py`, `board/lvotaq.py` | `POST /api/ota/put`: small, loaded per request |
 | Signature check | `board/lvsig.py` | Ed25519 verify in pure MicroPython |
 | Switch-over and rollback | `board/lvboot.py`, `board/boot.py` | runs at power-up, before `main.py` |
 | Reporting in | `board/main.py` | calls `lvota.good()` 30 s after the game is up |
@@ -117,6 +118,34 @@ verify loop calls `lvweb.probe` every 64 bits, so the heap gate sees its peak.
 
 The peak is during the verify: `lvota` itself (about 7.5 KB) plus `lvsig` at work (about
 6.5 KB). Both are dropped from memory as soon as the request is done.
+
+**0.3.0: the busiest season with Hail.** With all eight crew playing every day
+(`sim/season.py --everyone`, ~20 KB of log in the frozen core's RAM) and Hail on, 0.2.7
+peaked at ~84.5 KB, not at the verify but during the upload's pieces: all of `lvota`
+(~8 KB) loaded for each piece, the manifest parsed from `ota/new/env` each time, three
+requests in flight. 0.3.0 splits the upload out:
+
+- `lvotap` (~2.7 KB loaded) takes a piece. It finds the file's size and checksum in
+  `ota/new/ix`, one fixed-width line per file written when the envelope checks out, not
+  in the manifest. A 0.2.7 staging without `ix` gets one written on the first piece.
+- `lvotaq` (~0.5 KB), loaded before `lvotap` and dropped after, makes a file piece wait
+  (up to 3 s) until no other request is in flight, and the envelope's last piece wait (up
+  to 60 s) for a quiet radio, as before.
+- At the envelope's signature check `lvota` is dropped and only `lvsig` (~4 KB) is loaded.
+
+Measured (frozen lv32, `phone_heap.py ... --led --bat --ota --live --everyone`, eight
+runs): 76.0–79.1 KB board peak, so about 1 KB to spare at worst; the test enforces the
+80,000 B cap again. Without Hail ~75–76 KB. These savings apply to updates *installed by*
+0.3.0 or later: a 0.2.7 ship takes 0.3.0 with its own 0.2.7 `lvota`.
+
+**If an upload still runs out of heap.** The ship's server catches a `MemoryError` in a
+request, closes that connection and collects. The phone retries a failed piece five
+times with a growing pause, then shows the error; tapping Install again carries on from
+what's staged (`staged.have`). A file whose bytes all landed but whose check never ran
+shows one byte short, so its last piece is sent again and checked then. A ship that
+crashes twice in a row starts in safe mode (`board/lvsafe.py`): no story, no log in RAM,
+just sign-in and `/api/ota*`. `tests/phone_heap.py --safe` measures a whole upload there
+while another phone looks around: ~52 KB board peak, ~28 KB to spare.
 
 ## 4. On the ship
 

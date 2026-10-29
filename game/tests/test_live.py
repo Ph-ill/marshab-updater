@@ -738,8 +738,8 @@ ww = W()
 asyncio.run(lvliveapi.ping(lvweb, Web(a), r, ww))
 check("ping signed out: 401", b" 401 " in ww.b.split(b"\r\n")[0], ww.b[:40])
 
-# ---- OTA coexistence: the signature check waits for a quiet radio and server (lvota.quiet)
-import lvota                      # noqa: E402
+# ---- OTA coexistence: the signature check waits for a quiet radio and server (lvotaq.quiet)
+import lvotaq as lvota            # noqa: E402  (quiet moved from lvota in 0.3.0)
 
 
 class QB:
@@ -790,6 +790,25 @@ async def both():
 
 
 check("waits for the other requests too", asyncio.run(both()) == 1)
+
+# 0.3.0: a file piece waits (PIECE_MS at most) for the other requests, never for the radio
+qw = QW(QB(10 ** 6), busy=3)
+
+
+async def both_piece():
+    asyncio.create_task(calm())
+    await lvota.quiet(qw, {"f": "2", "o": "1024"}, b"a" * 1024)
+    return qw.busy
+
+
+check("a file piece waits for the other requests", asyncio.run(both_piece()) == 1 and qw.ship.ble.n == 10 ** 6,
+      qw.ship.ble.n)
+p0, lvota.PIECE_MS = lvota.PIECE_MS, 300
+t0 = lvship.ticks_ms()
+asyncio.run(lvota.quiet(QW(QB(0), busy=4), {"f": "1", "o": "0"}, b"a"))
+dt = lvship.ticks_diff(lvship.ticks_ms(), t0)
+lvota.PIECE_MS = p0
+check("phones that never pause: the piece goes ahead after PIECE_MS", 250 <= dt < 2000, dt)
 
 rm_tree(TMP)
 print("test_live: %d checks passed" % n[0])

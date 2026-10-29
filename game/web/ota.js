@@ -61,6 +61,7 @@ async function otaPut(q,body){
       const r=await fetch("/api/ota/put?"+q,{method:"POST",body,headers:{"X-Crew-Token":tok,"Content-Type":"application/octet-stream"}});
       const j=await r.json().catch(()=>({}));
       if(r.status===401)throw Object.assign(new Error("Sign in again, then install."),{stop:1});
+      if(r.status===503&&i<4){await new Promise((ok)=>setTimeout(ok,800*(i+1)));continue}
       return[r.status,j];
     }catch(e){if(e.stop||i>=4)throw e;await new Promise((ok)=>setTimeout(ok,800*(i+1)))}
   }

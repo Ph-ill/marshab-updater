@@ -5,6 +5,7 @@ plays two phones against it from here (tests/phone_flow.py over real sockets, so
 phones' buffers aren't on the board's heap). Every answer is checked; the heap line and
 RESULT come from the board side, with the 80,000 B cap at 32-bit.
   python3 tests/phone_heap.py MICROPYTHON [dir | frozen] [--led] [--bat] [--ota [--live]] [--everyone]  (from game/)
+  python3 tests/phone_heap.py LV_FROZEN_MP --safe     safe mode (tests/mp_safe_heap.py) takes a whole update
 --ota: a third phone uploads a signed update (the game firmware's own files as a newer
 version, signed with a test key) in pieces while the two play, the way web/ota.js does:
 a refused envelope first, a piece at a wrong offset, then everything; the board checks
@@ -54,10 +55,15 @@ def ota_setup():
     os.makedirs(OTA_MOD)
     os.makedirs(OTA_DIR)
     open(OTA_MOD + "/lvota.py", "w").write(src)
+    # lvotap (the upload, 0.3.0) stages under the same test dir
+    src = open("board/lvotap.py").read()
+    assert 'OTA = "ota"\n' in src
+    open(OTA_MOD + "/lvotap.py", "w").write(src.replace('OTA = "ota"\n', 'OTA = "%s"\n' % OTA_DIR, 1))
     mpyc = os.environ.get("MPY_CROSS")
     if mpyc:
-        subprocess.run([mpyc, "-O3", "-o", OTA_MOD + "/lvota.mpy", OTA_MOD + "/lvota.py"], check=True)
-        os.remove(OTA_MOD + "/lvota.py")
+        for n in ("lvota", "lvotap"):
+            subprocess.run([mpyc, "-O3", "-o", OTA_MOD + "/%s.mpy" % n, OTA_MOD + "/%s.py" % n], check=True)
+            os.remove(OTA_MOD + "/%s.py" % n)
     files = []
     for dp, _, fs in os.walk("build/board-fw"):
         for f in sorted(fs):
@@ -326,8 +332,80 @@ async def live_hail(req, fail, log):
         " 6 radio-test probes of 4 KB")
 
 
+async def safe_looks(req, fail, log):
+    """--safe: another phone on the safe-mode ship meanwhile: the crew list, a reload's
+    /api/me, the story's 503 {safe} once signed in, the version poll (board/lvsafe.py)."""
+    H = {"User-Agent": "heapS", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+    s, _, b = await req("GET", "/api/crew", None, H)
+    if s != 200 or not json.loads(b).get("safe"):
+        return fail("safe: /api/crew %d %s" % (s, b))
+    s, _, b = await req("POST", "/api/login", json.dumps({"crew": 2, "pin": "1234"}).encode(), H)
+    if s != 200:
+        return fail("safe: sign-in %d %s" % (s, b))
+    h = dict(H, **{"X-Crew-Token": json.loads(b)["token"]})
+    n = 0
+    for _ in range(40):
+        for path, want in (("/api/state", 503), ("/api/v", 200), ("/api/me", 200), ("/api/ota", 200)):
+            try:
+                s, _, b = await req("GET", path, None, h)
+            except OSError:
+                continue
+            if s == 503 and path != "/api/state":
+                continue            # busy: the board's 4 connections
+            if s != want:
+                return fail("safe: %s %d %s" % (path, s, b[:80]))
+            n += 1
+        await asyncio.sleep(0.2)
+    log("safe: %d looks answered by safe mode while the update came in" % n)
+
+
+def safe_main(mp, mode):
+    """--safe: tests/mp_safe_heap.py (safe mode on the game firmware) takes a whole signed
+    update while another phone looks around; its heap peak must stay under the cap."""
+    os.makedirs(DATA, exist_ok=True)
+    ota = ota_setup()
+    with open(DATA + "/crew.json", "w") as f:
+        json.dump(K.make_config(["1234"] * 7 + [None], b"bench-salt-16-by"), f)
+    p = subprocess.Popen([mp, "-X", "heapsize=512k", "tests/mp_safe_heap.py", "frozen"],
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    port = None
+    for line in p.stdout:
+        if line.startswith("PORT "):
+            port = int(line.split()[1])
+            break
+        print(line, end="")
+    if port is None:
+        print(p.stdout.read())
+        sys.exit("safe mode never started its server")
+    fails = []
+
+    async def phones():
+        req = F.tcp(port)
+        return await asyncio.gather(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print),
+                                    safe_looks(req, fails.append, print))
+    try:
+        asyncio.run(phones())
+    except Exception as e:
+        fails.append("phones: %r" % (e,))
+    finally:
+        open(DATA + "/done", "w").close()
+    out = p.stdout.read()
+    p.wait()
+    print(out, end="")
+    try:
+        os.remove(DATA + "/fault.json")
+    except OSError:
+        pass
+    for f in fails:
+        print("PHONE FAIL", f)
+    if fails or p.returncode or "RESULT PASS" not in out:
+        sys.exit(1)
+
+
 def main(argv):
     mp, mode = argv[0], argv[1:]
+    if "--safe" in mode:
+        return safe_main(mp, mode)
     os.makedirs(DATA, exist_ok=True)
     try:
         os.remove(DATA + "/funnel.bin")      # the phones the last run's ship remembered

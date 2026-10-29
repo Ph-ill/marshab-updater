@@ -51,3 +51,6 @@ module("lvlivein.py", base_path="../../board", opt=3)
 module("lvlivex.py", base_path="../../board", opt=3)
 module("lvflick.py", base_path="../../board", opt=3)
 module("lvliveapi.py", base_path="../../board", opt=3)
+# The update's upload, split out of lvota (0.3.0; on older cores releases ship it as lvotap.mpy).
+module("lvotap.py", base_path="../../board", opt=3)
+module("lvotaq.py", base_path="../../board", opt=3)
