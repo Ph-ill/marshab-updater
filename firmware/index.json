@@ -3,10 +3,21 @@
   "project": "LongVoyage",
   "latest": "0.0.2-coex",
   "channels": {
-    "test": "0.2.6-ota-phone",
+    "test": "0.2.7-ota-phone",
     "bench": "0.0.2-coex"
   },
   "releases": [
+    {
+      "version": "0.2.7-ota-phone",
+      "channel": "test",
+      "date": "2026-10-28",
+      "label": "Safe mode, and a power-safe Ship light switch (test)",
+      "path": "/firmware/releases/0.2.7-ota-phone/release.json",
+      "bytes": 174538,
+      "files": 25,
+      "frozen": "2661c2144844",
+      "ota": "2111b2e9"
+    },
     {
       "version": "0.2.6-ota-phone",
       "channel": "test",
