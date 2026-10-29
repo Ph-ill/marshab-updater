@@ -31,7 +31,7 @@ function setScreen(){
   let o=`<div class=kick><div class=lab>This phone · LV-${n}</div><h1>Settings</h1></div>`;
   o+=otaSect();
   o+=`<section id=set-a2h><div class=lab><span>Home screen icon</span>${k?`<span>${a2Steps(k).split("<li>").length-1} steps</span>`:""}</div>${k?`<p class=a2l>Keep the game one tap away. It opens ${a2Opens(k)}.</p>${a2Steps(k)}<p class=fine>${A2_WIFI}</p>`:`<p class=dim>${a2Std()?"You're already playing from your home screen.":"Open the game in your phone's browser to put it on your home screen."}</p>`}</section>`;
-  if(S.led!=null)o+=`<section id=set-led><div class=lab><span>Ship light</span><span>${S.led?"on":"off"}</span></div><p class=dim>Your ship's light pulses softly when something's waiting, no phone needed.</p><button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>${S.led?"turn off":"turn on"}</i></button>${ledtHTML(n)}</section>`;
+  if(S.led!=null)o+=`<section id=set-led><div class=lab><span>Ship light</span><span>${S.led?"on":"off"}</span></div><p class=dim>Your ship's light pulses softly when something's waiting, no phone needed.</p><button class="btn sec" data-led=1 aria-pressed="${!!S.led}"><span>Ship light: ${S.led?"on":"off"}</span><i>${S.led?"turn off":"turn on"}</i></button>${LEDW?`<p id=ledw class=err role=alert>${h(LEDW)}</p>`:""}${ledtHTML(n)}</section>`;
   if(b)o+=`<section id=set-bat><div class=lab><span>Battery</span></div>${batFacts(b)}</section>`;
   o+=`<section id=set-out><div class=lab><span>This phone</span></div><button class="btn sec" data-out=1><span>Not ${h(nm(S.you))}? Sign out</span><i>this phone</i></button></section>`;
   o+=chgSect(n);
@@ -47,6 +47,7 @@ function setScreen(){
 // "Testing" with a thin bar for as long as the ship says it plays; repainted in place (never a
 // whole redraw: the code form keeps what's typed), and a tap meanwhile does nothing.
 let LEDT=0,LEDS=0,LEDE="",LEDK=0;   // test: ends at (Date.now ms), started at, last error, timer
+let LEDW="";    // the Ship light switch's last refusal (app.html's data-led click), shown under it
 function ledtHTML(n){
   const now=Date.now(),on=LEDT>now,ms=LEDT-LEDS;
   let o=`<div id=set-ledt><button class="btn sec ledt" data-ledt=1${on?" disabled aria-busy=true":""} aria-describedby=ledts><span>${on?"Testing\u2026":"Test light"}</span><i>${on?"watch LV-"+n:"10 s"}</i>${on?`<b class=ledbar style="animation-duration:${ms}ms;animation-delay:-${now-LEDS}ms" aria-hidden=true></b>`:""}</button>`;

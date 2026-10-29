@@ -17,7 +17,10 @@ def api(self, req):
     if not auth:
         if sh.st is None or sh.days is None:
             return 503, {"err": "The story is switched off on this ship (story: false)."}
-        if sh.day < 1 and sh.cal is not None and p not in ("/api/crew", "/api/v"):
+        # The Ship light switch works during the countdown too (review 3 m1): POST /api/led
+        # goes on to the sign-in check below like any other call.
+        if sh.day < 1 and sh.cal is not None and p not in ("/api/crew", "/api/v") \
+                and not (p == "/api/led" and req.method == "POST"):
             j = {"err": "The voyage hasn't launched yet.", "until": sh.cal.until()}
             you = self.who(req) if p == "/api/state" else None
             if you is not None:

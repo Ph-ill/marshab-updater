@@ -6,7 +6,8 @@
 //      countdown. Once a ship knows its time, only a signed-in phone can move it.
 //   2. This phone (also before launch at first) can still sign in on the countdown. It gets
 //      the countdown with the gear, and Settings opens with Ship software (the ship's
-//      answer to /api/ota, Check for updates), the Ship light and Sign out.
+//      answer to /api/ota, Check for updates), the Ship light (its switch works and shows a
+//      refusal: review 3 m1) and Sign out.
 //   3. This phone's clock is then set right (flight day 2). The page's own 30 s check,
 //      signed in, moves the ship to the right day. The page leaves the countdown for FD 02,
 //      the crew briefing is still due (the countdown sign-in didn't spend it: review 2 m2),
@@ -78,6 +79,20 @@ try {
   check(!/USB/.test(await ev(`document.querySelector('#set-sw').textContent`)), 'Ship software in the countdown: no USB message');
   check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship what it runs (/api/ota 200)');
   check(http.some(([s, p]) => s === 409 && p === '/api/state'), 'the countdown state (409 with what Settings needs)');
+  // The Ship light switch works in the countdown (review 3 m1: it was a silent 409), and a
+  // refusal shows under it instead of being swallowed.
+  await until(`!!document.querySelector('#set-led [data-led]')`, 4000, 'Ship light switch in the countdown');
+  const ledWas = await ev(`!!S.led`);
+  await click('#set-led [data-led]');
+  await until(`S.led===${!ledWas}&&!document.querySelector('#ledw')&&route==="set"`, 8000, 'Ship light switch turns in the countdown');
+  check(http.some(([s, p]) => s === 200 && p === '/api/led'), 'POST /api/led answered 200 in the countdown');
+  await ev(`(()=>{const f=window.fetch;window.__f=f;window.fetch=(u,o)=>String(u).startsWith("/api/led?")||u==="/api/led"?Promise.resolve(new Response(JSON.stringify({err:"The ship said no."}),{status:409})):f(u,o)})()`);
+  await click('#set-led [data-led]');
+  await until(`/The ship said no/.test(document.querySelector('#ledw')?.textContent||'')`, 6000, 'a Ship light refusal is shown under the switch');
+  check(await ev(`S.led===${!ledWas}`), 'a refused switch keeps its state');
+  await ev(`window.fetch=window.__f`);
+  await click('#set-led [data-led]');
+  await until(`S.led===${ledWas}&&!document.querySelector('#ledw')`, 8000, 'Ship light switch back, error cleared');
   await ev(`go("home")`);
   await until(`!!document.querySelector('.kick.pre')`, 4000, 'back to the countdown');
   // 3. This phone's clock set right: its next check moves the ship to flight day 2

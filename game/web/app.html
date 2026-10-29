@@ -863,7 +863,13 @@ document.addEventListener("click",async(ev)=>{
     if(ws){ws.onclose=ws.onerror=null;ws.close();ws=null}
     clearInterval(poll);poll=0;net="live";tok="";me=-1;S=null;return go("hello");
   }
-  if(D.led){el.disabled=true;try{const j=await api("/api/led",{on:!S.led});S.led=!!j.led}catch(e){}return view()}
+  if(D.led){
+    // review 3 m1: a refusal is shown under the switch, not swallowed (the switch looked broken)
+    el.disabled=true;
+    try{const j=await api("/api/led",{on:!S.led});S.led=!!j.led;LEDW=""}
+    catch(e){if(!tok)return;LEDW=e.message||"That didn't work. Try again."}
+    return view();
+  }
   if(D.key)return key(D.key);
   if(D.retry){if(!T)return location.reload();el.disabled=true;return refresh().catch(()=>{el.disabled=false})}
   if(D.pick){const [c,i]=D.pick.split(":").map(Number);pick[c]=i;return view()}

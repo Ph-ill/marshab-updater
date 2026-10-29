@@ -161,6 +161,31 @@ class ClockAuth(unittest.TestCase):
                 self.assertEqual((status, body), (200, {"ok": True}))
                 self.assertFalse(staged.exists())
 
+    def test_prelaunch_ship_light_switch(self):
+        # review 3 m1: the Ship light switch in Settings works during the countdown; it still
+        # needs a sign-in, and other game calls are still held for launch
+        self.first_wrong_clock()
+        status, login = self.call(Request("POST", "/api/login", date="2026-10-28T12:00:00"))
+        self.assertEqual(status, 200, login)
+
+        def led(on, token):
+            req = Request("POST", "/api/led", date="2026-10-28T12:00:00", token=token)
+            req.body = json.dumps({"on": on}).encode()
+            return self.call(req)
+
+        self.assertEqual(led(True, None)[0], 401)
+        self.assertEqual(led(True, "forged")[0], 401)
+        status, body = led(True, login["token"])
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["led"], self.ship.led.enabled)
+        status, body = led(False, login["token"])
+        self.assertEqual((status, body["led"]), (200, False), body)
+        self.assertEqual(self.ship.day, 0)
+        req = Request("POST", "/api/act", date="2026-10-28T12:00:00", token=login["token"])
+        self.assertEqual(self.call(req)[0], 409)
+        req = Request("GET", "/api/led", date="2026-10-28T12:00:00", token=login["token"])
+        self.assertEqual(self.call(req)[0], 409)
+
     def test_auth_independent_of_story_and_launch(self):
         self.first_wrong_clock()
         for prelaunch in (True, False):
