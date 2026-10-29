@@ -126,4 +126,8 @@ def start(sh):
     finally:
         lvship.drop("lvlight")           # the task holds only the shared helpers
     sh.ledtest = ticks_add(lvship.ticks_ms(), WAIT_MS + FLICK_MS - T.TEST_MS)
+    # Which playback owns the mark (review 3 m2): Test light's 429 says "kind": "hail" while
+    # sh.ledhail is the same mark, so the page can say the light is showing a hail instead
+    # of "three blinks" (any later mark, or none, isn't this one: nothing to clear).
+    sh.ledhail = sh.ledtest
     return True

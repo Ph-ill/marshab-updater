@@ -157,7 +157,10 @@ def ota_hooks(lvweb, web):
             if t is not None:
                 left = 10000 - lvship.ticks_diff(lvship.ticks_ms(), t)
                 if left > -5000:
-                    return await lvweb.send_json(w, 429, {"err": "The light is already testing.", "ms": max(0, left)})
+                    # a hail's flicker owns the light (review 3 m2): the page says so
+                    hail = t == getattr(web.ship, "ledhail", None)
+                    return await lvweb.send_json(w, 429, {"err": "The light is showing a hail." if hail else "The light is already testing.",
+                                                          "ms": max(0, left), "kind": "hail" if hail else "test"})
             import lvledtest
             try:
                 s, j = lvledtest.start(web, req)

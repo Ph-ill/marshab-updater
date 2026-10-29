@@ -223,6 +223,7 @@ async def off_case():
     await lvship.sleep_ms(600)
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
     check("second tap while playing: 429 with the ms left", s == 429 and MS - 2000 <= j.get("ms", 0) <= MS - 400, (s, j))
+    check("R3 m2: a Test light's own 429 is kind test", j.get("kind") == "test", j)
     flips[0] = True               # the charger plugged in mid-test
     t_plug = diff(now(), T0[0])
     while sh.ledtest is not None and diff(now(), T0[0]) < MS + 2000:

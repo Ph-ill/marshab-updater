@@ -47,11 +47,13 @@ function setScreen(){
 // "Testing" with a thin bar for as long as the ship says it plays; repainted in place (never a
 // whole redraw: the code form keeps what's typed), and a tap meanwhile does nothing.
 let LEDT=0,LEDS=0,LEDE="",LEDK=0;   // test: ends at (Date.now ms), started at, last error, timer
+let LEDH=0;     // a hail's flicker has the light until (Date.now ms): Test light says so (review 3 m2)
 let LEDW="";    // the Ship light switch's last refusal (app.html's data-led click), shown under it
 function ledtHTML(n){
   const now=Date.now(),on=LEDT>now,ms=LEDT-LEDS;
   let o=`<div id=set-ledt><button class="btn sec ledt" data-ledt=1${on?" disabled aria-busy=true":""} aria-describedby=ledts><span>${on?"Testing\u2026":"Test light"}</span><i>${on?"watch LV-"+n:"10 s"}</i>${on?`<b class=ledbar style="animation-duration:${ms}ms;animation-delay:-${now-LEDS}ms" aria-hidden=true></b>`:""}</button>`;
-  o+=`<p id=ledts class=${LEDE?"err":"fine"} role=status>${LEDE?h(LEDE):on?`Look at LV-${n} now: three blinks, then three slow pulses.`:LEDS?`Finished. The light is back to ${S.led?"on":"off"}.`:"Three blinks, then three slow pulses. Works with the light off too."}</p></div>`;
+  const hl=LEDH>now?Math.ceil((LEDH-now)/1000):0;
+  o+=`<p id=ledts class=${LEDE?"err":"fine"} role=status>${LEDE?h(LEDE):hl?`Your ship's light is showing a hail. Try again in ${hl} s.`:on?`Look at LV-${n} now: three blinks, then three slow pulses.`:LEDS?`Finished. The light is back to ${S.led?"on":"off"}.`:"Three blinks, then three slow pulses. Works with the light off too."}</p></div>`;
   return o;
 }
 function ledtPaint(){
@@ -65,10 +67,16 @@ function ledtFor(ms){
 }
 document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button[data-ledt]");if(!el||el.disabled||LEDT>Date.now())return;
-  LEDE="";ledtFor(10000);
+  LEDE="";LEDH=0;ledtFor(10000);
   try{const j=await api("/api/led/test",{});ledtFor(j.ms??10000)}
   catch(e){
     if(!tok)return;
+    if(e.status===429&&e.j&&e.j.kind==="hail"){
+      // review 3 m2: a hail's flicker has the light (dark while it waits, then 3 Hz), so not
+      // "three blinks": say what it is and when to try again
+      clearTimeout(LEDK);LEDT=LEDS=0;LEDH=Date.now()+Math.max(1000,+e.j.ms||0);ledtPaint();
+      LEDK=setTimeout(()=>{LEDH=0;ledtPaint()},LEDH-Date.now()+250);return;
+    }
     if(e.status===429)return ledtFor(e.j&&e.j.ms);
     clearTimeout(LEDK);LEDT=LEDS=0;LEDE=e.message||"That didn't work. Try again.";ledtPaint();
   }

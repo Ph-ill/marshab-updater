@@ -22,7 +22,8 @@
 # arrives meanwhile (lvflick.maybe) doesn't flicker and doesn't spend the day's allowance:
 # the person is already looking at the ship, and the hail waits on the phone as ever.
 #   200 {ok, ms}  started      401 no session      404 not POST (main.py)
-#   429 {ms}      already playing                  500 no light to drive (no machine.Pin)
+#   429 {ms,kind} already playing ("test", or "hail": a hail's flicker has the light)
+#   500 no light to drive (no machine.Pin)
 try:
     import asyncio
 except ImportError:  # pragma: no cover
@@ -113,7 +114,9 @@ def start(web, req):
     if t is not None:
         left = TEST_MS - lvship.ticks_diff(lvship.ticks_ms(), t)
         if left > -5000:                # (a test that never finished can't block for good)
-            return 429, {"err": "The light is already testing.", "ms": max(0, left)}
+            hail = t == getattr(sh, "ledhail", None)    # a hail's flicker (review 3 m2)
+            return 429, {"err": "The light is showing a hail." if hail else "The light is already testing.",
+                         "ms": max(0, left), "kind": "hail" if hail else "test"}
     try:
         pin = _pin(sh)
     except Exception as e:

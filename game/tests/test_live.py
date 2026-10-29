@@ -422,9 +422,27 @@ b.led_pin = lambda: pin
 lvflick.FLICK_MS = 1200
 
 
+class _Ph:
+    def who(self, req):
+        return 0
+
+
+class _Web:
+    def __init__(self, sh):
+        self.ship = sh
+
+    def get_phone(self):
+        return _Ph()
+
+
 async def go():
     check("flick starts", lvflick.start(b))
     check("counts as a test", b.ledtest is not None)
+    # review 3 m2: Test light meanwhile is refused as the hail's, so the page says so
+    import lvledtest as LT
+    s, j = LT.start(_Web(b), None)
+    check("R3 m2: Test light during a hail flicker: 429 kind hail",
+          s == 429 and j.get("kind") == "hail" and j.get("ms", 0) > 0, (s, j))
     await lvship.sleep_ms(1500)
 
 
