@@ -113,7 +113,7 @@ def ota_hooks(lvweb, web):
             return await lvweb.send_json(w, s, j)
         if req.path == "/api/led/test":
             # "Test light" (board/lvledtest.py, web/settings.js): a signed-in crew member makes
-            # the light play ~4 s of blinks and a breath, on or off. Loaded per request.
+            # the light play 10 s of blinks and breaths, on or off. Loaded per request.
             if req.method != "POST":
                 return await lvweb.send_json(w, 404, {"err": "no such thing"})
             import lvledtest

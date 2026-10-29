@@ -500,7 +500,7 @@ if BAT:
     print("battery: %s after %d readings while idle, lvbatt %s: %s" % (
         B, bat[1], "loaded" if "lvbatt" in sys.modules else "dropped", "ok" if bat_ok else "FAIL"))
 if OTA and WEB:
-    # Test light played its ~4 s pattern twice (blinks and a software-PWM breath), then went
+    # Test light played its 10 s pattern twice (blinks and software-PWM breaths), then went
     lt_ok = TestPin.n >= 200 and "lvledtest" not in sys.modules
     ok = ok and lt_ok
     print("test light: pin writes %d, lvledtest %s: %s" % (

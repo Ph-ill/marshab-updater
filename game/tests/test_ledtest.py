@@ -1,7 +1,7 @@
 # "Test light" on the ship (board/lvledtest.py, POST /api/led/test from board/main.py's
 # ota_route), in real time on a fake pin: refused without a signed-in session (401) or as a
-# GET (404); the pattern (three full blinks, a dark gap, one software-PWM breath that swells
-# and fades, about 4 s, dark at the end); one at a time (a tap while it plays is 429 with the
+# GET (404); the pattern (three full blinks, a dark gap, three software-PWM breaths that swell
+# and fade, 10 s in all, dark at the end); one at a time (a tap while it plays is 429 with the
 # ms left, and plays nothing more); it plays with the Ship light off (lv/led.py's dark
 # Notifier) and on (lvled.Led: held dark, off the pin, for the test, then back to what it
 # was doing, its gift still waiting); the breath as a plain blink while the radio or a
@@ -44,18 +44,22 @@ def check(name, cond, extra=""):
 now = lvship.ticks_ms
 diff = lvship.ticks_diff
 MS = lvledtest.TEST_MS
-check("about 4 s", 3000 <= MS <= 5000, MS)
+check("10 s (0.3.0: was 4 s)", MS == 10000, MS)
 
 # -- the pattern itself (level: 0-100 at t ms, -1 when over)
 L = lvledtest.level
 check("blink 1, 2, 3 full on", L(0) == 100 and L(249) == 100 and L(500) == 100 and L(1000) == 100 and L(1249) == 100)
 check("dark between blinks", L(250) == 0 and L(499) == 0 and L(750) == 0 and L(1499) == 0)
 check("dark gap before the breath", all(L(t) == 0 for t in range(1500, 1800, 10)))
-up = [L(t) for t in range(1800, 2800, 10)]
-dn = [L(t) for t in range(2800, 4000, 10)]
-check("breath swells 0 to ~100", up[0] == 0 and up == sorted(up) and up[-1] >= 98, (up[0], up[-1]))
-check("breath fades back to ~0", dn[0] == 100 and dn == sorted(dn, reverse=True) and dn[-1] <= 2, (dn[0], dn[-1]))
+for k in range(3):                # three breaths, 2.7 s each: 1.2 s up, 1.5 s down
+    b0 = 1800 + k * 2700
+    up = [L(t) for t in range(b0, b0 + 1200, 10)]
+    dn = [L(t) for t in range(b0 + 1200, b0 + 2700, 10)]
+    check("breath %d swells 0 to ~100" % (k + 1), up[0] == 0 and up == sorted(up) and up[-1] >= 98, (up[0], up[-1]))
+    check("breath %d fades back to ~0" % (k + 1), dn[0] == 100 and dn == sorted(dn, reverse=True) and dn[-1] <= 1, (dn[0], dn[-1]))
+check("dark after the third breath, to the end", all(L(t) == 0 for t in range(9900, MS, 5)))
 check("over at TEST_MS", L(MS - 1) >= 0 and L(MS) == -1 and L(MS + 500) == -1)
+check("never out of range", all(0 <= L(t) <= 100 for t in range(0, MS, 7)))
 del up, dn
 
 
@@ -218,7 +222,7 @@ async def off_case():
     check("started: running", sh.ledtest is not None)
     await lvship.sleep_ms(600)
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
-    check("second tap while playing: 429 with the ms left", s == 429 and 2500 <= j.get("ms", 0) <= MS - 400, (s, j))
+    check("second tap while playing: 429 with the ms left", s == 429 and MS - 2000 <= j.get("ms", 0) <= MS - 400, (s, j))
     flips[0] = True               # the charger plugged in mid-test
     t_plug = diff(now(), T0[0])
     while sh.ledtest is not None and diff(now(), T0[0]) < MS + 2000:
@@ -235,11 +239,14 @@ async def off_case():
         check("blink %d: ~250 ms fully on" % (i + 1), 200 <= on <= 300, on)
         check("blink %d: one on, one off" % (i + 1), writes(log, a, a + 500) <= 3, writes(log, a, a + 500))
     check("dark gap", lit_ms(log, 1540, 1780) == 0)
-    rise = [lit_ms(log, 1800 + k * 200, 2000 + k * 200) for k in range(5)]
-    fall = [lit_ms(log, 2800 + k * 240, 3040 + k * 240) for k in range(5)]
-    check("breath: dim, then brighter, then full near the top", rise[0] < 20 and rise[0] < rise[2] < rise[4] and rise[4] >= 120, rise)
-    check("breath: then fades", fall[0] > fall[2] > fall[4] and fall[4] < 20, fall)
-    check("breath: software PWM (many short pulses, not one long on)", writes(log, 2000, 3600) >= 100, writes(log, 2000, 3600))
+    for b in range(3):
+        b0 = 1800 + b * 2700
+        rise = [lit_ms(log, b0 + k * 240, b0 + 240 + k * 240) for k in range(5)]
+        fall = [lit_ms(log, b0 + 1200 + k * 300, b0 + 1500 + k * 300) for k in range(5)]
+        check("breath %d: dim, then brighter, then full near the top" % (b + 1), rise[0] < 20 and rise[0] < rise[2] < rise[4] and rise[4] >= 140, rise)
+        check("breath %d: then fades" % (b + 1), fall[0] > fall[2] > fall[4] and fall[4] < 20, fall)
+        check("breath %d: software PWM (many short pulses, not one long on)" % (b + 1), writes(log, b0 + 200, b0 + 1800) >= 100, writes(log, b0 + 200, b0 + 1800))
+    check("dark for the last 100 ms", lit_ms(log, 9920, MS) == 0, lit_ms(log, 9920, MS))
     check("one test only (the 429 played nothing)", lit_ms(log, MS + 100, end + 250) == 0)
     check("event loop free: the 100 ms ticker never late by more than 60 ms", gaps and max(gaps) < 160, max(gaps) if gaps else None)
     check("charger_watch saw the plug mid-test", bat[2] is True and t_plug < MS, (bat[2], t_plug))
@@ -291,8 +298,9 @@ async def busy_case():
     sh.ble.on = True
     while sh.ledtest is not None:
         await lvship.sleep_ms(20)
-    check("busy: the breath plain (a couple of writes, not PWM)", writes(pin.log, 1800, MS) <= 4, writes(pin.log, 1800, MS))
-    check("busy: still lit through its middle", lit_ms(pin.log, 1800, MS) >= 500, lit_ms(pin.log, 1800, MS))
+    check("busy: the breaths plain (a couple of writes each, not PWM)", writes(pin.log, 1800, MS) <= 12, writes(pin.log, 1800, MS))
+    check("busy: still lit through each one's middle", all(lit_ms(pin.log, 1800 + k * 2700, 4500 + k * 2700) >= 500 for k in range(3)),
+          [lit_ms(pin.log, 1800 + k * 2700, 4500 + k * 2700) for k in range(3)])
     check("busy: blinks unchanged", 200 <= lit_ms(pin.log, 0, 500) <= 300)
 
 # -- 4. no light to drive, and a pin that fails mid-pattern

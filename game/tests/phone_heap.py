@@ -13,8 +13,8 @@ the signature and each file, and the heap peak includes all of it. Then it cance
 (applying restarts the board: tests/test_ota.py covers that). The home-screen funnel's
 /api/hello (board/lvfunnel.py, main.py's ota_route) is asked three times meanwhile, and a
 fourth phone changes a crew code and back (board/lvcode.py, POST /api/code), and a fifth
-taps Test light twice (board/lvledtest.py, POST /api/led/test: ~4 s of blinks and a
-software-PWM breath on a counted pin, a tap meanwhile refused). With --bat
+taps Test light twice (board/lvledtest.py, POST /api/led/test: 10 s of blinks and
+three software-PWM breaths on a counted pin, a tap meanwhile refused). With --bat
 too, main.py's charger watch runs on the board and a phone asks /api/bat twelve times."""
 import asyncio
 import json
@@ -195,7 +195,7 @@ async def code_change(req, fail, log):
 
 
 async def led_test(req, fail, log):
-    """Test light (board/lvledtest.py, loaded per request; its pattern a task for ~4 s) while
+    """Test light (board/lvledtest.py, loaded per request; its pattern a task for 10 s) while
     the others play: crew 4 taps it, taps again while it plays (429), waits it out, and
     taps once more; a tap with no session is 401. The board counts the pin's writes."""
     H = {"User-Agent": "heapL", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
@@ -225,13 +225,13 @@ async def led_test(req, fail, log):
         return fail("led test: without a session %d, want 401" % s)
     for i in range(2):
         s, b = await call("/api/led/test", {}, tok)
-        if s != 200 or json.loads(b).get("ms") != 4000:
+        if s != 200 or json.loads(b).get("ms") != 10000:
             return fail("led test: tap %d %d %s" % (i, s, b))
         await asyncio.sleep(0.5)
         s, b = await call("/api/led/test", {}, tok)
         if s != 429:
             return fail("led test: a tap while it plays %d %s, want 429" % (s, b))
-        await asyncio.sleep(4.2)
+        await asyncio.sleep(10.2)
     log("led test: played twice, a tap meanwhile refused each time, none without a session")
 
 
