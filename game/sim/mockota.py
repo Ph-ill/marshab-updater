@@ -29,7 +29,7 @@ NEW = "0.2.1"
 NOTES = {
     NEW: ["Hail a crewmate: send a short hail, and your ship passes it to theirs when the two are in range.",
           "Your ship's light flickers when a hail lands. Turn that off in Settings with Flicker for hails.",
-          "Test light now runs for 10 seconds, Settings shows what's new in each version, and updates install more reliably."],
+          "Test light now runs for 10 seconds. Updates install more reliably, and Settings lists what each one changed."],
     "0.2.0": ["If something goes wrong, your ship starts in a simple safe mode, so it can still take an update.",
               "Turning the Ship light on or off is now safe even if the power cuts out at that moment."],
     "0.1.9": ["Updates from your phone pick up where they left off if the connection drops."],

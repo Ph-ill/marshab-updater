@@ -224,10 +224,11 @@ async function otaInstall(){
 // game/tools/ota/whatsnew.py fills older entries) or, offline, from OTA_WN: whatsnew.json as
 // web/build.py baked it into this page, which the ship serves from its own (signed) release.
 // The ship itself never reads them: nothing on its update path holds notes (0.3.0, heap).
-// Display text only: cleaned here (strings only, at most 3 lines of 160 characters) and
+// Display text only: cleaned here (strings only, at most 3 lines of 120 characters: the
+// same limit as game/tools/ota/whatsnew.py NOTE_LEN, which web/build.py writes in) and
 // always put on the page through h(), never as markup.
 const OTA_WN=/*WHATSNEW*/{};
-function otaClean(n){return Array.isArray(n)?n.filter((x)=>typeof x==="string"&&x.trim()).slice(0,3).map((x)=>x.trim().slice(0,160)):[]}
+function otaClean(n){return Array.isArray(n)?n.filter((x)=>typeof x==="string"&&x.trim()).slice(0,3).map((x)=>x.trim().slice(0,/*NOTE_LEN*/120)):[]}
 function otaNotes(n){n=otaClean(n);return n.length?`<ul class=otaw>${n.map((x)=>`<li>${h(x)}</li>`).join("")}</ul>`:""}
 // Version history (Settings › Ship software › Version history): every release on this
 // ship's channel that has notes, newest first, the one installed and the one ready marked.

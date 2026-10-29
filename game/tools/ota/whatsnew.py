@@ -16,7 +16,8 @@ to spare, so the ship itself never holds notes (build_release.py checks the page
 
 The rules (check()): 1 to NOTES lines, each a non-empty string of at most NOTE_LEN
 characters, plain text (no control characters, no < or >), TOTAL bytes at most in all.
-The phone shows them as text only and caps them again (3 lines, 160 characters)."""
+The phone shows them as text only and caps them again at the same limits (web/ota.js
+otaClean: 3 lines, NOTE_LEN characters, written in by web/build.py)."""
 import json
 import sys
 from pathlib import Path

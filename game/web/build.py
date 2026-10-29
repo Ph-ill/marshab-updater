@@ -58,6 +58,9 @@ def main():
     import whatsnew
     wn = {k: v for k, v in whatsnew.table().items() if not whatsnew.check(v)}
     html = html.replace("OTA_WN=/*WHATSNEW*/{}", "OTA_WN=" + json.dumps(wn, separators=(",", ":")), 1)
+    # ...and its line length, so the page's cap (otaClean) is the checker's (review 3 nit-5)
+    assert "/*NOTE_LEN*/120)" in html, "web/ota.js: otaClean's /*NOTE_LEN*/ cap is missing"
+    html = html.replace("/*NOTE_LEN*/120)", "%d)" % whatsnew.NOTE_LEN, 1)
     html = squeeze(html)
     os.makedirs(BUILD, exist_ok=True)
     raw = html.encode("utf-8")
