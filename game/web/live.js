@@ -1,6 +1,6 @@
 // Ship-to-ship (board/lvlive.py, lvliveapi.py; GET/POST /api/live*): Hail, and the Settings
 // switches and radio check. A hail is a few words sent to a crewmate's own ship over
-// Bluetooth: their ship's light flickers softly for a few seconds and the hail waits on
+// Bluetooth: their ship's light flashes for a few seconds and the hail waits on
 // their home screen; you see "Sending", "Will deliver" (their ship is out of range: yours
 // keeps trying while they're about), "Delivered", then "<name> saw it" once they open the
 // game. Hail back within 10 minutes. One on its way per crewmate, one every 2 minutes to
@@ -29,8 +29,19 @@ function lvPeer(j){return LV&&LV.peers.find((p)=>p.s===j)}
 function lvNear(j){const p=lvPeer(j);if(!p||p.ago==null)return "Not in range lately";if(p.ago<=180)return "<b class=near>Nearby</b>";const s=p.ago;return "In range "+(s<3600?Math.round(s/60)+" min":Math.round(s/3600)+" h")+" ago"}
 function lvSt(o){return ["Sending\u2026","Will deliver · when your ships meet","Delivered",h(nm(o.to))+" saw it","Didn't go · ships never met"][o.st]}
 function lvOnWay(j){return LV&&LV.out.some((o)=>o.to===j&&o.st<2)}
+// a crewmate's ship: "old" (heard without Hail: needs the update), "off" (has Hail, paused)
+function lvOld(p){return !!p&&p.cap===0&&!p.off}
+function lvOff(p){return !!p&&p.cap===0&&!!p.off}
+// Hail paused on this ship (by itself after a problem, or for the fleet): a calm line on
+// Home instead of the card vanishing; turned off in Settings: nothing on Home
+function lvPausedCard(){
+  if(!LV||LV.on||!LV.why||LV.why==="turned off")return "";
+  const fleet=LV.why==="paused for the fleet"||LV.why==="core changed";
+  return `<section id=lv-home><div class=lab><span>Hails</span><span>paused</span></div><p class=dim>Hails are paused on this ship.${fleet?" An update will bring them back.":" Your ship still syncs the story with the fleet."}</p>${fleet?"":`<button class="btn sec" data-lvset=on><span>Turn hails back on</span><i>Settings has more</i></button>`}</section>`;
+}
 function lvHomeCard(){
-  if(!LV||!LV.on)return "";
+  if(LV&&!LV.on)return lvPausedCard();
+  if(!LV)return "";
   const inn=LV.in.slice().reverse(),out=LV.out.slice().reverse().slice(0,4);
   let o=`<section id=lv-home><div class=lab><span>Hails</span><span>${inn.length?inn.length+" today":"ship to ship"}</span></div>`;
   for(const x of inn.slice(0,4))o+=`<div class="row lvin${x.seen?"":" nw"}"><span class=pt>${portrait(x.by)}</span><span class=t><b>${h(nm(x.by))}${x.back?" hailed you back":""}</b><small class=lvq>\u201c${h(LV_PH[x.ph])}\u201d</small><small>${h(ship(x.from))} · ${lvAgo(x.t)}</small></span>${x.can&&!x.back?`<button class="btn sec lvbk" data-lvbk=${x.from}><span>Hail back</span></button>`:""}</div>`;
@@ -44,7 +55,7 @@ function lvHomeCard(){
 function lvHM(m){return String(m/60|0).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
 function lvRest(){
   if(!LV||!LV.on||!LV.light)return "";
-  if(LV.quiet)return `Quiet hours until ${lvHM(LV.quiet[1])}. Hails still arrive; your ship's light waits.`;
+  if(LV.quiet)return `During quiet hours (until ${lvHM(LV.quiet[1])}) hails arrive without the light.`;
   if(LV.cap&&LV.lights>=LV.cap)return `Your ship's light has flickered ${LV.cap} times today, its limit. Hails still arrive, without the light, until tomorrow.`;
   return "";
 }
@@ -62,15 +73,15 @@ const home_lv=home;home=function(){
 const crew_lv=crew;crew=function(c){
   crew_lv(c);
   if(c==null||c===S.you||c===S.here||!LV||!LV.on||S.cond[c]===2)return;
-  const m=document.querySelector("#v>.me"),p=lvPeer(c),old=p&&!p.cap;
-  if(m)m.insertAdjacentHTML("afterend",`<section id=lv-crew><div class=lab><span>Ship to ship</span><span>${lvNear(c)}</span></div><button class="btn pri" data-go="hail/${c}"${old||lvOnWay(c)?" disabled":""}><span>Hail ${h(nm(c))}</span><i>${old?"needs update":lvOnWay(c)?"on its way":"light + note"}</i></button>${old?`<p class=fine>${h(ship(c))} needs the latest ship software before it can be hailed.</p>`:""}</section>`);
+  const m=document.querySelector("#v>.me"),p=lvPeer(c),old=lvOld(p),off=lvOff(p),no=old||off;
+  if(m)m.insertAdjacentHTML("afterend",`<section id=lv-crew><div class=lab><span>Ship to ship</span><span>${lvNear(c)}</span></div><button class="btn pri" data-go="hail/${c}"${no||lvOnWay(c)?" disabled":""}><span>Hail ${h(nm(c))}</span><i>${old?"needs update":off?"not right now":lvOnWay(c)?"on its way":"light + note"}</i></button>${old?`<p class=fine>${h(ship(c))} needs the latest ship software before it can be hailed.</p>`:off?`<p class=fine>${h(nm(c))}'s ship isn't taking hails right now.</p>`:""}</section>`);
 };
 function hailScreen(to){
   shipTop();
   if(to!=null&&LVT==null)LVT=to;
   const c=[...Array(N).keys()].filter((j)=>j!==S.here&&S.cond[j]!==2);
   let o=`<div class=kick><div class=lab>Hail · from ${h(ship(S.here))}</div><h1>${LVB?"Hail back":"Hail a crewmate"}</h1><p class=dim>Their ship's light flickers for a few seconds and your words wait on their screen. Out of range? Your ship keeps trying while they're around.</p></div>`;
-  o+=`<section><div class=lab><span>To</span><span>their ship</span></div>`+c.map((j)=>{const p=lvPeer(j),old=p&&!p.cap,w=lvOnWay(j);return `<button class=row data-lvto=${j} aria-pressed="${LVT===j}"${old||w?" disabled":""}><span class=pt>${portrait(j)}</span><span class=t>${h(nm(j))}<small>${old?"Needs the latest ship software":w?"Your last hail is on its way":lvNear(j)}</small></span><span class=lvck aria-hidden=true></span></button>`}).join("")+`</section>`;
+  o+=`<section><div class=lab><span>To</span><span>their ship</span></div>`+c.map((j)=>{const p=lvPeer(j),old=lvOld(p),off=lvOff(p),w=lvOnWay(j);return `<button class=row data-lvto=${j} aria-pressed="${LVT===j}"${old||off||w?" disabled":""}><span class=pt>${portrait(j)}</span><span class=t>${h(nm(j))}<small>${old?"Needs the latest ship software":off?"Their ship isn't taking hails right now":w?"Your last hail is on its way":lvNear(j)}</small></span><span class=lvck aria-hidden=true></span></button>`}).join("")+`</section>`;
   o+=`<section><div class=lab><span>Say</span><span>one line</span></div><div class=lvph role=radiogroup aria-label="What to say">${LV_PH.map((p,i)=>`<button role=radio data-lvph=${i} aria-checked="${LVP===i}">${h(p)}</button>`).join("")}</div><p id=lv-e class=err role=alert>${h(LVE)}</p></section>`;
   $("v").innerHTML=o;
   const ok=LVT!=null&&LVP!=null&&!LVS;
@@ -140,7 +151,7 @@ function lvSect(){
     o+=`<p class=${f?"lvwhy":"dim"}>${f?`Paused on its own: ${h(LV.why)}. Your ship turned hails off to stay safe; turn them back on when you like.`:"Hails between ships are off. Your ship still syncs the story with the fleet."}</p><button class="btn ${f?"pri":"sec"}" data-lvset=on><span>${f?"Turn back on":"Ship-to-ship: off"}</span><i>${f?"hails":"turn on"}</i></button>`;
   }else{
     o+=`<p class=dim>Hails travel from your ship to a crewmate's by Bluetooth. Only what you send goes, signed with your fleet's key.</p><button class="btn sec" data-lvset=off aria-pressed=true><span>Ship-to-ship: on</span><i>turn off</i></button>`;
-    o+=`<button class="btn sec" data-lvset=light aria-pressed="${LV.light}"><span>Hail light: ${LV.light?"on":"off"}</span><i>${LV.light?"turn off":"turn on"}</i></button><p class=fine>A soft flicker for about 10 s when a hail lands. Never between 22:00 and 07:00, and at most ${LV.cap||12} a day (${LV.lights} so far).</p>${lvRest()?`<p class="fine lvrest">${lvRest()}</p>`:""}`;
+    o+=`<button class="btn sec" data-lvset=light aria-pressed="${LV.light}"><span>Hail light: ${LV.light?"on":"off"}</span><i>${LV.light?"turn off":"turn on"}</i></button><p class=fine>Your ship's light flashes on and off for about 10 s when a hail lands. Unless you change it here, it does what your Ship light does. Never during quiet hours${LV.qw?` (${lvHM(LV.qw[0])} to ${lvHM(LV.qw[1])})`:""}, and at most ${LV.cap||12} a day (${LV.lights} so far).</p>${lvRest()?`<p class="fine lvrest">${lvRest()}</p>`:""}`;
   }
   return o+`<button class=go data-go=coex style="margin-top:var(--s3)"><span class=lab><span>Radio check</span><span>Wi-Fi + Bluetooth</span></span><b>How your ship's radio is doing</b></button></section>`;
 }

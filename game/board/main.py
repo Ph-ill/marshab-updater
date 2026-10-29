@@ -444,7 +444,8 @@ def crashed(e, t0):
     # (review #2 M2): MAIN (run()'s finished task, whose coroutine holds run's closure:
     # ship, web, days, ap, cfg), FATAL (the accept loop's task, holding web.handle), CRASH,
     # the modules that hold the server, and the event loop's queues (a new event loop).
-    # Only the exception's words are kept. Then say it, note it (not on an update's trial:
+    # Only the exception's words are kept, and whether its traceback ran through Hail's own
+    # modules (fault.json "live": 0.3.0 review R2 M3). Then say it, note it (not on an update's trial:
     # lvboot's boot count decides that one; read now, an update may have been kept since
     # boot), restart. Never raises.
     try:
@@ -460,8 +461,13 @@ def crashed(e, t0):
     except Exception:
         pass
     gc.collect()
+    tb = ""
     try:
-        sys.print_exception(e)
+        import io
+        tb = io.StringIO()
+        sys.print_exception(e, tb)
+        tb = tb.getvalue()
+        print(tb, end="")
     except Exception:
         print("crash: %s" % why)
     e = None
@@ -469,7 +475,9 @@ def crashed(e, t0):
     trial = flag("ota/state.json")
     try:
         import lvsafe
-        lvsafe.crashed(why, trial, time.ticks_diff(time.ticks_ms(), t0))
+        # live: Hail's own code was in it (lvlivex turns Hail off for that crash only)
+        lvsafe.crashed(why, trial, time.ticks_diff(time.ticks_ms(), t0),
+                       live=("lvlive" in tb or "lvflick" in tb))
     except Exception as e2:
         print("crash: noting %r" % (e2,))
         note(trial)

@@ -130,17 +130,20 @@ if LIVE:
     from lv.ble import Peer
     if LIVEOFF:
         with open(DATA + "/fault.json", "w") as f:
-            f.write('{"n": 1, "why": "MemoryError()", "up": 4000}')
+            f.write('{"n": 1, "why": "MemoryError()", "up": 4000, "live": 1}')   # (in Hail's code: R2 M3)
     now = int(time.time() * 1000)
     ship.clock.learn(now, -300)
+    # The hail light switched on in Settings: the fixture's Ship light is the dark notifier,
+    # which the hail light would otherwise follow (0.3.0 review R2 M7)
+    lvlivein.save(DATA + "/live.json", {"light": True})
     if LIVEAS == "off":
-        lvlivein.save(DATA + "/live.json", {"on": False, "why": "turned off"})
+        lvlivein.save(DATA + "/live.json", {"on": False, "why": "turned off", "light": True})
     if LIVEAS == "fleet":
         lvlive.ON = False
     L = lvlive.install(ship, DATA)
     if L is not None:
         L.now = 10000000
-        for k, ago, cap in ((0, 20, 1), (1, 95, 1), (4, 3600, 1), (6, 900, 0), (3, 30000, 1)):
+        for k, ago, cap in ((0, 20, 1), (1, 25, 1), (4, 3600, 1), (6, 900, 0), (3, 30000, 1)):
             p = ship.ble.peers[k] = Peer(k)
             p.addr, p.seen = (0, bytes(6)), L.now - ago * 1000
             p.info = {"cap": cap, "busy": False}

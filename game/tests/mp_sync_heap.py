@@ -92,6 +92,18 @@ base = gc.mem_alloc() if hasattr(gc, "mem_alloc") else 0
 peak = [0]
 where = [""]
 kpeak = {}
+# 0.3.0 review R2 M2: with --live --ota, a hail comes in (a peer's trailer, taken as a session
+# would) at the signature check, the update's tightest moment: it must be held (not taken,
+# not acked, no lvlivein import), Hail stays on, and it's delivered later in the run.
+hail_sig = []
+HAIL_M = [None]
+
+
+class HailSes:
+    to = 1                           # (the peer: ship 2)
+
+    def __init__(self):
+        self.acks = []
 # the moment of the peak: which per-use board modules were loaded, the web server's open
 # requests and the radio (printed at the end, so a cap overrun says what it coincided with)
 PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
@@ -108,6 +120,14 @@ def sample():
     k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
     if m > kpeak.get(k, 0):
         kpeak[k] = m
+    if k == "sig" and HAIL_M[0] is not None and not hail_sig and getattr(globals().get("ship"), "live", None):
+        L = globals()["ship"].live
+        h0, i0, se = L.n["held"], L.n["in"], HailSes()
+        L.take(se, HAIL_M[0], 0)
+        hail_sig.append((L.n["held"] - h0, L.n["in"] - i0, len(se.acks), "lvlivein" in sys.modules))
+        m2 = mem()
+        if m2 > kpeak[k]:
+            kpeak[k] = m2
     if m > peak[0]:
         peak[0] = m
         try:
@@ -183,6 +203,8 @@ if LIVE:
     peer_link = lvlive.install(PeerShip(), DATA + "-peer")
     import lvlivein                  # (per use, as lvliveapi loads it for a phone's hail)
     lvlivein.send(peer_link, 1, 0, bytes((1, 0, 1)))        # "Good morning" to ship 1 (this one) from crew 2
+    if OTA:
+        HAIL_M[0] = bytes((lvlive.MARK, 1)) + peer_link.out[0][1]
     lvship.drop("lvlivein")
     lvlivein = None
 m_peer = sample()
@@ -471,6 +493,12 @@ if LIVE:
              and not PL.out and L.n["bad"] == 0 and PL.n["bad"] == 0 and "lvliveapi" not in sys.modules
              and "lvlivein" not in sys.modules)
     ok = ok and lv_ok
+    if OTA and WEB:
+        hs = hail_sig[0] if hail_sig else None
+        hs_ok = hs is not None and hs[0] == 1 and hs[1] == 0 and hs[2] == 0 and not hs[3] and L is not None
+        ok = ok and hs_ok
+        print("live: a hail at the signature check: %s (held, taken, acks, lvlivein loaded); Hail %s: %s" % (
+            hs, "on" if L is not None else "off", "ok" if hs_ok else "FAIL"))
     print("live: ship %s, peer %s, waiting %d/%d, lvliveapi and lvlivein %s: %s" % (
         L and L.n, PL and PL.n, len(L.out) if L else -1, len(PL.out) if PL else -1,
         "loaded" if "lvliveapi" in sys.modules or "lvlivein" in sys.modules else "dropped",

@@ -106,11 +106,11 @@ SCEN["hail-night"] = async () => {
   const p = await page();
   await signIn(p, 2);
   const t = await homeCard(p);
-  ok("hail-night: quiet hours said", /Quiet hours until 07:00/.test(t), t);
+  ok("hail-night: quiet hours said (R2 m3: arrive without the light)", /During quiet hours \(until 07:00\) hails arrive without the light/.test(t), t);
   await shot2(p, "hail-6-quiet-hours", "#lv-home");
   await p.click("#top .gear");   // Settings: the gear in the top bar
   await p.waitForSelector("#set-live [data-lvset]");
-  ok("hail-night: settings too", /Quiet hours until 07:00/.test(await p.textContent("#set-live")));
+  ok("hail-night: settings too", /During quiet hours \(until 07:00\)/.test(await p.textContent("#set-live")));
   await shot2(p, "hail-6b-quiet-hours-settings", "#set-live");
 };
 SCEN["hail-cap"] = async () => {
@@ -138,7 +138,11 @@ SCEN["hail-fleet"] = async () => {
   const p = await page();
   await signIn(p, 2);
   await p.waitForTimeout(800);
-  ok("hail-fleet: no hail card", !(await p.$("#lv-home")));
+  // paused for the fleet: Home keeps one calm line (an update brings hails back), no switch
+  await p.waitForSelector("#lv-home");
+  const hc = await p.textContent("#lv-home");
+  ok("hail-fleet: a calm line on Home, no switch", /paused on this ship/.test(hc) && /update will bring them back/.test(hc) && !(await p.$("#lv-home [data-lvset]")), hc);
+  await shot2(p, "hail-9a-fleet-home", "#lv-home");
   await p.click("#top .gear");   // Settings: the gear in the top bar
   await p.waitForSelector("#set-live .lvwhy");
   const t = await p.textContent("#set-live");
@@ -219,7 +223,13 @@ SCEN["live-off"] = async () => {
   const p = await page();
   await signIn(p, 2);
   await p.waitForSelector("#v .kick");
-  ok("live-off: no hail card", !(await p.$("#lv-home")));
+  // 0.3.0 review R2 M3: paused after a crash in Hail's own code, Home keeps a calm line
+  // (not a card that just vanishes) with a way back
+  await p.waitForSelector("#lv-home");
+  const hc = await p.textContent("#lv-home");
+  ok("live-off: a calm paused card on Home", /Hails are paused on this ship/.test(hc) && !!(await p.$("#lv-home [data-lvset=on]")), hc);
+  await p.$eval("#lv-home", (e) => e.scrollIntoView());
+  await shot(p, "live-8a-home-paused");
   await p.evaluate(() => go("set"));
   await p.waitForSelector("#set-live [data-lvset=on]");
   await p.$eval("#set-live", (e) => e.scrollIntoView());
