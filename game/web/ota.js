@@ -213,11 +213,12 @@ function otaNotes(n){n=otaClean(n);return n.length?`<ul class=otaw>${n.map((x)=>
 // installed version's lines from this page and says how to see the rest.
 async function otaHistOpen(){
   OH={st:"load"};view();scrollTo(0,0);
-  let list=null;
+  let list=null,err="",http;
   try{
     const idx=await otaGet(otaSrc(OS_)+"/firmware/index.json"),ch=OS_&&OS_.ch;
-    list=(idx.releases||[]).filter((e)=>e&&typeof e.version==="string"&&(!ch||e.channel===ch)).map((e)=>({v:e.version,d:typeof e.date==="string"?e.date:"",n:otaClean(e.notes)}));
-  }catch(e){}
+    if(!idx||!Array.isArray(idx.releases))throw otaErr("bad");
+    list=idx.releases.filter((e)=>e&&typeof e.version==="string"&&(!ch||e.channel===ch)).map((e)=>({v:e.version,d:typeof e.date==="string"?e.date:"",n:otaClean(e.notes)}));
+  }catch(e){err=e.kind||"bad";if(e.kind==="http")http=e.status}
   const iv0=OS_&&OS_.v,mn={v:iv0,n:otaClean(iv0&&Object.prototype.hasOwnProperty.call(OTA_WN,iv0)?OTA_WN[iv0]:null)};
   if(!OH)return;                                   // closed meanwhile
   if(list){
@@ -231,7 +232,7 @@ async function otaHistOpen(){
     }
     list=list.filter((e)=>e.n.length||e.v===iv||e.v===rv).sort((a,b)=>vcmp(b.v,a.v));
     OH={st:"on",list};
-  }else OH={st:"off",mine:mn};
+  }else OH={st:"off",mine:mn,err,http};
   if(route==="set")view();
 }
 function otaDay(d){const t=Date.parse(d+"T12:00:00Z");return isNaN(t)?"":new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"})}
@@ -252,7 +253,8 @@ function otaHist(){
   }else{
     const mn=H.mine;
     o+=mn.v?otaHistRow({v:mn.v,d:"",n:mn.n},iv,rv,false):"";
-    o+=`<div class=otahc><p class=dim>Older versions are listed online. Check again on mobile data or another Wi-Fi network.</p><button class="btn sec" data-ota=hist><span>Check again</span><i>github</i></button></div>`;
+    const why=H.err==="timeout"?"The version history request timed out.":otaNet(H.err)?"Your phone couldn't reach GitHub on this network.":H.err==="http"?`You couldn't get version history from GitHub (HTTP ${H.http}). Try again later.`:"The version history data is invalid. Try again later.";
+    o+=`<div class=otahc><p class=dim>${h(why)}${otaNet(H.err)?" Check again on mobile data or another Wi-Fi network.":""}</p><button class="btn sec" data-ota=hist><span>Check again</span><i>github</i></button></div>`;
   }
   $("v").innerHTML=o;
   dock(`<button class="btn sec" data-ota=back><span>Back</span><i>settings</i></button>`,"set");

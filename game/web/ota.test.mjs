@@ -89,6 +89,61 @@ test('history fills missing index notes locally without replacing published note
   }
 });
 
+test('review: history preserves HTTP 404/500 status without suggesting a network switch', async () => {
+  for (const status of [404, 500]) {
+    const p = phone(() => response({}, status));
+    p.run("OTA_WN[ship.v]=['Local notes kept']");
+    await p.run('otaHistOpen()');
+    assert.equal(p.run('OH.st'), 'off'); assert.equal(p.run('OH.err'), 'http');
+    assert.equal(p.run('OH.http'), status);
+    const html = historyHTML(p);
+    assert.ok(html.includes(`HTTP ${status}`));
+    assert.match(html, /Local notes kept/); assert.match(html, /Installed/);
+    assert.doesNotMatch(html, /mobile data|another Wi-Fi|couldn't reach|timed out/);
+    assert.equal(p.timers.size, 0);
+  }
+});
+test('history identifies invalid JSON and index data while keeping installed notes', async () => {
+  const bad = [
+    ...[null, {}, { releases: null }, { releases: {} }, { releases: 'bad' }].map((data) => () => response(data)),
+    () => ({ ok: true, json: async () => { throw new SyntaxError('invalid JSON'); } }),
+  ];
+  for (const fetcher of bad) {
+    const p = phone(fetcher); p.run("OTA_WN[ship.v]=['Local notes kept']");
+    await p.run('otaHistOpen()');
+    assert.equal(p.run('OH.err'), 'bad');
+    const html = historyHTML(p);
+    assert.match(html, /version history data is invalid/); assert.match(html, /Local notes kept/);
+    assert.doesNotMatch(html, /mobile data|another Wi-Fi|HTTP|couldn't reach/);
+    assert.equal(p.timers.size, 0);
+  }
+});
+test('history reserves network advice for reachability and distinguishes timeout', async () => {
+  for (const timeout of [false, true]) {
+    const p = phone((url, { signal }) => {
+      if (!timeout) throw new TypeError('unreachable');
+      return { ok: true, json: () => new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')))) };
+    });
+    p.run("OTA_WN[ship.v]=['Local notes kept']");
+    const pending = p.run('otaHistOpen()');
+    if (timeout) { await flush(); p.fire(8000); }
+    await pending;
+    assert.equal(p.run('OH.err'), timeout ? 'timeout' : 'network');
+    const html = historyHTML(p);
+    assert.match(html, timeout ? /request timed out/ : /couldn't reach GitHub/);
+    assert.match(html, /mobile data or another Wi-Fi network/);
+    assert.match(html, /Local notes kept/); assert.equal(p.timers.size, 0);
+  }
+});
+test('history retry clears the previous failure and restores online rows', async () => {
+  let fail = true;
+  const p = phone(() => fail ? response({}, 404) : response(index()));
+  await p.run('otaHistOpen()'); assert.equal(p.run('OH.http'), 404);
+  fail = false; await p.run('otaHistOpen()');
+  assert.equal(p.run('OH.st'), 'on'); assert.equal(p.run('OH.err'), undefined);
+  assert.doesNotMatch(historyHTML(p), /HTTP|invalid|another Wi-Fi/);
+});
+
 test('successful download persists on this phone, keeps notes, and never asks the offline ship', async () => {
   const p = phone(good);
   await p.run('otaCheck(true)');
