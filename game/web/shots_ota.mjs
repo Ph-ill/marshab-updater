@@ -12,7 +12,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME });
 const PH = "Placeholder text: story hidden from this screenshot.";
 const GH = "https://raw.githubusercontent.com/Ph-ill/marshab-updater/main/";
 let ua = 0, fails = 0;
-const ok = (what, c) => { console.log((c ? "ok   " : "FAIL ") + what); if (!c) fails++; };
+const ok = (what, c, why) => { console.log((c ? "ok   " : "FAIL ") + what + (!c && why ? "\n       " + why : "")); if (!c) fails++; };
 
 function blank(x) {
   if (typeof x === "string") return x.length > 18 && x.includes(" ") ? PH : x;
@@ -24,6 +24,7 @@ async function page(port, { online = true } = {}) {
   const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 ota/${ua++}`,
     viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
+  p.on("console", (m) => { if (m.text().startsWith("stage:")) console.log(m.text()); });
   p.on("pageerror", (e) => { console.error("pageerror", e.message); fails++; });
   // Past the install guide (web/funnel.js), as after "Play in this browser this time".
   await p.addInitScript(() => sessionStorage.setItem("lv.here", "1"));
@@ -129,6 +130,63 @@ await p.click("[data-ota=check]");
 await p.waitForFunction(() => document.querySelector("#v").textContent.includes("no internet"));
 ok("then a failed check: Couldn't check, not Up to date, the no-internet note kept", await p.$eval("#set-sw", (e) => /Available\s*Couldn't check/.test(e.textContent) && !e.textContent.includes("Up to date") && /Checked\s*just now · no internet/.test(e.textContent)));
 await shot(p, "ota-09-failed-check-after-up-to-date");
+await p.context().close();
+// 4. Carrying on with an upload that was cut short (0.3.0, review R2): only when the ship
+// staged this very envelope (the same sha256); anything else is cancelled and sent again
+// from nothing, and so is a resume the ship turns down with a checksum error (400). On the
+// ",back" mock, which stays on 0.2.0, so the same update can be offered again and again.
+async function stage(p, { env2 = false, files = 1, part = 0 } = {}) {
+  return p.evaluate(async ({ env2, files, part }) => {
+    const r = otaFor(OS_ || await otaStatus());
+    let e = r.env;
+    if (env2) { const j = JSON.parse(e); j.sig = (j.sig[0] === "A" ? "B" : "A") + j.sig.slice(1); e = JSON.stringify(j); }
+    const put = async (q, b) => (await fetch("/api/ota/put?" + q, { method: "POST", body: b, headers: { "X-Crew-Token": tok } })).status;
+    const env = new TextEncoder().encode(e);
+    for (let o = 0; o < env.length; o += 1024) await put(`f=0&n=${env.length}&o=${o}`, env.subarray(o, o + 1024));
+    for (let i = 0; i < files; i++) {
+      const b = Uint8Array.from(atob(r.files[i]), (c) => c.charCodeAt(0));
+      for (let o = 0; o < b.length; o += 1024) await put(`f=${i + 1}&o=${o}`, b.subarray(o, o + 1024));
+    }
+    if (part) { const b = Uint8Array.from(atob(r.files[files]), (c) => c.charCodeAt(0)); await put(`f=${files + 1}&o=0`, b.subarray(0, part)); }
+    const st = await (await fetch("/api/ota")).json();
+    if (!st.staged) console.log("stage: " + JSON.stringify({ st, n: env.length, tok: !!tok }));
+    return st.staged;
+  }, { env2, files, part });
+}
+async function install(p) {
+  const log = [];
+  const on = (r) => { const u = r.url(); if (r.method() === "POST" && u.includes("/api/ota/")) log.push(u.replace(/^.*\/api\/ota\//, "")); };
+  p.on("request", on);
+  await p.evaluate(() => { otaInstall(); });
+  await p.waitForSelector("[data-ota=clear]", { timeout: 60000 });
+  p.off("request", on);
+  return log;
+}
+p = await page(8057);
+await p.waitForTimeout(1200);
+let sg = await stage(p, { files: 2 });
+ok("R2: the ship reports the staged envelope's hash", sg && /^[0-9a-f]{64}$/.test(sg.h) && await p.evaluate((h) => h === otaSha(new TextEncoder().encode(otaFor(OS_).env)), sg.h));
+let log = await install(p);
+ok("R2: same envelope: carries on, no cancel, the signature and the done files not sent again",
+  !log.includes("cancel") && !log.some((x) => x.startsWith("put?f=0&")) && !log.some((x) => /^put\?f=[12]&/.test(x)) && log.some((x) => x.startsWith("put?f=3&")) && log.includes("apply"), log.join(" "));
+await p.context().close();
+await new Promise((r) => setTimeout(r, 6500));   // a restart signs everyone out: a fresh page
+p = await page(8057); await p.waitForTimeout(1200);
+sg = await stage(p, { env2: true, files: 2 });
+ok("R2: a version signed twice stages a different hash", sg && sg.h !== await p.evaluate(() => otaSha(new TextEncoder().encode(otaFor(OS_).env))), JSON.stringify(sg));
+log = await install(p);
+const c = log.indexOf("cancel"), e0 = log.findIndex((x) => x.startsWith("put?f=0&") && x.endsWith("&o=0"));
+ok("R2: a different envelope: cancelled, then everything from offset 0", c === 0 && e0 === 1 && log.some((x) => x === "put?f=1&o=0") && log.includes("apply"), log.join(" "));
+await p.context().close();
+await new Promise((r) => setTimeout(r, 6500));
+p = await page(8057); await p.waitForTimeout(1200);
+sg = await stage(p, { files: 1, part: 1024 });
+await p.evaluate(async () => fetch("/api/ota/mockbad?f=2", { method: "POST", headers: { "X-Crew-Token": tok } }));
+log = await install(p);
+const b4 = log.findIndex((x) => x.startsWith("put?f=2&")), c2 = log.indexOf("cancel");
+ok("R2: a 400 while carrying on: cancelled and sent again from the signature",
+  b4 >= 0 && c2 > b4 && log[c2 + 1] && log[c2 + 1].startsWith("put?f=0&") && log[c2 + 1].endsWith("&o=0") && log.slice(c2).includes("put?f=1&o=0") && log.includes("apply"), log.join(" "));
+ok("R2: the outcome is the ship's (went back), not an error", await p.$eval("#v", (e) => e.textContent.includes("went back to 0.2.0")));
 await p.context().close();
 await browser.close();
 console.log(fails ? `FAIL ${fails}` : "ota shots: all ok");

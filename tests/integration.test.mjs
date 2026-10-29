@@ -168,8 +168,13 @@ await t('a tampered release is rejected before touching the board', async () => 
 });
 
 await t('the test build installs by hand over a coex board, and the coex release brings it back', async () => {
-  const entry = index.releases.find(r => r.channel === 'test');
+  // A named release (LV_TEST_RELEASE=0.3.0-ota-phone), else the test channel's head, else the
+  // newest test entry: the suite checks the build it's meant to, not whatever is listed first.
+  const want = process.env.LV_TEST_RELEASE || index.channels?.test;
+  const entry = (want && index.releases.find(r => r.version === want)) || index.releases.find(r => r.channel === 'test');
   assert.ok(entry, 'a test release is listed');
+  if (process.env.LV_TEST_RELEASE) assert.equal(entry.version, process.env.LV_TEST_RELEASE, 'the named test release is listed');
+  assert.equal(entry.channel, 'test');
   assert.notEqual(index.latest, entry.version, 'the test build is not latest');
   const test = JSON.parse(readFileSync(join(repo, entry.path.slice(1)), 'utf8'));
   assert.equal(test.hotspot?.prefix, 'LV-');
@@ -224,6 +229,8 @@ await t('partial release: builder ships only lvx/ overrides of frozen modules, v
   assert.equal(rel.frozen.requires, 'abcdef012345');
   assert.deepEqual(rel.overrides, ['engine']);
   assert.ok(rel.delete.includes('lv') && rel.delete.includes('lvx'), 'clears lv/ and old overrides first');
+  // 0.3.0 R1: a --frozen build deletes the coex bench's config.py and index.html by default
+  assert.ok(rel.delete.includes('config.py') && rel.delete.includes('index.html'), 'clears the coex bench files by default');
   assert.equal(JSON.parse(readFileSync(join(tree, 'firmware/index.json'), 'utf8')).releases[0].frozen, 'abcdef012345');
   r = validate();
   assert.equal(r.status, 0, r.stdout);

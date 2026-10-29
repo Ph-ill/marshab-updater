@@ -395,7 +395,10 @@ class H(BaseHTTPRequestHandler):
                         G.tokens.clear()
                         G.book.phones = []
                 elif u.path == "/api/ota/cancel":
-                    G.ota.m = None
+                    G.ota.m, G.ota.env = None, b""
+                    code, obj = 200, {"ok": True}
+                elif u.path == "/api/ota/mockbad":   # shots_ota.mjs: file f's next piece fails (400)
+                    G.ota.bad = int(q.get("f", ["0"])[0])
                     code, obj = 200, {"ok": True}
                 else:
                     code, obj = 404, {"err": "no such thing"}

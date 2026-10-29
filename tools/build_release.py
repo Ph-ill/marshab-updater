@@ -184,6 +184,9 @@ def vkey(version: str):
     return nums + ((1, "") if not pre else (0, pre))
 
 
+FROZEN_COEX_DELETES = ("config.py", "index.html")   # the coex bench firmware's (game/bench/coex-test)
+
+
 def main() -> None:
     a = parse_args()
     root = a.repo_root.resolve()
@@ -201,9 +204,14 @@ def main() -> None:
     if a.frozen:
         names = [r.as_posix() for r in rels]
         frozen, overrides = frozen_spec(a.frozen.resolve(), names)
-        for d in ["lv", "lvx"] + frozen_stale(frozen, names):   # never a stale full install,
-            if d not in a.delete:                                 # an old override or a copy
-                a.delete.append(d)                                # of a now-frozen module
+        # never a stale full install, an old override or a copy of a now-frozen module; and
+        # never the coex bench firmware's own files on a board it replaces (config.py,
+        # index.html: 0.2.0/0.2.2 deleted them, the hand-built 0.2.4-0.2.7 didn't), unless
+        # this release ships them itself (review REVIEW2 m1, 0.3.0 R1)
+        coex = [d for d in FROZEN_COEX_DELETES if d not in names]
+        for d in ["lv", "lvx"] + frozen_stale(frozen, names) + coex:
+            if d not in a.delete:
+                a.delete.append(d)
     elif any(r.parts[0] == "lvx" for r in rels):
         raise SystemExit("lvx/ overrides only work on the game firmware: give --frozen <core manifest>")
 

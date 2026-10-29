@@ -5,8 +5,8 @@ GitHub side, so the phone's update screens can be clicked through and photograph
   ota=0.2.0,back     ... and the update "doesn't start": the ship comes back on 0.2.0, rolled back
 
 The ship's half follows board/lvota.py's protocol (GET /api/ota, POST put/apply/cancel, the
-409 {have} for a piece at the wrong place, 401 signed out) but doesn't check signatures or
-hashes (tests/test_ota.py does that on the real module). /gh/... is what the page would get
+409 {have} for a piece at the wrong place, 401 signed out, staged "h": the envelope's sha256)
+but doesn't check signatures or file hashes (tests/test_ota.py does that on the real module). /gh/... is what the page would get
 from raw.githubusercontent.com: an index and a signed release.json, made here with the TEST
 key (tools/ota/ed25519.py, seed 0..31), never the release key. The files are filler bytes.
 """
@@ -60,6 +60,7 @@ class MockOta:
         self.have = []
         self.down_until = 0
         self.last = None
+        self.bad = 0              # file number whose next piece fails its checksum (400), once
 
     def down(self):
         return time.monotonic() < self.down_until
@@ -69,6 +70,7 @@ class MockOta:
               "free": 600000, "last": self.last, "phase": None, "staged": None}
         if self.m:
             st["staged"] = {"v": self.m["version"], "have": list(self.have),
+                            "h": hashlib.sha256(self.env).hexdigest(),
                             "sizes": [f[1] for f in self.m["files"]]}
         return st
 
@@ -88,6 +90,9 @@ class MockOta:
         if not self.m or not 1 <= f <= len(self.have):
             return 409, {"err": "send the signature first"}
         size = self.m["files"][f - 1][1]
+        if self.bad and f == self.bad:   # (shots_ota.mjs: a staged file that isn't this update's)
+            self.bad, self.have[f - 1] = 0, 0
+            return 400, {"err": "didn't match its signed checksum", "have": 0}
         if o != self.have[f - 1]:
             return 409, {"err": "wrong place", "have": self.have[f - 1]}
         if o + len(body) > size:
