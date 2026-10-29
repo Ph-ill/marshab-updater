@@ -232,12 +232,8 @@ lvsafe.fail = once
 lvsafe.crashed("ValueError: q", False, 1, D)
 lvsafe.fail = None
 check("m2: the note is tried again", n_() == 1)
-lvsafe.healthy(D, said.append)
-check("healthy: count gone", n_() == 0 and not lvsafe.exists(D + "/fault.json"))
-check("healthy: ship.json backed up", json.loads(get(P + ".bak")) == json.loads(SHIP))
-n = len(said)
-lvsafe.healthy(D, said.append)
-check("healthy again: no rewrite when the same", len(said) == n)
+rm(D + "/fault.json")
+check("ship.json backed up", json.loads(get(P + ".bak")) == json.loads(SHIP))
 put(P, '{"ship_id": 5, "hots')
 check("broken ship.json + backup: put back, play", lvsafe.check(False, D, said.append) is None
       and json.loads(get(P)) == json.loads(SHIP))
@@ -275,16 +271,59 @@ w = lvsafe.check(False, D)
 check("broken, no backup: off", w is not None and w.startswith("off:"), w)
 check("off even on trial", (lvsafe.check(True, D) or "").startswith("off:"))
 check("no stray .new", [f for f in files() if f.endswith(".new")] == [], files())
-# m3: a read error that isn't "no such file" is "off" for now, never written over
+# m3: a read error that isn't "no such file", with nothing to put back, is "off" for now
+# and never written over (every file unreadable here: the .bak too)
 put(P, SHIP)
 lvsafe.check(False, D)
-put(P + ".bak", SHIP2)                  # a backup that would differ: must not be used
+put(P + ".bak", SHIP2)
 for e in (OSError(5, "EIO"), MemoryError()):
     lvsafe.fail = raiser("open", e)
     w = lvsafe.check(False, D, said.append)
     lvsafe.fail = None
-    check("m3 %r: off, looking again" % (e,), (w or "").startswith("off: ship.json can't be read just now"), w)
+    check("m3 %r: off, looking again" % (e,), (w or "").startswith("off: ship.json unreadable and nothing to put back"), w)
     check("m3 %r: ship.json untouched" % (e,), get(P) == SHIP and get(P + ".bak") == SHIP2)
+# Review #2 M4: a ship.json that stays unreadable (littlefs gives a damaged block
+# LFS_ERR_CORRUPT, OSError 84, on every read) with a good .bak was "off" on every boot,
+# forever: no hotspot, so no update either. Now: looked at again after a pause, then put
+# back from the .bak (refreshed at every boot, so at most this boot's changes behind).
+real_open = open
+
+
+def bad_open(path, *a, **k):
+    if path.endswith("/ship.json"):
+        raise OSError(84)
+    return real_open(path, *a, **k)
+
+
+def sticky(fn):
+    # ship.json unreadable until it is written over (as a damaged block until the rename)
+    lvsafe.open = bad_open
+    try:
+        return fn()
+    finally:
+        del lvsafe.open
+
+
+for have in (".bak", ".new"):
+    fresh()
+    put(P, SHIP)
+    lvsafe.check(False, D)
+    if have == ".new":
+        rm(P + ".bak")
+        put(P + ".new", SHIP2)
+    got = []
+    w = sticky(lambda: lvsafe.check(False, D, said.append, got))
+    check("M4 unreadable, good %s: play" % have, w is None, w)
+    want = SHIP if have == ".bak" else SHIP2
+    check("M4 unreadable, good %s: put back" % have, json.loads(get(P)) == json.loads(want), get(P))
+    check("M4 unreadable, good %s: said so" % have, said[-1] == "safe: ship.json unreadable, put back from ship.json" + have, said[-1:])
+    check("M4 unreadable, good %s: cfg from it" % have, got == [json.loads(want)], got)
+    check("M4 unreadable, good %s: no stray files" % have, files() == ["ship.json", "ship.json.bak"], files())
+fresh()
+put(P, SHIP)
+w = sticky(lambda: lvsafe.check(False, D, said.append))
+check("M4 unreadable, nothing to put back: off", (w or "").startswith("off: ship.json unreadable"), w)
+check("M4 unreadable, nothing to put back: untouched", get(P) == SHIP)
 flaky = [1]
 
 
@@ -313,6 +352,121 @@ check("m4: missing crew.json from 0.2.6's .old", lvsafe.check(False, D) is None 
 rm(C + ".bak")
 put(C, "{bad")
 check("m4: broken crew.json, nothing to put back: still play", lvsafe.check(False, D) is None)
+# Review #2 M3 (rv2/order.py, wear.py): "only when it differs" compared json.dumps text,
+# and a MicroPython dict's key order isn't the file's, so both .bak files were rewritten at
+# every boot there. Compared as objects now: count the writes over boots, on every port.
+fresh()
+SHIPW = ('{"ship_id": 5, "hotspot_password": "xxxxxxxxxxxx", "fleet_key": "00112233445566778899aabbccddeeff", '
+         '"launch_date": "2026-09-01", "ota_src": "ota-phonetest", "led_notify": true, "bat_chg_pull": "none", '
+         '"country": "US", "channel": 6, "ssid_prefix": "LV-", "http_port": 80, "captive_dns": true}')
+put(P, SHIPW)
+put(C, CREW)
+hits = []
+lvsafe.fail = hits.append
+lvsafe.check(False, D, said.append)
+first_boot = hits.count("write")
+writes = []
+for boot in range(4):
+    hits[:] = []
+    lvsafe.check(False, D, said.append)
+    writes.append(hits.count("write"))
+lvsafe.fail = None
+check("M3: the first boot writes both backups", first_boot == 2, first_boot)
+check("M3: later boots write nothing (%s)" % sys.implementation.name, writes == [0, 0, 0, 0], writes)
+check("M3: files as they were", get(P) == SHIPW and files() == ["crew.json", "crew.json.bak", "ship.json", "ship.json.bak"], files())
+put(P, SHIPW.replace('"led_notify": true', '"led_notify": false'))
+hits[:] = []
+lvsafe.fail = hits.append
+lvsafe.check(False, D, said.append)
+lvsafe.fail = None
+check("M3: a real change is backed up (one write)", hits.count("write") == 1 and json.loads(get(P + ".bak"))["led_notify"] is False, hits)
+
+# Review #2 M5 (rv2/new_repro.py): putting ship.json back from .new went through save(),
+# which writes ship.json.new, the very file it was restoring from, and removes it on a
+# failure: the only good copy gone, and the next boot a fake ship 1. Now .new and .old are
+# renamed into place (nothing rewritten), and .bak is copied through ship.json.bak.new.
+fresh()
+put(P + ".new", SHIP2)
+put(C, CREW)
+first = [1]
+
+
+def restore_fails_once(w):
+    if w == "restore" and first:
+        first.pop()
+        raise OSError(28)                       # ENOSPC, once, on the restore's rename
+lvsafe.fail = restore_fails_once
+w = lvsafe.check(False, D, said.append)
+lvsafe.fail = None
+check("M5: a failed restore from .new: off for now", (w or "").startswith("off: ship.json missing"), w)
+check("M5: ... and .new still there, whole", get(P + ".new") == SHIP2, files())
+w = lvsafe.check(False, D, said.append)
+check("M5: the next boot puts it back", w is None and json.loads(get(P)) == json.loads(SHIP2) and not lvsafe.exists(P + ".new"), (w, files()))
+fresh()
+put(P + ".bak", SHIP)
+put(P + ".new", '{"ship_id": 5, "ho')            # a .new cut short
+lvsafe.fail = raiser("rename", OSError(28))
+w = lvsafe.check(False, D, said.append)
+lvsafe.fail = None
+check("M5: a failed copy from .bak: off, .bak whole", (w or "").startswith("off:") and get(P + ".bak") == SHIP, (w, files()))
+check("M5: ... through its own temp file (no .bak.new left)", not lvsafe.exists(P + ".bak.new"), files())
+check("M5: then put back", lvsafe.check(False, D, said.append) is None and json.loads(get(P)) == json.loads(SHIP))
+# M5 part 2: 'set up for a crew' no longer hangs on files a restore can delete. Every crew
+# ship has crew.json; a missing ship.json next to one is "off", never the defaults.
+for f in ("crew.json", "crew.json.bak", "crew.json.old"):
+    fresh()
+    put(D + "/" + f, CREW)
+    w = lvsafe.check(False, D, said.append)
+    check("M5: no ship.json, no traces of it, but %s: off" % f, (w or "").startswith("off: ship.json missing"), w)
+fresh()
+check("M5: a bench board with nothing at all still plays", lvsafe.check(False, D, said.append) is None)
+# Review #2 m2: a ship damaged by 0.2.6's toggle ({"led_notify": ...} alone) arrives with no
+# .bak: it played as ship 1 on the placeholder hotspot. With crew.json it is "off".
+fresh()
+put(C, CREW)
+put(P, '{"led_notify": true}')
+w = lvsafe.check(False, D, said.append)
+check("m2: identity-less ship.json on a crew ship, nothing to put back: off", (w or "").startswith("off: ship.json not usable"), w)
+check("m2: ... left as it is", get(P) == '{"led_notify": true}')
+rm(C)
+rm(C + ".bak")
+got = []
+check("m2: the same on a bench board (no crew.json): plays its own settings", lvsafe.check(False, D, said.append, got) is None
+      and got == [{"led_notify": True}], got)
+# Review #2 m3 (rv2/guard_repro.py D): a stale .old (a power cut after a restore, or 0.2.6)
+# came back ahead of the fresher .bak. Leftovers next to a good file go; .bak before .old.
+CREWb = json.dumps(K.make_config(["4321"] + [None] * 7, b"safe-test-salt16"))
+fresh()
+put(P, SHIP)
+put(C, CREWb)
+put(C + ".old", CREW)
+put(P + ".new", SHIP2)
+lvsafe.check(False, D, said.append)
+check("m3: leftovers next to good files removed", files() == ["crew.json", "crew.json.bak", "ship.json", "ship.json.bak"], files())
+check("m3: said so", "safe: a leftover crew.json.old removed" in said and "safe: a leftover ship.json.new removed" in said, said[-4:])
+rm(C)
+put(C + ".old", CREW)                           # (a stale .old again, written after)
+lvsafe.check(False, D, said.append)
+check("m3: crew.json lost: the .bak (newer codes), not the stale .old", json.loads(get(C)) == json.loads(CREWb))
+check("m3: and the .old went once crew.json was good", not lvsafe.exists(C + ".old"), files())
+lvsafe.check(False, D, said.append)
+check("m3: ...on the next boot", not lvsafe.exists(C + ".old"), files())
+fresh()
+put(C, CREW)
+
+# Review #2 m7: crew_ok is codes.load's own rule, so a crew.json the game can't sign in
+# from never becomes the .bak
+CK = json.loads(CREW)
+check("m7: a crew.json codes.load takes", lvsafe.crew_ok(CK))
+for bad, why in ((dict(CK, codes=["ab"] * 8), "short codes"), (dict(CK, codes=[1] * 8), "numbers"),
+                 (dict(CK, salt="zz" * 16), "salt not hex"), (dict(CK, salt="ab" * 4), "salt short"),
+                 (dict(CK, codes=CK["codes"][:7]), "7 codes")):
+    check("m7: not good: " + why, not lvsafe.crew_ok(bad))
+put(C, json.dumps(dict(CK, codes=["ab"] * 8)))
+put(C + ".bak", CREW)
+lvsafe.check(False, D)
+check("m7: an unloadable crew.json put back from .bak, never backed up",
+      json.loads(get(C)) == CK and json.loads(get(C + ".bak")) == CK)
 put(P, SHIP)
 lvsafe.fail = lambda wh: (_ for _ in ()).throw(OSError("x")) if wh == "rename" else None
 check("save fails cleanly", lvsafe.save(D + "/fault.json", "{}") is False and not lvsafe.exists(D + "/fault.json.new"))
@@ -436,8 +590,62 @@ src = src[:src.index("\nT0 = time.ticks_ms()")]
 g = {"__name__": "main_test"}
 exec(src, g)
 web.ok2xx = 7
+web.served, sh.http_hits = 3, 4
 check("m7: the safe server serves the page", asyncio.run(g["serves"](web)) is True)
-check("m7: the 2xx count left as it was", web.ok2xx == 7)
+check("m7: the counts a phone moves left as they were", (web.ok2xx, web.served, sh.http_hits) == (7, 3, 4),
+      (web.ok2xx, web.served, sh.http_hits))
+
+
+class AP:
+    # the hotspot as network.WLAN(AP_IF) shows it
+    def __init__(self, on, essid):
+        self.on, self.essid = on, essid
+
+    def active(self):
+        return self.on
+
+    def config(self, k):
+        return self.essid
+
+
+class Srv:
+    def __init__(self, done):
+        self.task = self
+
+    def done(self):
+        return self.d
+
+
+cfg["ssid_prefix"] = "LV-"
+web.ap = AP(True, "LV-5")
+web.srv = Srv(False)
+web.srv.d = False
+check("M1: hotspot up as LV-5, server listening: serves", asyncio.run(g["serves"](web)) is True)
+web.ap = AP(False, "LV-5")
+check("M1: hotspot down: no keep", asyncio.run(g["serves"](web)) is False)
+web.ap = AP(True, "LV-1")
+check("M1: hotspot up as another ship (a fake ship 1): no keep", asyncio.run(g["serves"](web)) is False)
+web.ap = AP(True, "LV-5")
+web.srv.d = True
+check("M1: the accept loop has stopped: no keep", asyncio.run(g["serves"](web)) is False)
+web.srv.d = False
+# Review #2 M1 (rv2/serves_repro.py): a broken update whose request parser raises on every
+# real request passed serves() (it called route directly). Now the raw bytes go through
+# Server.handle, as a phone's do.
+real_rr = lvweb.read_req
+
+
+async def broken_read_req(reader):
+    raise AttributeError("typo in read_req")
+lvweb.read_req = broken_read_req
+check("M1: a broken request parser: no keep", asyncio.run(g["serves"](web)) is False)
+lvweb.read_req = real_rr
+busy = lvweb.MAX_CONN
+web.busy = busy
+check("M1: every slot busy (503): not now", asyncio.run(g["serves"](web)) is False)
+web.busy = 0
+check("M1: and the counts still as they were", (web.ok2xx, web.served, sh.http_hits) == (7, 3, 4),
+      (web.ok2xx, web.served, sh.http_hits, web.refused))
 os.rename("www/app.html.gz", "www/gone")
 check("m7: no page, no keep", asyncio.run(g["serves"](web)) is False)
 os.chdir(HERE)
@@ -467,7 +675,10 @@ class T:
 
 
 class Quick:
-    # lvship as main.py uses it, with every wait cut to a moment
+    # lvship as main.py uses it, with every wait cut to a moment (now: a clock tests move)
+    now = [0]
+    DEFAULTS = {"ship_id": 1, "ssid_prefix": "LV-", "hotspot": True}
+
     @staticmethod
     def sleep_ms(ms):
         return asyncio.sleep(min(ms, 20) / 1000)
@@ -475,6 +686,18 @@ class Quick:
     @staticmethod
     def drop(name):
         sys.modules.pop(name, None)
+
+    @staticmethod
+    def ticks_ms():
+        return Quick.now[0]
+
+    @staticmethod
+    def ticks_diff(a, b):
+        return a - b
+
+    @staticmethod
+    def load_config():
+        return "load_config"
 
 
 g["time"] = T
@@ -501,9 +724,12 @@ class FakeWeb:
     # a set that serves the page (or doesn't: up) and counts no 2xx of its own
     def __init__(self):
         self.ok2xx = 0
+        self.served = 0
         self.up = False
+        self.ship = FakeShip()
+        self.ship.http_hits = 0
 
-    async def route(self, r, w):
+    async def handle(self, r, w):
         w.write(b"HTTP/1.0 200 OK\r\n" if self.up else b"HTTP/1.0 500 Oops\r\n")
         if self.up:
             self.ok2xx += 1
@@ -572,6 +798,80 @@ check("crashed: restart every time", boots == [1] * 5, boots)
 put(FD, '{"n": 5, "why": "x"}')
 g["note"](False)
 check("M3: the short way stops at the cap too", json.loads(get(FD))["n"] == 5)
+# Review #2 m4: the short way kept only n and why (safe mode's next wait, tries, fell back to
+# 30 min after every crash it noted), and rewrote the file at the cap on every crash
+put(FD, '{"n": 1, "why": "MemoryError: x", "up": 5, "tries": 3}')
+g["note"](False)
+j = json.loads(get(FD))
+check("m4: the short way keeps tries", j == {"n": 2, "why": "noted the short way", "up": 5, "tries": 3}, j)
+put(FD, '{"n": 5, "why": "x", "tries": 2}')
+real_o = g.get("open")
+wrote = []
+
+
+def no_write_open(path, mode="r", *a):
+    if "w" in mode:
+        wrote.append(path)
+    return real_open(path, mode, *a)
+
+
+g["open"] = no_write_open
+g["note"](False)
+g["note"](False)
+del g["open"]
+check("m4: at the cap the short way writes nothing", wrote == [] and get(FD) == '{"n": 5, "why": "x", "tries": 2}', wrote)
+put(FD, "[1]")
+g["note"](False)
+check("m4: the short way over a broken note", json.loads(get(FD))["n"] == 1, get(FD))
+# Review #2 M2: crashed() let go of nothing: MAIN (run()'s finished task, its coroutine
+# holding the whole game) and FATAL (the accept loop's task, holding web.handle) kept it
+# all, and so did lvweb.head (net_hooks' counter, whose closure holds the server). Now
+# they are cleared first. On MicroPython, the heap the note sees is measured.
+for k in ("MAIN", "FATAL", "CRASH"):
+    check("M2: %s cleared by crashed()" % k, g[k] == [], g[k])
+if sys.implementation.name == "micropython":
+    import gc
+    saved = dict((m, sys.modules[m]) for m in g["GAME"] if m in sys.modules)
+    gc.collect()
+    base = gc.mem_alloc()
+    seen = []
+
+    def build():
+        import lvweb as W2
+        sh2 = FakeShip()
+        sh2.http_hits = 0
+        sh2.big = [bytearray(1000) for _ in range(30)]     # the game's heap (ship, story, phones...)
+        web2 = W2.Server(sh2, say=lambda s: None)
+        g["net_hooks"](W2, web2)
+
+        async def run():
+            g["MAIN"][:] = [asyncio.current_task()]
+            w = web2
+
+            async def srv():
+                c = w
+                await asyncio.sleep(10)
+            g["FATAL"][:] = [asyncio.create_task(srv())]
+            await asyncio.sleep(0)
+            g["CRASH"].append(MemoryError("memory allocation failed, allocating 4096 bytes"))
+            g["MAIN"][0].cancel()
+            await asyncio.sleep(1)
+        asyncio.run(run())
+
+    def measure(why, trial, up):
+        gc.collect()
+        seen.append((gc.mem_alloc() - base, why))
+    lvsafe.crashed = measure
+    boots = []
+    try:
+        build()
+    except BaseException as e:
+        g["crashed"](g["CRASH"][0] if g["CRASH"] else e, 0)
+    lvsafe.crashed = real
+    sys.modules.update(saved)
+    check("M2: crashed() noted the crash's own words", seen and seen[0][1].startswith("MemoryError: memory allocation"), seen)
+    check("M2: the game's heap is let go before the note (< 4 KB of 30 KB live)", seen[0][0] < 4096, seen)
+    print("M2: live after crashed()'s clean-up: %d B (the game held 30,000+)" % seen[0][0])
 
 # task_error(): only the web server's accept loop stops the game (M4)
 class Tk:
@@ -624,6 +924,47 @@ async def flaky_task():
         raise OSError("dns")
     return "done"
 check("keep: started again until it runs", asyncio.run(g["keep"]("dns", flaky_task)) == "done" and len(runs) == 3)
+# Review #2 m8: the pause doubled for good; a run of more than a minute starts it at 5 s again
+said_keep = []
+real_print = g.get("print")
+g["print"] = said_keep.append
+runs = []
+
+
+async def long_then_fail():
+    runs.append(1)
+    if len(runs) <= 3:
+        raise OSError("dns")            # three quick failures: 5, 10, 20 s
+    if len(runs) == 4:
+        Quick.now[0] += 3600000         # then it runs for an hour and fails
+        raise OSError("dns")
+    return "done"
+asyncio.run(g["keep"]("dns", long_then_fail))
+del g["print"]
+pauses = [x.split("again in ")[1] for x in said_keep]
+check("m8: the pause starts at 5 s again after a long run", pauses == ["5 s", "10 s", "20 s", "5 s"], pauses)
+
+# Review #2 M6: healthy() at minute 10 is main.py's own: fault.json goes, nothing imported
+put(FD, '{"n": 1, "why": "x"}')
+sys.modules.pop("lvsafe", None)
+asyncio.run(g["healthy"]())
+check("M6: healthy removes fault.json", not lvsafe.exists(FD))
+check("M6: healthy imports nothing (no lvsafe, no lvledcfg)", "lvsafe" not in sys.modules and "lvledcfg" not in sys.modules)
+asyncio.run(g["healthy"]())
+check("M6: healthy with no fault.json is fine", not lvsafe.exists(FD))
+sys.modules["lvsafe"] = lvsafe
+
+# Review #2 m1: cfg is built from the ship.json lvsafe.check() read, not a second read
+c = g["config"]([{"ship_id": "5", "hotspot_password": "x" * 12}])
+check("m1: cfg from what check() read", c["ship_id"] == 5 and c["ssid_prefix"] == "LV-" and c["hotspot_password"] == "x" * 12, c)
+check("m1: a bench board with no ship.json: the defaults", g["config"]([])["ship_id"] == 1)
+check("m1: ship_id clamped as load_config does", g["config"]([{"ship_id": 12}])["ship_id"] == 8 and g["config"]([{"ship_id": "x"}])["ship_id"] == 1)
+check("m4: lvsafe unusable at boot: load_config as 0.2.6", g["config"](None) == "load_config")
+fresh()
+put(P, SHIP)
+got = []
+lvsafe.check(False, D, said.append, got)
+check("m1: check() hands back ship.json as read", got == [json.loads(SHIP)], got)
 
 # safe_mode "off": nothing on the air, a wait, then a restart (safe mode once more after the cap)
 rested = []

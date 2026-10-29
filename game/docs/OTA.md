@@ -165,9 +165,18 @@ member's `X-Crew-Token`, otherwise it gets 401.
      power-cut safety (6.) is unchanged. A soft reset on trial is harmless the other way
      too: `main.py` still calls `good()` 30 s after the game is up.
 4. **`main.py`, 30 s after the game is up**, once it has answered a phone with a 2xx or
-   (0.2.7, no phone needed) its own check of `/`, `/api/crew` and `/api/ota` through the
-   ship's own server passes, retried every 5 s. Calls `lvota.good()`. That writes
+   (0.2.7, no phone needed) its own check passes, retried every 5 s. The check
+   (`serves()`) needs the hotspot up under this ship's own name (`ssid_prefix` + ship
+   number) and the server's accept task still running, then pushes raw
+   `GET /`, `/api/crew` and `/api/ota` requests through the server's own request handler
+   (`web.handle`: the request parser, the busy/`MAX_CONN` accounting and the error
+   handling a phone's request goes through), each of which must answer 2xx. Its own
+   requests aren't counted as phone hits. Calls `lvota.good()`. That writes
    `ota/last.json` `{result: "installed"}` and removes `ota/old` and the state.
+   A trial that boots dark ("off": `ship.json` or `crew.json` unreadable and nothing to
+   put back, see `board/lvsafe.py`) never reports in, so it rolls back at its 2nd boot;
+   the old software finds the same files and goes off too, which is harmless. Fix it over
+   USB with the updater.
 5. **Rollback.** If a trial reaches its 2nd boot without reporting in, `lvboot` puts every
    old file back, removes the files the update added and writes `{result: "rolled back"}`.
    Any unexpected error in `lvboot` also rolls back. Boots with `data/maint` or `data/safe`

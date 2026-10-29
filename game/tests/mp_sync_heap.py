@@ -182,40 +182,34 @@ class TestPin:
         TestPin.n += 1
 
 
+# main.py as the board holds it: every function and class it defines (review #2 M6: the
+# resident code is all of it, about 9 KB on lv32, not only the parts a run calls), executed up
+# to the line that starts a board (T0 = ...). Then, with the phone game, its home_screen()
+# (the manifest and icon) always, its ota_hooks() with --ota, and its charger watch with
+# --bat (the pin read every 100 ms, the bolt at once, next to lvship's loop), as the board
+# runs them. Imported as a module from a copy cut at that line (build/heap_main.py), so it
+# is compiled from the file as the board compiles main.py, never held as one string.
+with open("board/main.py") as f, open("build/heap_main.py", "w") as o:
+    for ln in f:
+        if ln.startswith("T0 = time.ticks_ms()"):
+            break
+        o.write(ln)
+sys.modules.pop("heap_main", None)
+sys.path.insert(0, "build")
+m0 = mem()
+import heap_main                     # noqa: E402
+m_main = mem() - m0
+sys.path.pop(0)
+MAIN_PY = heap_main.__dict__
 if WEB:
     web = lvweb.Server(ship, root=ROOT, say=lambda s: None)
     lvweb.probe = sample
-    # main.py's home_screen() (the manifest and icon) always, and its ota_hooks() with
-    # --ota, as they are (main.py itself starts a board, so only those parts).
-    # Read line by line, so the measured heap holds only those functions, not main.py's text.
-    src, on = [], False
-    with open("board/main.py") as f:
-        for ln in f:
-            if ln.startswith("def home_screen"):
-                on = True
-            elif ln.startswith("async def ota_ok") or (ln.startswith("def ota_hooks") and not OTA):
-                break
-            if on:
-                src.append(ln)
-    g = {"lvship": lvship, "asyncio": asyncio}
-    exec("".join(src), g)
+    g = MAIN_PY
     g["home_screen"](lvweb)
     if OTA:
         g["ota_hooks"](lvweb, web)
         ship.led_pin = TestPin         # Test light (board/lvledtest.py): the LED, counted
     if BAT:
-        # and main.py's charger watch (the pin read every 100 ms, the bolt at once), as the
-        # board runs it next to lvship's loop
-        src, on = [], False
-        with open("board/main.py") as f:
-            for ln in f:
-                if ln.startswith("# ---- the charger line"):
-                    on = True
-                elif ln.startswith("def main():"):
-                    break
-                if on:
-                    src.append(ln)
-        exec("".join(src), g)
         chg_watch[0] = g["charger_watch"]
     src = g = None
     gc.collect()
@@ -359,7 +353,9 @@ print("impl %s %d-bit; glue from %s, pack %s; %s" % (sys.implementation.name, BI
 print("heap: fake radio module %d, code (lvship + lv incl. sync, ble) %d, peer %d, ship with the whole season "
       "and the story at day 42 %d" % (m_fake, m_code - m_fake, m_peer - m_code, m_ship - m_peer))
 print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio time); peer and fake world at the end %d; "
-      "board peak (peak - peer - fake radio) %d B%s" % (peak[0], got, t, m_peer_end, board, " (cap 80,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 80,000 B cap"))
+      "board peak (peak - peer - fake radio) %d B%s; main.py's resident code %d B (in the peak)" % (
+          peak[0], got, t, m_peer_end, board, " (cap 80,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 80,000 B cap",
+          m_main))
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
