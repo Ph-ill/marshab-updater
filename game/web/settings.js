@@ -42,15 +42,15 @@ function setScreen(){
   $("v").innerHTML=o;
   dock("","set");
 }
-// Test light (board/lvledtest.py, POST /api/led/test): the ship plays three blinks and one
-// slow pulse (~4 s), on or off, then goes back to what its light was doing. The button says
+// Test light (board/lvledtest.py, POST /api/led/test): the ship plays three blinks and three
+// slow pulses (10 s; 0.3.0, was ~4 s), on or off, then goes back to what its light was doing. The button says
 // "Testing" with a thin bar for as long as the ship says it plays; repainted in place (never a
 // whole redraw: the code form keeps what's typed), and a tap meanwhile does nothing.
 let LEDT=0,LEDS=0,LEDE="",LEDK=0;   // test: ends at (Date.now ms), started at, last error, timer
 function ledtHTML(n){
   const now=Date.now(),on=LEDT>now,ms=LEDT-LEDS;
-  let o=`<div id=set-ledt><button class="btn sec ledt" data-ledt=1${on?" disabled aria-busy=true":""} aria-describedby=ledts><span>${on?"Testing\u2026":"Test light"}</span><i>${on?"watch LV-"+n:"about 4 s"}</i>${on?`<b class=ledbar style="animation-duration:${ms}ms;animation-delay:-${now-LEDS}ms" aria-hidden=true></b>`:""}</button>`;
-  o+=`<p id=ledts class=${LEDE?"err":"fine"} role=status>${LEDE?h(LEDE):on?`Look at LV-${n} now: three blinks, then one slow pulse.`:LEDS?`Finished. The light is back to ${S.led?"on":"off"}.`:"Three blinks, then one slow pulse. Works with the light off too."}</p></div>`;
+  let o=`<div id=set-ledt><button class="btn sec ledt" data-ledt=1${on?" disabled aria-busy=true":""} aria-describedby=ledts><span>${on?"Testing\u2026":"Test light"}</span><i>${on?"watch LV-"+n:"10 s"}</i>${on?`<b class=ledbar style="animation-duration:${ms}ms;animation-delay:-${now-LEDS}ms" aria-hidden=true></b>`:""}</button>`;
+  o+=`<p id=ledts class=${LEDE?"err":"fine"} role=status>${LEDE?h(LEDE):on?`Look at LV-${n} now: three blinks, then three slow pulses.`:LEDS?`Finished. The light is back to ${S.led?"on":"off"}.`:"Three blinks, then three slow pulses. Works with the light off too."}</p></div>`;
   return o;
 }
 function ledtPaint(){
@@ -64,7 +64,7 @@ function ledtFor(ms){
 }
 document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button[data-ledt]");if(!el||el.disabled||LEDT>Date.now())return;
-  LEDE="";ledtFor(4000);
+  LEDE="";ledtFor(10000);
   try{const j=await api("/api/led/test",{});ledtFor(j.ms)}
   catch(e){
     if(!tok)return;
@@ -124,9 +124,9 @@ function setDone(ms){
 const view_set=view;view=function(){
   if(/^(set|sw|a2h)$/.test(route)&&tok&&S){
     if(route!=="set"){route="set";history.replaceState(null,"","#set")}
-    try{return OI?otaScreen():setScreen()}finally{if(net==="lost"&&!OI)$("v").insertAdjacentHTML("afterbegin","<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>")}
+    try{return OI?otaScreen():OH?otaHist():setScreen()}finally{if(net==="lost"&&!OI)$("v").insertAdjacentHTML("afterbegin","<div class=off role=status>No signal · last copy shown<button data-retry=1>Retry</button></div>")}
   }
-  if(route!=="set"){RST=null;CHG=null;CHGV=null;if(!(LEDT>Date.now()))LEDS=0,LEDE=""}
+  if(route!=="set"){RST=null;CHG=null;CHGV=null;OH=null;if(!(LEDT>Date.now()))LEDS=0,LEDE=""}
   return view_set();
 };
 document.addEventListener("input",(ev)=>{

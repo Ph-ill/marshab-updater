@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { gzipSync } from 'node:zlib';
 import { SimDevice } from './sim-device.mjs';
 import { readDeviceInfo, summarizeDeviceInfo, describeFirmware } from '../src/device-info.js';
 import { installRelease } from '../src/installer.js';
@@ -272,6 +273,55 @@ await t('validator catches a hand-edited partial release', async () => {
     assert.match(r.stdout, want);
   }
   writeFileSync(relOf('9.9.9-p1'), good);
+  assert.equal(validate().status, 0);
+});
+
+// 0.3.0 group G: what's new for players (game/tools/ota/whatsnew.py) in release.json's
+// whats_new and the index entry's notes, never in version.json (the ship reads that while it
+// updates); the shipped page must carry them (offline, the phone reads them from it).
+await t("what's new: --whats-new lines in release.json and index.json, not version.json; the page checked; bad ones refused", async () => {
+  const ip = join(tree, 'firmware/index.json'), before = readFileSync(ip, 'utf8');
+  const wn = join(tree, 'whatsnew.txt');
+  writeFileSync(wn, 'You can hail a crewmate.\n\nYour ship\'s light flickers when a hail lands.\n');
+  let r = build('9.9.9-w1', ['--frozen', coreJson, '--whats-new', wn]);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const want = ['You can hail a crewmate.', "Your ship's light flickers when a hail lands."];
+  const rel = JSON.parse(readFileSync(relOf('9.9.9-w1'), 'utf8'));
+  assert.deepEqual(rel.whats_new, want);
+  assert.equal(rel.notes, '', 'the operator notes field is left alone');
+  const vf = rel.files.find(f => f.path === 'version.json');
+  assert.ok(!('notes' in JSON.parse(Buffer.from(vf.data, 'base64').toString('utf8'))), 'version.json has no notes');
+  const ent = JSON.parse(readFileSync(join(tree, 'firmware/index.json'), 'utf8')).releases.find(e => e.version === '9.9.9-w1');
+  assert.deepEqual(ent.notes, want);
+  assert.equal(validate().status, 0);
+  // a real page that doesn't carry them: refused; one that does: built
+  const pg = join(sb, 'www/app.html.gz'), pg0 = readFileSync(pg);
+  writeFileSync(pg, gzipSync('<script>const OTA_WN={}</script>'));
+  r = build('9.9.9-w1', ['--frozen', coreJson, '--whats-new', wn]);
+  assert.notEqual(r.status, 0); assert.match(r.stderr, /doesn't carry 9\.9\.9-w1's what's new/);
+  writeFileSync(pg, gzipSync('<script>const OTA_WN=' + JSON.stringify({ '9.9.9-w1': want }) + '</script>'));
+  r = build('9.9.9-w1', ['--frozen', coreJson, '--whats-new', wn]);
+  assert.equal(r.status, 0, r.stderr);
+  writeFileSync(pg, pg0);
+  // no --whats-new and none in whatsnew.json: no notes anywhere
+  r = build('9.9.9-w2', ['--frozen', coreJson]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(!('whats_new' in JSON.parse(readFileSync(relOf('9.9.9-w2'), 'utf8'))));
+  // markup, too long, too many: refused
+  for(const [text, why] of [['Hail <b>now</b>', /< >/], ['x'.repeat(121), /over 120/], ['a\nb\nc\nd', /1 to 3/]]){
+    writeFileSync(wn, text);
+    r = build('9.9.9-w3', ['--frozen', coreJson, '--whats-new', wn]);
+    assert.notEqual(r.status, 0, text); assert.match(r.stderr, why);
+  }
+  // a hand-edited index entry's notes: the validator says so
+  const good = readFileSync(ip, 'utf8'), idx = JSON.parse(good);
+  idx.releases.find(e => e.version === '9.9.9-w1').notes = ['<script>'];
+  writeFileSync(ip, JSON.stringify(idx));
+  r = validate();
+  assert.notEqual(r.status, 0); assert.match(r.stdout, /9\.9\.9-w1: notes: a line has a control character or < >/);
+  writeFileSync(ip, before);   // as it was: the next tests use 9.9.9-p1
+  for(const v of ['9.9.9-w1', '9.9.9-w2']) rmSync(join(tree, 'firmware/releases', v), { recursive: true });
+  rmSync(wn);
   assert.equal(validate().status, 0);
 });
 

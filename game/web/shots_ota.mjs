@@ -3,8 +3,10 @@
 // installed, an update that went back, and a check with no internet. GitHub is stood in for by
 // the mock's /gh/ (a release signed with the TEST key, filler files). Every story line on
 // screen is swapped for placeholder text, as in shots_you.mjs. Exits non-zero if a step fails.
-//   game/web/shots_ota.sh OUTDIR   (starts mocks on 8056 ota=0.2.0 and 8057 ota=0.2.0,back)
+//   game/web/shots_ota.sh OUTDIR   (starts mocks on 8056 ota=0.2.0, 8057 ota=0.2.0,back,
+//   and 8066 ota=0.2.0 for what's new, section 5)
 import { createRequire } from "module";
+import { readFileSync } from "fs";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || "playwright-core");
 const out = process.argv[2] || "shots";
@@ -20,9 +22,12 @@ function blank(x) {
   if (x && typeof x === "object") return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, blank(v)]));
   return x;
 }
-async function page(port, { online = true } = {}) {
-  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 ota/${ua++}`,
-    viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
+const IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+const ANDROID = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36";
+// idx: changes GitHub's index.json on its way to the phone (section 5's notes with markup in).
+async function page(port, { online = true, w = 390, ht = 844, android = false, idx = null } = {}) {
+  const ctx = await browser.newContext({ userAgent: `${android ? ANDROID : IOS} ota/${ua++}`,
+    viewport: { width: w, height: ht }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
   p.on("console", (m) => { if (m.text().startsWith("stage:")) console.log(m.text()); });
   p.on("pageerror", (e) => { console.error("pageerror", e.message); fails++; });
@@ -40,6 +45,7 @@ async function page(port, { online = true } = {}) {
   await p.route(GH + "**", async (route) => {
     if (!online) return route.abort("internetdisconnected");
     const r = await route.fetch({ url: `http://localhost:${port}/gh/` + route.request().url().slice(GH.length) });
+    if (idx && route.request().url().endsWith("index.json")) return route.fulfill({ response: r, json: idx(await r.json()) });
     await route.fulfill({ response: r });
   });
   await p.goto(`http://localhost:${port}/?day=22`);
@@ -53,11 +59,11 @@ async function page(port, { online = true } = {}) {
   await p.waitForSelector("#dock nav");
   return p;
 }
-async function shot(p, name) {
+async function shot(p, name, { full = false } = {}) {
   await p.evaluate((ph) => { for (const li of document.querySelectorAll(".log li, .epi p")) li.textContent = ph; }, PH);
   await p.waitForTimeout(150);
-  const f = `${out}/${name}-light-390x844.png`;
-  await p.screenshot({ path: f });
+  const v = p.viewportSize(), f = `${out}/${name}-light-${v.width}x${v.height}.png`;
+  await p.screenshot({ path: f, fullPage: full });
   console.log(f);
 }
 const goto = (p, r) => p.evaluate((r) => go(r), r);
@@ -187,6 +193,59 @@ const b4 = log.findIndex((x) => x.startsWith("put?f=2&")), c2 = log.indexOf("can
 ok("R2: a 400 while carrying on: cancelled and sent again from the signature",
   b4 >= 0 && c2 > b4 && log[c2 + 1] && log[c2 + 1].startsWith("put?f=0&") && log[c2 + 1].endsWith("&o=0") && log.slice(c2).includes("put?f=1&o=0") && log.includes("apply"), log.join(" "));
 ok("R2: the outcome is the ship's (went back), not an error", await p.$eval("#v", (e) => e.textContent.includes("went back to 0.2.0")));
+await p.context().close();
+
+// 5. What's new (0.3.0, group G), on an iPhone (390) and an Android phone (412): the ready
+// update's few lines in Settings, before Install; Version history online (GitHub's index.json,
+// newest first, the installed one and the ready one marked) and offline (the ship's own lines
+// from GET /api/ota/notes, and how to see the rest); Back to Settings.
+for (const [w, ht, android] of [[390, 844, false], [412, 915, true]]) {
+  p = await page(8066, { w, ht, android });
+  await goto(p, "set");
+  await p.waitForSelector("#set-sw .otaw li", { timeout: 15000 });
+  const wn = await p.$$eval("#set-sw .otaw li", (l) => l.map((x) => x.textContent));
+  ok(`${w}: Settings shows the ready update's what's new, before Install`, wn.length === 3 && wn[0].startsWith("Hail a crewmate") &&
+    await p.evaluate(() => !!(document.querySelector("#set-sw .otawn").compareDocumentPosition(document.querySelector("#set-sw [data-ota=install]")) & Node.DOCUMENT_POSITION_FOLLOWING)), wn.join(" | "));
+  await p.evaluate(() => scrollTo(0, document.querySelector("#set-sw").offsetTop - 60));
+  await shot(p, "whatsnew-01-settings-update-ready");
+  await p.click("[data-ota=hist]");
+  await p.waitForSelector(".otahv");
+  const rows = await p.$$eval(".otahv", (l) => l.map((x) => [...x.querySelectorAll(".lab span")].map((s) => s.textContent)));
+  ok(`${w}: history online: newest first, installed and ready marked`, JSON.stringify(rows.map((r) => r[0])) === '["0.2.1","0.2.0","0.1.9","0.1.8"]' &&
+    rows[0][1] === "Ready to install" && rows[1][1] === "Installed" && rows[2][1] === "Oct 21" && await p.$$eval(".otahv.on", (l) => l.length === 1), JSON.stringify(rows));
+  ok(`${w}: history online: each version's lines, no offline note`, await p.$$eval(".otahv .otaw li", (l) => l.length === 7) && !(await p.$(".otahc")));
+  await p.evaluate(() => scrollTo(0, 0));
+  await shot(p, "whatsnew-02-history-online");
+  await shot(p, "whatsnew-02-history-online-full", { full: true });
+  await p.click("[data-ota=back]");
+  ok(`${w}: Back returns to Settings, on Version history`, await p.$eval("#v h1", (e) => e.textContent === "Settings") && await p.evaluate(() => document.activeElement && document.activeElement.dataset.ota === "hist"));
+  await p.context().close();
+  p = await page(8066, { w, ht, android, online: false });
+  await goto(p, "set");
+  // Offline the lines come from the page itself (web/build.py bakes whatsnew.json into
+  // OTA_WN); the mock's "0.2.0" isn't a real version, so it borrows 0.2.7-ota-phone's.
+  const WN = JSON.parse(readFileSync(new URL("../tools/ota/whatsnew.json", import.meta.url), "utf8"));
+  ok(`${w}: the page carries whatsnew.json`, await p.evaluate((wn) => JSON.stringify(OTA_WN["0.3.0-ota-phone"]) === JSON.stringify(wn["0.3.0-ota-phone"]) && !("_about" in OTA_WN), WN));
+  const asked = [];
+  p.on("request", (r) => { if (r.url().includes("/api/ota/")) asked.push(r.url()); });
+  await p.evaluate((n) => { OTA_WN["0.2.0"] = n; }, WN["0.2.7-ota-phone"]);
+  await p.click("[data-ota=hist]");
+  await p.waitForSelector(".otahc", { timeout: 15000 });
+  const off = await p.$$eval(".otahv", (l) => l.map((x) => x.textContent));
+  ok(`${w}: history offline: the installed version's lines from the page, and how to see older ones`, off.length === 1 && off[0].includes("0.2.0") && off[0].includes("Installed") && off[0].includes("simple safe mode") &&
+    await p.$eval(".otahc", (e) => e.textContent.includes("Older versions are listed online")), off.join(" | "));
+  ok(`${w}: history offline: no /api/ota/ request for it`, asked.length === 0, asked.join(" "));
+  await shot(p, "whatsnew-03-history-offline");
+  await p.context().close();
+}
+// What's new is text: markup in index.json's notes shows as typed, never runs; at most 3 lines
+// of 160 characters; anything not a string is dropped.
+p = await page(8066, { idx: (j) => { j.releases[0].notes = ["<b>bold</b> & <img src=x onerror=\"window.PWN=1\">", 7, "x".repeat(500), "four", "five"]; return j; } });
+await goto(p, "set");
+await p.waitForSelector("#set-sw .otaw li", { timeout: 15000 });
+const li = await p.$$eval("#set-sw .otaw li", (l) => l.map((x) => [x.textContent, x.children.length]));
+ok("notes are text: no markup made, no script run", li[0][0] === '<b>bold</b> & <img src=x onerror="window.PWN=1">' && li[0][1] === 0 && !(await p.$("#set-sw .otaw b, #set-sw .otaw img")) && await p.evaluate(() => window.PWN === undefined), JSON.stringify(li));
+ok("notes capped: 3 strings, 160 characters each", li.length === 3 && li[1][0] === "x".repeat(160) && li[2][0] === "four", JSON.stringify(li.map((x) => x[0].length)));
 await p.context().close();
 await browser.close();
 console.log(fails ? `FAIL ${fails}` : "ota shots: all ok");

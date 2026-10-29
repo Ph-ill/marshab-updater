@@ -1,0 +1,38 @@
+{
+  "_about": "What's new in each release, for players: Settings > Ship software (the update notice) and Version history (web/ota.js). 1 to 3 short lines each, plain words, second person, no story spoilers, no technical terms. Checked by game/tools/ota/whatsnew.py; tools/build_release.py puts a release's lines in its version.json (signed with the release) and its index.json entry; whatsnew.py --index fills older entries.",
+  "0.3.0-ota-phone": [
+    "Hail a crewmate: send a short hail, and your ship passes it to theirs when the two are in range.",
+    "Your ship's light flickers when a hail lands. Turn that off in Settings with Flicker for hails.",
+    "Test light now runs for 10 seconds, Settings shows what's new in each version, and updates install more reliably."
+  ],
+  "0.2.7-ota-phone": [
+    "If something goes wrong, your ship starts in a simple safe mode, so it can still take an update.",
+    "Turning the Ship light on or off is now safe even if the power cuts out at that moment."
+  ],
+  "0.2.6-ota-phone": [
+    "New in Settings: Test light. Tap it to watch your ship's light blink, even with the Ship light off."
+  ],
+  "0.2.5-ota-phone": [
+    "Change your code: pick a new 4-digit sign-in code in Settings.",
+    "The charging bolt now shows within seconds of plugging your ship in."
+  ],
+  "0.2.4-ota-phone": [
+    "A step-by-step guide to putting the game on your phone's home screen."
+  ],
+  "0.2.3-ota-phone": [
+    "Settings, behind the gear: your ship's software, the Ship light and signing out, all in one place.",
+    "Reset this ship lets you start it over from the beginning.",
+    "Opening the game from your home screen looks cleaner, with a proper launch screen."
+  ],
+  "0.2.2-ota-phone": [
+    "Updates now reach your ship through your phone: no cables, no opening the case."
+  ],
+  "0.2.0-lv-test": [
+    "The game now runs from your ship's built-in software, so more of the crew can play at the same time."
+  ],
+  "0.1.0-lv-test": [
+    "The Long Voyage on your ship: sign in on your phone with your code and play.",
+    "Your phone speaks to you as you, and your first day starts with a briefing.",
+    "The ship's light breathes softly when something is waiting for you."
+  ]
+}
