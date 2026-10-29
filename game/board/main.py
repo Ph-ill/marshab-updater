@@ -16,14 +16,17 @@
 # a phone at least one 2xx answer (ota_ok, ok2xx), so a set that starts but can't serve the
 # page goes back too (lvboot's deadline restarts it until MAX_BOOTS, then rolls back).
 # A trial's update can also be kept without a phone: once OTA_OK_MS has passed, the ship
-# asks its own server for the page, /api/crew and /api/ota (serves()), and three 2xx do.
+# checks its hotspot is up and its web server is still listening, then hands its own server
+# three raw requests (the page, /api/crew and /api/ota) the way a phone's arrive, through
+# the request parser and Server.handle (serves()); three 2xx do.
 # Crashes (board/lvsafe.py): whatever main() lets escape, and a failure of the web server's
 # own accept loop, is noted in /data/fault.json once asyncio has let go of the game's heap,
 # and the ship restarts; SAFE_AFTER in a row and the next boot is safe mode (hotspot +
 # update page only, the game tried again on its own after a while). Any other task that
 # fails (the light, Test light, the charger watch, the update keeper...) is said in the log
 # and stops by itself; the captive DNS and the phones' saves start again after a pause
-# (keep()). An unusable ship.json or crew.json is put back from its backup.
+# (keep()). An unusable ship.json or crew.json is put back from its backup. After
+# lvsafe.HEALTHY_MS of play the crash count goes (healthy(): no import, no heap).
 import gc
 import os
 import time
@@ -204,9 +207,20 @@ async def reset_ship(lvweb, web, req, w):
 
 
 class Sink:
-    # serves()'s stand-in for a phone's connection: keeps the status line, drops the rest.
-    def __init__(self):
+    # serves()'s stand-in for a phone's connection, both ends: reads out the raw request
+    # it was given (as a socket's stream would), keeps the answer's status line, drops the rest.
+    def __init__(self, req):
+        self.b = req
         self.st = None
+
+    async def readline(self):
+        i = self.b.find(b"\n") + 1 or len(self.b)
+        r, self.b = self.b[:i], self.b[i:]
+        return r
+
+    async def readexactly(self, n):
+        r, self.b = self.b[:n], self.b[n:]
+        return r
 
     def write(self, d):
         if self.st is None:
@@ -215,18 +229,43 @@ class Sink:
     async def drain(self):
         pass
 
+    def get_extra_info(self, k):
+        return ("127.0.0.1", 0)
+
+    def close(self):
+        pass
+
+    async def wait_closed(self):
+        pass
+
 
 async def serves(web):
-    """Does this set serve a phone? GET /, /api/crew and /api/ota through the ship's own
-    route, each a 2xx. The 2xx count (net_hooks) is left as it was."""
-    import lvweb
-    n = web.ok2xx
+    """Does this set serve a phone? The hotspot is up as this ship's own SSID, the web
+    server's accept loop is still running, and GET /, /api/crew and /api/ota, as raw bytes
+    through Server.handle (lvweb's request parser, the busy count, route, head), each get a
+    2xx. The counts a phone's visit moves (the 2xx count, served, the ship's hits) are left
+    as they were. (A real socket round trip would be stronger; lwIP loopback on the Pico W
+    is unconfirmed, so the listening socket is shown by its accept task instead.)"""
+    sh = web.ship
+    ap = getattr(web, "ap", None)
+    if ap is not None:
+        try:
+            c = sh.cfg
+            if not ap.active() or ap.config("essid") != "%s%d" % (c["ssid_prefix"], c["ship_id"]):
+                print("ota: self-check: the hotspot isn't up")
+                return False
+        except Exception as e:
+            print("ota: self-check hotspot %r" % (e,))
+            return False
+    t = getattr(getattr(web, "srv", None), "task", None)
+    if t is not None and t.done():
+        print("ota: self-check: the web server stopped")
+        return False
+    n, s, h = web.ok2xx, web.served, sh.http_hits
     try:
         for p in ("/", "/api/crew", "/api/ota"):
-            r = lvweb.Req()
-            r.method, r.path, r.q, r.hdr, r.body, r.peer = "GET", p, {}, {}, b"", "0.0.0.0"
-            w = Sink()
-            await web.route(r, w)
+            w = Sink(("GET %s HTTP/1.0\r\nHost: self\r\n\r\n" % p).encode())
+            await web.handle(w, w)
             if not (w.st and w.st[9:10] == b"2"):
                 print("ota: %s answered %r" % (p, w.st))
                 return False
@@ -235,7 +274,7 @@ async def serves(web):
         print("ota: self-check %r" % (e,))
         return False
     finally:
-        web.ok2xx = n
+        web.ok2xx, web.served, sh.http_hits = n, s, h
 
 
 async def ota_ok(web=None):
@@ -263,42 +302,66 @@ def restart():
 
 
 def note(trial):
-    # lvsafe couldn't note the crash (no heap to load it?): the count, in a few bytes.
+    # lvsafe couldn't note the crash (no heap to load it?): the count, in a few bytes. The
+    # other keys (tries: safe mode's next wait; up) are kept. At the cap (lvsafe.SAFE_CAP)
+    # nothing is written: a boot loop must not wear the flash.
     if trial:
         return
     try:
-        n = 0
+        import json
+        j = {}
         try:
-            import json
             with open(FAULT) as f:
-                n = int(json.load(f)["n"])
+                j = json.load(f)
+            n = int(j["n"])
         except Exception:
-            pass
+            n = 0
+        if not isinstance(j, dict):
+            j = {}
+        if n >= 5:
+            return
+        j["n"], j["why"] = n + 1, "noted the short way"
         with open(FAULT + ".new", "w") as f:
-            f.write('{"n": %d, "why": "noted the short way"}' % min(n + 1, 5))
+            f.write(json.dumps(j))
         os.rename(FAULT + ".new", FAULT)
     except Exception as e:
         print("crash: not noted %r" % (e,))
 
 
+# Modules that hold the game once it has run (lvweb.head is net_hooks' counter, whose
+# closure holds the server, and through it the ship; lvphone and the rest hang off them).
+GAME = ("lvweb", "lvphone", "lvdays", "lvfunnel", "lvota", "lvled", "lvledcfg", "lvstat", "lvwifi")
+
+
 def crashed(e, t0):
-    # What stopped the game: drop every task it had (MicroPython: a new event loop lets go
-    # of them and their heap), say it, note it (not on an update's trial: lvboot's boot
-    # count decides that one; read now, an update may have been kept since boot), restart.
-    # Never raises.
+    # What stopped the game: let go of everything it had, so the note below has the heap
+    # (review #2 M2): MAIN (run()'s finished task, whose coroutine holds run's closure:
+    # ship, web, days, ap, cfg), FATAL (the accept loop's task, holding web.handle), CRASH,
+    # the modules that hold the server, and the event loop's queues (a new event loop).
+    # Only the exception's words are kept. Then say it, note it (not on an update's trial:
+    # lvboot's boot count decides that one; read now, an update may have been kept since
+    # boot), restart. Never raises.
     try:
+        why = "%s: %s" % (type(e).__name__, str(e)[:40])
+    except Exception:
+        why = "?"
+    del MAIN[:], FATAL[:], CRASH[:]
+    try:
+        import sys
+        for m in GAME:
+            sys.modules.pop(m, None)
         asyncio.new_event_loop()
     except Exception:
         pass
     gc.collect()
     try:
-        import sys
         sys.print_exception(e)
     except Exception:
-        print("crash: %r" % (e,))
+        print("crash: %s" % why)
+    e = None
+    gc.collect()
     trial = flag("ota/state.json")
     try:
-        why = "%s: %s" % (type(e).__name__, str(e)[:40])
         import lvsafe
         lvsafe.crashed(why, trial, time.ticks_diff(time.ticks_ms(), t0))
     except Exception as e2:
@@ -323,60 +386,52 @@ def task_error(loop, ctx):
 
 async def keep(name, make):
     # A task the ship can do without for a while (the captive DNS, the phones' saves): if
-    # it stops with an error, say so and start it again after a pause, 5 s up to 5 min.
+    # it stops with an error, say so and start it again after a pause, 5 s up to 5 min
+    # (back to 5 s once a run has lasted a minute: a fault hours later isn't the same one).
     pause = 5000
     while True:
+        t = lvship.ticks_ms()
         try:
             return await make()
         except Exception as e:
+            if lvship.ticks_diff(lvship.ticks_ms(), t) > 60000:
+                pause = 5000
             print("%s: stopped (%r), again in %d s" % (name, e, pause // 1000))
         await lvship.sleep_ms(pause)
         pause = min(pause * 2, 300000)
 
 
-async def healthy(ship):
-    await lvship.sleep_ms(600000)               # lvsafe.HEALTHY_MS
-    import lvsafe
+async def healthy():
+    # lvsafe.HEALTHY_MS of play: the crash count goes. Inline (no import, no heap at
+    # minute 10 under a busy game: review #2 M6); the backups are refreshed at each boot.
+    await lvship.sleep_ms(600000)
     try:
-        lvsafe.healthy(say=ship.say)
-    finally:
-        lvship.drop("lvsafe")
-        lvship.drop("lvledcfg")
+        os.remove(FAULT)
+    except OSError:
+        pass
 
 
 def safe_mode(cfg, why):
-    # Hotspot + the phone page, sign-in and Settings > Ship software (lvsafe.server), and
-    # the game tried again on its own after lvsafe.retry_ms(). "off": nothing on the air
-    # for lvsafe.OFF_MS, then a restart (after safe mode itself kept stopping: safe mode
-    # once more), so a ship that is off looks again rather than staying dark for good.
+    # Safe mode or "off": lvsafe.start (its code lives there, loaded only for this).
     print("safe: " + why)
     import lvsafe
-    if why.startswith("off:"):
-        time.sleep_ms(lvsafe.OFF_MS)
-        if lvsafe.count(lvsafe.faults()) >= lvsafe.SAFE_CAP:
-            lvsafe.rest()
-        return restart()
-    import lvwifi
-    import lvweb
-    ap = lvwifi.hotspot(cfg)
-    ip = "192.168.4.1"
-    try:
-        a = ap.ifconfig()[0]
-        if a and a != "0.0.0.0":
-            ip = a
-    except Exception:
-        pass
+    lvsafe.start(cfg, why, globals())
 
-    async def run():
-        web, sh = lvsafe.server(lvweb, cfg, why[6:], ip, reboot)
-        home_screen(lvweb)
-        net_hooks(lvweb, web)
-        await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
-        if cfg["captive_dns"]:
-            asyncio.create_task(keep("dns", lambda: lvweb.dns(ip)))
-        print("safe: update page on http://%s/" % ip)
-        await lvsafe.auto_retry(sh, lvsafe.retry_ms(), reboot)
-    asyncio.run(run())
+
+def config(got):
+    # cfg from the ship.json lvsafe.check() has just read and checked (got), not a second
+    # read (a one-off read error there would give DEFAULTS: a fake ship 1, review #2 m1).
+    # got None (lvsafe itself unusable): lvship.load_config() reads it, as 0.2.6 did.
+    if got is None:
+        return lvship.load_config()
+    c = dict(lvship.DEFAULTS)
+    if got:
+        c.update(got[0])
+    try:
+        c["ship_id"] = min(8, max(1, int(c["ship_id"])))
+    except (TypeError, ValueError):
+        c["ship_id"] = 1
+    return c
 
 
 # ---- the charger line, watched (docs/BATTERY.md "Charging shows at once"). lvbatt reads the
@@ -465,11 +520,16 @@ def main():
     except OSError:
         pass
     trial = flag("ota/state.json")
-    import lvsafe
-    why = lvsafe.check(trial)
+    got = []
+    try:
+        import lvsafe
+        why = lvsafe.check(trial, got=got)
+    except Exception as e:  # lvsafe itself unusable (a damaged lvsafe.mpy): play as 0.2.6 did,
+        print("safe: no boot check %r" % (e,))    # rather than crash-loop with no hotspot
+        why, got = None, None
     lvship.drop("lvsafe")
     lvship.drop("lvledcfg")                    # (lvsafe asked it whether ship.json is whole)
-    cfg = lvship.load_config()
+    cfg = config(got)
     if why:
         return safe_mode(cfg, why)
     try:
@@ -506,7 +566,7 @@ def main():
             web.ap = ap                 # board/lvfunnel.py: MAC mode, where the firmware lists leases
             home_screen(lvweb)
             ota_hooks(lvweb, web)
-            srv = await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
+            srv = web.srv = await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
             if getattr(srv, "task", None):
                 FATAL.append(srv.task)
             asyncio.create_task(keep("tick", web.tick))
@@ -519,7 +579,7 @@ def main():
             print("web: status only on http://%s/ (the phone game needs the game firmware)" % ip)
         if trial:
             asyncio.create_task(ota_ok(web))
-        asyncio.create_task(healthy(ship))
+        asyncio.create_task(healthy())
         if ship.bat:
             asyncio.create_task(charger_watch(ship))
         await ship.loop()
