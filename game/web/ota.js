@@ -254,7 +254,7 @@ function otaHist(){
     const mn=H.mine;
     o+=mn.v?otaHistRow({v:mn.v,d:"",n:mn.n},iv,rv,false):"";
     const why=H.err==="timeout"?"The version history request timed out.":otaNet(H.err)?"Your phone couldn't reach GitHub on this network.":H.err==="http"?`You couldn't get version history from GitHub (HTTP ${H.http}). Try again later.`:"The version history data is invalid. Try again later.";
-    o+=`<div class=otahc><p class=dim>${h(why)}${otaNet(H.err)?" Check again on mobile data or another Wi-Fi network.":""}</p><button class="btn sec" data-ota=hist><span>Check again</span><i>github</i></button></div>`;
+    o+=`<div class=otahc><p class=dim>${h(why)}${otaNet(H.err)?" Older versions are listed online. To see them, check again on mobile data or another Wi-Fi network.":""}</p><button class="btn sec" data-ota=hist><span>Check again</span><i>github</i></button></div>`;
   }
   $("v").innerHTML=o;
   dock(`<button class="btn sec" data-ota=back><span>Back</span><i>settings</i></button>`,"set");

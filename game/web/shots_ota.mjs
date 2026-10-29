@@ -256,8 +256,8 @@ for (const [w, ht, android] of [[390, 844, false], [412, 915, true]]) {
   await p.click("[data-ota=hist]");
   await p.waitForSelector(".otahc", { timeout: 15000 });
   const off = await p.$$eval(".otahv", (l) => l.map((x) => x.textContent));
-  ok(`${w}: history offline: the installed version's lines from the page, and how to see older ones`, off.length === 1 && off[0].includes("0.2.0") && off[0].includes("Installed") && off[0].includes("simple safe mode") &&
-    await p.$eval(".otahc", (e) => e.textContent.includes("Older versions are listed online")), off.join(" | "));
+  ok(`${w}: history offline: installed notes remain with guidance for older versions`, off.length === 1 && off[0].includes("0.2.0") && off[0].includes("Installed") && off[0].includes("simple safe mode") &&
+    await p.$eval(".otahc", (e) => e.textContent.includes("couldn't reach GitHub") && e.textContent.includes("Older versions are listed online") && e.textContent.includes("To see them, check again on mobile data or another Wi-Fi network")), off.join(" | "));
   ok(`${w}: history offline: no /api/ota/ request for it`, asked.length === 0, asked.join(" "));
   await shot(p, "whatsnew-03-history-offline");
   await p.context().close();

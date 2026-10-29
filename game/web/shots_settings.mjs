@@ -101,6 +101,9 @@ ok("Battery: 72 %, 3.95 V, charging", await p.$eval("#set-bat", (e) => /Charge\s
 ok("Reset: a danger button", await p.$eval("#set-rst [data-rst=ask]", (e) => e.classList.contains("dgr") && getComputedStyle(e).color !== getComputedStyle(document.body).color));
 // The charging bolt follows the cable within seconds (web/batt.js's 5 s look at /api/bat),
 // redrawn in place: the rest of the page stays the same nodes.
+// Let the initial automatic OTA check finish its own repaint before testing that
+// battery polls preserve unrelated DOM nodes. Do not confuse that repaint with a poll.
+await p.waitForFunction(() => !OTA_CHECK && OB && OB.at, null, { timeout: 25000 });
 await p.evaluate(() => { window.__keep = document.querySelector("#set-sw"); return fetch("/api/bat?set=72,3950,0"); });
 const bolt = () => p.evaluate(() => !!document.querySelector("#top .bat .bati path"));
 ok("Battery: charging shows the bolt", await bolt());
