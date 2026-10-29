@@ -29,6 +29,9 @@
 # (board/lvledtest.py, POST /api/led/test from main.py's ota_route: tests/test_ledtest.py on
 # all of them in real time on a fake pin; two tests on a counted pin in the --ota heap run;
 # the button in tests/app_e2e.mjs against the board's server and web/shots_settings.sh).
+# Ship-to-ship Hail (board/lvlive.py, lvliveapi.py, lvflick.py: tests/test_live.py on all of
+# them, with fuzzing of the radio side; both ships hailing in the --live heap run, again with
+# the everyone-plays-every-day season; web/live.js in web/shots_v03.sh against the board's server).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
@@ -60,6 +63,7 @@ python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py
 python3 tests/test_safe.py
+python3 tests/test_live.py
 python3 tests/test_ota_release.py
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
@@ -81,6 +85,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_ota.py; fi
   "$MP" tests/test_safe.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_safe.py; fi
+  "$MP" tests/test_live.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_live.py; fi
   "$MP" tests/test_reset.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_reset.py; fi
   "$MP" tests/test_funnel.py
@@ -125,6 +131,12 @@ if [ -n "$MP" ]; then
       # and a fourth phone changing a crew code and back (board/lvcode.py, loaded and dropped),
       # and a fifth tapping Test light twice (board/lvledtest.py: its ~4 s pattern a task).
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live
+      # Hail on both ships (board/lvlive.py), now with the season where all eight crew
+      # play every day (sim/season.py --everyone): everything checked, the cap reported only
+      # (the frozen core keeps the whole log in RAM: over 80,000 B with or without Hail).
+      python3 sim/season.py --everyone
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live --everyone
     fi
     # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
     # and, with LV_FROZEN_MP, the game firmware (install, settings, selftest, report).
@@ -150,7 +162,7 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_a2hs.sh "$O/a2hs"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_settings.sh "$O/settings"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_funnel.sh "$O/funnel"; rm -rf "$O"
-    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_v03.sh "$O/v03"; rm -rf "$O"
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_v03.sh "$O/v03" safe live live-off; rm -rf "$O"
   else
     echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi

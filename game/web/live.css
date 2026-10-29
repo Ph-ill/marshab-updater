@@ -1,0 +1,24 @@
+/* Ship-to-ship (web/live.js): hails on the home screen, the hail form, Settings. */
+.lvin.nw{box-shadow:inset 3px 0 0 var(--rust);padding-left:var(--s3)}
+.lvin .t b{font-weight:600}
+.lvq{color:var(--ink)!important;font-style:italic}
+.lvbk{width:auto;min-height:44px;flex:none;padding:0 var(--s3)}
+.lvout .t{font-size:16px}
+.lvs{font:600 13px/20px var(--mono)!important;letter-spacing:.04em;text-transform:uppercase}
+.lvs.s0,.lvs.s1{color:var(--ink2)}
+.lvs.s2::before,.lvs.s3::before{content:"";display:inline-block;width:7px;height:7px;margin-right:var(--s2);background:var(--rust);vertical-align:1px}
+.lvs.s3{color:var(--ink)}
+.row[data-lvto]{text-align:left}
+.lvck{width:22px;height:22px;border:2px solid var(--ink2);flex:none}
+.row[aria-pressed=true] .lvck{border-color:var(--ink);background:radial-gradient(var(--rust) 0 5px,transparent 6px)}
+.lvph{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+.lvph button{min-height:56px;padding:var(--s2) var(--s3);border:1px solid var(--ink2);text-align:left;font-size:16px;line-height:20px}
+.lvph button[aria-checked=true]{border:2px solid var(--ink);box-shadow:inset 4px 0 0 var(--rust);font-weight:600}
+#lv-e:empty{min-height:0;margin:0}
+#set-live .btn+.fine,#set-live .btn+.btn{margin-top:var(--s2)}
+#set-live .fine{margin-top:var(--s2)}
+.lvwhy{border-left:3px solid var(--rust-t);padding-left:var(--s3);margin-bottom:var(--s3)}
+#lv-test .lverr{color:var(--rust);font-weight:600}
+#lv-test .fine{margin-top:var(--s2)}
+.lvrest{border-left:3px solid var(--ink2);padding-left:var(--s3)}
+#lv-home .lvrest{margin-top:var(--s3)}

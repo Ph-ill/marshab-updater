@@ -198,7 +198,7 @@ try {
   check(await ev(`(b=>!!b&&b.getAttribute("aria-label")==="Settings"&&b.getBoundingClientRect().width>=44&&b.parentElement.textContent.includes("FD "))(document.querySelector('#top .gear'))`), 'gear in the top bar');
   await click('#top .gear');
   await until(`route==="set"&&!!document.querySelector('#set-rst')`, 4000, 'Settings open');
-  check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),"set-out","set-code","set-rst"].join()`)), 'Settings sections in order, Your code above Reset, Reset last');
+  check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),...(document.getElementById("set-live")?["set-live"]:[]),"set-out","set-code","set-rst"].join()`)), 'Settings sections in order, Your code above Reset, Reset last');
   // Reset this ship (main.py reset_ship on the board): refused without a session, without the
   // ship's number and with another; still signed in after (the success is tests/test_reset.py).
   const rst = JSON.parse(await ev(`(async()=>{const f=(b,t)=>fetch("/api/reset",{method:"POST",headers:t?{"X-Crew-Token":tok}:{},body:b}).then((r)=>r.status);const n=S.here+1;return JSON.stringify([await f(JSON.stringify({confirm:n}),0),await f("{}",1),await f(JSON.stringify({confirm:n%8+1}),1),await fetch("/api/state",{headers:{"X-Crew-Token":tok}}).then((r)=>r.status)])})()`));

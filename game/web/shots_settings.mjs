@@ -90,7 +90,9 @@ ok("crew page: no Ship light, Sign out, Ship software or Add to home screen", !(
 await p.click("#top .gear");
 await p.waitForSelector("#set-rst");
 const secs = await p.$$eval("#v section", (s) => s.map((e) => e.id));
-ok("Settings: Ship software, Home screen icon, Ship light, Battery, Sign out, Your code, Reset (last)", secs.join() === "set-sw,set-a2h,set-led,set-bat,set-out,set-code,set-rst");
+ok("Settings: Ship software, Home screen icon, Ship light, Battery, Sign out, Your code, Reset (last)", secs.filter((x) => x !== "set-live").join() === "set-sw,set-a2h,set-led,set-bat,set-out,set-code,set-rst"
+  && (!secs.includes("set-live") || secs.indexOf("set-live") === secs.indexOf("set-out") - 1), secs.join());
+// (Ship-to-ship, 0.3.0: its section sits before Sign out; empty here, no /api/live on this mock.)
 ok("Settings: the gear says where you are", await p.$eval("#top .gear", (e) => e.getAttribute("aria-current") === "page"));
 ok("Settings: the four tabs, none current", (await p.$$eval("#dock nav button", (b) => b.map((x) => x.dataset.go + (x.hasAttribute("aria-current") ? "*" : "")))).join() === "home,crew,log,file");
 ok("Ship software: installed, channel, available, checked, check button", await p.$eval("#set-sw", (e) => /Installed\s*0\.2\.0/.test(e.textContent) && /Channel/.test(e.textContent) && /Available/.test(e.textContent) && /Checked/.test(e.textContent) && !!e.querySelector("[data-ota=check]")));

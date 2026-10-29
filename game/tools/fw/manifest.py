@@ -45,3 +45,9 @@ module("lvcode.py", base_path="../../board", opt=3)
 module("lvledtest.py", base_path="../../board", opt=3)
 # Safe mode and the fault notes (after 0.2.6; on older cores releases ship it as lvsafe.mpy).
 module("lvsafe.py", base_path="../../board", opt=3)
+# Ship-to-ship (after 0.2.7; on older cores releases ship them as .mpy).
+module("lvlive.py", base_path="../../board", opt=3)
+module("lvlivein.py", base_path="../../board", opt=3)
+module("lvlivex.py", base_path="../../board", opt=3)
+module("lvflick.py", base_path="../../board", opt=3)
+module("lvliveapi.py", base_path="../../board", opt=3)
