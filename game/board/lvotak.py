@@ -4,9 +4,11 @@
 # lvotap's pieces, lvota's envelope and status, lvsig's signature check), and a set that
 # keeps itself without it can never be updated over the air again, not even from safe mode
 # (it uses the same modules) -- only a USB cable would fix it, and that means opening the
-# case. So before lvota.good() keeps it, every module of that chain is imported (and
-# dropped again straight after: one at a time, so the heap holds one of them at once), its
-# entry points are looked up, the staging status is read, and lvsig checks a fixed
+# case. So before lvota.good() keeps it, every module of that chain, and safe mode's
+# lvsafe (it serves the same upload on a ship that keeps crashing: fix review FR1 m4), is
+# imported (and dropped again straight after: one at a time, so the heap holds one of them
+# at once), its entry points are looked up, lvota.KEYS must hold the release key (KIDS:
+# FR1 M1), the staging status is read, and lvsig checks a fixed
 # signature: RFC 8032's test 1 (the empty message), which must verify, and the same with
 # one bit flipped, which must not (refused before the long part: costs nothing). A stale
 # lvota.py next to the shipped lvota.mpy (MicroPython imports the .py first) or a damaged
@@ -22,7 +24,13 @@ WAIT_MS = 15000
 NEEDS = (("lvotaq", ("quiet",)),
          ("lvotap", ("api", "put", "piece", "envelope", "append", "entry", "sha_file")),
          ("lvota", ("api", "status", "env_piece", "envelope_prep", "envelope_done", "apply",
-                    "good", "KEYS")))
+                    "good", "KEYS")),
+         ("lvsafe", ("check", "crashed", "start", "server")))
+# The release key(s) the next update can be signed with (tools/ota/sign_release.py). A set
+# whose lvota.KEYS lacks it would pass every other check here and then refuse every later
+# update as "signed with a key this ship doesn't know": kept, it could only be fixed over
+# USB (0.3.0 fix review FR1 M1 / FR3 i1). tools/build_release.py refuses to build one too.
+KIDS = ("2111b2e9",)
 
 
 def _drop(name):
@@ -30,6 +38,26 @@ def _drop(name):
         del sys.modules[name]
     except KeyError:
         pass
+
+
+def keys_ok(keys):
+    """lvota.KEYS can check the next update: a non-empty dict of 32-byte Ed25519 keys, one
+    of them under a key id in KIDS that is really its id (sha256(key)[:4] in hex)."""
+    if not isinstance(keys, dict) or not keys:
+        return False
+    for k in keys.values():
+        if not isinstance(k, (bytes, bytearray)) or len(k) != 32:
+            return False
+    try:
+        import hashlib
+    except ImportError:  # pragma: no cover
+        import uhashlib as hashlib
+    from binascii import hexlify
+    for kid in KIDS:
+        k = keys.get(kid)
+        if k is not None and str(hexlify(hashlib.sha256(k).digest()[:4]), "ascii") == kid:
+            return True
+    return False
 
 
 def _look(name, attrs):
@@ -40,6 +68,8 @@ def _look(name, attrs):
             if not hasattr(m, a):
                 raise ImportError("%s has no %s" % (name, a))
         if name == "lvota":
+            if not keys_ok(m.KEYS):
+                raise ValueError("lvota.KEYS doesn't hold the release key")
             m.status()
     finally:
         m = None

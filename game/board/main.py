@@ -19,12 +19,14 @@
 # checks its hotspot is up and its web server is still listening, then hands its own server
 # raw requests the way a phone's arrive, through the request parser and Server.handle
 # (serves()): the page, /api/crew and /api/ota must answer 2xx, and an update write with
-# no sign-in must answer 401 (lvota's own refusal: the write side is there too). If that
+# no sign-in must answer 401 (lvotap's own refusal: the write side is there too; this one
+# is sent even after a phone's 2xx, a whole 1 KB piece, 0.3.0 FR1 m1). If that
 # keeps failing for SELF_MS, the ship restarts (a real reset, which lvboot counts), so a
 # trial that lvboot gave no deadline (a soft reset, on ota-hwfix's lvboot) still ends.
 # Whatever served the phone, the update path is then checked too (kept(), board/lvotak.py,
-# 0.3.0): lvotaq, lvotap, lvota and lvsig must import and lvsig must check a known
-# signature, or the trial isn't kept (a set that can't take the next update would need USB).
+# 0.3.0): lvotaq, lvotap, lvota, lvsig and lvsafe must import, lvota.KEYS must hold the
+# release key and lvsig must check a known signature, or the trial isn't kept (a set that
+# can't take the next update would need USB).
 # Crashes (board/lvsafe.py): whatever main() lets escape, and a failure of the web server's
 # own accept loop, is noted in /data/fault.json once asyncio has let go of the game's heap,
 # and the ship restarts; SAFE_AFTER in a row and the next boot is safe mode (hotspot +
@@ -278,10 +280,14 @@ class Sink:
 
 
 # serves()'s requests and the status each must get: the page, the crew list and the update
-# status (2xx), and an update write with no sign-in (lvota's 401: its POST side answers;
-# put, not apply or cancel, so a sign-in check gone wrong still can't act on anything).
+# status (2xx), and an update write with no sign-in (lvotap's 401: put, not apply or cancel,
+# so a sign-in check gone wrong still can't act on anything). The put carries a whole piece
+# (lvota.CHUNK, 1024 B: lvweb.MAX_BODY must take it) and is the last probe, PUT: it is sent
+# even when a phone has had a 2xx already, so the upload's route, its body limit and lvotap
+# itself are shown to work before a trial is kept (0.3.0 fix review FR1 m1).
 PROBES = (("GET", "/", b"2"), ("GET", "/api/crew", b"2"), ("GET", "/api/ota", b"2"),
           ("POST", "/api/ota/put", b"401"))
+PUT = PROBES[3:]
 
 
 def essid_ok(ap, want):
@@ -300,7 +306,7 @@ def essid_ok(ap, want):
     return not e or str(e) == want
 
 
-async def serves(web):
+async def serves(web, probes=PROBES):
     """Does this set serve a phone? The hotspot is up as this ship's own SSID, the web
     server's accept loop is still running, and PROBES, as raw bytes through Server.handle
     (lvweb's request parser, the busy count, route, head), each get their status with no
@@ -333,8 +339,10 @@ async def serves(web):
         say(m)
     try:
         web.say = heard                 # Server.handle says what a request raised
-        for m, p, want in PROBES:
-            w = Sink(("%s %s HTTP/1.0\r\nHost: self\r\nContent-Length: 0\r\n\r\n" % (m, p)).encode())
+        for m, p, want in probes:
+            n = 1024 if m == "POST" else 0
+            w = Sink(("%s %s HTTP/1.0\r\nHost: self\r\nContent-Length: %d\r\n\r\n" % (m, p, n)).encode()
+                     + bytes(n))
             del err[:]
             n, d, h = web.ok2xx, web.served, sh.http_hits
             try:
@@ -370,7 +378,7 @@ async def ota_ok(web=None, want=False):
     # on ota-hwfix's lvboot has no deadline), a real reset that lvboot counts.
     await lvship.sleep_ms(OTA_OK_MS)
     t = lvship.ticks_ms()
-    while (web is None and want) or web is not None and not web.ok2xx and not await serves(web) \
+    while (web is None and want) or web is not None and not await serves(web, PUT if web.ok2xx else PROBES) \
             or not await kept(web):
         if lvship.ticks_diff(lvship.ticks_ms(), t) > SELF_MS:
             print("ota: the update can't show it serves a phone: restarting (a counted boot)")

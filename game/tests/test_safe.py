@@ -579,24 +579,47 @@ check("safe: update writes need sign-in", code == 401)
 # broken copy ahead of it), lvota.api answers instead of the request dying unanswered
 _sh = ROOT + "/shadow"
 os.mkdir(_sh)
-put(_sh + "/lvotap.py", "raise ImportError('damaged')\n")
-sys.path.insert(0, _sh)
-sys.modules.pop("lvotap", None)
-if sys.implementation.name == "cpython":
-    import importlib
-    importlib.invalidate_caches()
-_said = []
-_say, sh.say = sh.say, _said.append
-try:
-    code, b = call(web, "POST", "/api/ota/put?f=0&n=10&o=0", b"x", tok=tok)
-finally:
-    sh.say = _say
-    sys.path.remove(_sh)
-    rm(_sh)
+
+
+def shadowed(src, t=None):
+    put(_sh + "/lvotap.py", src)
+    sys.path.insert(0, _sh)
     sys.modules.pop("lvotap", None)
-check("R1 M2: safe mode, lvotap won't load: lvota.api answers 503", code == 503 and "update code" in b["err"], (code, b))
-check("R1 M2: ... and says why in the log", _said and "upload code" in _said[0], _said)
+    if sys.implementation.name == "cpython":
+        import importlib
+        importlib.invalidate_caches()
+    said = []
+    _say, sh.say = sh.say, said.append
+    try:
+        code, b = call(web, "POST", "/api/ota/put?f=0&n=10&o=0", b"x", tok=tok if t is None else t)
+    finally:
+        sh.say = _say
+        sys.path.remove(_sh)
+        sys.modules.pop("lvotap", None)
+    return code, b, said
+
+
+# 0.3.0 fix review FR1 m3: whatever goes wrong loading it, a clear answer the page doesn't
+# retry as "busy" (500 DAMAGED; before, only ImportError was caught here, and lvota.api's
+# own answer was a 503 the page called "busy")
+code, b, _said = shadowed("raise ImportError('damaged')\n")
+check("R1 M2 / FR1 m3: safe mode, lvotap won't load: 500, says it's damaged", code == 500
+      and b["err"] == lvsafe.DAMAGED and "damaged" in b["err"] and "USB" in b["err"], (code, b))
+check("R1 M2: ... and says why in the log", _said and "upload code ImportError" in _said[0], _said)
 check("R1 M2: ... nothing left loaded", "lvotap" not in sys.modules and "lvota" not in sys.modules)
+for _src, _e in (("x = (\n", "SyntaxError"), ("raise ValueError('x')\n", "ValueError"),
+                 ("async def api(web, req, w):\n    raise KeyError('k')\n", "KeyError"),
+                 ("api = None\n", "TypeError")):
+    code, b, _said = shadowed(_src)
+    check("FR1 m3: lvotap %s: 500 damaged, not retried" % _e, code == 500 and b["err"] == lvsafe.DAMAGED,
+          (code, b))
+    check("FR1 m3: ... logged as %s" % _e, _said and _said[0] == "safe: upload code " + _e, _said)
+    check("FR1 m3: ... nothing left loaded (%s)" % _e, "lvotap" not in sys.modules and "lvota" not in sys.modules)
+code, b, _said = shadowed("raise MemoryError('memory allocation failed')\n")
+check("FR1 m3: out of heap loading it: 503 busy (worth a retry)", code == 503 and b["err"] == "busy", (code, b))
+code, b, _said = shadowed("raise ValueError('x')\n", t="nope")
+check("FR1 m3: signed out: 401, not the damage", code == 401, (code, b))
+rm(_sh)
 code, b = call(web, "POST", "/api/safe/retry")
 check("safe: retry needs sign-in", code == 401)
 code, b = call(web, "GET", "/hotspot-detect.html")
@@ -637,6 +660,10 @@ g = {"__name__": "main_test"}
 exec(src, g)
 web.ok2xx = 7
 web.served, sh.http_hits = 3, 4
+# safe mode's start() runs main.py's net_hooks, which sets lvweb.MAX_BODY to a whole upload
+# piece (1 KB); the upload probe sends one (FR1 m1)
+_mb0 = lvweb.MAX_BODY
+lvweb.MAX_BODY = 1024
 check("m7: the safe server serves the page", asyncio.run(g["serves"](web)) is True)
 check("m7: the counts a phone moves left as they were", (web.ok2xx, web.served, sh.http_hits) == (7, 3, 4),
       (web.ok2xx, web.served, sh.http_hits))
@@ -709,6 +736,17 @@ web.phone.who = lambda req: 0
 check("m1: /api/ota/put open to anyone: no keep", asyncio.run(g["serves"](web)) is False)
 del web.phone.who
 check("m1: ... and refused again: serves", asyncio.run(g["serves"](web)) is True)
+# 0.3.0 fix review FR1 m1: the upload route is probed even after a phone's 2xx (main.PUT),
+# with a full 1 KB piece: a set whose lvweb.MAX_BODY can't take lvota.CHUNK is not kept
+check("FR1 m1: PUT is the upload probe alone", [p[:2] for p in g["PUT"]] == [("POST", "/api/ota/put")], g["PUT"])
+check("FR1 m1: the upload probe passes on its own", asyncio.run(g["serves"](web, g["PUT"])) is True)
+_mb = lvweb.MAX_BODY
+lvweb.MAX_BODY = 1023
+check("FR1 m1: MAX_BODY under a piece (413): no keep", asyncio.run(g["serves"](web, g["PUT"])) is False)
+lvweb.MAX_BODY = _mb
+web.phone.who = lambda req: 0
+check("FR1 m1: upload open to anyone: no keep, phone's 2xx or not", asyncio.run(g["serves"](web, g["PUT"])) is False)
+del web.phone.who
 rm(D + "/ota") if lvsafe.exists(D + "/ota") else None
 # a request that raises mid-way (said by Server.handle, the answer may be half out) fails
 real_api = web.phone.api
@@ -735,6 +773,7 @@ check("M1: and the counts still as they were", (web.ok2xx, web.served, sh.http_h
       (web.ok2xx, web.served, sh.http_hits, web.refused))
 os.rename("www/app.html.gz", "www/gone")
 check("m7: no page, no keep", asyncio.run(g["serves"](web)) is False)
+lvweb.MAX_BODY = _mb0
 os.chdir(HERE)
 
 # ---- main.py: the keep rule, crashes, tasks, safe mode off -------------------------------
@@ -813,13 +852,14 @@ class FakeWeb:
         self.ok2xx = 0
         self.served = 0
         self.up = False
+        self.put = True    # its /api/ota/put refuses an unsigned piece (401)
         self.ship = FakeShip()
         self.ship.http_hits = 0
 
     async def handle(self, r, w):
         post = r.b.startswith(b"POST")
-        w.write(b"HTTP/1.0 500 Oops\r\n" if not self.up else b"HTTP/1.0 401 Unauthorized\r\n" if post
-                else b"HTTP/1.0 200 OK\r\n")
+        w.write(b"HTTP/1.0 401 Unauthorized\r\n" if post and (self.up or self.put)
+                else b"HTTP/1.0 500 Oops\r\n" if not self.up or post else b"HTTP/1.0 200 OK\r\n")
         if self.up and not post:
             self.ok2xx += 1
 
@@ -859,6 +899,25 @@ a, b2 = asyncio.run(keeps(fw, lambda f: setattr(f, "ok2xx", 1)))
 check("keep: not without a 2xx", a == 0)
 check("keep: after the first 2xx", b2 == 1)
 check("lvota dropped after", "lvota" not in sys.modules)
+# FR1 m1: a phone's 2xx doesn't excuse a broken upload route
+sys.modules["lvota"] = FakeOta
+FakeOta.n = 0
+fw = FakeWeb()
+fw.put = False
+
+
+async def no_put(fw):
+    t = asyncio.create_task(g["ota_ok"](fw))
+    await asyncio.sleep(0.2)
+    fw.ok2xx = 1
+    await asyncio.sleep(0.2)
+    a = FakeOta.n
+    t.cancel()
+    await asyncio.sleep(0)
+    return a
+
+
+check("FR1 m1: a phone's 2xx, the upload route broken: not kept", asyncio.run(no_put(fw)) == 0)
 sys.modules["lvota"] = FakeOta
 FakeOta.n = 0
 fw = FakeWeb()

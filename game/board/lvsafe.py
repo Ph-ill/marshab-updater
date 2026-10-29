@@ -72,6 +72,9 @@ HEALTHY_MS = 600000
 OFF_MS = 900000
 RETRY_MS = (1800000, 7200000, 21600000, 43200000)
 D = "/data"
+# = lvota.DAMAGED: safe mode's answer to an upload when the upload's own code won't run.
+DAMAGED = ("this ship's update code is damaged, so it can't take an update now. It goes "
+           "back to its last good version by itself; if it doesn't, it needs fixing over USB")
 MISSING, BROKEN, UNKNOWN = "missing", "broken", "unknown"
 fail = None             # tests: called at "write", "read", "rename", "open", "restore" to simulate a failure
 
@@ -532,19 +535,29 @@ def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
             if p == "/status":
                 return await lvweb.send(w, 200, "SAFE %s\n" % why, "text/plain")
         if p == "/api/ota/put":
+            import sys
             try:
                 import lvotap           # the upload (0.3.0): lvota only for the envelope
-            except ImportError as e:    # damaged: lvota.api answers (R1 M2), never silence
-                sh.say("safe: upload code %r" % (e,))
-                lvotap = None
-            try:
-                if lvotap is not None:
-                    return await lvotap.api(web, req, w)
+                return await lvotap.api(web, req, w)
+            except MemoryError:
+                # no heap for it this time (a request served now, the next maybe not): the
+                # phone tries a 503 again, and on "busy" the person taps Install again
+                code, obj = 503, {"err": "busy", "have": None}
+            except OSError:
+                raise                   # the connection or the flash, not the code: as before
+            except Exception as e:
+                # Damaged (an .mpy for another firmware, a .py twin that won't compile, a
+                # missing name: anything, not just ImportError) -- an answer, never a request
+                # left hanging, and one the page doesn't retry (0.3.0 fix review FR1 m3).
+                sh.say("safe: upload code %s" % (type(e).__name__,))
+                code, obj = 500, {"err": DAMAGED, "have": None}
             finally:
                 lvotap = None
-                import sys
                 sys.modules.pop("lvotap", None)
                 sys.modules.pop("lvota", None)
+            if web.phone.who(req) is None:
+                code, obj = 401, {"err": "signed out"}
+            return await lvweb.send_json(w, code, obj)
         if p.startswith("/api/ota"):
             import lvota
             try:

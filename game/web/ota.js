@@ -71,10 +71,17 @@ async function otaSend(f,bytes,n,extra){
   while(o<bytes.length||(!bytes.length&&o===0)){
     const [s,j]=await otaPut(`f=${f}${extra}&o=${o}`,bytes.subarray(o,o+n));
     if(s===409&&j.have!=null){o=j.have;continue}
-    if(s!==200)throw Object.assign(new Error(j.err||"The ship turned the update down."),{status:s});
+    if(s!==200)throw Object.assign(new Error(otaWhy(s,j)),{status:s});
     o=j.have!=null?j.have:o+n;OI.done+=0;otaProg(f,o);
     if(j.done||!bytes.length)break;
   }
+}
+// What a refusal tells the person. 503 is "no memory for it just now" (already tried a few
+// times by otaPut); a 409 "busy, ..." is the ship still checking its last update (on trial).
+function otaWhy(s,j){
+  if(s===503)return"Your ship is busy right now. Ask everyone else to turn Wi-Fi off for a few minutes, then tap Install again.";
+  if(/^busy,/.test(j.err||""))return"Your ship is still checking its last update. Try again in a couple of minutes.";
+  return j.err||"The ship turned the update down.";
 }
 function otaProg(f,o){if(!OI)return;OI.f=f;OI.o=o;const el=$("otap");if(el)el.outerHTML=otaBar()}
 function otaBar(){
@@ -137,7 +144,7 @@ async function otaInstall(){
       }
     }
     const a=await fetch("/api/ota/apply",{method:"POST",headers:{"X-Crew-Token":tok}}),j=await a.json().catch(()=>({}));
-    if(!a.ok)throw new Error(j.err||"Your ship wouldn't start the update.");
+    if(!a.ok)throw new Error(a.status===409&&/^busy,/.test(j.err||"")?otaWhy(409,j):j.err||"Your ship wouldn't start the update.");
     OI.step="wait";view();
     await new Promise((ok)=>setTimeout(ok,(j.restart_ms||1500)+4000));
     const t0=Date.now();let back=null;
