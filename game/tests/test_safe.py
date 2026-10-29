@@ -608,13 +608,44 @@ check("R1 M2 / FR1 m3: safe mode, lvotap won't load: 500, says it's damaged", co
 check("R1 M2: ... and says why in the log", _said and "upload code ImportError" in _said[0], _said)
 check("R1 M2: ... nothing left loaded", "lvotap" not in sys.modules and "lvota" not in sys.modules)
 for _src, _e in (("x = (\n", "SyntaxError"), ("raise ValueError('x')\n", "ValueError"),
-                 ("async def api(web, req, w):\n    raise KeyError('k')\n", "KeyError"),
-                 ("api = None\n", "TypeError")):
+                 ("raise OSError(5)\n", "OSError"), ("api = None\n", "TypeError")):
     code, b, _said = shadowed(_src)
     check("FR1 m3: lvotap %s: 500 damaged, not retried" % _e, code == 500 and b["err"] == lvsafe.DAMAGED,
           (code, b))
     check("FR1 m3: ... logged as %s" % _e, _said and _said[0] == "safe: upload code " + _e, _said)
     check("FR1 m3: ... nothing left loaded (%s)" % _e, "lvotap" not in sys.modules and "lvota" not in sys.modules)
+# 0.3.0 review 2 m3: what goes wrong taking a piece is not "damaged, fix over USB"; and an
+# answer already started is never followed by a second one
+code, b, _said = shadowed("async def api(web, req, w):\n    raise KeyError('k')\n")
+check("review2 m3: lvotap loads, a piece fails (KeyError): 500, not damaged", code == 500
+      and b["err"] != lvsafe.DAMAGED and "USB" not in b["err"] and "Install" in b["err"], (code, b))
+check("review2 m3: ... logged as the piece's failure", _said == ["safe: upload piece KeyError"], _said)
+check("review2 m3: ... nothing left loaded", "lvotap" not in sys.modules and "lvota" not in sys.modules)
+code, b, _said = shadowed("async def api(web, req, w):\n    raise MemoryError('no heap')\n")
+check("review2 m3: out of heap taking a piece: 503 busy", code == 503 and b["err"] == "busy", (code, b))
+_W2 = []
+
+
+async def _late():
+    put(_sh + "/lvotap.py", "import lvweb\nasync def api(web, req, w):\n    await lvweb.send_json(w, 200, {'ok': 1})\n"
+        "    raise ValueError('after')\n")
+    sys.path.insert(0, _sh)
+    sys.modules.pop("lvotap", None)
+    if sys.implementation.name == "cpython":
+        import importlib
+        importlib.invalidate_caches()
+    w = W()
+    try:
+        await web.route(req("POST", "/api/ota/put?f=0&n=10&o=0", b"x", tok), w)
+    finally:
+        sys.path.remove(_sh)
+        sys.modules.pop("lvotap", None)
+    return w.b
+
+
+_b = asyncio.run(_late())
+check("review2 m3: an answer had started: just the one", _b.count(b"HTTP/1.0") == 1
+      and _b.startswith(b"HTTP/1.0 200"), _b[:60])
 code, b, _said = shadowed("raise MemoryError('memory allocation failed')\n")
 check("FR1 m3: out of heap loading it: 503 busy (worth a retry)", code == 503 and b["err"] == "busy", (code, b))
 code, b, _said = shadowed("raise ValueError('x')\n", t="nope")
@@ -1322,4 +1353,47 @@ check("m3: off for a read error: no rest, restarts", rested == [1] and boots == 
 lvsafe.faults, lvsafe.rest = real_f, real_r
 import lvcode  # noqa: E402  (Reset this ship: lvcode.reset since 0.3.0)
 check("RESET clears fault.json (m11)", "fault.json" in lvcode.RESET, lvcode.RESET)
+# 0.3.0 review 2 m1: safe mode can't depend on lvsetup loading. A damaged or missing
+# lvsetup.mpy (outside a trial) goes to safe mode with the boot window kept, not into a
+# crash loop with no hotspot; and lvsafe.check's own reason starts safe mode only after
+# lvsetup has been dropped (it isn't kept on the heap through safe mode).
+_sh = ROOT + "/shadow-setup"
+os.mkdir(_sh)
+_sm = g["safe_mode"]
+for _src, _e in (("raise ImportError('damaged')\n", "ImportError"), ("x = (\n", "SyntaxError"),
+                 ("raise ValueError('bad block')\n", "ValueError")):
+    put(_sh + "/lvsetup.py", _src)
+    sys.path.insert(0, _sh)
+    sys.modules.pop("lvsetup", None)
+    if sys.implementation.name == "cpython":
+        import importlib
+        importlib.invalidate_caches()
+    _got = []
+    g["safe_mode"] = lambda cfg, why: _got.append((cfg, why, "lvsetup" in sys.modules))
+    T.slept = []
+    try:
+        g["main"]()
+    finally:
+        sys.path.remove(_sh)
+        sys.modules.pop("lvsetup", None)
+    check("review2 m1: lvsetup %s: safe mode, not a crash" % _e,
+          _got == [("load_config", "boot code damaged (lvsetup: %s)" % _e, False)], _got)
+    check("review2 m1: ... after the boot window (%s)" % _e, T.slept == [g["BOOT_WINDOW_MS"]], T.slept)
+put(_sh + "/lvsetup.py", "def boot(ms, flag, safe_mode):\n    return None, 'cfg', 'safe: 2 crashes in a row'\n")
+sys.path.insert(0, _sh)
+sys.modules.pop("lvsetup", None)
+if sys.implementation.name == "cpython":
+    import importlib
+    importlib.invalidate_caches()
+_got = []
+g["safe_mode"] = lambda cfg, why: _got.append((cfg, why, "lvsetup" in sys.modules))
+try:
+    g["main"]()
+finally:
+    sys.path.remove(_sh)
+    sys.modules.pop("lvsetup", None)
+g["safe_mode"] = _sm
+check("review2 m1: lvsafe.check's reason: safe mode with lvsetup dropped first",
+      _got == [("cfg", "safe: 2 crashes in a row", False)], _got)
+rm(_sh)
 print("test_safe: %d checks ok (%s)" % (ok[0], sys.implementation.name))

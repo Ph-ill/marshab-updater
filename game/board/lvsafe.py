@@ -519,6 +519,22 @@ class Phone:
         return 503, {"err": "Your ship is in safe mode.", "safe": sh.why}
 
 
+class Once:
+    """The phone's stream for one upload piece in safe mode, noting whether lvotap's answer
+    has started (0.3.0 review 2 m3: a failure after it never gets a second answer)."""
+
+    def __init__(self, w):
+        self.w = w
+        self.n = 0
+
+    def write(self, b):
+        self.n += 1
+        return self.w.write(b)
+
+    def drain(self):
+        return self.w.drain()
+
+
 def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
     """-> (lvweb.Server, the safe ship). main.py starts it on the hotspot."""
     sh = Ship(cfg, why, data)
@@ -535,23 +551,51 @@ def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
             if p == "/status":
                 return await lvweb.send(w, 200, "SAFE %s\n" % why, "text/plain")
         if p == "/api/ota/put":
+            # 0.3.0 review 2 m3: only the code failing to load (or having no api to call) is
+            # "damaged, fix over USB". What goes wrong while a piece is taken (a bad body, a
+            # bug in one branch) is that piece's failure, and the person taps Install again.
+            # And one answer only: if lvotap's answer had started, nothing is sent after it.
             import sys
+            code = obj = None
             try:
                 import lvotap           # the upload (0.3.0): lvota only for the envelope
-                return await lvotap.api(web, req, w)
+                if not callable(getattr(lvotap, "api", None)):
+                    raise TypeError("no api")
             except MemoryError:
-                # no heap for it this time (a request served now, the next maybe not): the
-                # phone tries a 503 again, and on "busy" the person taps Install again
                 code, obj = 503, {"err": "busy", "have": None}
-            except OSError:
-                raise                   # the connection or the flash, not the code: as before
-            except Exception as e:
-                # Damaged (an .mpy for another firmware, a .py twin that won't compile, a
-                # missing name: anything, not just ImportError) -- an answer, never a request
-                # left hanging, and one the page doesn't retry (0.3.0 fix review FR1 m3).
+            except OSError as e:
+                # reading the .mpy: a flash fault there is damage too (it won't load)
+                lvotap = None
+                sys.modules.pop("lvotap", None)
+                sys.modules.pop("lvota", None)
                 sh.say("safe: upload code %s" % (type(e).__name__,))
                 code, obj = 500, {"err": DAMAGED, "have": None}
-            finally:
+            except Exception as e:
+                # Damaged (an .mpy for another firmware, a .py twin that won't compile, a
+                # missing name: anything, not just ImportError) -- an answer the page doesn't
+                # retry (0.3.0 fix review FR1 m3).
+                sh.say("safe: upload code %s" % (type(e).__name__,))
+                code, obj = 500, {"err": DAMAGED, "have": None}
+            if code is None:
+                o = Once(w)
+                try:
+                    return await lvotap.api(web, req, o)
+                except MemoryError:
+                    # no heap for it this time: the phone tries a 503 again
+                    code, obj = 503, {"err": "busy", "have": None}
+                except OSError:
+                    raise               # the connection or the flash: lvweb logs and closes
+                except Exception as e:
+                    sh.say("safe: upload piece %s" % (type(e).__name__,))
+                    code, obj = 500, {"err": "That piece didn't go through (%s). Tap Install "
+                                      "to try again." % (type(e).__name__,), "have": None}
+                finally:
+                    lvotap = None
+                    sys.modules.pop("lvotap", None)
+                    sys.modules.pop("lvota", None)
+                if o.n:
+                    return              # an answer had started: never a second one after it
+            else:
                 lvotap = None
                 sys.modules.pop("lvotap", None)
                 sys.modules.pop("lvota", None)

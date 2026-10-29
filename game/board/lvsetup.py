@@ -66,8 +66,9 @@ def boot(BOOT_WINDOW_MS, flag, safe_mode):
     lvship.drop("lvledcfg")                    # (lvsafe asked it whether ship.json is whole)
     cfg = config(got)
     if why:
-        safe_mode(cfg, why)
-        return None
+        # main.py starts safe mode once this module is dropped (0.3.0 review 2 m1): from
+        # here, its frame (and this module) would stay on the heap for all of safe mode.
+        return None, cfg, why
     try:
         import lv
         print("firmware: " + lv.describe())
