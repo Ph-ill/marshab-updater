@@ -381,7 +381,7 @@ for name, clk, cfg, lt, want in (
         ("quiet early", FakeClock(300), {}, None, 0),
         ("no clock", FakeClock(600, known=False), {}, None, 0),
         ("switched off", FakeClock(600), {"light": False}, None, 0),
-        ("a test playing", FakeClock(600), {}, 5, 0)):
+        ("a test playing", FakeClock(600), {}, __import__("lvship").ticks_ms(), 0)):  # (a fresh mark: review 2 M3 clears a stale one)
     b.clock, L.cfg, b.ledtest, L.lc = clk, cfg, lt, [0, 0]
     lvlivein.flick(L)
     check("light: " + name, L.lc[1] == want, L.lc)
