@@ -263,21 +263,18 @@ def fail_at(*where):
     return f
 
 
-for where, good in ((("write",), False), (("read",), False), (("rename", "rename2"), False),
-                    (("rename",), True)):
+# (0.2.7: a refused rename is a failure too; there's no second route through crew.json.old)
+for where in ("write", "read", "rename"):
     fresh()
     p = Phone()
-    lvcode.fail = fail_at(*where)
+    lvcode.fail = fail_at(where)
     s, j = lvcode.change(p, type("R", (), {"body": b'{"old": "3333", "new": "6060"}', "header": lambda self, k: "tok3"})())
     lvcode.fail = None
-    name = "fail at " + "+".join(where)
-    if good:
-        check(name + ": the fallback rename still saves it", s == 200 and K.load(PATH).codes[3] == K.digest(SALT, 3, "6060"), (s, j))
-    else:
-        check(name + ": 500, says the current code still works", s == 500 and "still works" in j["err"], (s, j))
-        check(name + ": crew.json byte-identical", read() == ORIG)
-        check(name + ": the book in memory unchanged", p.book.codes[3] == json.loads(ORIG)["codes"][3])
-        check(name + ": the current code still signs in", p.book.check(3, "3333", 0)[0] == K.OK)
+    name = "fail at " + where
+    check(name + ": 500, says the current code still works", s == 500 and "still works" in j["err"], (s, j))
+    check(name + ": crew.json byte-identical", read() == ORIG)
+    check(name + ": the book in memory unchanged", p.book.codes[3] == json.loads(ORIG)["codes"][3])
+    check(name + ": the current code still signs in", p.book.check(3, "3333", 0)[0] == K.OK)
     check(name + ": no crew.json.new / .old left", gone(PATH + ".new") and gone(PATH + ".old"))
 # A file someone edited so the digest isn't there once: refused, untouched.
 with open(PATH, "wb") as f:

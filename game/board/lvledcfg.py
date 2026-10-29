@@ -65,7 +65,7 @@ def switch(ship, on):
     return bool(on)
 
 
-fail = None             # tests: called at "write", "read" and "rename" to simulate a failure
+fail = None             # tests: called at "open", "write", "read" and "rename" to simulate a failure
 
 
 def _hit(where):
@@ -73,12 +73,29 @@ def _hit(where):
         fail(where)
 
 
+def valid(c):
+    """Is c a whole ship identity, one the ship may write or keep as a backup? A ship number
+    1-8 (the bench and the web updater always write one) and, if there is a hotspot
+    password, one of 8-63 characters. No password is allowed: the updater's "WPA2, firmware
+    default password" writes none. {"led_notify": true} alone is not one: a ship.json like
+    that comes up as ship 1 (review #1 M1)."""
+    if not isinstance(c, dict):
+        return False
+    i = c.get("ship_id")
+    if isinstance(i, bool) or not (isinstance(i, int) or isinstance(i, str) and i.isdigit()) or not 1 <= int(i) <= 8:
+        return False
+    pw = c.get("hotspot_password")
+    return pw is None or isinstance(pw, str) and 8 <= len(pw) <= 63
+
+
 def save(path, c):
     """Write the settings dict c to path whole, as lvcode.save does crew.json: the text to
     path.new, read back and compared, then renamed over path (one step on littlefs and
     POSIX), so ship.json is always the old file or the new one, never a half-written one
     (0.2.6 and before wrote it in place: a restart mid-write could leave it unreadable,
-    and the ship would come up as a default ship 1). True, or False (path as it was)."""
+    and the ship would come up as a default ship 1). True, or False (path as it was).
+    A rename that fails is a failure: there is no second route that moves ship.json aside
+    first (that left a moment with no ship.json at all)."""
     import json
     import os
     text = json.dumps(c)
@@ -91,19 +108,8 @@ def save(path, c):
         with open(tmp) as f:
             if f.read() != text:
                 raise OSError("ship.json.new reads back wrong")
-        try:
-            _hit("rename")
-            os.rename(tmp, path)
-        except OSError:
-            old = path + ".old"         # a filesystem that won't rename onto a file
-            os.rename(path, old)
-            try:
-                _hit("rename2")
-                os.rename(tmp, path)
-            except OSError:
-                os.rename(old, path)
-                raise
-            os.remove(old)
+        _hit("rename")
+        os.rename(tmp, path)
         return True
     except OSError:
         try:
@@ -115,9 +121,10 @@ def save(path, c):
 
 def toggle(phone, on):
     """The phone's Ship light switch (CREW > your page; lvphone.Phone, POST /api/led): on
-    or off now and after a restart (led_notify in /data/ship.json, the rest kept). A
-    ship.json that can't be read is left alone: the switch works until the restart, and
-    the ship's identity, hotspot password and the rest are never replaced by {}."""
+    or off now and after a restart (led_notify in /data/ship.json, the rest kept). Only a
+    ship.json that reads back as a whole identity (valid) is rewritten. Missing, unreadable
+    (any error but "no such file" too: a damaged block, no heap), or not an identity: the
+    switch works until the restart and the file is left exactly as it is."""
     sh = phone.ship
     on = sh.led_on(on)
     sh.v += 1
@@ -125,16 +132,13 @@ def toggle(phone, on):
         import json
         p = phone.data + "/ship.json"
         try:
+            _hit("open")
             with open(p) as f:
                 c = json.load(f)
-            if not isinstance(c, dict):
-                raise ValueError
-        except OSError:
-            c = {}                      # no file yet: the bench's defaults plus this one
         except Exception:
             c = None
-        if c is None:
-            sh.say("led: ship.json not readable, setting kept until restart")
+        if not valid(c):
+            sh.say("led: ship.json missing, unreadable or not whole: setting kept until restart")
         else:
             c["led_notify"] = on
             if not save(p, c):

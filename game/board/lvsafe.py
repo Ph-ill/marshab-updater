@@ -5,31 +5,41 @@
 #
 # Files, all in /data and each written whole (temp file, read back, rename: save()), so a
 # power cut mid-write leaves the old copy or the new one, never half of either:
-#   fault.json      {"n": crashes in a row, "why": the last one, short; "up": ms it ran}
-#                   n goes up by one for each crash main.py catches (the game, one of its
-#                   tasks), and the file goes once the ship has run HEALTHY_MS without one.
-#   ship.json.bak   the last /data/ship.json that read back as a JSON object (refreshed
-#                   once a boot has stayed healthy, only when it differs). If ship.json
-#                   can't be read, it is put back from here before anything else starts.
-#   live.json       the ship-to-ship switches (lvlive.py): never part of ship.json, so a
-#                   switch flipped from a phone can't damage the ship's identity file.
-# What a boot does (check()):
+#   fault.json      {"n": crashes in a row, "why": the last one ("Class: text", short),
+#                   "up": ms it ran, "tries": times safe mode tried the game again on its own}
+#                   n goes up by one for each crash main.py catches (the game, or a task it
+#                   can't do without), and the file goes once the game has run HEALTHY_MS.
+#   ship.json.bak   the last /data/ship.json that was a whole identity (lvledcfg.valid),
+#   crew.json.bak   and the last crew.json with a salt and 8 codes. Refreshed at every boot
+#                   and after HEALTHY_MS, each only when it differs (no write otherwise).
+# What a boot does (check()), in this order:
+#   * ship.json and crew.json: one that is missing, won't parse, or (ship.json) isn't a whole
+#     identity is put back from the first good one of .new (a write that got as far as its
+#     read-back), .old (0.2.5/0.2.6's crew.json route), .bak. A ship.json that can't be put
+#     back: missing on a bench board that never had one, play (the bench's defaults); missing
+#     with traces of an old one, or broken: "off". A read error that isn't "no such file"
+#     (twice, with a gc in between) is "off" too, and never overwritten: the next boot looks
+#     again. "off" puts nothing on the air (the defaults would open the public placeholder
+#     hotspot as ship 1) and restarts after OFF_MS, so a passing error passes.
 #   * an update on trial (ota/state.json): play as normal. A crash then just restarts, so
 #     lvboot counts the boot and rolls the update back after MAX_BOOTS (its own rule); the
 #     crash isn't counted here, so the version it goes back to doesn't start in safe mode.
-#   * ship.json there but not readable: put back from ship.json.bak and play; with no
-#     backup, start nothing at all (no hotspot: the defaults would open a public network
-#     with another ship's name). That ship needs the updater over USB (docs/OTA.md).
-#   * n >= SAFE_AFTER: safe mode: the ship's own hotspot and the update page only (the
-#     phone page, sign-in, Settings > Ship software, /api/ota*, /status). No Bluetooth, no
-#     story. "Try the game again" (POST /api/safe/retry) or an installed update leaves it.
+#   * n >= SAFE_CAP (safe mode itself kept stopping): "off" for OFF_MS, then safe mode once more.
+#   * n >= SAFE_AFTER: safe mode: the ship's own hotspot and the update page only (the phone
+#     page, sign-in, Settings > Ship software, /api/ota*, /status). No Bluetooth, no story.
+#     It tries the game again on its own after RETRY_MS[tries] (30 min, 2 h, 6 h, then every
+#     12 h), or at once from "Try the game again"; an installed update leaves it too.
 import json
 import os
 
 SAFE_AFTER = 2
+SAFE_CAP = SAFE_AFTER + 3
 HEALTHY_MS = 600000
+OFF_MS = 900000
+RETRY_MS = (1800000, 7200000, 21600000, 43200000)
 D = "/data"
-fail = None             # tests: called at "write", "read", "rename" to simulate a failure
+MISSING, BROKEN, UNKNOWN = "missing", "broken", "unknown"
+fail = None             # tests: called at "write", "read", "rename", "open" to simulate a failure
 
 
 def _hit(where):
@@ -68,90 +78,198 @@ def save(path, text):
         return False
 
 
+def read(path):
+    """The JSON object in path, else MISSING (no such file), BROKEN (there, but not a JSON
+    object) or UNKNOWN (couldn't be read: an I/O error or no heap, twice, a gc between)."""
+    import gc
+    for _ in range(2):
+        try:
+            _hit("open")
+            with open(path) as f:
+                j = json.load(f)
+            return j if isinstance(j, dict) else BROKEN
+        except OSError as e:
+            if e.args and e.args[0] == 2:       # ENOENT
+                return MISSING
+        except MemoryError:
+            pass
+        except Exception:                       # ValueError and kin: the text isn't JSON
+            return BROKEN
+        gc.collect()
+    return UNKNOWN
+
+
 def load(path):
     """A JSON object from path, or None (missing, unreadable, or not an object)."""
-    try:
-        with open(path) as f:
-            j = json.load(f)
-        return j if isinstance(j, dict) else None
-    except Exception:
+    j = read(path)
+    return j if isinstance(j, dict) else None
+
+
+def ship_ok(c):
+    from lvledcfg import valid
+    return valid(c)
+
+
+def crew_ok(c):
+    s, k = c.get("salt"), c.get("codes")
+    return isinstance(s, str) and len(s) >= 16 and isinstance(k, list) and len(k) == 8
+
+
+def backup(p, c):
+    """p.bak := c (already checked good), only when it differs."""
+    t = json.dumps(c)
+    b = load(p + ".bak")
+    return (b is not None and json.dumps(b) == t) or save(p + ".bak", t)
+
+
+def guard(p, ok, say=print):
+    """Keep p good: -> None, or why it can't be (start nothing). See the top of the file."""
+    name = p[p.rfind("/") + 1:]
+    j = read(p)
+    if isinstance(j, dict) and ok(j):
+        if not backup(p, j):
+            say("safe: %s.bak not written" % name)
         return None
+    if j == UNKNOWN:
+        return "off: %s can't be read just now; looking again in %d min" % (name, OFF_MS // 60000)
+    traces = False
+    for x in (".new", ".old", ".bak"):
+        c = load(p + x)
+        traces = traces or exists(p + x)
+        if c is not None and ok(c) and save(p, json.dumps(c)):
+            say("safe: %s %s, put back from %s%s" % (name, "missing" if j == MISSING else "not usable", name, x))
+            if x == ".old":
+                try:
+                    os.remove(p + x)
+                except OSError:
+                    pass
+            backup(p, c)
+            return None
+    if isinstance(j, dict) or (j == MISSING and not traces):
+        return None             # as before 0.2.7: a bench board's own (or no) settings
+    return "off: %s %s and nothing to put back (the updater over USB)" % (name, j)
 
 
 def faults(d=D):
-    j = load(d + "/fault.json")
+    """fault.json's {n, why, up, tries}, {} if there's none (or it's unreadable)."""
+    return load(d + "/fault.json") or {}
+
+
+def count(j):
     try:
-        return int(j["n"]) if j else 0
-    except Exception:
+        return int(j.get("n", 0))
+    except (TypeError, ValueError):
         return 0
 
 
 def check(trial, d=D, say=print):
     """-> None (play), "safe: <why>" (safe mode) or "off: <why>" (start nothing)."""
-    p = d + "/ship.json"
-    if exists(p) and load(p) is None:
-        b = load(p + ".bak")
-        if b is not None and save(p, json.dumps(b)):
-            say("safe: ship.json couldn't be read, put back from ship.json.bak")
-        else:
-            return "off: ship.json can't be read and there's no backup (reinstall with the updater over USB)"
+    w = guard(d + "/ship.json", ship_ok, say)
+    guard(d + "/crew.json", crew_ok, say)        # never "off": safe mode signs in from it
+    if w:
+        return w
     if trial:
         return None
-    n = faults(d)
+    j = faults(d)
+    n = count(j)
+    if n >= SAFE_CAP:
+        return "off: safe mode stopped %d times in a row" % (n - SAFE_AFTER)
     if n >= SAFE_AFTER:
-        j = load(d + "/fault.json") or {}
-        return "safe: %d crashes in a row (%s)" % (n, str(j.get("why", "?"))[:80])
+        why = str(j.get("why", "?"))
+        return "safe: %d crashes in a row (%s)" % (n, why[:why.find(":")] if ":" in why else why[:24])
     return None
 
 
 def crashed(why, trial, up=0, d=D):
-    """main.py caught a crash: count it (not on an update's trial) before the restart."""
+    """main.py caught a crash: count it (not on an update's trial) before the restart. Past
+    SAFE_CAP nothing more is written (a loop of them would only wear the flash)."""
     if trial:
         return
-    n = faults(d) + 1
-    save(d + "/fault.json", json.dumps({"n": n, "why": str(why)[:120], "up": up}))
+    j = faults(d)
+    n = count(j) + 1
+    if n > SAFE_CAP:
+        return
+    j["n"], j["why"], j["up"] = n, str(why)[:64], up
+    t = json.dumps(j)
+    if not save(d + "/fault.json", t):
+        save(d + "/fault.json", t)      # (save() has removed its .new: one more go)
 
 
 def healthy(d=D, say=print):
-    """HEALTHY_MS without a crash: forget the count, refresh ship.json.bak."""
+    """HEALTHY_MS without a crash: forget the count, refresh the backups."""
     if exists(d + "/fault.json"):
         try:
             os.remove(d + "/fault.json")
         except OSError:
             pass
-    p = d + "/ship.json"
-    c = load(p)
-    if c is None:
-        return
-    t = json.dumps(c)
-    b = load(p + ".bak")
-    if b is None or json.dumps(b) != t:
-        if save(p + ".bak", t):
-            say("safe: ship.json backed up")
+    for f, ok in (("/ship.json", ship_ok), ("/crew.json", crew_ok)):
+        c = load(d + f)
+        if c is not None and ok(c) and not backup(d + f, c):
+            say("safe: %s.bak not written" % f[1:])
 
 
-def retry(d=D):
-    """Safe mode's Try the game again: one more go (the next crash brings safe mode back)."""
-    save(d + "/fault.json", json.dumps({"n": SAFE_AFTER - 1, "why": "tried again"}))
+def retry(d=D, auto=False, n=SAFE_AFTER - 1):
+    """Safe mode's Try the game again (one more go: the next crash brings safe mode back),
+    by hand or on its own (auto: the next wait is longer). rest(): safe mode once more."""
+    j = faults(d)
+    j["n"], j["why"] = n, "tried again" if n < SAFE_AFTER else j.get("why", "?")
+    j["tries"] = int(j.get("tries", 0)) + (1 if auto else 0)
+    save(d + "/fault.json", json.dumps(j))
+
+
+def rest(d=D):
+    retry(d, n=SAFE_AFTER)
+
+
+def retry_ms(d=D):
+    try:
+        return RETRY_MS[min(int(faults(d).get("tries", 0)), len(RETRY_MS) - 1)]
+    except (TypeError, ValueError):
+        return RETRY_MS[0]
+
+
+async def auto_retry(sh, ms, reboot=None):
+    """Safe mode tries the game again on its own after ms (RETRY_MS: longer each time)."""
+    from lv.clock import ticks_ms
+    import asyncio
+    sh.retry = (ticks_ms(), ms)
+    await asyncio.sleep_ms(ms) if hasattr(asyncio, "sleep_ms") else await asyncio.sleep(ms / 1000)
+    retry(sh.data, True)
+    print("safe: trying the game again (on its own)")
+    if reboot:
+        return reboot()
+    import machine
+    machine.reset()
 
 
 # ---- the safe-mode server: the phone page, sign-in and the update, nothing else ---------
 class Ship:
-    # What lvweb.Server and lvota need of a ship.
+    # What lvweb.Server and lvota need of a ship. why: what anyone on the hotspot may see
+    # ("2 crashes in a row (MemoryError)": the count and the kind); detail: the last crash's
+    # own words (fault.json "why"), for a signed-in crew member only.
     def __init__(self, cfg, why, data=D, say=print):
         from lv.clock import Clock
         self.cfg = cfg
         self.why = why
+        self.detail = str(faults(data).get("why", ""))
         self.data = data
         self.say = say
         self.clock = Clock()
         self.http_hits = 0
         self.v = 0
         self.web = None
+        self.retry = None       # (ticks_ms when set, ms): auto_retry's wait
+
+    def retry_s(self):
+        if not self.retry:
+            return None
+        from lv.clock import ticks_ms, ticks_diff
+        return max(0, self.retry[1] - ticks_diff(ticks_ms(), self.retry[0])) // 1000
 
 
 class Phone:
-    # Sign-in from crew.json (lv/codes.py, as lvphone) and a 503 {safe} for the story.
+    # Sign-in from crew.json (lv/codes.py, as lvphone, which also remembers a phone for the
+    # day so a reload stays signed in: /api/me) and a 503 {safe} for the story.
     def __init__(self, ship):
         from lv import codes as K
         self.K = K
@@ -167,18 +285,35 @@ class Phone:
                 return c
         return None
 
+    def token(self, c):
+        for k, x in self.tokens:
+            if x == c:
+                return k
+        from binascii import hexlify
+        t = str(hexlify(os.urandom(8)), "ascii")
+        self.tokens = (self.tokens + [[t, c]])[-8:]
+        return t
+
     def api(self, req):
         from lv.clock import ticks_ms
         p = req.path
         K = self.K
+        sh = self.ship
         if p == "/api/crew":
-            return 200, {"set": [self.book.is_set(c) for c in range(8)], "day": 1, "safe": self.ship.why}
+            return 200, {"set": [self.book.is_set(c) for c in range(8)], "day": 1, "safe": sh.why,
+                         "retry_s": sh.retry_s()}
         if p == "/api/v":
             return 200, {"v": 0}
-        if p == "/api/state" or p == "/api/me":
-            if p == "/api/me" or self.who(req) is None:
+        if p == "/api/me":
+            c = self.book.recall(req.phone(), 1)
+            if c is None:
                 return 401, {"err": "signed out"}
-            return 503, {"err": "Your ship is in safe mode.", "safe": self.ship.why}
+            return 200, {"token": self.token(c), "crew": c, "first": False}
+        if p == "/api/state":
+            if self.who(req) is None:
+                return 401, {"err": "signed out"}
+            return 503, {"err": "Your ship is in safe mode.", "safe": sh.why, "detail": sh.detail,
+                         "retry_s": sh.retry_s()}
         if req.method != "POST":
             return 404, {"err": "no such thing"}
         try:
@@ -192,10 +327,8 @@ class Phone:
                 return 400, {"err": "bad request"}
             st, v = self.book.check(c, pin, ticks_ms())
             if st == K.OK:
-                from binascii import hexlify
-                t = str(hexlify(os.urandom(8)), "ascii")
-                self.tokens = (self.tokens + [[t, c]])[-8:]
-                return 200, {"token": t, "crew": c, "first": False}
+                self.book.remember(req.phone(), c, 1)
+                return 200, {"token": self.token(c), "crew": c, "first": False}
             if st == K.WRONG:
                 return 403, {"err": "That code doesn't match.", "left": v}
             if st == K.LOCKED:
@@ -204,13 +337,14 @@ class Phone:
         if p == "/api/logout":
             t = req.header("x-crew-token")
             self.tokens = [x for x in self.tokens if x[0] != t]
+            self.book.forget(req.phone())
             return 200, {"ok": True}
         if p == "/api/safe/retry":
             if self.who(req) is None:
                 return 401, {"err": "signed out"}
             retry(self.data)
             return 200, {"ok": True, "restart_ms": 1500}
-        return 503, {"err": "Your ship is in safe mode.", "safe": self.ship.why}
+        return 503, {"err": "Your ship is in safe mode.", "safe": sh.why}
 
 
 def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
