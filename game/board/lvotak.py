@@ -32,6 +32,10 @@ NEEDS = (("lvlight", ("_pin", "_hold", "_busy")),
          ("lvota", ("api", "status", "env_piece", "envelope_prep", "envelope_done", "apply",
                     "good", "KEYS")),
          ("lvsafe", ("check", "crashed", "start", "server")))
+# The game's own modules (they import lv, the game core): checked only on a ship that has
+# lv. A ship whose firmware has none runs no game and serves updates without them, so it
+# must still keep an update (0.3.0 review 2 m4: before, it never could, and rolled back).
+GAME = ("lvphoneinit", "lvphoneapi", "lvstateapi")
 # The release key(s) the next update can be signed with (tools/ota/sign_release.py). A set
 # whose lvota.KEYS lacks it would pass every other check here and then refuse every later
 # update as "signed with a key this ship doesn't know": kept, it could only be fixed over
@@ -67,9 +71,12 @@ def keys_ok(keys):
 
 
 def _look(name, attrs):
-    had = name in sys.modules
-    m = __import__(name)
+    # Everything the import brings in is dropped after, not just the module named: lvstateapi
+    # pulls in lvphone and lv.engine, which would otherwise stay on the heap for the rest of
+    # the trial on a ship no phone has visited yet (0.3.0 review 2 m4).
+    had = list(sys.modules)
     try:
+        m = __import__(name)
         for a in attrs:
             if not hasattr(m, a):
                 raise ImportError("%s has no %s" % (name, a))
@@ -79,8 +86,24 @@ def _look(name, attrs):
             m.status()
     finally:
         m = None
+        for k in list(sys.modules):
+            if k not in had:
+                _drop(k)
+        had = None
+
+
+def game():
+    """Does this ship have lv, the game core (frozen on the game firmware)?"""
+    had = "lv" in sys.modules
+    try:
+        import lv  # noqa: F401
+        return True
+    except ImportError:
+        return False
+    finally:
+        lv = None
         if not had:
-            _drop(name)
+            _drop("lv")
 
 
 def sig_ok():
@@ -109,8 +132,12 @@ async def check(web=None):
         while ((b is not None and b.busy()) or getattr(web, "busy", 0) > 0) \
                 and lvship.ticks_diff(lvship.ticks_ms(), t0) < WAIT_MS:
             await lvship.sleep_ms(100)
+    g = game()
+    if not g:
+        print("ota: self-check: no lv (game core) on this ship, the game's modules skipped")
     for name, attrs in NEEDS:
-        _look(name, attrs)
+        if g or name not in GAME:
+            _look(name, attrs)
         gc.collect()
     return sig_ok()
 

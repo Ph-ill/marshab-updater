@@ -906,6 +906,46 @@ check("R1 M2: the update path checks out", run(lvotak.check()) is True)
 check("R1 M2: ... and leaves none of it loaded (lvsafe too)", not [m for m in ("lvotaq", "lvotap", "lvsig", "lvsafe")
                                                                    if m in sys.modules and m not in _had])
 check("FR1 m4: lvsafe is part of it", [x for x in lvotak.NEEDS if x[0] == "lvsafe"])
+# 0.3.0 review 2 m4: everything the check imports goes again (lvstateapi brings lvphone and
+# lv.engine), and a ship without lv (no game) still keeps an update
+for _m in ("lvphone", "lvphoneapi", "lvphoneinit", "lvstateapi", "lv.engine", "lvlight", "lvsetup", "lvcheck"):
+    sys.modules.pop(_m, None)
+_before = set(sys.modules)
+check("review2 m4: the check passes", run(lvotak.check()) is True)
+_left = sorted(set(sys.modules) - _before)
+check("review2 m4: ... and leaves nothing it imported loaded (lvphone, lv.engine too)", not _left, _left)
+_real_game = lvotak.game
+check("review2 m4: this test ship has lv", _real_game() is True)
+lvotak.game = lambda: False
+try:
+    os.mkdir(HERE + "/build/ota-nolv-" + sys.implementation.name)
+except OSError:
+    pass
+_nolv = HERE + "/build/ota-nolv-" + sys.implementation.name
+for _m in lvotak.GAME:
+    with open(_nolv + "/" + _m + ".py", "w") as f:
+        f.write("import lv_missing_core\n")
+    sys.modules.pop(_m, None)
+sys.path.insert(0, _nolv)
+if CPY:
+    import importlib
+    importlib.invalidate_caches()
+trial_state()
+try:
+    got = run(lvotak.keep(None, FAULT, FAULT_LAST))
+except Exception as e:
+    got = type(e).__name__
+finally:
+    sys.path.remove(_nolv)
+    for _m in lvotak.GAME:
+        os.remove(_nolv + "/" + _m + ".py")
+        sys.modules.pop(_m, None)
+    lvotak.game = _real_game
+_st = lvota.read_json(lvota.STATE)
+check("review2 m4: no lv: the game's modules skipped, the update kept", got is True
+      and (_st or {}).get("phase") != "trial", (got, _st))
+if _st is not None:
+    rm(lvota.STATE)
 check("R1 M2: lvsig refuses the known signature tampered", lvotak.sig_ok() is True)
 # a module of the chain shadowed or broken (a stale .py ahead of the .mpy): not kept
 SH = HERE + "/build/ota-shadow-" + sys.implementation.name
