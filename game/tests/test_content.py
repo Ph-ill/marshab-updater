@@ -1408,7 +1408,7 @@ class TestRound22(unittest.TestCase):
 
     def test_new_quirks_are_on_their_owners(self):
         want = {"Kim": ("Mango", "Dirt"), "Jai": ("fantasy football", "JetBlue", "wedding"),
-                "Diego": ("three cats", "a stranger"), "Dorian": ("The kid at home", "Uncrustables"),
+                "Diego": ("three cats", "a stranger"), "Dorian": ("The kid at home", "their kid", "Uncrustables"),
                 "Jacques": ("circuit board", "career", "chihuahua", "two cats"), "Michelle": ("Disney", "Tesla"),
                 "Marco": ("Elgin", "BMW", "Mexico", "cologne")}
         for name, words in want.items():
