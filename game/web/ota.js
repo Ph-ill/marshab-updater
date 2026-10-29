@@ -221,9 +221,15 @@ async function otaHistOpen(){
   const iv0=OS_&&OS_.v,mn={v:iv0,n:otaClean(iv0&&Object.prototype.hasOwnProperty.call(OTA_WN,iv0)?OTA_WN[iv0]:null)};
   if(!OH)return;                                   // closed meanwhile
   if(list){
-    const iv=OS_&&OS_.v,x=list.find((e)=>e.v===iv);
-    if(x&&!x.n.length)x.n=mn.n;                    // this page's lines, if the index has none
-    list=list.filter((e)=>e.n.length||e.v===iv).sort((a,b)=>vcmp(b.v,a.v)).slice(0,12);
+    const iv=OS_&&OS_.v,r=otaFor(OS_),rv=r&&r.v;
+    // Keep locally known Installed/Ready releases even if the index omits them or notes.
+    for(const local of [mn,r&&{v:rv,n:otaClean(r.notes)}]){
+      if(!local||!local.v)continue;
+      const x=list.find((e)=>e.v===local.v);
+      if(!x)list.push({...local,d:""});
+      else if(!x.n.length)x.n=local.n;
+    }
+    list=list.filter((e)=>e.n.length||e.v===iv||e.v===rv).sort((a,b)=>vcmp(b.v,a.v));
     OH={st:"on",list};
   }else OH={st:"off",mine:mn};
   if(route==="set")view();

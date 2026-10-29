@@ -39,6 +39,56 @@ function phone(fetcher, saved = ship, store = () => true) {
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
 const good = (url) => response(url.endsWith('index.json') ? index() : release());
 
+// Adapted from review_phone_probes.mjs: run against this checkout, with fixed expectations.
+function historyHTML(p) {
+  const el = {}; p.c.$ = () => el; p.run('otaHist()'); return el.innerHTML;
+}
+test('review: configured branch supplies index, release and history', async () => {
+  const p = phone(good, { ...ship, src: 'ota-hwfix-030' });
+  p.run("OS_={...ship,src:'ota-hwfix-030'}");
+  await p.run('otaCheck(true)'); await p.run('otaHistOpen()');
+  assert.equal(p.calls.length, 3);
+  assert.ok(p.calls.every(({ url }) => url.startsWith('https://raw.githubusercontent.com/Ph-ill/marshab-updater/ota-hwfix-030/')));
+});
+test('review: real repository index retains missing installed release and baked notes', async () => {
+  const idx = JSON.parse(readFileSync(new URL('../../firmware/index.json', import.meta.url), 'utf8'));
+  const wn = JSON.parse(readFileSync(new URL('../tools/ota/whatsnew.json', import.meta.url), 'utf8'));
+  const p = phone(() => response(idx)); p.c.wn = wn;
+  p.run("OS_={...ship,v:'0.3.0-ota-phone'};Object.assign(OTA_WN,wn)");
+  await p.run('otaHistOpen()');
+  const rows = JSON.parse(p.run('JSON.stringify(OH.list)'));
+  assert.deepEqual(rows.find((e) => e.v === '0.3.0-ota-phone').n, wn['0.3.0-ota-phone']);
+  assert.match(historyHTML(p), /Installed/);
+});
+test('review: all 14 releases remain visible, including the oldest installed release', async () => {
+  const releases = Array.from({ length: 14 }, (_, n) => ({ version: '0.3.' + n, channel: 'test', notes: ['notes'] }));
+  const p = phone(() => response({ releases })); await p.run('otaHistOpen()');
+  assert.equal(p.run('OH.list.length'), 14);
+  assert.equal(p.run('OH.list[13].v'), ship.v);
+  assert.match(historyHTML(p), /Installed/);
+});
+test('history retains Installed and Ready without notes, whether indexed or missing', async () => {
+  for (const indexed of [false, true]) {
+    const rel = { v: '0.3.1', ch: ship.ch, core: ship.core, notes: [] };
+    const releases = indexed ? [ship.v, rel.v].map((version) => ({ version, channel: ship.ch })) : [];
+    const p = phone(() => response({ releases }), { ...ship, rel });
+    await p.run('otaHistOpen()');
+    assert.equal(p.run('OH.list.length'), 2);
+    const html = historyHTML(p);
+    assert.match(html, /Installed/); assert.match(html, /Ready to install/);
+    assert.equal((html.match(/No notes for this version/g) || []).length, 2);
+  }
+});
+test('history fills missing index notes locally without replacing published notes or duplicating rows', async () => {
+  for (const notes of [[], ['Published notes']]) {
+    const p = phone(() => response({ releases: [{ version: ship.v, channel: ship.ch, notes }] }));
+    p.run("OTA_WN[ship.v]=['Baked notes']");
+    await p.run('otaHistOpen()');
+    assert.equal(p.run('OH.list.length'), 1);
+    assert.equal(p.run('OH.list[0].n[0]'), notes[0] || 'Baked notes');
+  }
+});
+
 test('successful download persists on this phone, keeps notes, and never asks the offline ship', async () => {
   const p = phone(good);
   await p.run('otaCheck(true)');
