@@ -60,6 +60,7 @@ node --test web/settings.test.mjs
 python3 tests/mock_check.py
 python3 tests/test_phone.py
 python3 tests/test_cal.py
+python3 tests/test_clock_auth.py
 python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py

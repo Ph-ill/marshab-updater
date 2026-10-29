@@ -15,8 +15,10 @@
 #
 # The board has one flight day (ship.day: from the launch date and the phones' clocks,
 # board/lvcal.py, or ship.json "day" on the bench); the page's ?day= is ignored. Before
-# launch only /api/crew (with the countdown: {day: 0, launch, until, start}) and /api/v
-# answer; the rest is 409. Taps are signed records for today authored by whoever signed
+# launch /api/crew (with the countdown: {day: 0, launch, until, start}), /api/v and
+# sign-in/recovery/sign-out answer; story routes are 409. Authentication also works
+# with the story switched off, so a crew token can correct a bad first phone clock
+# and authorize normal OTA. Taps are signed records for today authored by whoever signed
 # in (lvship.Ship.tap), so they sync to the other ships like any record.
 # Crew codes come from data/crew.json (the updater writes it); without it nobody can sign in.
 # What phones opened and saw is kept in /data/local.bin.
@@ -100,10 +102,12 @@ class Phone:
         p = req.path
         sh = self.ship
         d = max(1, sh.day)
-        if sh.st is None or sh.days is None:
-            return 503, {"err": "The story is switched off on this ship (story: false)."}
-        if sh.day < 1 and sh.cal is not None and p not in ("/api/crew", "/api/v"):
-            return 409, {"err": "The voyage hasn't launched yet.", "until": sh.cal.until()}
+        auth = p in ("/api/login", "/api/me", "/api/logout")
+        if not auth:
+            if sh.st is None or sh.days is None:
+                return 503, {"err": "The story is switched off on this ship (story: false)."}
+            if sh.day < 1 and sh.cal is not None and p not in ("/api/crew", "/api/v"):
+                return 409, {"err": "The voyage hasn't launched yet.", "until": sh.cal.until()}
         if req.method == "GET":
             if p == "/api/crew":
                 j = {"set": [self.book.is_set(c) for c in range(N)], "day": d}
