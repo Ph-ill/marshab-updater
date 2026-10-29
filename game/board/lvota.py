@@ -38,6 +38,7 @@ from binascii import a2b_base64, unhexlify, hexlify
 
 OTA = "ota"
 NEW = OTA + "/new"
+OLD = OTA + "/old"
 STATE = OTA + "/state.json"
 LAST = OTA + "/last.json"
 TAG = b"LV-OTA-1\n"
@@ -181,7 +182,11 @@ def bad_path(p):
     if "" in parts or "." in parts or ".." in parts:
         return True
     top = parts[0]
-    return (top in ("data", "ota", "boot.py") or top.startswith("lvboot.")
+    # lv/ (or lv.py, lv.mpy): ahead of .frozen on sys.path, it shadows the frozen core
+    # (lv.firmware "shadowed"), so the phone game and its /api/ota would never start again:
+    # no update can carry one (review #3 m4). (lvx/ is the core's own way to replace one lv
+    # module, and stays allowed.)
+    return (top in ("data", "ota", "boot.py", "lv", "lv.py", "lv.mpy") or top.startswith("lvboot.")
             or top.startswith("."))
 
 
@@ -330,6 +335,8 @@ def put(q, body):
             return 400, {"err": "bad request"}
         if off == 0:
             rmtree(NEW)
+            if not _exists(STATE):
+                rmtree(OLD)     # a kept update's rollback copies, if good() was cut short
             _mkdirs(NEW)
         p = NEW + "/env"
         have = _append(p, off, body, n)
@@ -389,6 +396,8 @@ def apply():
     why = check_manifest(m)
     if why:
         return 403, {"err": why}
+    if not _exists(STATE):
+        rmtree(OLD)             # lvboot.swap keeps an ota/old/<path> already there: none stale
     write_json(STATE, {"phase": "ready", "v": m["version"], "prev": installed()["v"]})
     return 200, {"ok": True, "v": m["version"], "restart_ms": 1500}
 
@@ -438,16 +447,24 @@ def restart(web):
 
 
 def good():
-    """The new set came up and has run a while (main.py): keep it, drop the old copies."""
+    """The new set came up and has run a while (main.py): keep it, drop the old copies.
+    The state file goes first, in one step: from then on lvboot has nothing to do, so a
+    power cut while ota/old/ is being deleted can't roll back to a mix of old and new files
+    (review #3 M2). What's left of ota/old/ and ota/new/ is only flash in use; staging the
+    next update (put f=0 o=0) and apply() clear it before lvboot could look at it. Cut
+    before the state file goes: the trial carries on as if good() never ran."""
     s = read_json(STATE)
     if not s or s.get("phase") != "trial":
         return False
     write_json(LAST, {"result": "installed", "v": s.get("v"), "prev": s.get("prev"),
                       "boots": s.get("boots")})
-    rmtree(OTA + "/old")
+    # lvboot's own .tmp first (a stale one from a cut lvboot._save): lvboot._load falls
+    # back to it when the state file is gone, so it must not outlive it
+    for p in (STATE + ".tmp", STATE):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
     rmtree(NEW)
-    try:
-        os.remove(STATE)
-    except OSError:
-        pass
+    rmtree(OLD)
     return True

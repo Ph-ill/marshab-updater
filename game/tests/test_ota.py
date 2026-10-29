@@ -92,7 +92,8 @@ def write_fixtures():
     fx["env"]["old"] = env(manifest("0.1.0-lv-test", f1))
     fx["env"]["same"] = env(manifest("0.2.0-lv-test", f1))
     for name, p in (("data", "data/crew.json"), ("ota", "ota/state.json"), ("boot", "boot.py"),
-                    ("lvboot", "lvboot.mpy"), ("dots", "www/../data/crew.json"), ("abs", "/main.py")):
+                    ("lvboot", "lvboot.mpy"), ("dots", "www/../data/crew.json"), ("abs", "/main.py"),
+                    ("lv", "lv/engine.mpy"), ("lvmpy", "lv.mpy")):
         fx["env"]["path_" + name] = env(manifest("0.2.1-lv-test", update("0.2.1-lv-test", {p: b"x"})))
     fx["env"]["del_data"] = env(manifest("0.2.1-lv-test", f1, delete=("data",)))
     huge = manifest("0.2.1-lv-test", f1)
@@ -179,10 +180,16 @@ for name, want in (("tampered", "signature"), ("otherkey", "signature"), ("unkno
                    ("core", "firmware"), ("old", "newer"), ("same", "newer"),
                    ("path_data", "file"), ("path_ota", "file"), ("path_boot", "file"),
                    ("path_lvboot", "file"), ("path_dots", "file"), ("path_abs", "file"),
+                   ("path_lv", "file"), ("path_lvmpy", "file"),
                    ("del_data", "delete"), ("huge", "file")):
     r = send_env(FX["env"][name])
     check("refused " + name, r[0] == 403 and want in r[1]["err"], r)
     check("refused %s: nothing staged" % name, lvota.manifest() is None and lvota.status()["staged"] is None)
+# review #3 m4: nothing that would shadow the frozen core (lv/, lv.py, lv.mpy); lvx/ (the
+# core's own one-module override) and names that only start with lv are fine
+for p, bad in (("lv/engine.mpy", True), ("lv", True), ("lv.py", True), ("lv.mpy", True),
+               ("lvx/engine.mpy", False), ("lvota.mpy", False), ("lvweb.mpy", False), ("www/lv/x", False)):
+    check("bad_path %r: %s" % (p, bad), lvota.bad_path(p) is bad)
 r = lvota.put({"f": "0", "n": "20", "o": "0"}, b'{"m": "x", "sig": "!!"')
 r = lvota.put({"f": "0", "n": "20", "o": "22"}, b"x")
 check("envelope: past its size", r[0] == 400 or r[0] == 409, r)
@@ -251,7 +258,108 @@ ship_runs(FILES[V1], "0.2.1 running")
 check("config.py deleted (kept in ota/old)", read("config.py") is None and read("ota/old/config.py") == OLD["config.py"])
 check("installed() is 0.2.1", lvota.installed()["v"] == V1)
 data_same("0.2.1 on trial")
+# Review #3 M2 (rv3/good_cut.py): a power cut anywhere inside good() (keeping the update)
+# never leaves a mix: the next boot is either still on trial with every old copy there
+# (lvboot can still put it all back) or the update is kept and lvboot has nothing to do.
+# What's left of ota/old/ is cleared when the next update is staged, never by lvboot.
+
+
+def snap(d="."):
+    out = {}
+    for n in os.listdir(d):
+        p = n if d == "." else d + "/" + n
+        if os.stat(p)[0] & 0x4000:
+            out[p] = None
+            out.update(snap(p))
+        else:
+            out[p] = read(p)
+    return out
+
+
+def unsnap(t):
+    for n in os.listdir("."):
+        rm(n)
+    for p in sorted(t):
+        if t[p] is None:
+            lvota._mkdirs(p)
+        else:
+            write(p, t[p])
+
+
+class CutOs:
+    # lvota's os with the power going at the k-th change on the flash
+    def __init__(self, k):
+        self.left = k
+
+    def __getattr__(self, n):
+        f = getattr(os, n)
+        if n not in ("remove", "rmdir", "rename"):
+            return f
+
+        def g(*a):
+            if self.left == 0:
+                raise Cut()
+            self.left -= 1
+            return f(*a)
+        return g
+
+
+class Cut(BaseException):     # like pulling the plug: nothing in lvota or lvboot catches it
+    pass
+
+
+before = snap()
+olds = sorted(p for p in before if p.startswith("ota/old/") and before[p] is not None)
+check("M2: a trial with old copies to keep", len(olds) >= 2, olds)
+write(lvota.STATE + ".tmp", read(lvota.STATE))         # a stale one of lvboot's, as a cut _save leaves
+before = snap()
+kept = trial = 0
+for k in range(80):
+    unsnap(before)
+    lvota.os = CutOs(k)
+    try:
+        lvota.good()
+        hit = False
+    except Cut:
+        hit = True
+    lvota.os = os
+    r = lvboot.run()
+    tag = "M2 cut %d in good()" % k
+    if r == "trial":
+        trial += 1
+        check(tag + ": still on trial, every old copy there", all(read(p) == before[p] for p in olds))
+        ship_runs(FILES[V1], tag)
+        check(tag + ": kept next time", lvota.good() is True and read(lvota.STATE) is None)
+    else:
+        kept += 1
+        check(tag + ": kept, nothing for lvboot", r is None and lvota.read_json(lvota.LAST)["result"] == "installed")
+        ship_runs(FILES[V1], tag)
+    data_same(tag)
+    check(tag + ": no state left", read(lvota.STATE) is None and read(lvota.STATE + ".tmp") is None)
+    if not hit:
+        break
+check("M2: cut points tried both sides of keeping", trial >= 1 and kept >= 3 and not hit, (trial, kept, k))
+# the last cut left ota/old/ part-deleted: staging the next update clears it (no state
+# file: nothing could need it), and no boot ever looks at it
+unsnap(before)
+lvota.os = CutOs(len(olds) + 3)     # LAST, .tmp, the state file, then a few old copies
+try:
+    lvota.good()
+except Cut:
+    pass
+lvota.os = os
+left = [p for p in olds if read(p) is not None]
+check("M2: cut part-way through ota/old/", 0 < len(left) < len(olds), left)
+check("M2: ... the next boot does nothing", lvboot.run() is None)
+ship_runs(FILES[V1], "M2: leftovers")
+check("M2: staging the next update clears ota/old/", send_env(FX["env"]["0.2.2-lv-test"])[0] == 200
+      and not [p for p in olds if read(p) is not None])
+lvota.rmtree(lvota.NEW)
+# while on trial, staging keeps ota/old/ (lvboot may still need it to roll back)
+unsnap(before)
+rm(lvota.STATE + ".tmp")
 check("a second update while on trial", send_env(FX["env"]["0.2.2-lv-test"])[0] == 200)
+check("M2: on trial, staging keeps ota/old/", all(read(p) == before[p] for p in olds))
 lvota.rmtree(lvota.NEW)
 check("good(): kept", lvota.good() is True)
 check("last: installed", lvota.read_json(lvota.LAST)["result"] == "installed")
