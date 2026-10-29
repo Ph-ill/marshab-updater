@@ -1,7 +1,9 @@
-# Safe mode and the ship's fault notes (board/main.py). Loaded at boot, when something
-# crashes and once the ship has run healthily for HEALTHY_MS; dropped after each (lvship.drop),
-# so a ship that is fine never carries it. Shipped over the air as lvsafe.mpy: boot.py and
-# lvboot.py (the rollback of an update on trial) are USB-only and stay exactly as they are.
+# Safe mode and the ship's fault notes (board/main.py). Loaded at boot (check()), when
+# something crashes (crashed()) and for safe mode itself (start()); dropped after the boot
+# check (lvship.drop), so a ship that is fine never carries it. HEALTHY_MS is main.py's own
+# timer: it removes fault.json with no import (no heap needed at minute 10). Shipped over
+# the air as lvsafe.mpy: boot.py and lvboot.py (the rollback of an update on trial) are
+# USB-only and stay exactly as they are.
 #
 # Files, all in /data and each written whole (temp file, read back, rename: save()), so a
 # power cut mid-write leaves the old copy or the new one, never half of either:
@@ -10,17 +12,30 @@
 #                   n goes up by one for each crash main.py catches (the game, or a task it
 #                   can't do without), and the file goes once the game has run HEALTHY_MS.
 #   ship.json.bak   the last /data/ship.json that was a whole identity (lvledcfg.valid),
-#   crew.json.bak   and the last crew.json with a salt and 8 codes. Refreshed at every boot
-#                   and after HEALTHY_MS, each only when it differs (no write otherwise).
+#   crew.json.bak   and the last crew.json that lv/codes.py would load (crew_ok). Refreshed
+#                   at every boot, only when its content differs (compared as objects: a
+#                   MicroPython dict's key order isn't the file's, so text never matches).
+#                   (Not again at HEALTHY_MS: the writes in between are whole and checked.)
 # What a boot does (check()), in this order:
-#   * ship.json and crew.json: one that is missing, won't parse, or (ship.json) isn't a whole
-#     identity is put back from the first good one of .new (a write that got as far as its
-#     read-back), .old (0.2.5/0.2.6's crew.json route), .bak. A ship.json that can't be put
-#     back: missing on a bench board that never had one, play (the bench's defaults); missing
-#     with traces of an old one, or broken: "off". A read error that isn't "no such file"
-#     (twice, with a gc in between) is "off" too, and never overwritten: the next boot looks
-#     again. "off" puts nothing on the air (the defaults would open the public placeholder
-#     hotspot as ship 1) and restarts after OFF_MS, so a passing error passes.
+#   * ship.json and crew.json, when good (or once put back): any leftover .new/.old (a
+#     write cut short, which its caller never confirmed; 0.2.6's crew.json route) is
+#     removed, so it can't come back later ahead of the fresher .bak.
+#   * one that is missing, won't parse, or (ship.json) isn't a whole identity is put back
+#     from the first good one of .new (a write that got as far as its read-back), .bak
+#     (the last good one this ship booted with), .old. .new and .old are renamed into
+#     place (nothing is rewritten, so a failed restore can't destroy them); .bak is copied
+#     through its own temp file (ship.json.bak.new), never through ship.json.new.
+#   * a read error that isn't "no such file" (an I/O error that stays: littlefs gives a
+#     damaged block the same error on every read; no heap) is looked at again after a
+#     pause, then put back the same way (the .bak is at most this boot's changes behind).
+#   * a ship.json that can't be put back: missing or settings of its own on a bench board
+#     that was never set up for a crew (no crew.json, no backups), play (the bench's
+#     defaults); otherwise "off": a missing, broken or unreadable one, or one with no ship
+#     number at all (0.2.6's toggle could leave {"led_notify": ...}). "off" puts nothing on
+#     the air (the defaults would open the public placeholder hotspot as a fake ship 1) and
+#     restarts after OFF_MS, so a passing error passes. On an update's trial lvboot's
+#     deadline restarts it sooner and rolls the update back (harmless: it rolls back to a
+#     set that reads the same files).
 #   * an update on trial (ota/state.json): play as normal. A crash then just restarts, so
 #     lvboot counts the boot and rolls the update back after MAX_BOOTS (its own rule); the
 #     crash isn't counted here, so the version it goes back to doesn't start in safe mode.
@@ -39,7 +54,7 @@ OFF_MS = 900000
 RETRY_MS = (1800000, 7200000, 21600000, 43200000)
 D = "/data"
 MISSING, BROKEN, UNKNOWN = "missing", "broken", "unknown"
-fail = None             # tests: called at "write", "read", "rename", "open" to simulate a failure
+fail = None             # tests: called at "write", "read", "rename", "open", "restore" to simulate a failure
 
 
 def _hit(where):
@@ -55,10 +70,10 @@ def exists(p):
         return False
 
 
-def save(path, text):
-    """Write text to path whole: path.new, read back, rename over path. True, or False
-    (path as it was). Rename onto an existing file is one step on littlefs and POSIX."""
-    tmp = path + ".new"
+def save(path, text, tmp=None):
+    """Write text to path whole: tmp (path.new), read back, rename over path. True, or
+    False (path as it was). Rename onto an existing file is one step on littlefs and POSIX."""
+    tmp = tmp or path + ".new"
     try:
         _hit("write")
         with open(tmp, "w") as f:
@@ -111,43 +126,97 @@ def ship_ok(c):
 
 
 def crew_ok(c):
+    """A crew.json lv/codes.py load() takes as it is: a hex salt of 8+ bytes and 8 codes,
+    each None or a 64-character digest (anything less and safe mode, and the game, would
+    show "No code set up" for everyone, so it must never become the .bak)."""
     s, k = c.get("salt"), c.get("codes")
-    return isinstance(s, str) and len(s) >= 16 and isinstance(k, list) and len(k) == 8
+    if not (isinstance(s, str) and len(s) >= 16 and isinstance(k, list) and len(k) == 8):
+        return False
+    try:
+        from binascii import unhexlify
+        unhexlify(s)
+    except Exception:
+        return False
+    for x in k:
+        if not (x is None or isinstance(x, str) and len(x) == 64):
+            return False
+    return True
 
 
 def backup(p, c):
-    """p.bak := c (already checked good), only when it differs."""
-    t = json.dumps(c)
-    b = load(p + ".bak")
-    return (b is not None and json.dumps(b) == t) or save(p + ".bak", t)
+    """p.bak := c (already checked good), only when it differs. Compared as objects: dict
+    equality ignores key order (MicroPython's json.dumps order isn't the file's)."""
+    return load(p + ".bak") == c or save(p + ".bak", json.dumps(c))
 
 
-def guard(p, ok, say=print):
-    """Keep p good: -> None, or why it can't be (start nothing). See the top of the file."""
+def gone(p):
+    try:
+        os.remove(p)
+    except OSError:
+        pass
+
+
+def crewed(d):
+    """Was this /data ever set up for a crew? Files a restore of ship.json never deletes:
+    crew.json (the updater and the bench write it with ship.json), its backup and leftovers."""
+    for x in ("", ".bak", ".new", ".old"):
+        if exists(d + "/crew.json" + x):
+            return True
+    return False
+
+
+def guard(p, ok, say=print, got=None, bench=True):
+    """Keep p good: -> None, or why it can't be (start nothing). See the top of the file.
+    got: a list the good object (or a bench board's own settings) is appended to, so the
+    caller never reads the file a second time. bench: a missing or identity-less p may
+    play (a board never set up for a crew)."""
     name = p[p.rfind("/") + 1:]
     j = read(p)
+    if j == UNKNOWN:
+        import gc
+        import time
+        gc.collect()
+        time.sleep_ms(200) if hasattr(time, "sleep_ms") else time.sleep(0.2)
+        j = read(p)
     if isinstance(j, dict) and ok(j):
+        for x in (".new", ".old"):
+            if exists(p + x):
+                gone(p + x)
+                say("safe: a leftover %s%s removed" % (name, x))
         if not backup(p, j):
             say("safe: %s.bak not written" % name)
+        if got is not None:
+            got.append(j)
         return None
-    if j == UNKNOWN:
-        return "off: %s can't be read just now; looking again in %d min" % (name, OFF_MS // 60000)
+    how = "missing" if j == MISSING else "unreadable" if j == UNKNOWN else "not usable"
     traces = False
-    for x in (".new", ".old", ".bak"):
+    for x in (".new", ".bak", ".old"):
         c = load(p + x)
         traces = traces or exists(p + x)
-        if c is not None and ok(c) and save(p, json.dumps(c)):
-            say("safe: %s %s, put back from %s%s" % (name, "missing" if j == MISSING else "not usable", name, x))
-            if x == ".old":
-                try:
-                    os.remove(p + x)
-                except OSError:
-                    pass
-            backup(p, c)
-            return None
-    if isinstance(j, dict) or (j == MISSING and not traces):
+        if c is None or not ok(c):
+            continue
+        try:
+            if x == ".bak":
+                if not save(p, json.dumps(c), p + ".bak.new"):
+                    continue
+            else:
+                _hit("restore")
+                os.rename(p + x, p)
+        except OSError:
+            continue
+        say("safe: %s %s, put back from %s%s" % (name, how, name, x))
+        for y in (".new", ".old"):              # the others: older, or cut short
+            gone(p + y)
+        backup(p, c)
+        if got is not None:
+            got.append(c)
+        return None
+    if bench and not traces and not crewed(p[:p.rfind("/")]) and (j == MISSING or isinstance(j, dict)):
+        if got is not None and isinstance(j, dict):
+            got.append(j)
         return None             # as before 0.2.7: a bench board's own (or no) settings
-    return "off: %s %s and nothing to put back (the updater over USB)" % (name, j)
+    return "off: %s %s and nothing to put back (the updater over USB); looking again in %d min" % (
+        name, how, OFF_MS // 60000)
 
 
 def faults(d=D):
@@ -162,10 +231,11 @@ def count(j):
         return 0
 
 
-def check(trial, d=D, say=print):
-    """-> None (play), "safe: <why>" (safe mode) or "off: <why>" (start nothing)."""
-    w = guard(d + "/ship.json", ship_ok, say)
-    guard(d + "/crew.json", crew_ok, say)        # never "off": safe mode signs in from it
+def check(trial, d=D, say=print, got=None):
+    """-> None (play), "safe: <why>" (safe mode) or "off: <why>" (start nothing). got: a
+    list that receives ship.json's settings as checked (main.py builds cfg from them)."""
+    w = guard(d + "/ship.json", ship_ok, say, got)
+    guard(d + "/crew.json", crew_ok, say, bench=False)  # never "off": safe mode signs in from it
     if w:
         return w
     if trial:
@@ -193,19 +263,6 @@ def crashed(why, trial, up=0, d=D):
     t = json.dumps(j)
     if not save(d + "/fault.json", t):
         save(d + "/fault.json", t)      # (save() has removed its .new: one more go)
-
-
-def healthy(d=D, say=print):
-    """HEALTHY_MS without a crash: forget the count, refresh the backups."""
-    if exists(d + "/fault.json"):
-        try:
-            os.remove(d + "/fault.json")
-        except OSError:
-            pass
-    for f, ok in (("/ship.json", ship_ok), ("/crew.json", crew_ok)):
-        c = load(d + f)
-        if c is not None and ok(c) and not backup(d + f, c):
-            say("safe: %s.bak not written" % f[1:])
 
 
 def retry(d=D, auto=False, n=SAFE_AFTER - 1):
@@ -240,6 +297,42 @@ async def auto_retry(sh, ms, reboot=None):
         return reboot()
     import machine
     machine.reset()
+
+
+def start(cfg, why, m):
+    """main.py's safe mode (moved here from main.py so its code isn't resident while the
+    game plays). m: main.py's globals (time, restart, reboot, home_screen, net_hooks, keep).
+    Hotspot + the phone page, sign-in and Settings > Ship software (server()), and the game
+    tried again on its own after retry_ms(). "off": nothing on the air for OFF_MS, then a
+    restart (after safe mode itself kept stopping: safe mode once more), so a ship that is
+    off looks again rather than staying dark for good."""
+    if why.startswith("off:"):
+        m["time"].sleep_ms(OFF_MS)
+        if count(faults()) >= SAFE_CAP:
+            rest()
+        return m["restart"]()
+    import lvwifi
+    import lvweb
+    import asyncio
+    ap = lvwifi.hotspot(cfg)
+    ip = "192.168.4.1"
+    try:
+        a = ap.ifconfig()[0]
+        if a and a != "0.0.0.0":
+            ip = a
+    except Exception:
+        pass
+
+    async def run():
+        web, sh = server(lvweb, cfg, why[6:], ip, m["reboot"])
+        m["home_screen"](lvweb)
+        m["net_hooks"](lvweb, web)
+        await asyncio.start_server(web.handle, "0.0.0.0", cfg["http_port"])
+        if cfg["captive_dns"]:
+            asyncio.create_task(m["keep"]("dns", lambda: lvweb.dns(ip)))
+        print("safe: update page on http://%s/" % ip)
+        await auto_retry(sh, retry_ms(), m["reboot"])
+    asyncio.run(run())
 
 
 # ---- the safe-mode server: the phone page, sign-in and the update, nothing else ---------

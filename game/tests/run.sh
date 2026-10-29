@@ -106,10 +106,11 @@ if [ -n "$MP" ]; then
   if [ -n "$MPY_CROSS" ]; then
     MPY_CROSS="$MPY_CROSS" sh tools/board_build.sh
     # Stock MicroPython (every module a file): sync + the bench status server (the phone
-    # game is off there: it needs the game firmware).
-    "$MP" -X heapsize=256k tests/mp_sync_heap.py build/board
+    # game is off there: it needs the game firmware). All of main.py is resident in the
+    # measurement (review #2 M6), ~13 KB on a 64-bit port, so 320k there (no cap applies).
+    "$MP" -X heapsize=320k tests/mp_sync_heap.py build/board
     # ...with led_notify on: stays dark there (game firmware only: no heap for it).
-    "$MP" -X heapsize=256k tests/mp_sync_heap.py build/board --led
+    "$MP" -X heapsize=320k tests/mp_sync_heap.py build/board --led
     # The game firmware's frozen set, if a unix build of it is given (tools/build_firmware.sh unix32):
     # sync alone, then sync + two phones playing over real sockets.
     if [ -n "$LV_FROZEN_MP" ]; then
@@ -130,7 +131,7 @@ if [ -n "$MP" ]; then
     MICROPYTHON="$MP" LV_FROZEN_MP="$LV_FROZEN_MP" python3 tests/test_bench.py
   else
     echo "mpy-cross not found: heap measured from source (set MPY_CROSS=...)"
-    "$MP" -X heapsize=256k tests/mp_sync_heap.py
+    "$MP" -X heapsize=384k tests/mp_sync_heap.py
   fi
 else
   echo "micropython not found: skipped tests/mp_check.py (set MICROPYTHON=...)"
