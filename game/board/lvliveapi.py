@@ -48,6 +48,22 @@ PING_KB = 8
 PIECE = 256          # GET /api/live goes out this many bytes at a time
 F = "/hail.json"
 
+# review 3 MAJOR-1: a phone that stops taking bytes mid-stream (out of range, screen locked,
+# Wi-Fi stalled) would leave drain() waiting until lwIP gives up, minutes, with main.py's
+# admission holding every other phone's /api/* off. Each stream write here waits at most
+# DRAIN_MS; then the stream fails (TimeoutError), lvweb.Server.handle closes the socket and
+# main.py's finally clears state_busy (GET /api/live; the radio test's ping holds nothing).
+# (Here, not in lvweb: lvweb is frozen in the lv-core firmware, and any change would ship
+# it as a ~4 KB .mpy that stays in RAM all the time.)
+DRAIN_MS = 15000
+
+
+async def wdrain(w):
+    import asyncio
+    if hasattr(asyncio, "wait_for_ms"):
+        return await asyncio.wait_for_ms(w.drain(), DRAIN_MS)
+    return await asyncio.wait_for(w.drain(), DRAIN_MS / 1000)   # CPython (the tests)
+
 
 def _in():
     import lvlivein
@@ -212,7 +228,7 @@ async def live(lvweb, web, req, w):
         k += PIECE
         if k == 3 * PIECE and lvweb.probe:
             lvweb.probe()
-        await lvweb.drain(w)
+        await wdrain(w)
 
 
 def body(g):
@@ -397,9 +413,9 @@ async def ping(lvweb, web, req, w):
         z = b" " * 512
         for _ in range(2 * kb):
             w.write(z)
-            await lvweb.drain(w)
+            await wdrain(w)
     else:
-        await lvweb.drain(w)
+        await wdrain(w)
 
 
 def api(web, req):

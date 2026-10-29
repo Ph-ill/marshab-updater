@@ -6,6 +6,22 @@ from lv.engine import Engine
 from lv.state import N
 import lvphone
 
+# review 3 MAJOR-1: a phone that stops taking bytes mid-stream (out of range, screen locked,
+# Wi-Fi stalled) would leave drain() waiting until lwIP gives up, minutes, with main.py's
+# admission holding every other phone's /api/* off. Each stream write here waits at most
+# DRAIN_MS; then the stream fails (TimeoutError), lvweb.Server.handle closes the socket and
+# main.py's finally clears state_busy. (Here, not in lvweb: lvweb is frozen in the lv-core
+# firmware, and any change would ship it as a ~4 KB .mpy that stays in RAM all the time.)
+DRAIN_MS = 15000
+
+
+async def drain(w):
+    import asyncio
+    if hasattr(asyncio, "wait_for_ms"):
+        return await asyncio.wait_for_ms(w.drain(), DRAIN_MS)
+    return await asyncio.wait_for(w.drain(), DRAIN_MS / 1000)   # CPython (the tests)
+
+
 # ---- /api/state
 def state_body(self, you, last, minute):
     """Everything in /api/state except "story" (streamed separately)."""
@@ -118,7 +134,7 @@ def state_writer(self, you, last, minute):
                 if k >= 384 or (i == len(refs) - 1 and k):
                     w.write(b2a_base64(carry[:k])[:-1])
                     carry = carry[k:]
-                    await lvweb.drain(w)
+                    await drain(w)
         finally:
             days.readers -= 1
         if carry:
@@ -129,5 +145,5 @@ def state_writer(self, you, last, minute):
         w.write(b"}")
         if lvphone.probe:
             lvphone.probe()
-        await lvweb.drain(w)
+        await drain(w)
     return write

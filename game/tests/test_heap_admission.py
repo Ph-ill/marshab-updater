@@ -116,10 +116,10 @@ class Admission(unittest.IsolatedAsyncioTestCase):
     async def test_stalled_stream_frees_other_phones_after_the_write_deadline(self):
         # review 3 MAJOR-1: a phone that stops reading mid-/api/state (out of range, screen
         # locked) used to hold every other phone's /api/* off until lwIP gave up (minutes).
-        # Each stream write now waits at most lvweb.DRAIN_MS; then the stream fails (its
-        # socket is closed by Server.handle) and admission is released.
+        # Each stream write now waits at most lvstateapi.DRAIN_MS; then the stream fails (its
+        # socket is closed by lvweb.Server.handle) and admission is released.
         import time
-        import lvweb
+        import lvstateapi
 
         class Stalled:
             def write(self, b):
@@ -133,10 +133,10 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         async def route(req, w):
             calls.append(req.path)
             if req.path == "/api/state":
-                await lvweb.drain(Stalled())
+                await lvstateapi.drain(Stalled())
 
-        saved = lvweb.DRAIN_MS
-        lvweb.DRAIN_MS = 200
+        saved = lvstateapi.DRAIN_MS
+        lvstateapi.DRAIN_MS = 200
         try:
             web = hooks(route)
             t0 = time.monotonic()
@@ -154,27 +154,38 @@ class Admission(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(answer, [])
             self.assertEqual(calls, ["/api/state", "/api/login"])
         finally:
-            lvweb.DRAIN_MS = saved
+            lvstateapi.DRAIN_MS = saved
 
-    async def test_send_and_file_streams_use_the_write_deadline(self):
-        import lvweb
+    async def test_live_stream_writes_use_the_deadline(self):
+        # GET /api/live (and the radio test's ping) stream through lvliveapi.wdrain
+        import lvliveapi
 
         class Stalled:
-            def write(self, b):
-                pass
-
             async def drain(self):
                 await asyncio.Event().wait()
 
-        saved = lvweb.DRAIN_MS
-        lvweb.DRAIN_MS = 50
+        class Moving:
+            n = 0
+
+            async def drain(self):
+                Moving.n += 1
+
+        saved = lvliveapi.DRAIN_MS
+        lvliveapi.DRAIN_MS = 50
         try:
             with self.assertRaises(asyncio.TimeoutError):
-                await lvweb.send(Stalled(), 200, "{}")
-            with self.assertRaises(asyncio.TimeoutError):
-                await lvweb.send_file(Stalled(), str(ROOT / "board/lvweb.py"), "text/plain", False)
+                await lvliveapi.wdrain(Stalled())
+            await lvliveapi.wdrain(Moving())
+            self.assertEqual(Moving.n, 1)
         finally:
-            lvweb.DRAIN_MS = saved
+            lvliveapi.DRAIN_MS = saved
+
+    def test_lvweb_left_as_frozen(self):
+        # lvweb is frozen in the lv-core firmware: changing it ships a ~4 KB .mpy kept in RAM
+        # (the review 3 heap runs went 76.5 -> 80.5 KB), so the deadline lives in the stream
+        # modules instead
+        src = (ROOT / "board/lvweb.py").read_text()
+        self.assertNotIn("DRAIN_MS", src)
 
     async def test_stale_busy_mark_is_ignored_after_20_s(self):
         # the backstop: a state_busy mark that somehow outlived its stream holds nobody off

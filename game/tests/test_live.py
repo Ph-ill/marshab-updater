@@ -1352,10 +1352,6 @@ class _LW:
     async def send_json(w, code, obj):
         w.write(("%d " % code).encode() + json.dumps(obj).encode())
 
-    @staticmethod
-    async def drain(w):                 # (lvweb.drain: the writer's drain, under a deadline)
-        await w.drain()
-
 
 try:
     import asyncio
