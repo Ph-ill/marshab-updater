@@ -64,6 +64,20 @@ async def play(sh, pin, T):
         T._hold(sh, True)
 
 
+def led_busy(sh):
+    """Is a light playback (Test light, or this flicker) still running? sh.ledtest holds its
+    start, counted as Test light's (TEST_MS long); like the 429 in lvledtest.start and
+    main.py, a mark more than 5 s past its end is stale (a task that never ran its finally)
+    and is cleared rather than holding the light off for good."""
+    t = getattr(sh, "ledtest", None)
+    if t is None:
+        return False
+    if 10000 - lvship.ticks_diff(lvship.ticks_ms(), t) > -5000:
+        return True
+    sh.ledtest = None
+    return False
+
+
 def maybe(lk):
     """lvlive's Link.flick: the light for a hail that just arrived, if it may play."""
     sh = lk.sh
@@ -78,7 +92,7 @@ def maybe(lk):
     if lk.lc[0] != d:
         lk.lc = [d, 0]
     import lvlive
-    if lk.lc[1] >= lvlive.LIGHTS or getattr(sh, "ledtest", None) is not None:
+    if lk.lc[1] >= lvlive.LIGHTS or led_busy(sh):
         return False
     lk.lc[1] += 1
     return start(sh)
@@ -97,7 +111,19 @@ def start(sh):
     except ImportError:                  # CPython (the tests)
         def ticks_add(a, b):
             return a + b
+    # The task first, the busy mark after (as lvledtest.start): if building the coroutine
+    # or the task fails (a MemoryError with the heap at its tightest), nothing is left
+    # marked busy. The mark is set before the task first runs (create_task only schedules
+    # it); play() clears it in its finally.
+    try:
+        c = play(sh, pin, T)
+        asyncio.create_task(c)
+    except Exception as e:
+        c = None
+        sh.ledtest = None
+        sh.say("led: hail light, no task %r" % (e,))
+        return False
+    finally:
+        lvship.drop("lvlight")           # the task holds only the shared helpers
     sh.ledtest = ticks_add(lvship.ticks_ms(), WAIT_MS + FLICK_MS - T.TEST_MS)
-    asyncio.create_task(play(sh, pin, T))
-    lvship.drop("lvlight")               # the task holds only the shared helpers
     return True

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""R1: reject expensive overlap before allocating; release admission on errors."""
+"""R1 (reworked in 0.3.0 review 2 M2-M4): one streamed state at a time, other API calls wait
+for it rather than being refused, a 503 only after TURN_MS; admission released on errors."""
 import ast
 import asyncio
 from pathlib import Path
@@ -16,7 +17,14 @@ def hooks(route):
     tree = ast.parse(source.read_text())
     names = {"ota_hooks", "clock_gate", "_Hdr", "net_hooks"}
     nodes = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.name in names]
-    g = {"reboot": None}
+    clock = [0]
+
+    async def sleep_ms(ms):
+        clock[0] += ms
+        await asyncio.sleep(0)
+
+    g = {"reboot": None, "lvship": NS(ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b,
+                                      sleep_ms=sleep_ms, drop=lambda n: None)}
     exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec"), g)
 
     async def send(w, status, body=b"", **kwargs):
@@ -33,50 +41,71 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
-    async def test_concurrent_response_refused_before_allocation(self):
+    async def test_overlap_waits_its_turn_then_proceeds(self):
         entered, release = asyncio.Event(), asyncio.Event()
         calls = []
 
         async def route(req, w):
             calls.append(req.path)
-            entered.set()
-            await release.wait()
+            if req.path == "/api/state" and len(calls) == 1:
+                entered.set()
+                await release.wait()
 
         web = hooks(route)
         running = asyncio.create_task(web.route(request(), []))
         await entered.wait()
-        try:
-            for path in ("/api/state", "/api/login", "/api/live", "/api/ota/put"):
-                answer = []
-                await web.route(request(path), answer)
-                self.assertEqual(answer, [(503, "Retry-After: 1\r\n")])
-            self.assertEqual(calls, ["/api/state"])
-        finally:
-            release.set()
-            await running
+        waiting = [asyncio.create_task(web.route(request(p), [])) for p in
+                   ("/api/state", "/api/login", "/api/crew")]
+        for _ in range(5):
+            await asyncio.sleep(0)
+        self.assertEqual(calls, ["/api/state"])     # nothing else allocates mid-stream
+        release.set()
+        await running
+        await asyncio.gather(*waiting)
+        self.assertEqual(sorted(calls), sorted(["/api/state", "/api/state", "/api/login", "/api/crew"]))
         self.assertFalse(web.state_busy)
 
-    async def test_upload_and_light_admission_and_recovery(self):
+    async def test_503_only_after_the_turn_runs_out(self):
         calls = []
 
         async def route(req, w):
             calls.append(req.path)
 
         web = hooks(route)
-        web.ota_busy = 1
-        for path in ("/api/state", "/api/live"):
+        web.state_busy = True                       # a state that never finishes
+        for path in ("/api/login", "/api/live"):
             answer = []
             await web.route(request(path), answer)
-            self.assertEqual(answer[0][0], 503)
-        web.ota_busy = 0
-        web.ship.ledtest = 123
+            self.assertEqual(answer, [(503, "Retry-After: 1\r\n")])
+        self.assertEqual(calls, [])
+        web.state_busy = False
+        web.ota_busy = 1                            # an update piece: state/live wait, others go
+        answer = []
+        await web.route(request("/api/login"), answer)
+        self.assertEqual(calls, ["/api/login"])
         answer = []
         await web.route(request(), answer)
         self.assertEqual(answer[0][0], 503)
-        self.assertFalse(calls)
-        web.ship.ledtest = None
+        web.ota_busy = 0
         await web.route(request(), [])
-        self.assertEqual(calls, ["/api/state"])
+        self.assertEqual(calls, ["/api/login", "/api/state"])
+
+    async def test_light_playback_does_not_hold_state_off(self):
+        # review 2 M2: a hail's flicker (up to ~40 s) or Test light (10 s) no longer 503s
+        # /api/state or /api/live, nor any other call
+        calls = []
+
+        async def route(req, w):
+            calls.append(req.path)
+
+        web = hooks(route)
+        web.ship.ledtest = 123
+        for path in ("/api/state", "/api/login", "/api/crew"):
+            answer = []
+            await web.route(request(path), answer)
+            self.assertEqual(answer, [])
+        self.assertEqual(calls, ["/api/state", "/api/login", "/api/crew"])
+        self.assertFalse(web.state_busy)
 
     async def test_failed_writer_releases_admission(self):
         async def route(req, w):

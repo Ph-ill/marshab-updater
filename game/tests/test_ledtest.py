@@ -357,4 +357,50 @@ asyncio.run(on_case())
 asyncio.run(busy_case())
 asyncio.run(busy_case(http=True))
 asyncio.run(fail_case())
+
+
+# -- 5. (0.3.0 review 2 M3) the busy mark only once a task exists, and a stale mark cleared
+class NoTask:
+    @staticmethod
+    def create_task(c):
+        c.close()                       # (no "never awaited" warning on CPython)
+        raise MemoryError("no heap for a task")
+
+
+def no_task_case():
+    import lvflick
+    import lvotaq
+    sh = Ship(Notifier(Clock(), True))
+    sh.led_pin = lambda: Pin()
+    srv = Server(sh)
+    real = lvledtest.asyncio
+    lvledtest.asyncio = NoTask
+    try:
+        lvledtest.start(srv, Req("POST", "/api/led/test", "tok"))
+        check("M3: Test light with no task raises", False)
+    except MemoryError:
+        pass
+    finally:
+        lvledtest.asyncio = real
+    check("M3: Test light with no task: not marked busy", sh.ledtest is None, sh.ledtest)
+    real = lvflick.asyncio
+    lvflick.asyncio = NoTask
+    del SAID[:]
+    try:
+        r = lvflick.start(sh)
+    finally:
+        lvflick.asyncio = real
+    check("M3: a hail's flicker with no task: False, not marked busy", r is False and sh.ledtest is None, (r, sh.ledtest))
+    check("M3: ... and said so", any("no task" in x for x in SAID), SAID)
+    sh.ledtest = lvship.ticks_ms()
+    check("M3: a running mark is busy (flick, update pieces)", lvflick.led_busy(sh) and lvotaq.lit(sh, lvship))
+    sh.ledtest = lvship.ticks_ms() - 16000
+    check("M3: a mark past its end + 5 s is stale: flick clears it", not lvflick.led_busy(sh) and sh.ledtest is None)
+    sh.ledtest = lvship.ticks_ms() - 16000
+    check("M3: ... and so do update pieces", not lvotaq.lit(sh, lvship) and sh.ledtest is None)
+    for m in ("lvflick", "lvotaq", "lvlight"):
+        sys.modules.pop(m, None)
+
+
+no_task_case()
 print("led test: %d checks ok" % ok[0])

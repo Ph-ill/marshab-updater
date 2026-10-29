@@ -324,3 +324,40 @@ test('a successful index can report Up to date or an incompatible core without d
     assert.match(p.run('otaSect()'), v === ship.v ? /Up to date/ : /not signed for this ship/);
   }
 });
+
+// 0.3.0 review 2 M4: the ship's admission 503 (Retry-After: 1) means "busy, try again",
+// never "this ship needs a USB install". Timers here are fake: drain() fires each pause.
+const busy = () => ({ ok: false, status: 503, headers: { get: (k) => (k === 'Retry-After' ? '1' : null) }, json: async () => ({ err: 'busy, try again' }) });
+async function drain(p, promise) {
+  let done = false, out; promise.then((v) => { done = true; out = v; }, (e) => { done = true; out = e; });
+  for (let i = 0; i < 200 && !done; i++) { await flush(); const t = [...p.timers][0]; if (t && !done) { p.timers.delete(t[0]); p.advance(t[1].ms); t[1].fn(); } }
+  assert.ok(done, 'settled'); return out;
+}
+test('review2 M4: /api/ota busy is replayed, then the status lands', async () => {
+  const p = phone((url, o, n) => (n <= 3 ? busy() : response({ ...ship, v: '0.3.0', chunk: 512 })));
+  p.run('OS_=null');
+  const st = await drain(p, p.run('otaStatus()'));
+  assert.equal(p.calls.length, 4); assert.equal(st.chunk, 512);
+  assert.equal(p.run('OTA_NONE'), false);
+  assert.doesNotMatch(p.run('otaSect()'), /USB/);
+});
+test('review2 M4: a failed /api/ota keeps the last status; only 404 says USB', async () => {
+  const p = phone(() => response({ err: 'no memory' }, 503));
+  const st = await drain(p, p.run('otaStatus()'));
+  assert.equal(st, null);
+  assert.equal(p.run('OS_.v'), ship.v);
+  assert.doesNotMatch(p.run('otaSect()'), /USB/);
+  p.run('OS_=null'); assert.doesNotMatch(p.run('otaSect()'), /USB/);
+  const q = phone(() => response({ err: 'no such thing' }, 404)); q.run('OS_=null');
+  await drain(q, q.run('otaStatus()'));
+  assert.equal(q.run('OTA_NONE'), true); assert.match(q.run('otaSect()'), /USB/);
+});
+test('review2 M4: an upload piece rides out admission 503s past the old four tries', async () => {
+  const p = phone((url, o, n) => (n <= 7 ? busy() : response({ have: 4 })));
+  const [s, j] = await drain(p, p.run('otaPut("f=1&o=0",new Uint8Array(4))'));
+  assert.equal(s, 200); assert.equal(j.have, 4); assert.equal(p.calls.length, 8);
+  const q = phone(() => busy());
+  const r = await drain(q, q.run('otaPut("f=1&o=0",new Uint8Array(4))'));
+  assert.equal(r[0], 503, 'gives up after the replay window, without a USB message');
+  assert.doesNotMatch(q.run('otaWhy(503,{})'), /USB/);
+});

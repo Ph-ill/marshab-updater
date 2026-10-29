@@ -53,10 +53,29 @@ function otaFor(st){
   const b=OB||otaLoad();if(!st||!b.rel)return null;
   const r=b.rel;return r.ch===st.ch&&r.core===st.core&&vcmp(r.v,st.v)>0?r:null;
 }
+// The ship's own "busy, try again" (503 with Retry-After: 1: board/main.py's admission
+// while another phone's state streams, or lvweb's connection limit) is replayed, with a
+// growing pause, for up to OTA_TURN ms; it never means the ship can't take updates.
+// Anything else (a 503 without the header is the board out of memory) goes back as it is.
+const OTA_TURN=90000;
+async function otaFetch(url,o){
+  const t0=Date.now();
+  for(let i=0;;i++){
+    const r=await fetch(url,o);
+    if(r.status!==503||!r.headers||r.headers.get("Retry-After")!=="1"||Date.now()-t0>=OTA_TURN)return r;
+    await new Promise((ok)=>setTimeout(ok,Math.min(3000,1000+250*i)));
+  }
+}
+// What the ship runs (GET /api/ota). Only a real "no updates here" answer (404, or a
+// page that isn't JSON: firmware from before 0.2) marks the ship as needing USB. A busy
+// or failed answer keeps what the page last knew and returns null to the caller, so the
+// Install button and Version history don't vanish over one refused request.
 async function otaStatus(){
-  try{const r=await fetch("/api/ota",{cache:"no-store"});if(r.status===404)OTA_NONE=true;OS_=r.ok?await r.json():null}catch(e){if(e instanceof SyntaxError)OTA_NONE=true}
+  let fresh=null;
+  try{const r=await otaFetch("/api/ota",{cache:"no-store"});if(r.status===404)OTA_NONE=true;if(r.ok){fresh=await r.json();OS_=fresh;OTA_NONE=false}}catch(e){if(e instanceof SyntaxError)OTA_NONE=true}
+  if(OTA_NONE)OS_=null;
   if(OS_&&OS_.ch){const b=otaLoad();const src=OS_.src||null;if(b.ch!==OS_.ch||b.core!==OS_.core||(b.src||null)!==src){if((b.src||null)!==src){b.at=0;b.rel=null}b.ch=OS_.ch;b.core=OS_.core;b.src=src;otaSave(b);OB=b}}
-  return OS_;
+  return fresh;
 }
 // Look on GitHub. Quiet unless asked (force): a phone on the ship's hotspot has no internet.
 async function otaCheck(force){
@@ -94,10 +113,13 @@ async function otaCheck(force){
   if(route==="set"||route==="home")view();
 }
 // ---- installing: the signed envelope, then each file, in pieces the ship takes (chunk) ----
+// A piece: "busy, try again" (503 + Retry-After: 1, before the ship read anything) is
+// replayed for up to OTA_TURN ms by otaFetch; the ship's out-of-memory 503 (no header) and
+// a dropped connection get four more tries, as before.
 async function otaPut(q,body){
   for(let i=0;;i++){
     try{
-      const r=await fetch("/api/ota/put?"+q,{method:"POST",body,headers:{"X-Crew-Token":tok,"Content-Type":"application/octet-stream"}});
+      const r=await otaFetch("/api/ota/put?"+q,{method:"POST",body,headers:{"X-Crew-Token":tok,"Content-Type":"application/octet-stream"}});
       const j=await r.json().catch(()=>({}));
       if(r.status===401)throw Object.assign(new Error("Sign in again, then install."),{stop:1});
       if(r.status===503&&i<4){await new Promise((ok)=>setTimeout(ok,800*(i+1)));continue}
@@ -155,7 +177,7 @@ async function otaInstall(){
   OTA_BUSY=true;OI={v:r.v,prev:OS_.v,step:"env",f:0,o:0,sizes:JSON.parse(JSON.parse(r.env).m).files.map((f)=>f[1]),msg:""};
   go("set");view();
   try{
-    const st=await otaStatus();if(!st)throw new Error("Your ship didn't answer. Stay close and try again.");
+    const st=await otaStatus();if(!st)throw new Error(OTA_NONE?"Your ship can't take updates over the air yet.":"Your ship didn't answer. Stay close and try again.");
     const n=st.chunk||1024,enc=new TextEncoder(),env=enc.encode(r.env);
     // Carry on from what the ship already has only if it staged this very envelope (the
     // same bytes, by hash: a version signed twice never mixes). Anything else staged is
@@ -182,7 +204,7 @@ async function otaInstall(){
         have=null;
       }
     }
-    const a=await fetch("/api/ota/apply",{method:"POST",headers:{"X-Crew-Token":tok}}),j=await a.json().catch(()=>({}));
+    const a=await otaFetch("/api/ota/apply",{method:"POST",headers:{"X-Crew-Token":tok}}),j=await a.json().catch(()=>({}));
     if(!a.ok)throw new Error(a.status===409&&/^busy,/.test(j.err||"")?otaWhy(409,j):j.err||"Your ship wouldn't start the update.");
     OI.step="wait";view();
     await new Promise((ok)=>setTimeout(ok,(j.restart_ms||1500)+4000));
@@ -296,7 +318,8 @@ function otaSect(){
   let o=`<section id=set-sw><div class=lab><span>Ship software</span>${otaNag()?`<span class=otan><i>update ready</i></span>`:""}</div><dl class="facts otaf"><dt>Installed</dt><dd class=m>${st?h(st.v||"unknown"):"—"}</dd><dt>Channel</dt><dd>${st?h(st.ch||"—"):"—"}</dd><dt>Available</dt><dd class=m>${otaAvail(st,b,r)}</dd><dt>Checked</dt><dd>${otaChecking()?"Checking…":otaAgo(b.at)}</dd></dl>`;
   if(last&&last.result==="rolled back")o+=`<p class=upd><b>Went back</b> · ${h(last.v)} didn't start, so your ship returned to ${h(last.prev)}.</p>`;
   else if(last&&last.result==="installed"&&last.v===(st&&st.v))o+=`<p class=fine>${h(last.v)} installed over the air.</p>`;
-  if(!st)o+=`<p class=dim>Your ship can't take updates over the air yet. It needs one install over USB first.</p>`;
+  if(!st&&OTA_NONE)o+=`<p class=dim>Your ship can't take updates over the air yet. It needs one install over USB first.</p>`;
+  else if(!st)o+=`<p class=dim>Your ship hasn't said what it runs yet. Stay on its Wi-Fi; this page asks again.</p>`;
   else if(r)o+=`<p>${h(r.v)} is ready on this phone for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p>${otaClean(r.notes).length?`<div class=otawn><div class=otawh>What's new</div>${otaNotes(r.notes)}</div>`:""}<p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
   else o+=`<p class=dim>You need internet to check. Your ship's Wi-Fi usually can't reach it. Keep this app open; your download waits on this phone until you rejoin your ship.</p>`;
   if(st){

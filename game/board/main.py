@@ -81,24 +81,41 @@ def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
     route = web.route
     clock_gate(web)
-    # Admit before Phone.state_writer allocates the response, not after it.
+    # Admission for the heavy answers, decided before Phone.state_writer (or lvliveapi.live)
+    # allocates anything (0.3.0 review 1 R1, reworked in review 2 M2-M4). One streamed
+    # /api/state or /api/live at a time, and none while an update piece is being taken;
+    # every other /api/* request waits while one streams (its auth/dispatch modules must not
+    # sit on the heap next to a half-sent state). Waiting, not refusing: the request is
+    # already read (lvweb.MAX_BODY), so holding it costs a few hundred bytes, and the phone
+    # just sees a slower answer instead of a 503 for each overlap. A request that still
+    # can't go after TURN_MS gets 503 + Retry-After: 1, which web/app.html api() and
+    # web/ota.js replay. A light playback (Test light, a hail's flicker) no longer holds
+    # /api/state or /api/live off: its task keeps only lvlight's helpers and its own small
+    # play() (tests/phone_heap.py --ota --live --everyone measures them under a full state).
     web.state_busy = False
     web.ota_busy = 0
+    TURN_MS = 10000
+
+    async def turn(heavy):
+        t0 = lvship.ticks_ms()
+        while web.state_busy or (heavy and web.ota_busy):
+            if lvship.ticks_diff(lvship.ticks_ms(), t0) >= TURN_MS:
+                return False
+            await lvship.sleep_ms(20)
+        return True
 
     async def ota_route(req, w):
-        # Authentication/dispatch modules must not overlap a half-sent state either.
-        if web.state_busy and req.path.startswith("/api/"):
-            return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
-        if req.method == "GET" and req.path == "/api/live" and (web.ota_busy or getattr(web.ship, "ledtest", None) is not None):
-            return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
-        if req.path == "/api/state" and req.method == "GET":
-            if web.state_busy or web.ota_busy or getattr(web.ship, "ledtest", None) is not None:
+        if req.path.startswith("/api/"):
+            heavy = req.method == "GET" and req.path in ("/api/state", "/api/live")
+            if (web.state_busy or (heavy and web.ota_busy)) and not await turn(heavy):
                 return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
-            web.state_busy = True
-            try:
-                return await route(req, w)
-            finally:
-                web.state_busy = False
+            # (nothing awaits between turn() seeing the way clear and the mark below)
+            if heavy and req.path == "/api/state":
+                web.state_busy = True
+                try:
+                    return await route(req, w)
+                finally:
+                    web.state_busy = False
         if req.path == "/api/reset":
             # "Reset this ship" (board/lvcode.py reset, web/settings.js). Loaded per request,
             # like lvota (0.3.0: out of main.py's resident code).

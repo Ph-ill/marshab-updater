@@ -6,6 +6,20 @@ QUIET_MS = 60000          # the signature check waits this long at most for the 
 PIECE_MS = 3000           # any other piece waits this long at most for the other requests
 
 
+def lit(sh, lvship):
+    """A light playback still running (sh.ledtest: its start, counted as Test light's 10 s)?
+    The same staleness rule as Test light's 429 (lvledtest.start, main.py): a mark more than
+    5 s past its end belongs to a task that never ran its finally, so it is cleared here
+    instead of making every piece wait QUIET_MS until a restart (0.3.0 review 2 M3)."""
+    t = getattr(sh, "ledtest", None)
+    if t is None:
+        return False
+    if 10000 - lvship.ticks_diff(lvship.ticks_ms(), t) > -5000:
+        return True
+    sh.ledtest = None
+    return False
+
+
 async def quiet(web, q, body):
     """Before the signature check (the envelope's last piece): wait, up to QUIET_MS, until
     no Bluetooth sync is running and this is the only request being answered. The check
@@ -28,10 +42,9 @@ async def quiet(web, q, body):
     except ValueError:
         return
     b = getattr(getattr(web, "ship", None), "ble", None) if last else None
-    ms = QUIET_MS if last or getattr(web.ship, "ledtest", None) is not None else PIECE_MS
     import lvship
+    ms = QUIET_MS if last or lit(web.ship, lvship) else PIECE_MS
     t0 = lvship.ticks_ms()
-    while ((b is not None and b.busy()) or getattr(web, "busy", 0) > 1
-           or getattr(web.ship, "ledtest", None) is not None) \
+    while ((b is not None and b.busy()) or getattr(web, "busy", 0) > 1 or lit(web.ship, lvship)) \
             and lvship.ticks_diff(lvship.ticks_ms(), t0) < ms:
         await lvship.sleep_ms(50)

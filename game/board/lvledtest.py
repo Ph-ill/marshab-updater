@@ -119,7 +119,18 @@ def start(web, req):
     except Exception as e:
         sh.say("led: test, no light %r" % (e,))
         return 500, {"err": "This ship's light can't be reached."}
+    # The coroutine and its task first, the busy mark after: a MemoryError building either
+    # (the heap is tightest exactly when phones are busy) leaves nothing marked busy, so no
+    # stale mark can hold Test light, an update's pieces or a hail off until a restart.
+    # The mark is set before the task first runs (create_task only schedules it), and play()
+    # clears it in its finally.
+    c = play(sh, pin)
+    try:
+        asyncio.create_task(c)
+    except BaseException:
+        c = None
+        sh.ledtest = None
+        raise
     sh.ledtest = lvship.ticks_ms()
-    asyncio.create_task(play(sh, pin))
     sh.say("led: test from a phone")
     return 200, {"ok": True, "ms": TEST_MS}
