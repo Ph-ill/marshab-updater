@@ -440,7 +440,7 @@ class H(BaseHTTPRequestHandler):
                 left = int((G.ledtest - _time.monotonic()) * 1000)
                 if left > 0:
                     return self.send(429, {"err": "The light is already testing.", "ms": left})
-                G.ledtest = _time.monotonic() + 4.0
+                G.ledtest = _time.monotonic() + 10.0
                 G.ledtests += 1
             return self.send(200, {"ok": True, "ms": 4000})
         if u.path == "/api/code":    # Change your code: board/lvcode.py itself, the file kept in memory

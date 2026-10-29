@@ -129,7 +129,7 @@ if [ -n "$MP" ]; then
       # ...and a third phone uploading a signed update meanwhile (board/lvota.py, lvsig.py),
       # and the home-screen funnel's /api/hello (board/lvfunnel.py, loaded and dropped).
       # and a fourth phone changing a crew code and back (board/lvcode.py, loaded and dropped),
-      # and a fifth tapping Test light twice (board/lvledtest.py: its ~4 s pattern a task).
+      # and a fifth tapping Test light twice (board/lvledtest.py: its 10 s pattern a task).
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live
       # Hail on both ships (board/lvlive.py), now with the season where all eight crew

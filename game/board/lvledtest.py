@@ -1,23 +1,26 @@
 # "Test light" (Settings > Ship light, web/settings.js; POST /api/led/test from board/main.py's
 # ota_route): a signed-in crew member makes the ship's light play a short, unmistakable
 # pattern, so they can see it works without opening the case. Loaded per request and dropped
-# (lvship.drop); the pattern's task keeps this module's code alive for its ~4 s, then it goes.
+# (lvship.drop); the pattern's task keeps this module's code alive for its 10 s, then it goes.
 # Shipped over the air: the frozen core (lvled, lvledcfg, lvweb, lvphone) is unchanged.
 #
-# The pattern, TEST_MS = 4000 ms from the tap:
+# The pattern, TEST_MS = 10000 ms from the tap (0.3.0: was 4 s, one breath; long enough now
+# to walk over to a ship on a shelf and still catch it):
 #   0-1500     three bright blinks (250 ms on, 250 ms off): the LED fully on, one write each
 #   1500-1800  dark
-#   1800-4000  one full breath (1 s up, 1.2 s down): software PWM as lvled.py breathes, 10 ms
-#              frames lit (x/100)^2 of each, the dim end a short busy-wait (under 1.5 ms),
-#              the rest an await, so the web server, the DNS, the BLE sync and the charger
-#              watch (main.py, every 100 ms) all run between edges
-#   then dark, and the light goes back to what it was doing.
+#   1800-9900  three full breaths (1.2 s up, 1.5 s down, 2.7 s each): software PWM as
+#              lvled.py breathes, 10 ms frames lit (x/100)^2 of each, the dim end a short
+#              busy-wait (under 1.5 ms), the rest an await, so the web server, the DNS, the
+#              BLE sync and the charger watch (main.py, every 100 ms) all run between edges
+#   9900-10000 dark, then the light goes back to what it was doing.
 # It plays whether the Ship light is on or off. When it is on (lvled.Led), the notifier is
 # held dark for the test (its pattern dropped, its next look pushed past the test) and let go
 # at the end, so the two never write the pin at once; quiet hours, the budget and anything
 # waiting (gift, new day) are untouched. While a BLE sync or an HTTP request is in progress
 # the breath plays as a plain blink (lit through its bright middle), as lvled does.
-# One at a time: a tap while it plays gets 429 {ms: left} and changes nothing.
+# One at a time: a tap while it plays gets 429 {ms: left} and changes nothing. A hail that
+# arrives meanwhile (lvflick.maybe) doesn't flicker and doesn't spend the day's allowance:
+# the person is already looking at the ship, and the hail waits on the phone as ever.
 #   200 {ok, ms}  started      401 no session      404 not POST (main.py)
 #   429 {ms}      already playing                  500 no light to drive (no machine.Pin)
 try:
@@ -26,9 +29,9 @@ except ImportError:  # pragma: no cover
     import uasyncio as asyncio
 import lvship
 
-TEST_MS = 4000
+TEST_MS = 10000
 _BLINKS, _ON = 3, 250                   # blinks, ms on (and off) each
-_B0, _UP, _DN = 1800, 1000, 1200        # the breath: starts at, ms up, ms down
+_B0, _UP, _DN, _N = 1800, 1200, 1500, 3  # the breaths: start at, ms up, ms down, how many
 _FRAME = 10                             # ms a frame (100 Hz), as lvled
 _DIM_US = 1500                          # on parts shorter than this: a busy-wait
 
@@ -43,15 +46,15 @@ def level(t):
     """Brightness 0-100 at t ms into the test; -1 once it's over."""
     if t < 2 * _ON * _BLINKS:
         return 100 if t % (2 * _ON) < _ON else 0
+    if t >= TEST_MS:
+        return -1
     t -= _B0
-    if t < 0:
-        return 0
+    if t < 0 or t >= _N * (_UP + _DN):
+        return 0                        # the gap after the blinks, the dark end
+    t %= _UP + _DN
     if t < _UP:
         return t * 100 // _UP
-    t -= _UP
-    if t < _DN:
-        return (_DN - t) * 100 // _DN
-    return -1
+    return (_UP + _DN - t) * 100 // _DN
 
 
 def _pin(sh):
