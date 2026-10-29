@@ -197,7 +197,13 @@ def put(q, body):
     except ValueError:
         return 400, {"err": "bad request"}
     if f == 0:
-        return envelope(q, off, body)
+        try:
+            return envelope(q, off, body)
+        except MemoryError:
+            # the check ran out of heap: nothing is lost (the envelope stays on flash, not
+            # yet ok), and 503 is what the phone retries after a pause; its last piece again
+            # checks it (lvota.env_piece). Not 403 "unreadable": it isn't (0.3.0 R1 m1).
+            return 503, {"err": "busy", "have": None}
     return piece(f, off, body)
 
 

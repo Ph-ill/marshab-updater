@@ -575,6 +575,28 @@ check("safe: the update status", code == 200 and b.get("ota") == 1, (code, b))
 check("lvota dropped", "lvota" not in sys.modules)
 code, b = call(web, "POST", "/api/ota/cancel")
 check("safe: update writes need sign-in", code == 401)
+# 0.3.0 review R1 M2: safe mode's upload goes to lvotap; if that won't load (damaged, or a
+# broken copy ahead of it), lvota.api answers instead of the request dying unanswered
+_sh = ROOT + "/shadow"
+os.mkdir(_sh)
+put(_sh + "/lvotap.py", "raise ImportError('damaged')\n")
+sys.path.insert(0, _sh)
+sys.modules.pop("lvotap", None)
+if sys.implementation.name == "cpython":
+    import importlib
+    importlib.invalidate_caches()
+_said = []
+_say, sh.say = sh.say, _said.append
+try:
+    code, b = call(web, "POST", "/api/ota/put?f=0&n=10&o=0", b"x", tok=tok)
+finally:
+    sh.say = _say
+    sys.path.remove(_sh)
+    rm(_sh)
+    sys.modules.pop("lvotap", None)
+check("R1 M2: safe mode, lvotap won't load: lvota.api answers 503", code == 503 and "update code" in b["err"], (code, b))
+check("R1 M2: ... and says why in the log", _said and "upload code" in _said[0], _said)
+check("R1 M2: ... nothing left loaded", "lvotap" not in sys.modules and "lvota" not in sys.modules)
 code, b = call(web, "POST", "/api/safe/retry")
 check("safe: retry needs sign-in", code == 401)
 code, b = call(web, "GET", "/hotspot-detect.html")
@@ -804,6 +826,23 @@ class FakeWeb:
 
 sys.modules["lvota"] = FakeOta
 g["OTA_OK_MS"] = 10
+
+
+async def fake_kept(web):
+    # main.py's kept(): board/lvotak.py's keep() as it is (lvota.good(), fault.json set aside,
+    # lvota let go), its update-path check (tested in tests/test_ota.py) taken as passed
+    import lvotak
+
+    async def ok(web=None):
+        return True
+    lvotak.check = ok
+    try:
+        return await lvotak.keep(web, g["FAULT"], g["FAULT_LAST"])
+    finally:
+        sys.modules.pop("lvotak", None)
+
+
+g["kept"] = fake_kept
 
 
 async def keeps(fw, how):

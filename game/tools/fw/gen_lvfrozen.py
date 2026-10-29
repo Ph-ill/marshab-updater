@@ -44,13 +44,13 @@ MICROPYTHON = "v1.29.0"
 # code), lvledtest (Test light), lvsafe (safe mode and the fault notes) and lvlive, lvlivein,
 # lvlivex, lvflick and lvliveapi (ship-to-ship: Hail, its items, its install and fault net,
 # its light, its phone API) and lvotap, lvotaq (the update's upload and its wait, split out of
-# lvota in 0.3.0)
+# lvota in 0.3.0) and lvotak (the update path's check before a trial is kept, 0.3.0)
 # came after lv-core 0.2.0: on that core they ship as .mpy. tools/board_build.sh, the manifest
 # (tools/fw/manifest.py) and the tests take the list from here.
 BOARD = ("lvship", "lvreport", "lvcal", "lvled", "lvledcfg", "lvbatt", "lvdays", "lvweb",
          "lvphone", "lvstat", "lvwifi", "selftest", "lvota", "lvsig", "lvboot",
          "lvfunnel", "lvcode", "lvledtest", "lvsafe", "lvlive", "lvlivein", "lvlivex",
-         "lvflick", "lvliveapi", "lvotap", "lvotaq")
+         "lvflick", "lvliveapi", "lvotap", "lvotaq", "lvotak")
 PACK = os.path.join(ROOT, "build", "pack.bin")
 
 

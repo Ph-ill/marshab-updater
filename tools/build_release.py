@@ -184,6 +184,21 @@ def vkey(version: str):
     return nums + ((1, "") if not pre else (0, pre))
 
 
+OTA_CHAIN = ("lvota", "lvotap", "lvotaq", "lvotak", "lvsig", "lvsafe", "lvweb")
+
+
+def mpy_twins(names: list[str]) -> list[str]:
+    """The X.py of each module on the update path that the release ships as X.mpy only:
+    MicroPython imports X.py ahead of X.mpy, so a stale one (a USB install, a hand-copied fix)
+    would run instead of the update's own module, and a broken one that way could keep itself
+    (0.3.0 review R1 M2). The update path only (OTA_CHAIN: the upload, the signature check, the
+    keep check, safe mode and the web server they answer through): every name here goes into
+    the signed envelope, which the ship holds whole at its heap peak (the signature check), so
+    a twin for every shipped .mpy (about 25) would cost the install that peak about 1 KB.
+    lvboot is never deleted over the air (lvota's bad_path refuses lvboot.*; USB only)."""
+    return [m + ".py" for m in OTA_CHAIN if m + ".mpy" in names and m + ".py" not in names]
+
+
 FROZEN_COEX_DELETES = ("config.py", "index.html")   # the coex bench firmware's (game/bench/coex-test)
 
 
@@ -209,7 +224,7 @@ def main() -> None:
         # index.html: 0.2.0/0.2.2 deleted them, the hand-built 0.2.4-0.2.7 didn't), unless
         # this release ships them itself (review REVIEW2 m1, 0.3.0 R1)
         coex = [d for d in FROZEN_COEX_DELETES if d not in names]
-        for d in ["lv", "lvx"] + frozen_stale(frozen, names) + coex:
+        for d in ["lv", "lvx"] + frozen_stale(frozen, names) + coex + mpy_twins(names):
             if d not in a.delete:
                 a.delete.append(d)
     elif any(r.parts[0] == "lvx" for r in rels):

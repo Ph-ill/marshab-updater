@@ -22,6 +22,9 @@
 # no sign-in must answer 401 (lvota's own refusal: the write side is there too). If that
 # keeps failing for SELF_MS, the ship restarts (a real reset, which lvboot counts), so a
 # trial that lvboot gave no deadline (a soft reset, on ota-hwfix's lvboot) still ends.
+# Whatever served the phone, the update path is then checked too (kept(), board/lvotak.py,
+# 0.3.0): lvotaq, lvotap, lvota and lvsig must import and lvsig must check a known
+# signature, or the trial isn't kept (a set that can't take the next update would need USB).
 # Crashes (board/lvsafe.py): whatever main() lets escape, and a failure of the web server's
 # own accept loop, is noted in /data/fault.json once asyncio has let go of the game's heap,
 # and the ship restarts; SAFE_AFTER in a row and the next boot is safe mode (hotspot +
@@ -375,19 +378,26 @@ async def ota_ok(web=None, want=False):
     # on ota-hwfix's lvboot has no deadline), a real reset that lvboot counts.
     await lvship.sleep_ms(OTA_OK_MS)
     t = lvship.ticks_ms()
-    while (web is None and want) or web is not None and not web.ok2xx and not await serves(web):
+    while (web is None and want) or web is not None and not web.ok2xx and not await serves(web) \
+            or not await kept(web):
         if lvship.ticks_diff(lvship.ticks_ms(), t) > SELF_MS:
             print("ota: the update can't show it serves a phone: restarting (a counted boot)")
             return restart()
         await lvship.sleep_ms(5000)
-    import lvota
-    if lvota.good():
-        print("ota: update kept")
-        try:
-            os.rename(FAULT, FAULT_LAST)        # the new set starts with a clean count
-        except OSError:
-            pass
-    lvship.drop("lvota")
+
+
+async def kept(web):
+    # Then, whatever served it, the update path itself (board/lvotak.py, 0.3.0 review R1
+    # M2: its modules import and lvsig checks a known signature) before lvota.good() keeps
+    # it: a set that can't take the next update is never kept. Failing: False, tried again.
+    try:
+        import lvotak
+        return await lvotak.keep(web, FAULT, FAULT_LAST)
+    except Exception as e:
+        print("ota: self-check %r" % (e,))
+        return False
+    finally:
+        lvship.drop("lvotak")
 
 
 def restart():

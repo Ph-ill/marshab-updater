@@ -246,6 +246,8 @@ def envelope_prep(p):
         sig = a2b_base64(env["sig"])
         key = KEYS.get(env.get("kid"))
         h = hashlib.sha256(m.encode()).digest()
+    except MemoryError:
+        raise                   # lvotap.envelope: 503, the phone tries again (not 403)
     except Exception:
         return None, None, None, None, "unreadable update"
     m = env = None
@@ -268,6 +270,8 @@ def envelope_done(p, h, ok, why=None):
                 why = "the update changed while it was checked"
             else:
                 m = json.loads(ms)
+        except MemoryError:
+            raise
         except Exception:
             why = "unreadable update"
     if why is None:
@@ -365,13 +369,24 @@ def env_piece(q, off, body):
         n = 0
     if not 0 < n <= MAX_ENV:
         return 400, {"err": "bad request"}
+    if installing():
+        # apply() said ready and the restart is ~1.5 s away (or lvboot is mid-swap): lvboot
+        # reads ota/new/env as it is then, so nothing may touch it (0.3.0 review R3 M1: a
+        # short envelope sent in that window was never checked, and its delete list was
+        # swapped out all the same).
+        return 409, {"err": "an update is being installed: wait for the restart", "have": None}
+    p = NEW + "/env"
+    if off and _size(p) == n and not _exists(NEW + "/ok"):
+        # all of it is here but its check never answered (no heap for it, a dropped
+        # connection): the phone sends the last piece again, and that checks it (R1 m1)
+        return None
     if off == 0:
         rmtree(NEW)
         if not _exists(STATE):
             rmtree(OLD)     # a kept update's rollback copies, if good() was cut short
         _mkdirs(NEW)
     from lvotap import append
-    have = append(NEW + "/env", off, body, n)
+    have = append(p, off, body, n)
     if have is not None:
         return have
     if off + len(body) < n:
@@ -380,9 +395,16 @@ def env_piece(q, off, body):
 
 
 def put(q, body):
-    """-> (status, JSON-able): lvotap.put (the board's route goes there directly)."""
+    """-> (status, JSON-able): lvotap.put (the board's route goes there directly; the tests
+    and tools call this)."""
     import lvotap
     return lvotap.put(q, body)
+
+
+def installing():
+    """apply() has handed the staged update to lvboot (ota/state.json ready or swap)."""
+    st = read_json(STATE)
+    return bool(st) and st.get("phase") in ("ready", "swap")
 
 
 def ready():
@@ -419,14 +441,16 @@ async def api(web, req, w):
     if web.get_phone().who(req) is None:
         return await lvweb.send_json(w, 401, {"err": "signed out"})
     if p == "/api/ota/put":
-        # (main.py and lvsafe.py send this request to lvotap.api, without this module)
-        import lvotaq
-        await lvotaq.quiet(web, req.q, req.body or b"")
-        import lvotap
-        code, obj = lvotap.put(req.q, req.body or b"")
+        # The upload is lvotap.api's (main.py and lvsafe.py send it there). Only safe mode
+        # comes here with it, when lvotap.py itself won't load: say so rather than nothing
+        # (0.3.0 review R1 M2/m5; such a set is never kept, lvotak.py).
+        code, obj = 503, {"err": "this ship's update code didn't load", "have": None}
     elif p == "/api/ota/cancel":
-        rmtree(NEW)
-        code, obj = 200, {"ok": True}
+        if installing():
+            code, obj = 409, {"err": "an update is being installed: wait for the restart"}
+        else:
+            rmtree(NEW)
+            code, obj = 200, {"ok": True}
     elif p == "/api/ota/apply":
         code, obj = apply()
         if code == 200:

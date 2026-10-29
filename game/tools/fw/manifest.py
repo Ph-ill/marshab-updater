@@ -54,3 +54,5 @@ module("lvliveapi.py", base_path="../../board", opt=3)
 # The update's upload, split out of lvota (0.3.0; on older cores releases ship it as lvotap.mpy).
 module("lvotap.py", base_path="../../board", opt=3)
 module("lvotaq.py", base_path="../../board", opt=3)
+# The update path's check before a trial is kept (0.3.0; on older cores it ships as lvotak.mpy).
+module("lvotak.py", base_path="../../board", opt=3)
