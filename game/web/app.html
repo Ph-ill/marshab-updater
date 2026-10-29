@@ -315,9 +315,21 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tok)refre
 function lost(e){if(e&&e.message==="signed out")return;if(S&&net!=="lost"){net="lost";view()}}
 
 async function refresh(){
-  S=await api("/api/state");
+  const was=!!(S&&S.pre);
+  try{S=await api("/api/state")}
+  catch(e){
+    // Before launch a signed-in phone gets 409 {pre: {you, here, led, bat, v, season}}:
+    // just enough for the top bar and Settings. Anything else is a real failure.
+    const p=e.status===409&&e.j&&e.j.pre;if(!p)throw e;
+    S=Object.assign({ending:NONE,day:0,open:[],last:0},p,{pre:1});PRE={day:0,launch:e.j.launch,until:e.j.until};if(e.j.start!=null)DSTART=e.j.start;
+  }
   if(net==="lost")net=poll?"poll":"live";
-  lines=null;engSeen();
+  lines=null;
+  if(S.pre)return view();
+  // Launched (or the ship's clock was put right): from the countdown into the game, by way
+  // of the crew briefing if this sign-in was the first.
+  if(was){PRE=null;clearInterval(preT);if(tutDue&&route==="home")route="meet"}
+  engSeen();
   view();
 }
 
@@ -659,13 +671,26 @@ function reread(){
 function hm(m){return m%60?pad(m/60|0)+":"+pad(m%60):String(m/60|0)}
 function wait(m){if(m==null)return "soon";if(m<1)return "under a minute";const d=m/1440|0,hh=(m%1440)/60|0,mm=m%60;return d?`${d} day${d>1?"s":""}${hh?` ${hh} h`:""}`:hh?`${hh} h${mm?` ${mm} min`:""}`:`${mm} min`}
 function crewInfo(j){codeSet=j.set||[];if(j.start!=null)DSTART=j.start;PRE=j.day===0&&j.launch?j:null;
-  clearInterval(preT);if(PRE)preT=setInterval(async()=>{try{crewInfo(await api("/api/crew"));if(!tok&&route==="hello")view()}catch(e){}},30000)}
+  clearInterval(preT);if(PRE)preT=setInterval(async()=>{try{crewInfo(await api("/api/crew"));if(!tok&&route==="hello")view();else if(tok&&S&&S.pre)await refresh()}catch(e){}},30000)}
+// The countdown block, on the sign-in list and on the signed-in pre-launch screen.
+function preKick(p){
+  let when=PRE&&PRE.launch;try{when=new Date(PRE.launch+"T12:00").toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"})}catch(e){}
+  return `<div class="kick pre"><div class=lab>Pre-launch · FD 00</div><h1>Launch in ${wait(PRE&&PRE.until)}</h1><p>Flight day 01 starts at ${pad(DSTART/60|0)}:${pad(DSTART%60)}${when?` on ${h(when)}`:""}. ${p}</p></div>`;
+}
+// Signed in before launch (the ship answered /api/state 409 with {pre}): the countdown and
+// the gear, so Settings (Ship software, the Ship light, codes) works through the countdown.
+// Each 30 s check asks /api/state again, carrying this phone's clock: a ship whose first
+// phone had a wrong clock moves to the right day on a crew member's request.
+function preHome(){
+  shipTop();
+  $("v").innerHTML=preKick("You're signed in. The gear at the top opens Settings.");
+  dock("","");
+}
 function hello(){
   bar("THE LONG VOYAGE","8 SHIPS");
   let o=`<div class=kick><div class=lab>Starship fleet · Earth to Mars</div><h1>Who's reading?</h1><p>Eight ships, 42 flight days. Each of you is one of the astronauts. Tap your name.</p></div><section>`;
-  if(PRE){let when=PRE.launch;try{when=new Date(PRE.launch+"T12:00").toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"})}catch(e){}
-    o=`<div class="kick pre"><div class=lab>Pre-launch · FD 00</div><h1>Launch in ${wait(PRE.until)}</h1><p>Flight day 01 starts at ${pad(DSTART/60|0)}:${pad(DSTART%60)} on ${h(when)}. Boarding opens then; this page checks by itself.</p></div><section>`}
-  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"${codeSet[c]===false||PRE?" disabled":""}><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span>${codeSet[c]===false?"<span class=lab>Not set up</span>":""}</button>`).join("");
+  if(PRE)o=preKick("Boarding opens then; this page checks by itself. Crew can sign in now for Settings.")+`<section>`;
+  o+=T.crew.map((n,c)=>`<button class=row data-who="${c}"${codeSet[c]===false?" disabled":""}><span class=pt>${portraitBare(c)}</span><span class=t>${h(n)}<small>${h(ship(c))}${c===T.flagship?" · flagship":""}</small></span>${codeSet[c]===false?"<span class=lab>Not set up</span>":""}</button>`).join("");
   $("v").innerHTML=o+`</section>`;
   dock("","");
 }
@@ -787,6 +812,7 @@ function view(){
     if(a==="hello")return hello();
     if(a==="pin")return pinScreen();
     if(!S)return;
+    if(S.pre)return preHome();
     if(a==="meet")return meet();
     if(a==="crew")return crew(b!=null?+b:null);
     if(a==="log")return log(b!=null?+b:0);
@@ -816,7 +842,7 @@ async function key(k){
       const j=await api("/api/login",{crew:me,pin});
       tok=j.token;pin="";busy=false;tutDue=!!j.first&&!briefed();
       await refresh();live();
-      go(j.first?"meet":"home");
+      go(j.first&&!S.pre?"meet":"home");
     }catch(e){
       pin="";const j=e.j||{};
       if(j.wait){lockUntil[me]=Date.now()+j.wait*1000;lockTick()}

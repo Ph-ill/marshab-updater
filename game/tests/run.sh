@@ -160,9 +160,17 @@ fi
 CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || true)}"
 if [ -n "$CHROME" ] && command -v node > /dev/null; then
   CHROME="$CHROME" node --experimental-websocket tests/app_e2e.mjs 9
+  # a wrong first phone clock: sign-in, Settings and Ship software through the countdown it
+  # starts, then the right day from a signed-in phone (0.3.0 review 2 M1)
+  CHROME="$CHROME" node --experimental-websocket tests/app_clock_e2e.mjs
   BPY="${LV_FROZEN_MP:-$MP}"
   if [ -n "$BPY" ]; then
     CHROME="$CHROME" BOARD_PY="$BPY -X heapsize=1m" node --experimental-websocket tests/app_e2e.mjs 9
+  fi
+  if [ -n "$MP" ]; then
+    # (the interpreter without frozen board glue: phone_serve puts board/ after .frozen, so on
+    # the lv32 build it would serve 0.2.0's frozen lvphone instead of the code under test)
+    CHROME="$CHROME" BOARD_PY="$MP -X heapsize=1m" node --experimental-websocket tests/app_clock_e2e.mjs
   fi
   if [ -n "$PW" ]; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_ota.sh "$O/ota"; rm -rf "$O"

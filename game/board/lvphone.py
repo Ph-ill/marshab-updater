@@ -80,12 +80,11 @@ class Phone:
 
     # Dispatch code isn't retained during an upload or a streamed response.
     def api(self, req):
-        if req.path == "/api/state" and req.method == "GET":
-            sh = self.ship
+        sh = self.ship
+        # (before launch /api/state goes to lvphoneapi: 409, with Settings' share for crew)
+        if req.path == "/api/state" and req.method == "GET" and (sh.day >= 1 or sh.cal is None):
             if sh.st is None or sh.days is None:
                 return 503, {"err": "The story is switched off on this ship (story: false)."}
-            if sh.day < 1 and sh.cal is not None:
-                return 409, {"err": "The voyage hasn't launched yet.", "until": sh.cal.until()}
             you = self.who(req)
             if you is None:
                 return 401, {"err": "signed out"}

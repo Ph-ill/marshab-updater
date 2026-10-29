@@ -242,10 +242,11 @@ try {
   await click('[data-out]');
   await until(`tok===""`, 4000, 'signed out again');
   step('pre-launch');
-  // The countdown the page shows before launch ({day: 0, launch, until} from /api/crew): no sign-in.
+  // The countdown the page shows before launch ({day: 0, launch, until} from /api/crew). Crew
+  // can sign in on it (for Settings: 0.3.0 review 2 M1; tests/app_clock_e2e.mjs signs in there).
   await ev(`(PRE={day:0,launch:"2026-11-12",until:125},hello(),1)`);
   const pre = JSON.parse(await ev(`JSON.stringify({h:document.querySelector('.pre h1').textContent,p:document.querySelector('.pre p').textContent,on:document.querySelectorAll('[data-who]:not([disabled])').length})`));
-  check(pre.h === 'Launch in 2 h 5 min' && /starts at 06:00/.test(pre.p) && pre.on === 0, 'pre-launch screen: ' + JSON.stringify(pre));
+  check(pre.h === 'Launch in 2 h 5 min' && /starts at 06:00/.test(pre.p) && /Crew can sign in now/.test(pre.p) && pre.on === 8, 'pre-launch screen: ' + JSON.stringify(pre));
   await ev('(PRE=null,hello(),1)');
   // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404, the reset and
   // code-change and Test light refusals asked for above)

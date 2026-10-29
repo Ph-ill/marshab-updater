@@ -18,7 +18,16 @@ def api(self, req):
         if sh.st is None or sh.days is None:
             return 503, {"err": "The story is switched off on this ship (story: false)."}
         if sh.day < 1 and sh.cal is not None and p not in ("/api/crew", "/api/v"):
-            return 409, {"err": "The voyage hasn't launched yet.", "until": sh.cal.until()}
+            j = {"err": "The voyage hasn't launched yet.", "until": sh.cal.until()}
+            you = self.who(req) if p == "/api/state" else None
+            if you is not None:
+                # A crew member signed in during the countdown (0.3.0 review 2 M1): what the
+                # page's top bar and Settings need, nothing of the story. The page shows the
+                # countdown and the gear; Ship software, the Ship light, codes and Reset work.
+                j["launch"], j["start"] = sh.cal.date, sh.cal.start
+                j["pre"] = {"you": you, "here": sh.me, "v": sh.v, "season": sh.pack.season,
+                            "led": sh.led.enabled, "bat": sh.bat[:3] if sh.bat else None}
+            return 409, j
     if req.method == "GET":
         if p == "/api/crew":
             j = {"set": [self.book.is_set(c) for c in range(N)], "day": d}
@@ -33,7 +42,11 @@ def api(self, req):
         if p == "/api/v":
             return 200, {"v": sh.v}
         if p == "/api/me":
-            c = self.book.recall(req.phone(), d)
+            # No recall before launch (0.3.0 review 2 m2): a sign-in then isn't remembered
+            # (see /api/login), and one remembered on an earlier flight day can't come back
+            # through a countdown that a wrong first clock started. Recall is by IP and
+            # browser, which a later device on the same DHCP lease can share.
+            c = self.book.recall(req.phone(), d) if sh.day >= 1 else None
             if c is None:
                 return 401, {"err": "signed out"}
             return 200, {"token": self.token(c), "crew": c, "first": False}
@@ -56,8 +69,13 @@ def api(self, req):
         st, v = self.book.check(c, pin, ticks_ms())
         if st == K.OK:
             first = not self.book.seen[c]
-            self.book.seen[c] = True
-            self.book.remember(req.phone(), c, d)
+            if sh.day >= 1:
+                # Before launch (0.3.0 review 2 m2) a sign-in is for Settings only: it isn't
+                # remembered for /api/me (that would last the whole countdown and FD 01, on a
+                # key another device can share), and it doesn't use up the first-time
+                # briefing, which the page shows once the voyage starts.
+                self.book.seen[c] = True
+                self.book.remember(req.phone(), c, d)
             return 200, {"token": self.token(c), "crew": c, "first": first}
         if st == K.WRONG:
             return 403, {"err": "That code doesn't match.", "left": v}

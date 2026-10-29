@@ -115,18 +115,30 @@ class ClockAuth(unittest.TestCase):
         self.assertEqual(status, 200, login)
         self.assertTrue(login["token"])
         self.assertEqual(self.ship.day, 0, "login alone cannot correct the clock")
-        status, me = self.call(Request("GET", "/api/me"))
-        self.assertEqual(status, 200, me)
-        self.assertEqual(me["crew"], 0)
-        self.assertFalse(me["first"])
-        self.assertTrue(me["token"])
-        self.assertEqual(self.ship.clock.base, base, "remembering alone cannot move time")
+        # review 2 m2: no recall during the countdown (by IP and browser, which another
+        # device on the same lease can share): the page keeps the token it signed in with
+        self.assertEqual(self.call(Request("GET", "/api/me"))[0], 401)
+        self.assertTrue(login["first"], "a first sign-in: the page shows the briefing on day 1")
+        self.assertEqual(self.ship.clock.base, base, "signing in alone cannot move time")
         self.assertEqual(self.call(Request("GET", "/api/state"))[0], 409)
-        # Both issued tokens are genuine clock credentials, including recalled /api/me.
-        for token in (login["token"], me["token"]):
-            self.assertEqual(self.phone.who(Request("GET", "/api/v", token=token)), 0)
+        # review 2 M1: signed in, the countdown's 409 carries what Settings needs, no story
+        status, pre = self.call(Request("GET", "/api/state", token=login["token"],
+                                        date="2026-10-28T12:00:00"))
+        self.assertEqual(status, 409, pre)
+        self.assertEqual((pre["pre"]["you"], pre["launch"]), (0, "2026-10-29"), pre)
+        self.assertTrue({"here", "v", "season", "led", "bat"} <= set(pre["pre"]), pre)
+        self.assertNotIn("story", pre)
+        self.assertEqual(self.ship.day, 0, "a wrong date from the signed-in phone is ignored")
+        me = {"token": login["token"]}
+        self.assertEqual(self.phone.who(Request("GET", "/api/v", token=login["token"])), 0)
         self.call(Request("GET", "/api/v", token=me["token"]))
         self.assertEqual((self.ship.day, self.ship.st.day), (1, 1))
+        # once flown, the sign-in is remembered as before, and the briefing is still due
+        status, again = self.call(Request("POST", "/api/login"))
+        self.assertEqual(status, 200, again)
+        self.assertTrue(again["first"], "the briefing wasn't spent by the countdown sign-in")
+        status, me2 = self.call(Request("GET", "/api/me"))
+        self.assertEqual((status, me2.get("crew")), (200, 0), me2)
         self.assertNotEqual(self.ship.clock.base, base)
         corrected = self.ship.clock.base
         future = "2026-10-30T12:00:00"
@@ -166,7 +178,11 @@ class ClockAuth(unittest.TestCase):
                         status, login = self.call(Request("POST", "/api/login"))
                         self.assertEqual(status, 200, login)
                         status, me = self.call(Request("GET", "/api/me"))
-                        self.assertEqual(status, 200, me)
+                        if prelaunch:       # review 2 m2: no recall in the countdown
+                            self.assertEqual(status, 401, me)
+                            me = login
+                        else:
+                            self.assertEqual(status, 200, me)
                         self.assertEqual(self.ship.day, 0 if prelaunch else 1)
                         date = "2026-10-28T12:00:00" if prelaunch else "2026-10-29T12:00:00"
                         self.assertEqual(self.call(Request("GET", "/api/state", date=date, token=me["token"]))[0], 503)
