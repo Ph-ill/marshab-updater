@@ -141,7 +141,7 @@ SCEN["hail-fleet"] = async () => {
   // paused for the fleet: Home keeps one calm line (an update brings hails back), no switch
   await p.waitForSelector("#lv-home");
   const hc = await p.textContent("#lv-home");
-  ok("hail-fleet: a calm line on Home, no switch", /paused on this ship/.test(hc) && /update will bring them back/.test(hc) && !(await p.$("#lv-home [data-lvset]")), hc);
+  ok("hail-fleet: a calm line on Home, no switch", /paused on every ship/.test(hc) && /update will bring hails back/.test(hc) && !(await p.$("#lv-home [data-lvset]")), hc);
   await shot2(p, "hail-9a-fleet-home", "#lv-home");
   await p.click("#top .gear");   // Settings: the gear in the top bar
   await p.waitForSelector("#set-live .lvwhy");
@@ -204,7 +204,7 @@ SCEN.live = async () => {
   await p.evaluate(() => go("set"));
   await p.waitForSelector("#set-live [data-lvset]");
   await p.$eval("#set-live", (e) => e.scrollIntoView());
-  ok("live: settings section", /Hail light/.test(await p.textContent("#set-live")));
+  ok("live: settings section", /Flicker for hails/.test(await p.textContent("#set-live")));
   await shot(p, "live-6-settings");
   await p.click("[data-go=coex]");
   await p.waitForSelector("#v dl.facts");
@@ -227,7 +227,7 @@ SCEN["live-off"] = async () => {
   // (not a card that just vanishes) with a way back
   await p.waitForSelector("#lv-home");
   const hc = await p.textContent("#lv-home");
-  ok("live-off: a calm paused card on Home", /Hails are paused on this ship/.test(hc) && !!(await p.$("#lv-home [data-lvset=on]")), hc);
+  ok("live-off: a calm paused card on Home", /Hails paused on their own/.test(hc) && !!(await p.$("#lv-home [data-lvset=on]")), hc);
   await p.$eval("#lv-home", (e) => e.scrollIntoView());
   await shot(p, "live-8a-home-paused");
   await p.evaluate(() => go("set"));
