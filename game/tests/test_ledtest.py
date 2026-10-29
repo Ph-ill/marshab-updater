@@ -287,20 +287,36 @@ async def on_case():
     await task
 
 # -- 3. busy radio: the breath as a plain blink
-async def busy_case():
+async def busy_case(http=False):
     pin = Pin()
     sh = Ship(Notifier(Clock(), False))
     sh.ble = Busy()
     sh.led_pin = lambda: pin
     srv = hook(sh)
+    said = len(SAID)
     T0[0] = now()
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
-    sh.ble.on = True
+    check("busy: started for the full duration (including after module reload)",
+          s == 200 and j.get("ms") == MS, (s, j))
+    if http:
+        srv.busy = 1
+    else:
+        sh.ble.on = True
     while sh.ledtest is not None:
         await lvship.sleep_ms(20)
+    elapsed = diff(now(), T0[0])
+    check("busy: no playback exception", not any("test stopped" in s for s in SAID[said:]), SAID[said:])
+    check("busy: plays for TEST_MS, not just an advertised duration", MS - 50 <= elapsed <= MS + 400,
+          (elapsed, pin.log, SAID[said:]))
     check("busy: the breaths plain (a couple of writes each, not PWM)", writes(pin.log, 1800, MS) <= 12, writes(pin.log, 1800, MS))
     check("busy: still lit through each one's middle", all(lit_ms(pin.log, 1800 + k * 2700, 4500 + k * 2700) >= 500 for k in range(3)),
           [lit_ms(pin.log, 1800 + k * 2700, 4500 + k * 2700) for k in range(3)])
+    for k in range(3):
+        b0 = 1800 + k * 2700
+        # Integrate writes, don't sample a software-PWM pin at one instant. The bright
+        # middle (level >= 50) must stay on even when BLE or HTTP suppresses PWM.
+        middle = lit_ms(pin.log, b0 + 800, b0 + 1600)
+        check("busy: breath %d has a solid bright middle" % (k + 1), middle >= 700, middle)
     check("busy: blinks unchanged", 200 <= lit_ms(pin.log, 0, 500) <= 300)
 
 # -- 4. no light to drive, and a pin that fails mid-pattern
@@ -339,5 +355,6 @@ async def fail_case():
 asyncio.run(off_case())
 asyncio.run(on_case())
 asyncio.run(busy_case())
+asyncio.run(busy_case(http=True))
 asyncio.run(fail_case())
 print("led test: %d checks ok" % ok[0])

@@ -56,6 +56,7 @@ python3 tests/mp_sync.py
 python3 tests/test_you_voice.py
 node tests/render_check.mjs
 python3 web/build.py
+node --test web/settings.test.mjs
 python3 tests/mock_check.py
 python3 tests/test_phone.py
 python3 tests/test_cal.py
