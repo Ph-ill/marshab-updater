@@ -134,11 +134,17 @@ function lvTestSect(){
 async function lvTest(){
   if(LVR&&LVR.run)return;
   const c0=LVC;LVR={run:1,p:[],d:null};view();
+  let busy=0;
   for(let k=0;k<LV_TN&&route==="coex";k++){
     const kb=k%2?4:0,t=performance.now();
     try{
       const r=await fetch("/api/coex/ping?kb="+kb,{headers:{"X-Crew-Token":tok},cache:"no-store"});
       const n=(await r.arrayBuffer()).byteLength;
+      // review 3 m3: 503 + Retry-After is the ship's admission (another phone's state is
+      // streaming), not a missed answer: wait and ask again (up to 30 times a test), so the
+      // result never suggests turning Ship-to-ship off for it
+      const ra=r.status===503&&+r.headers.get("Retry-After");
+      if(ra&&busy<30){busy++;k--;await new Promise((f)=>setTimeout(f,Math.min(5,ra)*1000));continue}
       LVR.p.push({ok:r.ok&&n===kb*1024,ms:Math.round(performance.now()-t),kb,b:r.headers.get("X-Ble")||"off"});
       if(r.status===401){tok="";me=-1;return go("hello")}
     }catch(e){LVR.p.push({ok:false,ms:Math.round(performance.now()-t),kb,b:"?"})}

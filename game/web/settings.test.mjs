@@ -65,3 +65,14 @@ test('another tap during a test does not call the API or restart its timer', asy
   assert.equal(calls, 1);
   assert.deepEqual([...p.timers.keys()], [id]);
 });
+test('429 during a hail says the light is showing a hail, not "three blinks" (review 3 m2)', async () => {
+  const p = phone(async () => { throw { status: 429, j: { ms: 28400, kind: 'hail' } }; });
+  await p.click();
+  assert.match(p.html(), /Your ship's light is showing a hail\. Try again in 29 s\./);
+  assert.doesNotMatch(p.html(), /aria-busy|ledbar|three blinks, then/);
+  assert.equal(p.timers.size, 1);
+  const [timer] = p.timers.values();
+  assert.equal(timer.ms, 28400 + 250);
+  timer.fn();
+  assert.doesNotMatch(p.html(), /showing a hail/);
+});
