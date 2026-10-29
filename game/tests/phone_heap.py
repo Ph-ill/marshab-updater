@@ -194,7 +194,7 @@ async def code_change(req, fail, log):
     log("code: wrong current code refused, changed, signed in with the new one, changed back")
 
 
-async def led_test(req, fail, log):
+async def led_test(req, fail, log, hail=False):
     """Test light (board/lvledtest.py, loaded per request; its pattern a task for 10 s) while
     the others play: crew 4 taps it, taps again while it plays (429), waits it out, and
     taps once more; a tap with no session is 401. The board counts the pin's writes."""
@@ -223,8 +223,22 @@ async def led_test(req, fail, log):
     s, _ = await call("/api/led/test", {})
     if s != 401:
         return fail("led test: without a session %d, want 401" % s)
-    for i in range(2):
+    # Hail owns the shared pin first; do not mistake its exclusion for a failed test.
+    s, b = await call("/api/led/test", {}, tok)
+    if hail and s != 429:
+        return fail("led test: initial Hail ownership %d %s, want 429" % (s, b))
+    for _ in range(120):
+        if s != 429:
+            break
+        await asyncio.sleep(0.5)
         s, b = await call("/api/led/test", {}, tok)
+        if s != 429:
+            break
+    else:
+        return fail("led test: Hail never released the light")
+    for i in range(2):
+        if i:
+            s, b = await call("/api/led/test", {}, tok)
         if s != 200 or json.loads(b).get("ms") != 10000:
             return fail("led test: tap %d %d %s" % (i, s, b))
         await asyncio.sleep(0.5)
@@ -439,7 +453,7 @@ def main(argv):
             jobs.append(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print))
             jobs.append(funnel_hello(req, fails.append, print))
             jobs.append(code_change(req, fails.append, print))
-            jobs.append(led_test(req, fails.append, print))
+            jobs.append(led_test(req, fails.append, print, "--live" in mode))
             if "--live" in mode:
                 jobs.append(live_hail(req, fails.append, print))
             if "--bat" in mode:
