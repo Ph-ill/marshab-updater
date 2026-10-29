@@ -141,17 +141,36 @@ member's `X-Crew-Token`, otherwise it gets 401.
      board if the game never reports in.
 4. **`main.py`, 30 s after the game is up**, once it has answered a phone with a 2xx or
    (0.2.7, no phone needed) its own check passes, retried every 5 s. The check
-   (`serves()`) needs the hotspot up under this ship's own name (`ssid_prefix` + ship
-   number) and the server's accept task still running, then pushes raw
-   `GET /`, `/api/crew` and `/api/ota` requests through the server's own request handler
-   (`web.handle`: the request parser, the busy/`MAX_CONN` accounting and the error
-   handling a phone's request goes through), each of which must answer 2xx. Its own
-   requests aren't counted as phone hits. Calls `lvota.good()`. That writes
-   `ota/last.json` `{result: "installed"}` and removes `ota/old` and the state.
-   A trial that boots dark ("off": `ship.json` or `crew.json` unreadable and nothing to
-   put back, see `board/lvsafe.py`) never reports in, so it rolls back at its 2nd boot;
-   the old software finds the same files and goes off too, which is harmless. Fix it over
-   USB with the updater.
+   (`serves()`) needs the hotspot up (`ap.active()`) and, when the core can read it back,
+   under this ship's own name (`ssid_prefix` + ship number, compared as text; a readback
+   that raises or comes back empty is accepted, one naming another ship is not), and the
+   server's accept task still running. Then it pushes raw `GET /`, `GET /api/crew`,
+   `GET /api/ota` and an unsigned `POST /api/ota/put` through the server's own request
+   handler (`web.handle`: the request parser, the busy/`MAX_CONN` accounting and the error
+   handling a phone's request goes through). The GETs must answer 2xx and the POST 401
+   (the write side still refuses anyone without a crew token; `put` stages nothing, so
+   even a broken one changes nothing). Any error the handler says on the way fails it.
+   The page streams in chunks and lets other requests in as it goes; only what these
+   requests added comes off the hit counts, so a phone's own request in the meantime still
+   counts. With the phone game wanted (the hotspot on, `phone_game` true, or "auto" on a
+   firmware with a core) but no web server up, the update isn't kept. After `SELF_MS`
+   (3 min) of failing checks `main.py` restarts the ship itself, a counted boot (on
+   ota-hwfix's `lvboot` a soft-reset trial has no 120 s timer of its own).
+   Then it calls `lvota.good()`. That writes `ota/last.json` `{result: "installed"}`,
+   removes the state file (lvboot's `.tmp` first) and only then `ota/new` and `ota/old`.
+   A power cut before the state file goes: still on trial, every old copy there. After:
+   the update is kept and `lvboot` has nothing to do; what's left of `ota/old` is only
+   flash in use, cleared when the next update is staged (`put` of the envelope at offset
+   0, and `apply()`, both only with no state file). `fault.json` is set aside as
+   `fault.last.json` (the new set starts with a clean count; the notes stay readable).
+   **A trial that boots dark** ("off", see `board/lvsafe.py`) never reports in, so it is
+   rolled back at its 3rd boot, about 4 min after the swap. Off is rare: only a
+   `ship.json` with no usable ship number (1-8) on a ship with crew codes and nothing to
+   put back. `crew.json` never makes a ship go off (the game says "No code set up"). Any
+   `ship.json` that names its ship plays, as 0.2.6 played it (a missing, empty or odd
+   hotspot password falls back to `CHANGE_ME`, as in 0.2.6). The reason is in
+   `data/fault.json` `"boot"`, which survives the rollback. The old software then plays
+   the same file as a fake ship 1 on the default hotspot: fix it over USB with the updater.
 5. **Rollback.** If a trial reaches its 2nd boot without reporting in, `lvboot` puts every
    old file back, removes the files the update added and writes `{result: "rolled back"}`.
    Any unexpected error in `lvboot` also rolls back. Boots with `data/maint` or `data/safe`

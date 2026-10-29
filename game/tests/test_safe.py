@@ -267,10 +267,16 @@ put(P, '{"ship_name": "x"}')
 check("a bench board's own (not whole) settings, nothing to put back: play, left alone",
       lvsafe.check(False, D) is None and get(P) == '{"ship_name": "x"}')
 put(P, "{bad")
+check("broken, no backup, a board never set up (no crew.json): plays the defaults, as 0.2.6 (review #3 M1)",
+      lvsafe.check(False, D) is None)
+put(D + "/crew.json", "{}")
 w = lvsafe.check(False, D)
-check("broken, no backup: off", w is not None and w.startswith("off:"), w)
+check("broken, no backup, a crew ship: off", w is not None and w.startswith("off:"), w)
 check("off even on trial", (lvsafe.check(True, D) or "").startswith("off:"))
 check("no stray .new", [f for f in files() if f.endswith(".new")] == [], files())
+check("review #3 M1: the reason is in fault.json", lvsafe.faults(D).get("boot") == w, lvsafe.faults(D))
+rm(D + "/crew.json")
+rm(D + "/fault.json")
 # m3: a read error that isn't "no such file", with nothing to put back, is "off" for now
 # and never written over (every file unreadable here: the .bak too)
 put(P, SHIP)
@@ -318,11 +324,17 @@ for have in (".bak", ".new"):
     check("M4 unreadable, good %s: put back" % have, json.loads(get(P)) == json.loads(want), get(P))
     check("M4 unreadable, good %s: said so" % have, said[-1] == "safe: ship.json unreadable, put back from ship.json" + have, said[-1:])
     check("M4 unreadable, good %s: cfg from it" % have, got == [json.loads(want)], got)
-    check("M4 unreadable, good %s: no stray files" % have, files() == ["ship.json", "ship.json.bak"], files())
+    check("M4 unreadable, good %s: no stray files" % have, files() == ["fault.json", "ship.json", "ship.json.bak"], files())
+    check("M4 unreadable, good %s: noted in fault.json (review #3 M1)" % have,
+          lvsafe.faults(D) == {"boot": "ship.json unreadable, put back from ship.json" + have}, lvsafe.faults(D))
 fresh()
 put(P, SHIP)
+check("M4 unreadable on a board never set up (no crew.json): the defaults, as 0.2.6",
+      sticky(lambda: lvsafe.check(False, D, said.append)) is None)
+put(D + "/crew.json", "{}")
 w = sticky(lambda: lvsafe.check(False, D, said.append))
 check("M4 unreadable, nothing to put back: off", (w or "").startswith("off: ship.json unreadable"), w)
+rm(D + "/crew.json")
 check("M4 unreadable, nothing to put back: untouched", get(P) == SHIP)
 flaky = [1]
 
@@ -460,8 +472,20 @@ CK = json.loads(CREW)
 check("m7: a crew.json codes.load takes", lvsafe.crew_ok(CK))
 for bad, why in ((dict(CK, codes=["ab"] * 8), "short codes"), (dict(CK, codes=[1] * 8), "numbers"),
                  (dict(CK, salt="zz" * 16), "salt not hex"), (dict(CK, salt="ab" * 4), "salt short"),
-                 (dict(CK, codes=CK["codes"][:7]), "7 codes")):
+                 (dict(CK, codes="ab"), "codes not a list"), (dict(CK, codes=CK["codes"][:7] + ["ab"]), "a short 8th")):
     check("m7: not good: " + why, not lvsafe.crew_ok(bad))
+from binascii import unhexlify  # noqa: E402
+# Review #3 m7: exactly 8 codes was stricter than codes.load (any count: fewer means the
+# rest have none, more are ignored), so a crew.json the game signs in from was never
+# backed up. Every shape codes.load takes is good now, every code cleared included.
+for good, why in ((dict(CK, codes=CK["codes"][:7]), "7 codes"), (dict(CK, codes=CK["codes"][:1]), "1 code"),
+                  (dict(CK, codes=CK["codes"] + ["junk"]), "a 9th (ignored by codes.load)"),
+                  (dict(CK, codes=[None] * 8), "every code cleared"), ({"salt": CK["salt"]}, "no codes key")):
+    check("m7: good: " + why, lvsafe.crew_ok(good))
+    put(C + ".x", json.dumps(good))
+    b = K.load(C + ".x")
+    check("m7: ... and codes.load takes it (%s)" % why, b.salt == unhexlify(CK["salt"]))
+rm(C + ".x")
 put(C, json.dumps(dict(CK, codes=["ab"] * 8)))
 put(C + ".bak", CREW)
 lvsafe.check(False, D)
@@ -629,6 +653,47 @@ web.ap = AP(True, "LV-5")
 web.srv.d = True
 check("M1: the accept loop has stopped: no keep", asyncio.run(g["serves"](web)) is False)
 web.srv.d = False
+# Review #3 m3: the SSID readback is only a cross-check. A core whose AP config("essid")
+# raises, answers bytes or nothing still serves (an endless trial otherwise); a readback
+# that names another ship (a fake ship 1) still doesn't.
+for e, yes in ((b"LV-5", True), ("", True), (None, True), (b"", True), (b"LV-1", False), ("LV-15", False)):
+    web.ap = AP(True, e)
+    check("m3: an AP up reading back %r: %s" % (e, "serves" if yes else "no keep"), asyncio.run(g["serves"](web)) is yes)
+
+
+class APx(AP):
+    def config(self, k):
+        raise ValueError("unknown config param")
+web.ap = APx(True, "LV-5")
+check("m3: a readback that raises: serves", asyncio.run(g["serves"](web)) is True)
+web.ap = APx(False, "LV-5")
+check("m3: ... but not with the AP down", asyncio.run(g["serves"](web)) is False)
+web.ap = AP(True, "LV-5")
+# Review #3 m2: a phone's own request while the check runs (the page streams and lets
+# it in) keeps its counts: only what the probes added comes off
+web.served, sh.http_hits = 3, 4
+
+
+async def with_phone():
+    ph = W()
+    r = await asyncio.gather(g["serves"](web), web.handle(g["Sink"](b"GET /api/crew HTTP/1.0\r\n\r\n"), ph))
+    return r[0]
+check("m2: serves with a phone's request alongside", asyncio.run(with_phone()) is True)
+check("m2: ... the phone's request still counted", (web.served, sh.http_hits) == (4, 5), (web.served, sh.http_hits))
+web.served, sh.http_hits = 3, 4
+# Review #3 m1 (POST-side check): the update must still refuse an unsigned write. An
+# update whose /api/ota/put lets anyone in (here: who() says crew 0 to everyone) is not kept.
+web.phone.who = lambda req: 0
+check("m1: /api/ota/put open to anyone: no keep", asyncio.run(g["serves"](web)) is False)
+del web.phone.who
+check("m1: ... and refused again: serves", asyncio.run(g["serves"](web)) is True)
+rm(D + "/ota") if lvsafe.exists(D + "/ota") else None
+# a request that raises mid-way (said by Server.handle, the answer may be half out) fails
+real_api = web.phone.api
+web.phone.api = lambda req: 1 / 0
+check("m1: an error said while answering /api/crew: no keep", asyncio.run(g["serves"](web)) is False)
+web.phone.api = real_api
+check("m2: and the counts as they were", (web.served, sh.http_hits) == (3, 4), (web.served, sh.http_hits))
 # Review #2 M1 (rv2/serves_repro.py): a broken update whose request parser raises on every
 # real request passed serves() (it called route directly). Now the raw bytes go through
 # Server.handle, as a phone's do.
@@ -730,8 +795,10 @@ class FakeWeb:
         self.ship.http_hits = 0
 
     async def handle(self, r, w):
-        w.write(b"HTTP/1.0 200 OK\r\n" if self.up else b"HTTP/1.0 500 Oops\r\n")
-        if self.up:
+        post = r.b.startswith(b"POST")
+        w.write(b"HTTP/1.0 500 Oops\r\n" if not self.up else b"HTTP/1.0 401 Unauthorized\r\n" if post
+                else b"HTTP/1.0 200 OK\r\n")
+        if self.up and not post:
             self.ok2xx += 1
 
 
@@ -759,12 +826,75 @@ fw = FakeWeb()
 a, b2 = asyncio.run(keeps(fw, lambda f: setattr(f, "up", True)))
 check("m7: not while the ship's own check fails", a == 0)
 check("m7: kept once it serves the page, no phone needed", b2 == 1 and fw.ok2xx == 0, (b2, fw.ok2xx))
+# Review #3 m4: the phone game was wanted (the hotspot on, phone_game asks for it) but no
+# web server came up (a core shadowed, say): not kept. And past SELF_MS of failing checks
+# main.py restarts the ship itself, a counted boot (a soft-reset trial on ota-hwfix's lvboot
+# has no deadline of its own: endless otherwise).
+sys.modules["lvota"] = FakeOta
+FakeOta.n = 0
+rb = []
+g["reboot"] = lambda: rb.append(1)
+a, b2 = asyncio.run(keeps(None, lambda f: None))
+check("m4: no web server, none wanted: kept", b2 == 1)
+sys.modules["lvota"] = FakeOta
+FakeOta.n = 0
+
+
+async def wants(web, after):
+    t = asyncio.create_task(g["ota_ok"](web, True))
+    await asyncio.sleep(0.15)
+    a = (FakeOta.n, list(rb))
+    Quick.now[0] += after
+    await asyncio.sleep(0.15)
+    t.cancel()
+    return a, (FakeOta.n, list(rb))
+
+
+a, b2 = asyncio.run(wants(None, g["SELF_MS"] + 1))
+check("m4: the phone game wanted, no web server: not kept", a == (0, []), a)
+check("m4: ... restarted past SELF_MS (a counted boot), never kept", b2 == (0, [1]), b2)
+rb[:] = []
+fw = FakeWeb()
+a, b2 = asyncio.run(wants(fw, g["SELF_MS"] + 1))
+check("m3: a set that never shows it serves: restarted past SELF_MS", a == (0, []) and b2 == (0, [1]), (a, b2))
+rb[:] = []
+fw = FakeWeb()
+fw.up = True
+a, b2 = asyncio.run(wants(fw, 0))
+check("m4: the phone game wanted and served: kept", a == (1, []), a)
+Quick.now[0] = 0
+sys.modules["lvota"] = FakeOta
+# wanted(): phone_game true/false as set; "auto" asks the firmware for a core (none here)
+check("m4: wanted, phone_game true", g["wanted"]({"phone_game": True}) is True)
+check("m4: wanted, phone_game false", g["wanted"]({"phone_game": False}) is False)
+real_lv = sys.modules.get("lv")
+
+
+class LvStub:
+    fw = (None, None)
+
+    @staticmethod
+    def firmware():
+        return LvStub.fw
+
+
+sys.modules["lv"] = LvStub
+check("m4: wanted, auto with no frozen core", g["wanted"]({"phone_game": "auto"}) is False)
+LvStub.fw = ("2661c2144844", "0.2.0")
+check("m4: wanted, auto with a frozen core", g["wanted"]({}) is True)
+LvStub.firmware = None
+check("m4: wanted, auto, an lv without firmware(): no", g["wanted"]({}) is False)
+if real_lv is None:
+    sys.modules.pop("lv", None)
+else:
+    sys.modules["lv"] = real_lv
 
 # crashed(): noted (by lvsafe, or the short way when it can't: M3), then a restart; the
 # trial flag read at the crash (m9)
 FD = D + "/fault.json"
 fresh()
 g["FAULT"] = FD
+g["FAULT_LAST"] = D + "/fault.last.json"
 boots = []
 noted = []
 trial = [False]
@@ -949,6 +1079,12 @@ put(FD, '{"n": 1, "why": "x"}')
 sys.modules.pop("lvsafe", None)
 asyncio.run(g["healthy"]())
 check("M6: healthy removes fault.json", not lvsafe.exists(FD))
+check("review #3 M1: ... set aside as fault.last.json, notes kept", json.loads(get(D + "/fault.last.json")) == {"n": 1, "why": "x"})
+put(FD, '{"n": 1, "boot": "ship.json plays as it is"}')
+sys.modules["lvota"] = FakeOta
+asyncio.run(g["ota_ok"]())
+check("review #3 M1: an update kept sets fault.json aside too (its note kept)", not lvsafe.exists(FD)
+      and json.loads(get(D + "/fault.last.json")) == {"n": 1, "boot": "ship.json plays as it is"})
 check("M6: healthy imports nothing (no lvsafe, no lvledcfg)", "lvsafe" not in sys.modules and "lvledcfg" not in sys.modules)
 asyncio.run(g["healthy"]())
 check("M6: healthy with no fault.json is fine", not lvsafe.exists(FD))
@@ -965,6 +1101,103 @@ put(P, SHIP)
 got = []
 lvsafe.check(False, D, said.append, got)
 check("m1: check() hands back ship.json as read", got == [json.loads(SHIP)], got)
+
+# Review #3 M1 (rv3/upgrade_matrix.py): every ship.json that failed lvledcfg.valid() was
+# "off" at boot, so a 0.2.6 ship with an empty or 64-character password, a float ship_id
+# or no password key... could never take 0.2.7 (its trial went dark, lvboot rolled it back)
+# nor any later release. Now: a usable ship number plays, exactly as 0.2.6 played that
+# file (main.config(got) == 0.2.6's lvship.load_config, the same hotspot password rule);
+# valid() only decides the .bak. Off only with no usable ship number on a crew ship with
+# nothing to put back, and the reason is in fault.json "boot". Every shape the review
+# listed, on an update's trial and kept, with a crew.json as every real ship has.
+ls = open(HERE + "/board/lvship.py").read()
+g26 = {}
+exec(ls[ls.index("\nDEFAULTS = {"):ls.index("\ndef phone_game")], g26)     # 0.2.6's own config rule
+
+
+def ap_pw(c):
+    # board/lvwifi.py's rule (unchanged since 0.2.5): the password the hotspot gets
+    pw = str(c.get("hotspot_password") or "")
+    return "" if c.get("hotspot_open") else pw if 8 <= len(pw) <= 63 else "CHANGE_ME"
+
+
+MATRIX = [
+    ("bench-provisioned", {"ship_id": 3, "hotspot_password": "fake-pass-123", "hotspot_open": False}, "whole"),
+    ("updater, firmware-default pw (no key)", {"schema": 2, "ship_id": 6, "ship_name": "Starship-06", "hotspot_open": False}, "whole"),
+    ("hotspot_password empty", {"ship_id": 4, "hotspot_password": ""}, "plays"),
+    ("open hotspot, empty password", {"ship_id": 2, "hotspot_open": True, "hotspot_password": ""}, "plays"),
+    ("64-hex WPA PSK as password", {"ship_id": 7, "hotspot_password": "a" * 64}, "plays"),
+    ("ship_id as float 1.0", {"ship_id": 1.0, "hotspot_password": "fake-pass-123"}, "plays"),
+    ("ship_id as digits", {"ship_id": "8", "hotspot_password": "fake-pass-123"}, "whole"),
+    ("password a number", {"ship_id": 5, "hotspot_password": 12345678}, "plays"),
+    ("no ship_id (0.2.6's default ship 1)", {"hotspot_password": "fake-pass-123", "fleet_key": "fake"}, "off"),
+    ("0.2.6 toggle damage {led_notify}", {"led_notify": True}, "off"),
+    ("ship_id 0", {"ship_id": 0, "hotspot_password": "fake-pass-123"}, "off"),
+    ("ship_id 9", {"ship_id": 9, "hotspot_password": "fake-pass-123"}, "off"),
+    ("ship_id 2.5", {"ship_id": 2.5}, "off"),
+    ("ship_id true", {"ship_id": True}, "off"),
+    ("ship_id \"x\"", {"ship_id": "x"}, "off"),
+]
+quick_d = Quick.DEFAULTS
+Quick.DEFAULTS = g26["DEFAULTS"]            # main.config builds on lvship.DEFAULTS
+for name, sc, want in MATRIX:
+    for tr in (True, False):
+        fresh()
+        put(P, json.dumps(sc))
+        put(D + "/crew.json", CREW)
+        got = []
+        w = lvsafe.check(tr, D, said.append, got)
+        tag = "M1 matrix, %s, %s" % (name, "trial" if tr else "kept")
+        fj = lvsafe.faults(D)
+        if want == "off":
+            check(tag + ": off", (w or "").startswith("off: ship.json not usable"), w)
+            check(tag + ": the reason in fault.json", fj.get("boot") == w and "n" not in fj, fj)
+            check(tag + ": ship.json left as it is", json.loads(get(P)) == sc)
+            continue
+        check(tag + ": plays", w is None, w)
+        c = g["config"](got)
+        o = g26["load_config"](P)
+        check(tag + ": as 0.2.6 played it (cfg)", c == o, (c, o))
+        check(tag + ": the same hotspot password rule", ap_pw(c) == ap_pw(o))
+        check(tag + ": the ship it says", c["ship_id"] == int(sc["ship_id"]))
+        if want == "whole":
+            check(tag + ": backed up, nothing to note", json.loads(get(P + ".bak")) == sc and "boot" not in fj, (files(), fj))
+        else:
+            check(tag + ": never backed up", not lvsafe.exists(P + ".bak"), files())
+            check(tag + ": noted, once", fj.get("boot") == "ship.json plays as it is, but isn't whole (no backup made)", fj)
+            hits = []
+            lvsafe.fail = hits.append
+            lvsafe.check(tr, D, said.append)
+            lvsafe.fail = None
+            check(tag + ": the next boot writes nothing", "write" not in hits, hits)
+Quick.DEFAULTS = quick_d
+# a usable but not whole ship.json next to a good .bak: the file plays (it says which
+# ship), the .bak stays the last whole one
+fresh()
+put(P + ".bak", SHIP)
+put(P, '{"ship_id": 5, "hotspot_password": ""}')
+got = []
+check("M1: usable, not whole, a .bak there: plays the file", lvsafe.check(False, D, said.append, got) is None
+      and got == [{"ship_id": 5, "hotspot_password": ""}], got)
+check("M1: ... the .bak untouched", get(P + ".bak") == SHIP)
+# an off ship looks again every OFF_MS: the same reason is not written again
+fresh()
+put(D + "/crew.json", CREW)
+put(P, '{"led_notify": true}')
+lvsafe.check(False, D, said.append)
+hits = []
+lvsafe.fail = hits.append
+w = lvsafe.check(False, D, said.append)
+lvsafe.fail = None
+check("M1: off again: no new write (no wear)", w.startswith("off:") and "write" not in hits, hits)
+lvsafe.crashed("ValueError: q", False, 1, D)
+check("M1: a crash note keeps the boot note", lvsafe.faults(D).get("boot") == w and lvsafe.count(lvsafe.faults(D)) == 1)
+# review #3 m6: a backup cut short (.bak.new) is cleaned up next to a good file
+fresh()
+put(P, SHIP)
+put(P + ".bak.new", SHIP)
+lvsafe.check(False, D, said.append)
+check("m6: a leftover ship.json.bak.new removed", not lvsafe.exists(P + ".bak.new") and "safe: a leftover ship.json.bak.new removed" in said, files())
 
 # safe_mode "off": nothing on the air, a wait, then a restart (safe mode once more after the cap)
 rested = []

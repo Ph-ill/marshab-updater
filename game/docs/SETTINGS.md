@@ -139,19 +139,33 @@ logs or prints a code.
 **The boot check (0.2.7, `board/lvsafe.py`).** Every boot reads `ship.json` and
 `crew.json` before the game starts:
 
+- `ship.json` plays when it names its ship: a `ship_id` of 1-8 (a number, a whole float
+  such as `1.0`, or digits). The rest is read as 0.2.6 read it: a missing, empty or odd
+  hotspot password falls back to `CHANGE_ME`, as in 0.2.6. Only a file that is also whole
+  (`lvledcfg.valid()`: a hotspot password of 8-63 characters, and so on) becomes the `.bak`;
+  one that plays but isn't whole says so once in `/data/fault.json` `"boot"` and is never
+  backed up. `crew.json` plays when the game can read it (a salt, and a list of up to 8
+  codes, each cleared or set; any number of codes, as `lv/codes` reads it).
 - A file that reads back and is usable is kept as it is. Its `.bak` copy is rewritten only
   when its contents differ (compared as data, not as text), so a normal boot writes
-  nothing. A leftover `.new` or `.old` next to a good file is removed.
+  nothing. A leftover `.new`, `.old` or `.bak.new` next to a good file is removed.
 - A file that can't be read (a flash error) is read once more after a short pause. Still
   unreadable, missing or unusable: it is put back from, in order, `.new` (a write that
   had got as far as the rename, renamed into place), `.bak` (copied via `.bak.new`, then
-  renamed) and `.old` (renamed), whichever is the first good one, and the boot says which.
-- Nothing good to put back: the ship stays off (no hotspot, no game) and says so, and looks
-  again every few minutes; the updater over USB fixes it. The one exception is a bench
-  board: with no `crew.json` (nor its `.bak`, `.new` or `.old`) anywhere it has never been
-  provisioned, so a missing or plain-JSON `ship.json` plays on the defaults. A board with
-  crew codes never runs on defaults, so it can't come up as ship 1 under the default
-  hotspot.
+  renamed) and `.old` (renamed), whichever is the first good one, and the boot says which
+  (also in `/data/fault.json` `"boot"`).
+- Nothing good to put back for `ship.json`: the ship stays off (no hotspot, no game) and
+  says so, and looks again every 15 minutes (`OFF_MS`); the updater over USB fixes it. The
+  reason is in `/data/fault.json` `"boot"`, written once. The one exception is a board
+  never set up: with no `crew.json` (nor its `.bak`, `.new` or `.old`) and no `ship.json`
+  `.bak`, `.new` or `.old` anywhere, a missing or broken `ship.json` plays on the
+  defaults. A board with crew codes never runs on defaults, so it can't come up as ship 1
+  under the default hotspot. A `crew.json` with nothing to put back never makes the ship
+  go off: the game says "No code set up".
+- **Change your code** (and `tools/bench.py --code`) writes `crew.json.bak` too, at once,
+  so an old code never comes back from it. To clear every code over USB, delete
+  `crew.json` and `crew.json.bak` (`crew.json*`): with a `.bak` left, the next boot
+  puts the codes back.
 
 ## Reset this ship
 
@@ -201,6 +215,9 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
 - `/data/crew.json`: the crew codes;
 - `/data/ship.json.bak` and `/data/crew.json.bak`: the boot check's last good copies
   (0.2.7, `board/lvsafe.py`), rewritten only when the file really changed;
+- `/data/fault.json` and `/data/fault.last.json`: crash counts and boot notes
+  (`fault.json` is set aside as `fault.last.json` once the ship has run 10 minutes or an
+  update is kept);
 - `/data/maint` and `/data/safe`;
 - the installed software;
 - `ota/`: the update state and the rollback copy.

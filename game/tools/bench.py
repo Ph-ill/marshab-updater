@@ -391,6 +391,10 @@ if CODES:
         crew["codes"][i] = binascii.hexlify(hashlib.sha256(salt + bytes([i]) + k.encode()).digest()).decode() if k else None
     with open("data/crew.json", "w") as f:
         json.dump(crew, f)
+    # the boot check's backup (board/lvsafe.py) the same at once: a code set or cleared
+    # here never comes back from an older crew.json.bak
+    with open("data/crew.json.bak", "w") as f:
+        json.dump(crew, f)
 CODES = None
 def safe(c):
     c = dict(c)
