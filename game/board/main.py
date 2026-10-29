@@ -149,6 +149,22 @@ def ota_hooks(lvweb, web):
             if req.method != "GET":
                 # An update coming in from a phone: Hail holds its dials (lvlive.OTA_MS).
                 web.ship.ota_t = lvship.ticks_ms() or 1
+            if req.path == "/api/ota/put":
+                # The upload itself (board/lvotap.py, 0.3.0): ~3 KB of code, with lvota loaded
+                # only for the envelope and dropped through its signature check. It waits for
+                # a quiet moment first (lvotaq.py, ~0.5 KB) before lvotap is even loaded.
+                if req.method == "POST" and web.get_phone().who(req) is not None:
+                    import lvotaq
+                    try:
+                        await lvotaq.quiet(web, req.q, req.body or b"")
+                    finally:
+                        lvship.drop("lvotaq")
+                import lvotap
+                try:
+                    return await lvotap.api(web, req, w, True)
+                finally:
+                    lvship.drop("lvotap")
+                    lvship.drop("lvota")
             import lvota
             try:
                 return await lvota.api(web, req, w)

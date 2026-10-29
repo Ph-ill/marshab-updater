@@ -253,6 +253,34 @@ check("file: more than its size", r[0] == 400, r)
 good_tail = FILES[V1]["www/app.html.gz"][2048:]
 r = lvota.put({"f": str(idx), "o": "2048"}, b"Z" + good_tail[1:])
 check("file: tampered -> 400, thrown away", r[0] == 400 and "checksum" in r[1]["err"] and r[1]["have"] == 0, r)
+# 0.3.0: the last piece's bytes land but its check never runs (no heap for the hash, the
+# connection dropped): status shows it one byte short, and sending that piece again (or any
+# piece of it) checks it then, instead of a 409 that ends the phone's loop with the file
+# never marked done (apply would refuse forever, and "Install" again would skip the file)
+import lvotap  # noqa: E402
+_sf = lvotap.sha_file
+
+
+def _no_heap(p):
+    raise MemoryError("memory allocation failed")
+
+
+_page = FILES[V1]["www/app.html.gz"]
+for o in (0, 1024):
+    lvota.put({"f": str(idx), "o": str(o)}, _page[o:o + 1024])
+lvotap.sha_file = _no_heap
+try:
+    lvota.put({"f": str(idx), "o": "2048"}, good_tail)
+    died = False
+except MemoryError:
+    died = True
+lvotap.sha_file = _sf
+check("file: its check died after the write", died)
+st = lvota.status()
+check("status: written but unchecked shows one byte short", st["staged"]["have"][idx - 1] == size - 1, st["staged"]["have"][idx - 1])
+r = lvota.put({"f": str(idx), "o": "2048"}, good_tail)
+check("file: the same piece again checks it -> done", r[0] == 200 and r[1].get("done") and r[1]["have"] == size, r)
+check("status: now all there", lvota.status()["staged"]["have"][idx - 1] == size)
 r = send_files(V1)
 check("file: sent again", r[0] == 200, r)
 r = lvota.put({"f": str(idx), "o": "0"}, b"again")

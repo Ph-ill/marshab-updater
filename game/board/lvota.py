@@ -2,7 +2,9 @@
 # reach GitHub fetches a signed release (web/ota.js) and relays it here over the hotspot.
 # main.py sends /api/ota* here; this module is imported for one request and dropped again
 # (everything it needs between requests is on flash, under ota/), so a ship nobody is
-# updating never carries it.
+# updating never carries it. The upload itself (POST /api/ota/put) goes to lvotap.py
+# (0.3.0), which loads this module only for the envelope, and not through its signature
+# check: the heap's biggest moments carry ~2 KB of code instead of ~8 KB.
 #
 #   GET  /api/ota                 {ota, v, ch, core, chunk, free, staged, last, src}
 #                                 staged: {v, have, sizes, h: sha256 hex of the envelope as
@@ -25,7 +27,9 @@
 # Each file is checked against its sha256 as soon as its last byte lands.
 #
 # Staging is ota/new/: env (the envelope), ok (written once the signature checked out),
-# eh (the envelope's sha256), f<I> while file I arrives, f<I>.ok once it matches. apply writes ota/state.json
+# eh (the envelope's sha256), ix (each file's size, sha256 and path, one fixed-width line
+# per file: lvotap.py reads a piece's line with a seek; eh and ix are written before ok),
+# f<I> while file I arrives, f<I>.ok once it matches. apply writes ota/state.json
 # {"phase": "ready"} and restarts; boot.py hands that to lvboot.py, which swaps the files
 # in (the old ones go to ota/old/), runs the new set on trial and puts the old one back if
 # it doesn't come up twice. main.py calls good() once the game has been up a while.
@@ -36,7 +40,7 @@ try:
     import hashlib
 except ImportError:  # pragma: no cover
     import uhashlib as hashlib
-from binascii import a2b_base64, unhexlify, hexlify
+from binascii import a2b_base64, unhexlify
 
 OTA = "ota"
 NEW = OTA + "/new"
@@ -49,7 +53,6 @@ MAX_ENV = 8192
 MAX_FILE = 256 * 1024
 MAX_FILES = 40
 SPARE = 16 * 1024         # flash left free after staging (littlefs needs room to work)
-QUIET_MS = 60000          # the signature check waits this long at most for the radio (0.3.0)
 # Ed25519 public keys allowed to sign an update: key id (first 8 hex of sha256(key)) -> key.
 KEYS = {"2111b2e9": unhexlify("0478d983c1a756c32acf10215359e6f0361ea4800ede2b50031256bcf0f4b58f")}
 reset = None              # tests: called instead of machine.reset()
@@ -231,44 +234,77 @@ def _env_m(p):
     return env["m"], env
 
 
-def open_envelope(p):
-    """The envelope staged at path p -> (manifest dict, manifest text, None) if its signature
-    checks out, else (None, None, why). The check (lvsig) is the update's biggest moment for
-    the heap, so nothing of the envelope is held through it but the manifest's hash: the file
-    is read again afterwards, and must hash the same (0.3.0: ~7 KB less at the peak)."""
+def envelope_prep(p):
+    """The envelope staged at path p, before its signature check (lvotap.envelope) ->
+    (h, message, signature, key, None), or (h, None, None, None, why) if it can't be checked.
+    The check (lvsig) is the update's biggest moment for the heap, so nothing of the envelope
+    is held through it but the manifest's hash (h): envelope_done reads the file again
+    afterwards, and it must hash the same (0.3.0: ~7 KB less at the peak); and this module
+    is dropped meanwhile (lvotap)."""
     try:
         m, env = _env_m(p)
         sig = a2b_base64(env["sig"])
         key = KEYS.get(env.get("kid"))
         h = hashlib.sha256(m.encode()).digest()
     except Exception:
-        return None, None, "unreadable update"
+        return None, None, None, None, "unreadable update"
     m = env = None
     if key is None:
-        return None, None, "signed with a key this ship doesn't know"
-    import lvsig
-    import sys
-    try:
-        import lvweb
-        lvsig.probe = lvweb.probe       # the heap tests' sampler (None on a board)
-    except Exception:
-        pass
-    try:
-        ok = lvsig.verify(key, TAG + h, sig)
-    finally:
+        return h, None, None, None, "signed with a key this ship doesn't know"
+    return h, TAG + h, sig, key, None
+
+
+def envelope_done(p, h, ok, why=None):
+    """After the check: the envelope at p is staged (eh, ix, ok written) if the signature
+    checked out (ok), the file still hashes as it did (h) and its manifest may be installed
+    here; else ota/new/ goes. -> (status, JSON-able)."""
+    m = None
+    if why is None and not ok:
+        why = "the signature doesn't match"
+    if why is None:
         try:
-            del sys.modules["lvsig"]   # ~5 KB of code: only ever needed for this
-        except KeyError:
-            pass
-    if not ok:
-        return None, None, "the signature doesn't match"
-    try:
-        m = _env_m(p)[0]
-        if hashlib.sha256(m.encode()).digest() != h:
-            return None, None, "the update changed while it was checked"
-        return json.loads(m), m, None
-    except Exception:
-        return None, None, "unreadable update"
+            ms = _env_m(p)[0]
+            if hashlib.sha256(ms.encode()).digest() != h:
+                why = "the update changed while it was checked"
+            else:
+                m = json.loads(ms)
+        except Exception:
+            why = "unreadable update"
+    if why is None:
+        why = check_manifest(m, free=free_flash())
+    if why:
+        rmtree(NEW)
+        return 403, {"err": why}
+    # The staged envelope's hash, exactly as it came (sha256 of the bytes on flash,
+    # read in 512 B pieces: no second copy of it on the heap): the phone resumes an
+    # upload only if its own envelope hashes the same (web/ota.js), so a version signed
+    # twice can never mix pieces of both (0.3.0, review R2).
+    from lvotap import sha_file
+    eh = sha_file(p)
+    with open(NEW + "/env", "w") as fh:      # kept as {"m": ...} for lvboot
+        json.dump({"m": ms}, fh)
+    with open(NEW + "/eh", "w") as fh:
+        fh.write(eh)
+    _write_ix(m)
+    with open(NEW + "/ok", "w") as fh:
+        fh.write(m["version"])
+    return 200, {"ok": True, "v": m["version"], "files": len(m["files"])}
+
+
+def _write_ix(m):
+    from lvotap import ix_line, IX
+    with open(IX + ".new", "w") as fh:
+        for path, size, sha in m["files"]:
+            fh.write(ix_line(path, size, sha))
+    os.rename(IX + ".new", IX)
+
+
+def index():
+    """ota/new/ix for an update staged before 0.3.0 (lvotap.entry): from the manifest,
+    once. Nothing if nothing checked is staged."""
+    m = manifest()
+    if m is not None:
+        _write_ix(m)
 
 
 def free_flash():
@@ -304,7 +340,10 @@ def status():
         have = []
         for i in range(1, len(m["files"]) + 1):
             p = "%s/f%d" % (NEW, i)
-            have.append(m["files"][i - 1][1] if _exists(p + ".ok") else max(0, _size(p)))
+            n = m["files"][i - 1][1]
+            # a file all here but never checked (lvotap.piece): one byte short, so the
+            # phone sends its last piece again and that checks it
+            have.append(n if _exists(p + ".ok") else max(0, min(_size(p), n - 1)))
         try:
             with open(NEW + "/eh") as f:
                 eh = f.read(64)
@@ -317,94 +356,33 @@ def status():
     return st
 
 
-def _sha_file(p):
-    h = hashlib.sha256()
-    buf = bytearray(512)
-    with open(p, "rb") as f:
-        while True:
-            n = f.readinto(buf)
-            if not n:
-                break
-            h.update(buf[:n] if n < 512 else buf)
-    return str(hexlify(h.digest()), "ascii")
-
-
-def _append(p, off, body, size):
-    """Write `body` at `off`, which must be the end of what's there, within `size`.
-    -> None, or the (status, answer) refusing it: 409 says where to carry on from."""
-    have = max(0, _size(p))
-    if off != have:
-        return 409, {"err": "wrong offset", "have": have}
-    if off + len(body) > size:
-        return 400, {"err": "more than the file's size"}
-    with open(p, "ab") as f:
-        f.write(body)
+def env_piece(q, off, body):
+    """A piece of the envelope (lvotap.envelope) -> (status, JSON-able), or None once the
+    whole envelope is on flash and its signature is to be checked."""
+    try:
+        n = int(q.get("n", "0"))
+    except ValueError:
+        n = 0
+    if not 0 < n <= MAX_ENV:
+        return 400, {"err": "bad request"}
+    if off == 0:
+        rmtree(NEW)
+        if not _exists(STATE):
+            rmtree(OLD)     # a kept update's rollback copies, if good() was cut short
+        _mkdirs(NEW)
+    from lvotap import append
+    have = append(NEW + "/env", off, body, n)
+    if have is not None:
+        return have
+    if off + len(body) < n:
+        return 200, {"ok": True, "have": off + len(body)}
     return None
 
 
 def put(q, body):
-    """-> (status, JSON-able)."""
-    try:
-        f = int(q.get("f", "-1"))
-        off = int(q.get("o", "-1"))
-    except ValueError:
-        return 400, {"err": "bad request"}
-    if f == 0:
-        try:
-            n = int(q.get("n", "0"))
-        except ValueError:
-            n = 0
-        if not 0 < n <= MAX_ENV:
-            return 400, {"err": "bad request"}
-        if off == 0:
-            rmtree(NEW)
-            if not _exists(STATE):
-                rmtree(OLD)     # a kept update's rollback copies, if good() was cut short
-            _mkdirs(NEW)
-        p = NEW + "/env"
-        have = _append(p, off, body, n)
-        if have is not None:
-            return have
-        if off + len(body) < n:
-            return 200, {"ok": True, "have": off + len(body)}
-        m, ms, why = open_envelope(p)
-        if m is not None:
-            why = check_manifest(m, free=free_flash())
-        if why:
-            rmtree(NEW)
-            return 403, {"err": why}
-        # The staged envelope's hash, exactly as it came (sha256 of the bytes on flash,
-        # read in 512 B pieces: no second copy of it on the heap): the phone resumes an
-        # upload only if its own envelope hashes the same (web/ota.js), so a version signed
-        # twice can never mix pieces of both (0.3.0, review R2).
-        eh = _sha_file(p)
-        with open(NEW + "/env", "w") as fh:      # kept as {"m": ...} for lvboot
-            json.dump({"m": ms}, fh)
-        with open(NEW + "/eh", "w") as fh:
-            fh.write(eh)
-        with open(NEW + "/ok", "w") as fh:
-            fh.write(m["version"])
-        return 200, {"ok": True, "v": m["version"], "files": len(m["files"])}
-    m = manifest()
-    if m is None:
-        return 409, {"err": "send the update's signature first", "have": None}
-    if not 1 <= f <= len(m["files"]):
-        return 400, {"err": "bad request"}
-    path, size, sha = m["files"][f - 1]
-    p = "%s/f%d" % (NEW, f)
-    if _exists(p + ".ok"):
-        return 200, {"ok": True, "have": size, "done": True}
-    have = _append(p, off, body, size)
-    if have is not None:
-        return have
-    have = off + len(body)
-    if have < size:
-        return 200, {"ok": True, "have": have}
-    if _sha_file(p) != sha:
-        os.remove(p)
-        return 400, {"err": "%s didn't match its signed checksum" % path, "have": 0}
-    os.rename(p, p + ".ok")
-    return 200, {"ok": True, "have": have, "done": True}
+    """-> (status, JSON-able): lvotap.put (the board's route goes there directly)."""
+    import lvotap
+    return lvotap.put(q, body)
 
 
 def ready():
@@ -441,8 +419,11 @@ async def api(web, req, w):
     if web.get_phone().who(req) is None:
         return await lvweb.send_json(w, 401, {"err": "signed out"})
     if p == "/api/ota/put":
-        await quiet(web, req.q, req.body or b"")
-        code, obj = put(req.q, req.body or b"")
+        # (main.py and lvsafe.py send this request to lvotap.api, without this module)
+        import lvotaq
+        await lvotaq.quiet(web, req.q, req.body or b"")
+        import lvotap
+        code, obj = lvotap.put(req.q, req.body or b"")
     elif p == "/api/ota/cancel":
         rmtree(NEW)
         code, obj = 200, {"ok": True}
@@ -454,30 +435,6 @@ async def api(web, req, w):
     else:
         code, obj = 404, {"err": "no such thing"}
     return await lvweb.send_json(w, code, obj)
-
-
-async def quiet(web, q, body):
-    """Before the signature check (the envelope's last piece): wait, up to QUIET_MS, until
-    no Bluetooth sync is running and this is the only request being answered. The check
-    (lvsig, ~7 KB with its code) is the update's biggest moment for the heap; a sync with a
-    crewmate back from a long time away is the radio's, and two phones' /api/state answers
-    are the web server's. This way none of them is held at the same time as the check.
-    Nothing awaits between here and the end of the check, so nothing new starts in between
-    (syncs only start in the radio's poll, never in its interrupt handler, and requests
-    only in the server's tasks). The phone's upload has no time limit on a piece, so it
-    just waits; past QUIET_MS (a sync that won't end, phones that never pause) the check
-    goes ahead as before."""
-    try:
-        if q.get("f") != "0" or int(q.get("o", "-1")) + len(body) < int(q.get("n", "0")):
-            return
-    except ValueError:
-        return
-    b = getattr(getattr(web, "ship", None), "ble", None)
-    import lvship
-    t0 = lvship.ticks_ms()
-    while ((b is not None and b.busy()) or getattr(web, "busy", 0) > 1) \
-            and lvship.ticks_diff(lvship.ticks_ms(), t0) < QUIET_MS:
-        await lvship.sleep_ms(50)
 
 
 def restart(web):

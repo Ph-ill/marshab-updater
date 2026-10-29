@@ -44,10 +44,12 @@ OTA = "--ota" in sys.argv
 LIVE = "--live" in sys.argv
 # --everyone: the season where all eight crew play every day (build/season_log_all.bin,
 # python3 sim/season.py --everyone: about 2.5 times the reference season's records): the
-# busiest log a season is likely to have, everything else as above. Report-only against the cap: the board's own copy of a log that size (lv/chlog.py, the frozen
-# lv-core 0.2.0's, ~30 B a record on the Pico: ~20 KB for 673 records) already takes 0.2.7
-# over 80,000 B at an update's signature check, Hail or not, and only a new core (a reflash,
-# not an update) can change that. Everything else is still checked; the cap figure is printed.
+# busiest log a season is likely to have, everything else as above. The cap applies again
+# (0.3.0): the board's own copy of a log that size (lv/chlog.py, the frozen lv-core 0.2.0's,
+# ~30 B a record on the Pico: ~20 KB for 673 records) took 0.2.7 to ~84.5 KB with Hail at an
+# update's upload pieces (lvota whole, the manifest parsed per piece); 0.3.0 puts a piece
+# through the small lvotap (an index line, not the manifest), waits in lvotaq before it
+# loads, and drops lvota through the signature check: ~78-79 KB, about 1 KB to spare.
 EVERYONE = "--everyone" in sys.argv
 LOG = "build/season_log_all.bin" if EVERYONE else "build/season_log.bin"
 if LED or BAT:
@@ -88,6 +90,12 @@ for n in ("log.bin", "local.bin", "days.bin", "done", "clock.json"):    # crew.j
 gc.collect()
 base = gc.mem_alloc() if hasattr(gc, "mem_alloc") else 0
 peak = [0]
+where = [""]
+kpeak = {}
+# the moment of the peak: which per-use board modules were loaded, the web server's open
+# requests and the radio (printed at the end, so a cap overrun says what it coincided with)
+PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
+           "lvcode", "lvledtest", "lvbatt", "lvsafe")
 
 
 def mem():
@@ -97,8 +105,18 @@ def mem():
 
 def sample():
     m = mem()
+    k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
+    if m > kpeak.get(k, 0):
+        kpeak[k] = m
     if m > peak[0]:
         peak[0] = m
+        try:
+            where[0] = "%s; web busy %s; radio %s" % (
+                "+".join(n for n in PER_USE if n in sys.modules) or "no per-use module",
+                getattr(globals().get("web"), "busy", "-"),
+                globals()["ship"].ble.state if "ship" in globals() else "-")
+        except Exception as e:
+            where[0] = "? %r" % (e,)
     return m
 
 
@@ -380,7 +398,7 @@ BITS = 64 if sys.maxsize > 2 ** 32 else 32
 led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
 ok = (synced and http_ok[0] and led_ok and
-      (base == 0 or BITS == 64 or EVERYONE or (0 < board < 80000)))
+      (base == 0 or BITS == 64 or (0 < board < 80000)))
 import lv                                   # noqa: E402
 if FROZEN:
     # the core is the frozen one (not hidden by a lv/ directory). Since lv-core 0.2.0 the glue
@@ -408,16 +426,21 @@ print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio
       "board peak (peak - peer - fake radio) %d B%s; main.py's resident code %d B (in the peak)" % (
           peak[0], got, t, m_peer_end, board, " (cap 80,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 80,000 B cap",
           m_main))
-if EVERYONE and BITS == 32 and board >= 80000:
-    print("heap: the everyone-plays season is %d B over the 80,000 B cap (report-only: the frozen "
-          "core's log, see --everyone above)" % (board - 80000 + 1))
+print("heap: the peak came with %s" % where[0])
+print("heap: board peak by moment: %s" % ", ".join("%s %d B" % (k, kpeak[k] - m_peer_end - m_fake) for k in sorted(kpeak)))
+if EVERYONE and BITS == 32:
+    print("heap: the everyone-plays season: %d B to spare under the 80,000 B cap" % (80000 - board))
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
     # Bluetooth contact for the phones (lvphone.air): ship 2 heard seconds ago and in sync,
     # nobody else heard; ship 1 is this one.
     A = air[0]
-    air_ok = A is not None and len(A) == 1 and A[0][0] == 1 and 0 <= A[0][1] <= 30 and A[0][2] is True
+    # "seconds ago" is lv/ble's _swept (moved on at most every 10 s, by a status look) less the
+    # last advert heard; with Hail on, the peer spends some of the after-sync minute in a
+    # session (not advertising) and the 0.3.0 upload's waits move the phones' last looks, so
+    # anything within that minute (60 s of scans) counts: 36 s was seen once, 0-26 s usually.
+    air_ok = A is not None and len(A) == 1 and A[0][0] == 1 and 0 <= A[0][1] <= 60 and A[0][2] is True
     ok = ok and air_ok
     print("air: %s (ship 2 heard seconds ago, in sync): %s" % (A, "ok" if air_ok else "FAIL"))
     ok = ok and ship.cal is not None and ship.day == 42

@@ -526,6 +526,14 @@ def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
                 return await lvweb.send_file(w, web.root + s[0], s[1])
             if p == "/status":
                 return await lvweb.send(w, 200, "SAFE %s\n" % why, "text/plain")
+        if p == "/api/ota/put":
+            import lvotap               # the upload (0.3.0): lvota only for the envelope
+            try:
+                return await lvotap.api(web, req, w)
+            finally:
+                import sys
+                sys.modules.pop("lvotap", None)
+                sys.modules.pop("lvota", None)
         if p.startswith("/api/ota"):
             import lvota
             try:
