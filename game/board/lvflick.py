@@ -12,9 +12,10 @@
 #     (lvledtest._hold: a light it left on mid-pattern goes dark at once), the pin is
 #     written dark before the wait, and sh.ledtest is set, so a test tap meanwhile gets a
 #     429 and the two never write the pin at once.
-# maybe() checks first: the hail light switch (unset: as the Ship light is, so a ship whose
-# light was turned off doesn't flicker for hails either), a known clock (a phone's, since
-# the start), quiet hours, the daily allowance (lvlive.LIGHTS, 12) and that no test is playing.
+# maybe() checks first: the hail light switch (Settings, "Flicker for hails": its own,
+# on unless switched off, whether or not the Ship light is on: FIXREVIEW2 J5), a known
+# clock (a phone's, since the start), quiet hours, the daily allowance (lvlive.LIGHTS, 12)
+# and that no test is playing.
 try:
     import asyncio
 except ImportError:  # pragma: no cover
@@ -68,9 +69,7 @@ def maybe(lk):
     sh = lk.sh
     c = sh.clock
     m, d = c.minute(), c.date()
-    v = lk.cfg.get("light")
-    if v is None:
-        v = getattr(sh.led, "enabled", False)
+    v = lk.cfg.get("light", True)       # its own switch, on unless set off (FIXREVIEW2 J5)
     if not v or m is None or not c.known():
         return False
     q = getattr(sh.led, "q", None) or (1320, 420)

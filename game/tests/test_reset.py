@@ -73,9 +73,9 @@ def read(rel):
         return None
 
 
-# Hail's box (0.3.0 review R2 m10): what came in and no phone read yet goes; the epoch,
-# sequence, each sender's highest taken (replay protection) and this ship's own waiting
-# items stay
+# Hail's box (0.3.0 review R2 m10): what came in and no phone read yet goes, and this
+# ship's own waiting items (FIXREVIEW2 minor 10: Reset says everyone's hails go); the
+# epoch, sequence and each sender's highest taken (replay protection) stay
 BOX = {"e": 7, "s": 3, "o": [[1, "aa", 20000]], "i": [[2, "bb", None]], "h": {"2": [5, 9]}, "l": [0, 0]}
 
 
@@ -216,8 +216,9 @@ kept("reset")
 check("reset: ship.json untouched", read("data/ship.json") == SHIP)
 bx = json.loads(read("data/livebox.json"))
 check("R2 m10: reset: hails that came in are gone", bx.get("i") == [], bx)
-check("R2 m10: reset: replay protection and own waiting items kept",
-      all([bx.get(k) == BOX[k] for k in ("e", "s", "o", "h")]), bx)
+check("R2 m10: reset: replay protection kept",
+      all([bx.get(k) == BOX[k] for k in ("e", "s", "h")]), bx)
+check("FR2 minor 10: reset: own waiting hails gone too", bx.get("o") == [], bx)
 
 # Again with the progress already gone (a second tap): still fine, still restarts.
 n = len(rebooted)

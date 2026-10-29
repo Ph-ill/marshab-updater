@@ -16,12 +16,15 @@ def setup(lk, ship, data, cfg):
     lk.cf = data + "/live.json"
     lk.cfg = cfg or {}
     lk.v = 1
-    lk.nx = {}            # ship -> [dials, next ms]
+    lk.nx = {}            # ship -> [dials, next ms, last dial ms (0 never), failures in a row]
     lk.forced = None
     lk.due = 0            # Link.poll: no dial is worth a look before this
     lk.now = 0
     lk.gap = 0            # no hail dial (to anyone) before this
     lk.tf = 0             # MemoryErrors in a row (Link.fault: passing, up to L.TRANSIENT)
+    lk.cm = 0             # the core's MemoryErrors in a row (Link.poll; not Hail's)
+    lk.et = 0             # the last MemoryError's time (Link.calm)
+    lk.hx = None          # an error in Hail's parts of a hooked call, for Link.poll's fault()
     lk.n = {"dial": 0, "dial_ok": 0, "dial_fail": 0, "in": 0, "acked": 0, "dup": 0, "bad": 0, "out": 0,
             "held": 0, "oom": 0, "old": 0, "gone": 0}
     b = load(lk.f) or {}

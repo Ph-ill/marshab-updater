@@ -81,7 +81,7 @@ def mkdir(d):
 
 class Led:
     q = (1320, 420)
-    enabled = True          # (the Ship light on: the hail light follows it unless set)
+    enabled = True          # (the Ship light on; the hail light is its own setting: J5)
 
 
 class Sh:
@@ -280,7 +280,8 @@ check("bad json", lvliveapi.api(Web(a), r)[0] == 400)
 
 # 20 a day, one undelivered per crewmate
 j = lvliveapi._hl(a)
-j["o"] = [[("%06x" % k), 5, 0, 1, 2] for k in range(20)]
+j["o"] = [[("%06x" % k), 5, 0, 1, 2] for k in range(lvliveapi.HOUT)]
+j["n"] = 20                     # (sent today: hail.json keeps only the newest HOUT)
 lvlivein.save(a.data + lvliveapi.F, j)
 st, j = api(a, "/api/live/hail", "POST", {"to": 3})
 check("20 a day", st == 429 and "today" in j["err"], (st, j))
@@ -557,7 +558,7 @@ except Exception as e:
     ok = False
     j = e
 check("signed junk: the page still answers", ok, j)
-check("signed junk: inbox bounded", len(L.inb) == 0 and len(j["in"]) <= lvliveapi.HMAX, len(j["in"]))
+check("signed junk: inbox bounded", len(L.inb) == 0 and len(j["in"]) <= lvliveapi.SHOW and j["ni"] <= lvliveapi.HIN, len(j["in"]))
 check("signed junk: flickers capped", L.lc[1] <= lvlive.LIGHTS, L.lc)
 
 # a later release's kind travels and is acked: it never sticks in the sender's queue
@@ -866,8 +867,10 @@ t = run(w, [a, b, c3], 120000, lambda: not a.live.out and a.ble.state == "idle")
 check("R2 M1: two crewmates: both delivered", t is not None and b.live.n["in"] == 1 and c3.live.n["in"] == 1,
       (t, a.live.n))
 ts = [d[0] for d in dials]
-check("R2 M1: dials to different ships at least GAP apart",
-      all([ts[k + 1] - ts[k] >= lvlive.GAP for k in range(len(ts) - 1) if dials[k][1] != dials[k + 1][1]]), dials)
+# (FIXREVIEW2 J1: a ship's first dial needs only a quarter of the GAP after the last one)
+check("R2 M1 / J1: dials to different ships GAP apart, a first dial GAP/4",
+      all([ts[k + 1] - ts[k] >= (lvlive.GAP if dials[k + 1][1] in [d[1] for d in dials[:k + 1]] else lvlive.GAP // 4)
+           for k in range(len(ts) - 1) if dials[k][1] != dials[k + 1][1]]), dials)
 a.ble._connect = con0
 # a waiting hail for a crewmate not heard lately costs no lvlivein import (the 5 s reload)
 w.separate(a.radio, b.radio)
@@ -875,6 +878,8 @@ lvliveapi.GAP_MS, gap = 0, lvliveapi.GAP_MS
 check("R2 M1: queued for a ship out of range", api(a, "/api/live/hail", "POST", {"to": 1, "ph": 3})[0] == 200)
 lvliveapi.GAP_MS = gap
 run(w, [a, b, c3], 60000)
+run(w, [a, b, c3], 60000)               # (one load, once out of range OUT: its dials start over)
+check("J1: out of range OUT: its dial history starts over", a.live.nx[1][2:] == [0, 0], a.live.nx)
 imp = [0]
 want0 = lvlive.Link.want
 
@@ -938,6 +943,8 @@ finally:
 check("R2 M2: MemoryError taking: no acks, counted, on", ss.acks == [] and b.live.n["oom"] == 1 and b.live is not None,
       (ss.acks, b.live.n))
 L2 = b.live
+check("R2 M2: ... counted against Hail's run (its own code)", L2.tf == 1, L2.tf)
+L2.tf = 0
 for k in range(lvlive.TRANSIENT):
     L2.fault(MemoryError("x"))
 check("R2 M2: a few MemoryErrors in a row: Hail stays on", b.live is L2 and b.live_why is None, b.live_why)
@@ -945,8 +952,9 @@ L2.fault(MemoryError("x"))
 check("R2 M2: ... but not forever", b.live is None and b.live_why == "fault: MemoryError", b.live_why)
 lvlivein.load(b.data + "/live.json")
 
-# M5: a hail its sender sent over a day ago is acked but not kept (no light, not listed);
-# the arrival time is the ship's, and Hail back follows it
+# M5: a hail its sender sent over a day ago (by its clock) is kept and listed with the ship's
+# own arrival time, but no light (FIXREVIEW2 minor 2 / FIXREVIEW3 f2: never acked and
+# dropped); the arrival time is the ship's, and Hail back follows it
 w, (a, b) = fresh(62)
 run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
 m = (lvlivein.mins(a.clock) - 1500) & 65535
@@ -954,12 +962,16 @@ lvlivein.send(a.live, 1, 1, bytes((2, 0, 0, m >> 8, m & 255)))
 a.live.gap = 0
 t = run(w, [a, b], 60000, lambda: not a.live.out and a.ble.state == "idle")
 check("R2 M5: a day-old hail: acked", t is not None, a.live.n)
-check("R2 M5: ... not kept, no light", b.live.n["old"] == 1 and b.live.n["in"] == 0 and b.live.lc[1] == 0, b.live.n)
-check("R2 M5: ... not listed", not api(b, "/api/live")[1]["in"])
+check("R2 M5: ... kept, no light", b.live.n["old"] == 1 and b.live.n["in"] == 1 and b.live.lc[1] == 0, b.live.n)
+jo = api(b, "/api/live")[1]["in"]
+e = lvliveapi._ep(b)
+check("R2 M5: ... listed at its arrival", len(jo) == 1 and abs(jo[0]["t"] - e) < 5000 and jo[0]["sent"] < jo[0]["t"] - 86400000, jo)
+del b.live.inb[:]
+lvlivein.save(b.data + lvliveapi.F, dict(lvliveapi._hl(b), i=[]))
 st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 1})
 check("R2 M5: a fresh one queued", st == 200, (st, j))
 t = run(w, [a, b], 60000, lambda: not a.live.out and a.ble.state == "idle")
-check("R2 M5: ... delivered", t is not None and b.live.n["in"] == 1, (t, a.live.n, b.live.n))
+check("R2 M5: ... delivered", t is not None and b.live.n["in"] == 2, (t, a.live.n, b.live.n))
 e = lvliveapi._ep(b)
 check("R2 M5: a fresh one: kept with its arrival time", b.live.inb and b.live.inb[0][2] is not None
       and abs(b.live.inb[0][2] - e) < 5000, b.live.inb)
@@ -984,9 +996,9 @@ check("R2 M5: arrival from uptime", x and abs(x[0]["t"] - (e - 30000)) < 2000 an
 w, (a, b) = fresh(63)
 w.separate(a.radio, b.radio)
 api(a, "/api/live/hail", "POST", {"to": 1})
-a.live.out[0][2] = "2026-10-24"
+a.live.out[0][2] = a.clock.date() - 1
 j = lvliveapi._hl(a)
-j["d"] = "2026-10-24"
+j["d"] = a.clock.date() - 1
 lvlivein.save(a.data + lvliveapi.F, j)
 run(w, [a, b], 2000)
 check("new day: the waiting item goes", not a.live.out and a.live.n["gone"] == 1, a.live.n)
@@ -1016,21 +1028,32 @@ class S6:
 lvledtest._hold(S6)
 check("R2 M6: held mid-breath: written dark", S6.led.w == [0] and not S6.led.lit and S6.led.seq is None, S6.led.w)
 
-# M7: the hail light follows the Ship light unless set
+# M7 / J5 (FIXREVIEW2): the hail light is its own setting, on by default, whatever the
+# Ship light; off: no light, and the advert says so (bit 7) so the sender's page says
+# "note only"
 w, (a, b) = fresh(64)
 b.led.enabled = False
 run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
-check("R2 M7: the page: light follows the Ship light (off)", api(b, "/api/live")[1]["light"] is False)
+check("J5: on by default, Ship light off", api(b, "/api/live")[1]["light"] is True)
 api(a, "/api/live/hail", "POST", {"to": 1})
 t = run(w, [a, b], 60000, lambda: not a.live.out and a.ble.state == "idle")
-check("R2 M7: Ship light off: no hail light", t is not None and b.live.n["in"] == 1 and b.live.lc[1] == 0, b.live.lc)
-st, j = api(b, "/api/live/set", "POST", {"light": True})
-check("R2 M7: set on in Settings", st == 200 and j["light"] is True, j)
+check("J5: Ship light off: the hail still lights", t is not None and b.live.n["in"] == 1 and b.live.lc[1] == 1, b.live.lc)
+pe = {p["s"]: p for p in api(a, "/api/live")[1]["peers"]}
+check("J5: the sender: ship 2 flickers", not pe[1].get("nl"), pe[1])
+st, j = api(b, "/api/live/set", "POST", {"light": False})
+check("J5: Flicker for hails: off", st == 200 and j["light"] is False, j)
+run(w, [a, b], 300000, lambda: a.ble.peers[1].info.get("nl"))   # (heard again)
+pe = {p["s"]: p for p in api(a, "/api/live")[1]["peers"]}
+check("J5: the sender sees note only (bit 7)", pe[1].get("nl") == 1, pe[1])
 lvliveapi.GAP_MS, gap = 0, lvliveapi.GAP_MS
 api(a, "/api/live/hail", "POST", {"to": 1, "ph": 1})
 t = run(w, [a, b], 60000, lambda: not a.live.out and a.ble.state == "idle")
 lvliveapi.GAP_MS = gap
-check("R2 M7: ... then it lights", t is not None and b.live.lc[1] == 1, b.live.lc)
+check("J5: off: kept, no light", t is not None and b.live.n["in"] == 2 and b.live.lc[1] == 1, (b.live.n, b.live.lc))
+st, j = api(b, "/api/live/set", "POST", {"light": True})
+run(w, [a, b], 300000, lambda: not a.ble.peers[1].info.get("nl"))
+pe = {p["s"]: p for p in api(a, "/api/live")[1]["peers"]}
+check("J5: back on: the flag clears", st == 200 and not pe[1].get("nl"), pe[1])
 
 # ---- 0.3.0 review group C
 # R1 m2: the first boot of an update (a trial; often installed from safe mode, after the
@@ -1086,6 +1109,317 @@ del a.live.out[:]
 lvlivein.keep(b.live)
 x = lvlivein.load(b.data + "/livebox.json")["h"]["0"]
 check("R3 m4: the epochs left behind survive a restart", x[0] == a.live.ep and e1 in x[2:], x)
+
+# ---- FIXREVIEW2 (group D)
+# J1: six crewmates heard but whose ships never answer, one more back in range: its hail
+# goes within a few seconds of it being heard again (it was never dialled since it came
+# back, so it goes first), and the six back off (1, 2, 4... min, MAXB at most)
+K = 6
+w, ships = fresh(36, K + 2, (True,) * (K + 2))
+a, z = ships[0], ships[K + 1]
+run(w, ships, 400000, lambda: all([k in a.ble.peers for k in range(1, K + 2)]))
+for s in ships[1:K + 1]:
+    s.radio.deaf = True
+w.separate(a.radio, z.radio)
+for k in range(1, K + 2):
+    check("J1: queued %d" % k, api(a, "/api/live/hail", "POST", {"to": k, "ph": 1})[0] == 200)
+run(w, ships, 120000)
+w.rejoin(a.radio, z.radio)
+d0, t, heard, got = a.live.n["dial"], 0, None, None
+while t < 600000 and got is None:
+    w.step(10)
+    t += 10
+    for s in ships:
+        s.poll(w.now)
+    p = a.ble.peers[K + 1]
+    if heard is None and lvlive.dt(w.now, p.seen) < 20:
+        heard = t
+    if not [o for o in a.live.out if o[0] == K + 1]:
+        got = t
+check("J1: back in range: its hail goes within 15 s of being heard", got is not None and heard is not None
+      and got - heard < 15000, (heard, got, a.live.nx))
+run(w, ships, 600000)
+nd = a.live.n["dial"] - d0
+check("J1: six that never answer: backed off (dials in 10+ min)", nd <= 40, nd)
+check("J1: ... and capped", all([a.live.nx[k][3] >= 3 and lvlive.dt(a.live.nx[k][1], w.now) <= lvlive.MAXB
+                                 for k in range(1, K + 1)]), a.live.nx)
+x = [0, 0, 0, 30]
+lvlivein.failed(a.live, x, 1000)
+check("J1: the backoff's cap", x[1] == 1000 + lvlive.MAXB, x)
+x = [0, 0, 0, 1]
+lvlivein.failed(a.live, x, 0x3FFFFFFF - 10)
+check("J1: a backoff across the tick wrap still waits", not lvlive.due(5, x[1]) and lvlive.due(x[1] + 1, x[1]), x)
+
+# wrap-safe times (FIXREVIEW2 minor 4)
+check("dt across the wrap", lvlive.dt(5, 0x3FFFFFFF - 4) == 10 and lvlive.dt(0x3FFFFFFF - 4, 5) == -10)
+check("due: unset, past, far off", lvlive.due(5, 0) and lvlive.due(5, 0x3FFFFFFF - 4) and not lvlive.due(5, 20)
+      and lvlive.due(5, 5 + 3600001))
+
+# J2: the core's own MemoryErrors (in its poll, Hail moving nothing) never turn Hail off:
+# a few pass, a run of them goes on as a crash would (marked the core's, so Hail stays on
+# after); the run ends at a good sync or after CALM_MS without one
+w, (a, b) = fresh(7)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+lk = b.live
+real = lk.poll0
+arm = [0]
+
+
+def flaky(now):
+    if arm[0]:
+        arm[0] = 0
+        raise MemoryError("memory allocation failed")
+    return real(now)
+
+
+lk.poll0 = flaky
+for k in range(5):
+    run(w, [a, b], lvlive.CALM_MS + 1000)
+    arm[0] = 1
+    run(w, [a, b], 100)
+check("J2: core MemoryErrors 11 min apart: Hail stays on", b.live is lk and lk.cm == 1 and lk.tf == 0, (lk.cm, lk.tf))
+crash = None
+try:
+    for k in range(lvlive.TRANSIENT + 1):
+        arm[0] = 1
+        run(w, [a, b], 100)
+except MemoryError as e:
+    crash = e
+check("J2: a run of them: raised to main, as without Hail", crash is not None and lvlive.CORE == 1)
+check("J2: ... live.json untouched", lvlivein.load(b.data + "/live.json") is None)
+lvlive.CORE = 0
+lk.cm = lk.tf = 2
+
+
+class _Done:
+    def complete(self):
+        return True
+
+
+f0, lk.fin0 = lk.fin0, lambda now, why: None      # (the core's end of a session: not this test's)
+b.ble.sess, b.ble.peer, lk.forced = _Done(), None, None
+lk.finish(w.now, "test")
+lk.fin0 = f0
+b.ble.sess = None
+lvlive.CORE = 0
+check("J2: a good sync ends the run", lk.cm == 0 and lk.tf == 0, (lk.cm, lk.tf))
+lk.poll0 = real
+
+# J3: taking a hail whose save fails: nothing acked, nothing counted as taken (no
+# "repeat" later), no light; the sender keeps it and it goes in once saving works
+w, (a, b) = fresh(65)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+api(a, "/api/live/hail", "POST", {"to": 1, "ph": 2})
+jm = json
+real_dumps, hit = jm.dumps, [0]
+
+
+def dumps(o, *k):
+    if not hit[0] and isinstance(o, dict) and "h" in o and "e" in o and o.get("i"):
+        hit[0] = 1
+        raise MemoryError("memory allocation failed")
+    return real_dumps(o, *k)
+
+
+try:
+    jm.dumps = dumps
+    patched = jm.dumps is dumps
+except (AttributeError, TypeError):
+    patched = False                     # (MicroPython's json: read-only; CPython covers it)
+if patched:
+    t = run(w, [a, b], 300000, lambda: hit[0] and not a.live.out and a.ble.state == "idle")
+    jm.dumps = real_dumps
+    check("J3: the failed save hit", hit[0] == 1)
+    check("J3: delivered on a later try", t is not None, (a.live.n, b.live.n))
+    check("J3: taken once, never a repeat", b.live.n["in"] == 1 and b.live.n["dup"] == 0, b.live.n)
+    check("J3: one light", b.live.lc[1] == 1, b.live.lc)
+    box = lvlivein.load(b.data + "/livebox.json")
+    check("J3: on flash", len(box["i"]) == 1, box)
+    check("J3: counted as passing, not a fault", b.live.tf <= 1 and b.live is not None, b.live.tf)
+
+# J4: a receipt that came in before midnight but nobody looked: Delivered, not "Didn't
+# go", after the day turns; and a late receipt makes "Didn't go" Delivered
+w, (a, b) = fresh(66)
+T2350 = PHONE_MS + (14 * 60 + 50) * 60000         # 23:50
+for s in (a, b):
+    s.clock.base = None
+    s.clock.learn(T2350, -300)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+d1 = a.clock.date()
+api(a, "/api/live/hail", "POST", {"to": 1, "ph": 2})
+t = run(w, [a, b], 120000, lambda: not a.live.out and a.ble.state == "idle")
+check("J4: delivered before midnight", t is not None and a.live.inb, a.live.inb)
+for s in (a, b):
+    s.clock.base += 20 * 60000
+check("J4: ... the day turned", a.clock.date() == d1 + 1)
+j = api(a, "/api/live")[1]
+check("J4: not Didn't go", not [o for o in j["out"] if o["st"] == 4], j["out"])
+j = lvliveapi._hl(a)
+check("J4: the roll saved (receipts not lost)", lvlivein.load(a.data + lvliveapi.F)["d"] == d1 + 1 and not a.live.inb)
+# a late receipt: listed as Didn't go, then its ack arrives
+w.separate(a.radio, b.radio)
+api(a, "/api/live/hail", "POST", {"to": 1, "ph": 3})
+hid = api(a, "/api/live")[1]["out"][-1]["id"]
+it = a.live.out[0][1]
+for s in (a, b):
+    s.clock.base += 24 * 3600000
+j = api(a, "/api/live")[1]
+check("J4: next day: Didn't go", [o["st"] for o in j["out"] if o["id"] == hid] == [4], j["out"])
+a.live.inb.append([1, lvlivein.item(b.live, 0, 0, it[2:5], 0), None, a.live.now])
+j = api(a, "/api/live")[1]
+check("J4: the late receipt: Delivered", [o["st"] for o in j["out"] if o["id"] == hid] == [2], j["out"])
+
+# FIXREVIEW3 f2: a phone's clock a day back (or ahead, the next day back) never acks and
+# drops a hail, nor expires one waiting: days only turn forward
+w, (a, b) = fresh(67)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+w.separate(a.radio, b.radio)
+api(a, "/api/live/hail", "POST", {"to": 1})
+d1 = a.clock.date()
+a.clock.base -= 2 * 86400000                       # set two days back
+lvlivein.expire(a.live)
+check("f2: a clock set back: the waiting hail stays", len(a.live.out) == 1 and a.live.out[0][2] == d1, a.live.out)
+j = lvliveapi._hl(a)
+check("f2: ... hail.json's day stays", j["d"] == d1, j)
+a.clock.base += 2 * 86400000
+w.rejoin(a.radio, b.radio)
+b.clock.base += 3 * 86400000                       # the receiver three days ahead
+t = run(w, [a, b], 300000, lambda: not a.live.out and a.ble.state == "idle")
+check("f2: a receiver days ahead: kept and listed, not dropped", t is not None and b.live.n["in"] == 1
+      and len(api(b, "/api/live")[1]["in"]) == 1, b.live.n)
+check("f2: ... but no light", b.live.lc[1] == 0 and b.live.n["old"] == 1, (b.live.lc, b.live.n))
+
+# J5's advert bit and the parse
+a.live.cfg = {"light": False}
+check("J5: bit 7 when its light is off", a.node.advert()[5] & lvlive.NOLIGHT)
+i = lvlive.parse(S.adv_data(a.node.advert()))
+check("J5: parse: nl", i["nl"] and i["cap"], i)
+a.live.cfg = {}
+check("J5: no bit 7 by default", not a.node.advert()[5] & lvlive.NOLIGHT)
+
+# B1: a full day (12 sent, 16 received): the page gets the newest SHOW each way, with the
+# counts, and GET /api/live goes out in small pieces with a Content-Length
+w, (a, b) = fresh(68)
+d, e = a.clock.date(), lvliveapi._ep(a)
+j = {"d": d, "n": 12, "o": [["%06x" % k, 1 + k % 1, k % 8, e - (40 - k) * 60000, 2] for k in range(12)],
+     "i": [["%06x" % (k + 99), 1, k % 8, e - (40 - k) * 60000, 1, 0, 1, e - (40 - k) * 60000] for k in range(16)]}
+lvlivein.save(a.data + lvliveapi.F, j)
+st, r = api(a, "/api/live")
+check("B1: newest SHOW sent", [o["id"] for o in r["out"]] == ["%06x" % k for k in range(6, 12)], r["out"])
+check("B1: newest SHOW received", [o["id"] for o in r["in"]] == ["%06x" % (k + 99) for k in range(10, 16)], r["in"])
+check("B1: the counts", r["no"] == 12 and r["ni"] == 16 and r["today"] == 12, r)
+ps = list(lvliveapi.parts(*lvliveapi._prep(a)))
+check("B1: in pieces, none big", len(ps) >= 12 and max([len(x) for x in ps]) < 400, max([len(x) for x in ps]))
+
+
+class _W:
+    def __init__(self):
+        self.b, self.d = [], 0
+
+    def write(self, x):
+        self.b.append(bytes(x))
+
+    async def drain(self):
+        self.d += 1
+
+
+class _LW:
+    probe = None
+
+    @staticmethod
+    def head(code, ctype, length=None):
+        return ("HTTP/1.0 %d OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n" % (code, ctype, length)).encode()
+
+    @staticmethod
+    async def send_json(w, code, obj):
+        w.write(("%d " % code).encode() + json.dumps(obj).encode())
+
+
+try:
+    import asyncio
+except ImportError:
+    import uasyncio as asyncio
+ww = _W()
+asyncio.run(lvliveapi.live(_LW, Web(a), Req("/api/live"), ww))
+hd, _, body = b"".join(ww.b).partition(b"\r\n\r\n")
+n_ = int(hd.split(b"Content-Length: ")[1].split(b"\r")[0])
+check("B1: streamed, the length right", n_ == len(body) and json.loads(body)["no"] == 12, (n_, len(body)))
+check("B1: written in pieces, a drain after each",
+      len(ww.b) >= 2 + len(body) // lvliveapi.PIECE and max([len(x) for x in ww.b[1:]]) <= lvliveapi.PIECE
+      and ww.d >= len(ww.b) - 1, (len(ww.b), ww.d))
+ww = _W()
+asyncio.run(lvliveapi.live(_LW, Web(a), Req("/api/live", who=None), ww))
+check("B1: signed out: 401", ww.b and ww.b[0].startswith(b"401"), ww.b)
+_hl0 = lvliveapi._hl(a)
+lvliveapi.GAP_MS, gap = 0, lvliveapi.GAP_MS
+for k in range(3):
+    check("B1: hail %d" % k, lvliveapi.api(Web(a), Req("/api/live/hail", "POST", {"to": 1}, 0))[0] == 200)
+    del a.live.out[:]
+    jj = lvlivein.load(a.data + lvliveapi.F)
+    jj["o"][-1][4] = 2                  # (delivered: one undelivered per crewmate)
+    lvlivein.save(a.data + lvliveapi.F, jj)
+lvliveapi.GAP_MS = gap
+jj = lvlivein.load(a.data + lvliveapi.F)
+check("B1: hail.json keeps HOUT sent, counts them all", len(jj["o"]) == lvliveapi.HOUT and jj["n"] == 15
+      and jj["o"][-1][0] != jj["o"][-2][0], (len(jj["o"]), jj["n"]))
+
+
+# FIXREVIEW3 f2: once the ship knows the time, only a signed-in phone moves its clock
+# (main.py clock_gate); the first time is anyone's
+_ms, _on = [], 0                       # (a line at a time: main.py whole is too big here)
+with open("board/main.py") as f:
+    for ln in f:
+        if ln.startswith("class _Hdr"):
+            _on = 1
+        elif ln.startswith("def net_hooks"):
+            break
+        if _on:
+            _ms.append(ln)
+_gg = {"__name__": "clock_gate_test"}
+exec("".join(_ms), _gg)
+_ms = None
+
+
+class _GPh:
+    def who(self, req):
+        return 3 if req.header("x-crew-token") == "good" else None
+
+
+class _GW:
+    def __init__(self):
+        self.ship = type("S", (), {})()
+        self.ship.clock = Clock()
+        self.phone = None
+        self.made = 0
+
+    def get_phone(self):
+        self.made += 1
+        self.phone = self.phone or _GPh()
+        return self.phone
+
+
+def _hd(t, tok=None):
+    d = {"x-phone-time": str(t), "x-phone-tz": "0"}
+    if tok:
+        d["x-crew-token"] = tok
+    return d.get
+
+
+gw = _GW()
+_gg["clock_gate"](gw)
+gc = gw.ship.clock
+T0 = 1792989200000
+check("f2 gate: the first clock is anyone's", gc.learn_headers(_hd(T0)) and gc.known())
+b0 = gc.base
+check("f2 gate: signed out, a day ahead: refused", not gc.learn_headers(_hd(T0 + 86400000)) and gc.base == b0)
+check("f2 gate: signed out: no phone list made for it", gw.made == 0, gw.made)
+check("f2 gate: a wrong token: refused", not gc.learn_headers(_hd(T0 + 86400000, "bad")) and gc.base == b0)
+check("f2 gate: signed in: it moves", gc.learn_headers(_hd(T0 + 86400000, "good")) and gc.base != b0)
+gw2 = _GW()
+_gg["clock_gate"](gw2)
+gw2.ship.clock.learn_headers(_hd(T0))
+check("f2 gate: signed in before a restart (no phone list yet): it moves",
+      gw2.ship.clock.learn_headers(_hd(T0 + 86400000, "good")) and gw2.made == 1)
 
 rm_tree(TMP)
 print("test_live: %d checks passed" % n[0])

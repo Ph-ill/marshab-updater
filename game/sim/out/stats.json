@@ -237,7 +237,7 @@
    "deepest_rewrite_days": 12
   }
  },
- "seconds_reference_season": 0.016,
- "seconds_determinism_runs": 1.68,
+ "seconds_reference_season": 0.014,
+ "seconds_determinism_runs": 1.53,
  "pack_bytes": 6752
 }
