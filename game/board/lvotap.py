@@ -131,8 +131,10 @@ def trial():
         return False
 
 
-def piece(f, off, body):
+def piece(f, off, body, req=None):
     """A piece of file f (f >= 1) -> (status, JSON-able)."""
+    if req is not None:
+        body, req.body = req.body or b"", b""
     if trial():
         return 409, {"err": BUSY, "have": None}
     if not _exists(NEW + "/ok"):
@@ -156,6 +158,7 @@ def piece(f, off, body):
     # else: every byte landed before, but its check never ran (the request died after the
     # write: no heap for the hash, a dropped connection, a power cut). Any piece of it checks
     # it now; lvota.status shows such a file one byte short, so the phone sends one (0.3.0).
+    body = None
     have = size
     if sha_file(p) != sha:
         os.remove(p)
@@ -180,13 +183,16 @@ def _verify(key, msg, sig):
         _drop("lvsig")                  # ~4 KB on the heap: only ever needed for this
 
 
-def envelope(q, off, body):
+def envelope(q, off, body, req=None):
     """A piece of the envelope (f=0) -> (status, JSON-able); its last one is checked."""
     import gc
     had = "lvota" in sys.modules
     import lvota
     try:
+        if req is not None:
+            body, req.body = req.body or b"", b""
         r = lvota.env_piece(q, off, body)
+        body = None       # appended to flash: no request/chunk retained during verify
         if r is not None:
             return r
         p = NEW + "/env"
@@ -207,7 +213,7 @@ def envelope(q, off, body):
             _drop("lvota")
 
 
-def put(q, body):
+def put(q, body, req=None):
     """POST /api/ota/put -> (status, JSON-able)."""
     try:
         f = int(q.get("f", "-1"))
@@ -216,13 +222,13 @@ def put(q, body):
         return 400, {"err": "bad request"}
     if f == 0:
         try:
-            return envelope(q, off, body)
+            return envelope(q, off, body, req)
         except MemoryError:
             # the check ran out of heap: nothing is lost (the envelope stays on flash, not
             # yet ok), and 503 is what the phone retries after a pause; its last piece again
             # checks it (lvota.env_piece). Not 403 "unreadable": it isn't (0.3.0 R1 m1).
             return 503, {"err": "busy", "have": None}
-    return piece(f, off, body)
+    return piece(f, off, body, req)
 
 
 async def api(web, req, w, waited=False):
@@ -233,13 +239,13 @@ async def api(web, req, w, waited=False):
         return await lvweb.send_json(w, 404, {"err": "no such thing"})
     if web.get_phone().who(req) is None:
         return await lvweb.send_json(w, 401, {"err": "signed out"})
-    body = req.body or b""
     if not waited:
         import lvotaq
         try:
-            await lvotaq.quiet(web, req.q, body)
+            await lvotaq.quiet(web, req.q, req.body or b"")
         finally:
             lvotaq = None
             _drop("lvotaq")
-    code, obj = put(req.q, body)
+    # Pass ownership, not a second bytes reference in this coroutine/put frame.
+    code, obj = put(req.q, None, req)
     return await lvweb.send_json(w, code, obj)

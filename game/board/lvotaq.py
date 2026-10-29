@@ -17,7 +17,9 @@ async def quiet(web, q, body):
     and requests only in the server's tasks). The phone's upload has no time limit on a
     piece, so it just waits; past QUIET_MS (a sync that won't end, phones that never pause)
     the check goes ahead as before.
-    Every other piece (0.3.0) waits up to PIECE_MS for the other requests only (a sync can
+    A light playback also retains its code until it ends: all pieces allow QUIET_MS
+    for it to finish before loading upload code. Other pieces otherwise wait up to
+    PIECE_MS for the other requests only (a sync can
     take minutes, and a piece is small): with the season's whole log in RAM, a piece written
     and hashed while two phones' answers are half sent was the update's peak (~4.5 KB over
     what the game alone needs, tests/mp_sync_heap.py --everyone)."""
@@ -26,9 +28,10 @@ async def quiet(web, q, body):
     except ValueError:
         return
     b = getattr(getattr(web, "ship", None), "ble", None) if last else None
-    ms = QUIET_MS if last else PIECE_MS
+    ms = QUIET_MS if last or getattr(web.ship, "ledtest", None) is not None else PIECE_MS
     import lvship
     t0 = lvship.ticks_ms()
-    while ((b is not None and b.busy()) or getattr(web, "busy", 0) > 1) \
+    while ((b is not None and b.busy()) or getattr(web, "busy", 0) > 1
+           or getattr(web.ship, "ledtest", None) is not None) \
             and lvship.ticks_diff(lvship.ticks_ms(), t0) < ms:
         await lvship.sleep_ms(50)

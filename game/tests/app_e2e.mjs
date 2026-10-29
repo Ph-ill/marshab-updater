@@ -49,7 +49,7 @@ try {
     if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') problems.push('console: ' + m.params.args.map((a) => a.value ?? a.description).join(' '));
     if (m.method === 'Runtime.exceptionThrown') problems.push('exception: ' + (m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text));
     if (m.method === 'Network.webSocketCreated' && m.params.url.endsWith('/ws')) wsTried = true;
-    if (m.method === 'Network.responseReceived') http.push([m.params.response.status, new URL(m.params.response.url).pathname]);
+    if (m.method === 'Network.responseReceived') http.push([m.params.response.status, new URL(m.params.response.url).pathname, Object.entries(m.params.response.headers).find(([k])=>k.toLowerCase()==='retry-after')?.[1]]);
   };
   const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); sock.send(JSON.stringify({ id: i, method, params })); });
   const ev = async (expr) => { const r = (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result; if (r.exceptionDetails) throw new Error(expr.slice(0, 60) + ': ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text)); return r.result.value; };
@@ -249,8 +249,9 @@ try {
   await ev('(PRE=null,hello(),1)');
   // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404, the reset and
   // code-change and Test light refusals asked for above)
-  // (and /api/me's 401 when the page opens signed out).
-  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)) && !(p === '/api/code' && (s === 400 || s === 401 || s === 403)) && !(p === '/api/led/test' && (s === 401 || s === 429)));
+  // (and /api/me's 401 when the page opens signed out). An explicit admission
+  // 503 is expected only if this same path subsequently succeeds through retry.
+  const bad = http.filter(([s, p, retry], i) => s >= 400 && !(s === 503 && retry === '1' && http.slice(i + 1).some(([ss, pp]) => ss === 200 && pp === p)) && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)) && !(p === '/api/code' && (s === 400 || s === 401 || s === 403)) && !(p === '/api/led/test' && (s === 401 || s === 429)));
   check(bad.length === 0, 'HTTP errors: ' + JSON.stringify(bad));
   check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship about updates (web/ota.js)');
   check(wsTried, 'the page tried the WebSocket and fell back to polling');

@@ -238,7 +238,12 @@ async def led_test(req, fail, log, hail=False):
         return fail("led test: Hail never released the light")
     for i in range(2):
         if i:
-            s, b = await call("/api/led/test", {}, tok)
+            for _ in range(120):
+                s, b = await call("/api/led/test", {}, tok)
+                if s != 429:
+                    break
+                # Another incoming Hail can acquire the pin between playbacks.
+                await asyncio.sleep(0.5)
         if s != 200 or json.loads(b).get("ms") != 10000:
             return fail("led test: tap %d %d %s" % (i, s, b))
         await asyncio.sleep(0.5)
@@ -446,7 +451,22 @@ def main(argv):
     assets = {n: open("build/" + n, "rb").read() for n in ("app.html.gz", "text.json.gz", "engage.json.gz", "app.webmanifest.gz", "icon.png.gz")}
 
     async def phones():
-        req = F.tcp(port)
+        tcp = F.tcp(port)
+
+        async def req(method, path, body=None, headers=None):
+            # Admission can refuse before reading a request; read-only clients retry
+            # resets too, just as a phone's next poll does. Never replay a POST reset.
+            for _ in range(1000):
+                try:
+                    answer = await tcp(method, path, body, headers)
+                    if answer[0] != 503:
+                        return answer
+                except OSError:
+                    if method != "GET":
+                        raise
+                await asyncio.sleep(0.2)
+            raise RuntimeError("board stayed busy: " + path)
+
         jobs = [F.session(req, "heapA", 1, "1234", fails.append, assets, log=print),
                 F.session(req, "heapB", 6, "1234", fails.append, assets, log=print)]
         if ota:

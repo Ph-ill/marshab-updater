@@ -81,8 +81,24 @@ def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
     route = web.route
     clock_gate(web)
+    # Admit before Phone.state_writer allocates the response, not after it.
+    web.state_busy = False
+    web.ota_busy = 0
 
     async def ota_route(req, w):
+        # Authentication/dispatch modules must not overlap a half-sent state either.
+        if web.state_busy and req.path.startswith("/api/"):
+            return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
+        if req.method == "GET" and req.path == "/api/live" and (web.ota_busy or getattr(web.ship, "ledtest", None) is not None):
+            return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
+        if req.path == "/api/state" and req.method == "GET":
+            if web.state_busy or web.ota_busy or getattr(web.ship, "ledtest", None) is not None:
+                return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
+            web.state_busy = True
+            try:
+                return await route(req, w)
+            finally:
+                web.state_busy = False
         if req.path == "/api/reset":
             # "Reset this ship" (board/lvcode.py reset, web/settings.js). Loaded per request,
             # like lvota (0.3.0: out of main.py's resident code).
@@ -116,11 +132,21 @@ def ota_hooks(lvweb, web):
             # the light play 10 s of blinks and breaths, on or off. Loaded per request.
             if req.method != "POST":
                 return await lvweb.send_json(w, 404, {"err": "no such thing"})
+            # Don't load a second copy of the playback module while its task owns
+            # the pin (the first copy remains alive through that task's globals).
+            if web.get_phone().who(req) is None:
+                return await lvweb.send_json(w, 401, {"err": "signed out"})
+            t = getattr(web.ship, "ledtest", None)
+            if t is not None:
+                left = 10000 - lvship.ticks_diff(lvship.ticks_ms(), t)
+                if left > -5000:
+                    return await lvweb.send_json(w, 429, {"err": "The light is already testing.", "ms": max(0, left)})
             import lvledtest
             try:
                 s, j = lvledtest.start(web, req)
             finally:
                 lvship.drop("lvledtest")
+                lvship.drop("lvlight")
             return await lvweb.send_json(w, s, j)
         if req.path == "/api/bat" and req.method == "GET":
             # The page's poll every 5 s while it's showing (web/app.html startPoll): the
@@ -155,7 +181,11 @@ def ota_hooks(lvweb, web):
                 if req.path == "/api/coex/ping":
                     return await lvliveapi.ping(lvweb, web, req, w)
                 if req.path == "/api/live" and req.method == "GET":
-                    return await lvliveapi.live(lvweb, web, req, w)     # (in pieces)
+                    web.state_busy = True
+                    try:
+                        return await lvliveapi.live(lvweb, web, req, w)     # (in pieces)
+                    finally:
+                        web.state_busy = False
                 s, j = lvliveapi.api(web, req)
             finally:
                 lvship.drop("lvliveapi")
@@ -170,18 +200,23 @@ def ota_hooks(lvweb, web):
                 # The upload itself (board/lvotap.py, 0.3.0): ~3 KB of code, with lvota loaded
                 # only for the envelope and dropped through its signature check. It waits for
                 # a quiet moment first (lvotaq.py, ~0.5 KB) before lvotap is even loaded.
-                if req.method == "POST" and web.get_phone().who(req) is not None:
-                    import lvotaq
-                    try:
-                        await lvotaq.quiet(web, req.q, req.body or b"")
-                    finally:
-                        lvship.drop("lvotaq")
-                import lvotap
+                web.ota_busy += 1
                 try:
-                    return await lvotap.api(web, req, w, True)
+                    if req.method == "POST" and web.get_phone().who(req) is not None:
+                        import lvotaq
+                        try:
+                            await lvotaq.quiet(web, req.q, req.body or b"")
+                        finally:
+                            lvotaq = None
+                            lvship.drop("lvotaq")
+                    import lvotap
+                    try:
+                        return await lvotap.api(web, req, w, True)
+                    finally:
+                        lvship.drop("lvotap")
+                        lvship.drop("lvota")
                 finally:
-                    lvship.drop("lvotap")
-                    lvship.drop("lvota")
+                    web.ota_busy -= 1
             import lvota
             try:
                 return await lvota.api(web, req, w)
@@ -246,39 +281,6 @@ def net_hooks(lvweb, web):
     lvweb.dns_answer = dns_answer
 
 
-class Sink:
-    # serves()'s stand-in for a phone's connection, both ends: reads out the raw request
-    # it was given (as a socket's stream would), keeps the answer's status line, drops the rest.
-    def __init__(self, req):
-        self.b = req
-        self.st = None
-
-    async def readline(self):
-        i = self.b.find(b"\n") + 1 or len(self.b)
-        r, self.b = self.b[:i], self.b[i:]
-        return r
-
-    async def readexactly(self, n):
-        r, self.b = self.b[:n], self.b[n:]
-        return r
-
-    def write(self, d):
-        if self.st is None:
-            self.st = bytes(d[:12])
-
-    async def drain(self):
-        await lvship.sleep_ms(0)    # the page streams in CHUNKs: let the phones in between
-
-    def get_extra_info(self, k):
-        return ("127.0.0.1", 0)
-
-    def close(self):
-        pass
-
-    async def wait_closed(self):
-        pass
-
-
 # serves()'s requests and the status each must get: the page, the crew list and the update
 # status (2xx), and an update write with no sign-in (lvotap's 401: put, not apply or cancel,
 # so a sign-in check gone wrong still can't act on anything). The put carries a whole piece
@@ -290,81 +292,20 @@ PROBES = (("GET", "/", b"2"), ("GET", "/api/crew", b"2"), ("GET", "/api/ota", b"
 PUT = PROBES[3:]
 
 
-def essid_ok(ap, want):
-    """Is the hotspot up under this ship's own name? Up (active) is required. The name read
-    back (ap.config("essid"), str or bytes) must match when the firmware gives one; when it
-    gives nothing, or can't read it back at all, active is taken as enough (a readback that
-    doesn't work on this firmware must not fail every update's check)."""
-    if not ap.active():
-        return False
+def Sink(req):
+    import lvcheck
     try:
-        e = ap.config("essid")
-    except Exception:
-        return True
-    if isinstance(e, (bytes, bytearray)):
-        e = str(e, "utf-8")
-    return not e or str(e) == want
+        return lvcheck.Sink(req)
+    finally:
+        lvship.drop("lvcheck")
 
 
 async def serves(web, probes=PROBES):
-    """Does this set serve a phone? The hotspot is up as this ship's own SSID, the web
-    server's accept loop is still running, and PROBES, as raw bytes through Server.handle
-    (lvweb's request parser, the busy count, route, head), each get their status with no
-    error said on the way. The counts a phone's visit moves (the 2xx count, served, the
-    ship's hits) lose exactly what these requests added, so a phone's own request in the
-    meantime still counts (the page streams, and lets other requests in as it goes). (A
-    real socket round trip would be stronger; lwIP loopback on the Pico W is unconfirmed,
-    so the listening socket is shown by its accept task instead.)"""
-    sh = web.ship
-    ap = getattr(web, "ap", None)
-    if ap is not None:
-        try:
-            c = sh.cfg
-            if not essid_ok(ap, "%s%d" % (c["ssid_prefix"], c["ship_id"])):
-                print("ota: self-check: the hotspot isn't up")
-                return False
-        except Exception as e:
-            print("ota: self-check hotspot %r" % (e,))
-            return False
-    t = getattr(getattr(web, "srv", None), "task", None)
-    if t is not None and t.done():
-        print("ota: self-check: the web server stopped")
-        return False
-    hits = oks = done = 0
-    say = getattr(web, "say", print)
-    err = []
-
-    def heard(m):
-        err.append(m)
-        say(m)
+    import lvcheck
     try:
-        web.say = heard                 # Server.handle says what a request raised
-        for m, p, want in probes:
-            n = 1024 if m == "POST" else 0
-            w = Sink(("%s %s HTTP/1.0\r\nHost: self\r\nContent-Length: %d\r\n\r\n" % (m, p, n)).encode()
-                     + bytes(n))
-            del err[:]
-            n, d, h = web.ok2xx, web.served, sh.http_hits
-            try:
-                await web.handle(w, w)
-            finally:
-                # what this request added (at most 1 each: more is a phone's, and stays)
-                oks += min(1, max(0, web.ok2xx - n))
-                done += min(1, max(0, web.served - d))
-                hits += min(1, max(0, sh.http_hits - h))
-            st = w.st[9:9 + len(want)] if w.st else None
-            if st != want or err:
-                print("ota: %s %s answered %r" % (m, p, w.st))
-                return False
-        return True
-    except Exception as e:
-        print("ota: self-check %r" % (e,))
-        return False
+        return await lvcheck.serves(web, probes)
     finally:
-        web.say = say
-        web.ok2xx -= oks
-        web.served -= done
-        sh.http_hits -= hits
+        lvship.drop("lvcheck")
 
 
 async def ota_ok(web=None, want=False):
@@ -535,32 +476,19 @@ def safe_mode(cfg, why):
 
 
 def wanted(cfg):
-    # Should the phone game be running? phone_game true, or "auto" on a firmware that has a
-    # frozen core at all (shadowed or not: lvship.game_fw says no to a shadowed one).
-    v = cfg.get("phone_game", "auto")
-    if v != "auto":
-        return bool(v)
+    import lvsetup
     try:
-        import lv
-        return lv.firmware()[0] is not None
-    except Exception:
-        return False
+        return lvsetup.wanted(cfg)
+    finally:
+        lvship.drop("lvsetup")
 
 
 def config(got):
-    # cfg from the ship.json lvsafe.check() has just read and checked (got), not a second
-    # read (a one-off read error there would give DEFAULTS: a fake ship 1, review #2 m1).
-    # got None (lvsafe itself unusable): lvship.load_config() reads it, as 0.2.6 did.
-    if got is None:
-        return lvship.load_config()
-    c = dict(lvship.DEFAULTS)
-    if got:
-        c.update(got[0])
+    import lvsetup
     try:
-        c["ship_id"] = min(8, max(1, int(c["ship_id"])))
-    except (TypeError, ValueError):
-        c["ship_id"] = 1
-    return c
+        return lvsetup.config(got, lvship)
+    finally:
+        lvship.drop("lvsetup")
 
 
 # ---- the charger line, watched (docs/BATTERY.md "Charging shows at once"). lvbatt reads the
@@ -631,58 +559,21 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
             b[6], b[7] = lvship.ticks_ms(), CHG_GAUGE_MS
 
 def main():
-    print("boot: The Long Voyage starts in %d s (Ctrl-C or any mpremote command stops it)" % (
-        BOOT_WINDOW_MS // 1000))
-    time.sleep_ms(BOOT_WINDOW_MS)
-    if flag("/data/safe"):
-        print("safe: /data/safe found, not starting (remove it to play)")
+    import lvsetup
+    try:
+        setup = lvsetup.boot(BOOT_WINDOW_MS, flag, safe_mode)
+    finally:
+        lvsetup = None
+        lvship.drop("lvsetup")
+    if setup is None:
         return
+    cfg, trial = setup
+    import lvsetup
     try:
-        os.stat("/data/maint")
-        os.remove("/data/maint")
-        print("maint: /data/maint found, not starting (once)")
-        return
-    except OSError:
-        pass
-    try:
-        os.mkdir("/data")
-    except OSError:
-        pass
-    trial = flag("ota/state.json")
-    got = []
-    try:
-        import lvsafe
-        why = lvsafe.check(trial, got=got)
-    except Exception as e:  # lvsafe itself unusable (a damaged lvsafe.mpy): play as 0.2.6 did,
-        print("safe: no boot check %r" % (e,))    # rather than crash-loop with no hotspot
-        why, got = None, None
-    lvship.drop("lvsafe")
-    lvship.drop("lvledcfg")                    # (lvsafe asked it whether ship.json is whole)
-    cfg = config(got)
-    if why:
-        return safe_mode(cfg, why)
-    try:
-        import lv
-        print("firmware: " + lv.describe())
-    except Exception as e:
-        print("firmware: %r" % (e,))
-    print("lvship %s ship %d, free heap %d" % (lvship.VERSION, cfg["ship_id"], lvship.free()))
-    ip = "192.168.4.1"
-    if cfg["hotspot"]:
-        import lvwifi
-        ap = lvwifi.hotspot(cfg)
-        try:
-            a = ap.ifconfig()[0]
-            if a and a != "0.0.0.0":
-                ip = a
-        except Exception:
-            pass
-    game = cfg["hotspot"] and lvship.phone_game(cfg)
-    days = None
-    if game:
-        import lvdays
-        days = lvdays.Days("/data/days.bin")
-    ship = lvship.Ship(cfg, days=days)
+        ship, ap, ip, game = lvsetup.prepare(cfg)
+    finally:
+        lvsetup = None
+        lvship.drop("lvsetup")
     web = None
 
     async def run():

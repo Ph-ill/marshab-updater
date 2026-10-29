@@ -15,6 +15,7 @@ import hashlib
 
 CPY = sys.implementation.name == "cpython"
 HERE = os.getcwd()
+sys.path.insert(0, HERE)
 sys.path.insert(0, HERE + "/board")
 sys.path.insert(0, HERE + "/tests")
 import lvota   # noqa: E402
@@ -736,6 +737,7 @@ class FakeLvweb:
 
 class FakeServer:
     routed = []
+    ship = type("RouteShip", (), {"ledtest": None})()
 
     async def route(self, req, w):
         FakeServer.routed.append(req.path)

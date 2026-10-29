@@ -267,8 +267,15 @@ async function api(path,body){
   // The phone's clock rides along: the ship has none, and learns the time from this (lv/clock.py).
   const o={headers:{"X-Crew-Token":tok,"X-Phone-Time":String(Date.now()),"X-Phone-TZ":String(-new Date().getTimezoneOffset())}};
   if(body){o.method="POST";o.body=JSON.stringify(body);o.headers["Content-Type"]="application/json"}
-  const r=await fetch(path+(path.startsWith("/api/")?DQ:""),o);
-  const j=await r.json().catch(()=>({}));
+  let r,j;
+  for(let attempt=0;;attempt++){
+    r=await fetch(path+(path.startsWith("/api/")?DQ:""),o);
+    j=await r.json().catch(()=>({}));
+    // Only explicit admission refusals are replayable; safe-mode/story errors
+    // and failed writes without this header must keep their original meaning.
+    if(r.status!==503||r.headers.get("Retry-After")!=="1"||attempt>=89)break;
+    await new Promise((resolve)=>setTimeout(resolve,1000));
+  }
   if(r.status===401&&path!=="/api/me"){tok="";me=-1;go("hello");throw new Error("signed out")}
   if(!r.ok)throw Object.assign(new Error(j.err||"The ship didn't answer. Try again."),{j,status:r.status});
   return j;

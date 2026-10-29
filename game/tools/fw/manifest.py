@@ -56,3 +56,10 @@ module("lvotap.py", base_path="../../board", opt=3)
 module("lvotaq.py", base_path="../../board", opt=3)
 # The update path's check before a trial is kept (0.3.0; on older cores it ships as lvotak.mpy).
 module("lvotak.py", base_path="../../board", opt=3)
+# Review-1 heap helpers; still ordinary .mpy files on the existing 0.2.0 core.
+module("lvcheck.py", base_path="../../board", opt=3)
+module("lvstateapi.py", base_path="../../board", opt=3)
+module("lvphoneapi.py", base_path="../../board", opt=3)
+module("lvsetup.py", base_path="../../board", opt=3)
+module("lvphoneinit.py", base_path="../../board", opt=3)
+module("lvlight.py", base_path="../../board", opt=3)

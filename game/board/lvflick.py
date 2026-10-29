@@ -85,7 +85,7 @@ def maybe(lk):
 
 
 def start(sh):
-    import lvledtest as T
+    import lvlight as T
     try:
         pin = T._pin(sh)
     except Exception as e:
@@ -99,5 +99,5 @@ def start(sh):
             return a + b
     sh.ledtest = ticks_add(lvship.ticks_ms(), WAIT_MS + FLICK_MS - T.TEST_MS)
     asyncio.create_task(play(sh, pin, T))
-    lvship.drop("lvledtest")             # the task holds what it needs
+    lvship.drop("lvlight")               # the task holds only the shared helpers
     return True

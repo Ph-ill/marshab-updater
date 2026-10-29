@@ -21,7 +21,13 @@ import sys
 from binascii import unhexlify
 
 WAIT_MS = 15000
-NEEDS = (("lvotaq", ("quiet",)),
+NEEDS = (("lvlight", ("_pin", "_hold", "_busy")),
+         ("lvcheck", ("serves",)),
+         ("lvsetup", ("boot", "config", "wanted", "prepare")),
+         ("lvphoneinit", ("setup",)),
+         ("lvphoneapi", ("api", "gift")),
+         ("lvstateapi", ("state_body", "state_writer")),
+         ("lvotaq", ("quiet",)),
          ("lvotap", ("api", "put", "piece", "envelope", "append", "entry", "sha_file")),
          ("lvota", ("api", "status", "env_piece", "envelope_prep", "envelope_done", "apply",
                     "good", "KEYS")),

@@ -36,7 +36,8 @@ gc.collect()
 base = gc.mem_alloc()
 peak = [0]
 where = [""]
-PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig")
+PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvcheck", "lvsetup",
+           "lvphoneapi", "lvphoneinit", "lvstateapi", "lvlight")
 
 
 def sample():

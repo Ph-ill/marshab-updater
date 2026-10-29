@@ -67,7 +67,9 @@ def seed_hails(p):
 # ~30 B a record on the Pico: ~20 KB for 673 records) took 0.2.7 to ~84.5 KB with Hail at an
 # update's upload pieces (lvota whole, the manifest parsed per piece); 0.3.0 puts a piece
 # through the small lvotap (an index line, not the manifest), waits in lvotaq before it
-# loads, and drops lvota through the signature check: ~78-79 KB, about 1 KB to spare.
+# loads, and drops lvota through the signature check. Review-1 additionally bounds
+# expensive responses before allocation and loads phone/boot helpers only when used;
+# the acceptance target is <=78,000 B over three full and three normal combined runs.
 EVERYONE = "--everyone" in sys.argv
 LOG = "build/season_log_all.bin" if EVERYONE else "build/season_log.bin"
 if LED or BAT:
@@ -125,7 +127,8 @@ class HailSes:
 # the moment of the peak: which per-use board modules were loaded, the web server's open
 # requests and the radio (printed at the end, so a cap overrun says what it coincided with)
 PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
-           "lvcode", "lvledtest", "lvbatt", "lvsafe")
+           "lvcode", "lvledtest", "lvbatt", "lvsafe", "lvcheck", "lvstateapi",
+           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight")
 
 
 def mem():
@@ -357,13 +360,25 @@ async def heap_run():
         asyncio.create_task(chg_watch[0](ship))
     if srv:
         await client(port)
+    if PHONE and LIVE:
+        # Deterministic shared-pin precondition: a real Hail playback owns it
+        # before the Test-light client connects (independent of quiet hours).
+        import lvflick
+        assert lvflick.start(ship)
+        lvflick = None
+        lvship.drop("lvflick")
     if PHONE:
         print("PORT %d" % port)
         while web.served < 2:            # sync starts with the first phone's visit
             await lvship.sleep_ms(5)
     t = 0
     phones_done = not PHONE
-    while t < (600000 if PHONE else 120000):
+    started = lvship.ticks_ms()
+    # Light ownership/OTA admission can outlast ten accelerated radio minutes.
+    # Keep polling and sampling until every client finishes; never truncate the workload.
+    while t < (600000 if PHONE else 120000) or (PHONE and not phones_done):
+        if PHONE and lvship.ticks_diff(lvship.ticks_ms(), started) > 180000:
+            raise RuntimeError("phone workload did not finish within 180 s")
         w.step(10)
         t += 10
         ship.ble.poll(w.now)
@@ -382,16 +397,23 @@ async def heap_run():
                     during[0] = web.served
         # Done when the peer has everything (with phones: their taps too, once they've left).
         if phones_done and peer.node.digest() == ship.node.digest() and ship.ble.state == "idle" \
-                and peer.state == "idle":
+                and peer.state == "idle" and (not LIVE or (not ship.live.out and not peer_link.out)):
             break
     if PHONE:
-        # A few more scans, so the ship hears the peer's advert after the sync (in sync now).
-        for i in range(6000):
+        # Hail can leave the peer in a session/cooldown longer than one scan.
+        # Settle until a fresh, matching advert is actually observed, not merely
+        # until a fixed amount of fake radio time has passed. Keep the age assertion.
+        for i in range(30000):
             w.step(10)
             ship.ble.poll(w.now)
             peer.poll(w.now)
             if i % 5 == 0:
                 sample()
+                q = ship.ble.peers.get(1)
+                if i >= 6000 and q is not None and q.diff_since is None and 0 <= ship.ble._swept - q.seen <= 10000:
+                    break
+            if i % 50 == 0:
+                await lvship.sleep_ms(1)
         # (not sampled: the phones' own /api/state calls during the sync are, above)
         air[0] = web.phone.state_body(0, 39, ship.clock.minute())["air"]
         bat[0] = web.phone.state_body(0, 39, ship.clock.minute())["bat"]
@@ -438,7 +460,9 @@ m_peer_end = m_peer - m_code + grow
 board = peak[0] - m_peer_end - m_fake  # what a board holds: no second ship, no fake radio
 BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # The cap is the Pico's: a 32-bit build. The 64-bit port's figure is printed for comparison.
-led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
+# Hail/Test light can own the pin for the entire run; the notifier must not write
+# over them. The separate TestPin and phone assertions cover those real playbacks.
+led_ok = (ship.led.enabled and (ship.led.writes >= 6 or (OTA and LIVE and TestPin.n >= 26)) if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
 ok = (synced and http_ok[0] and led_ok and
       (base == 0 or BITS == 64 or (0 < board < 80000)))
