@@ -65,7 +65,7 @@ function ledtFor(ms){
 document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button[data-ledt]");if(!el||el.disabled||LEDT>Date.now())return;
   LEDE="";ledtFor(10000);
-  try{const j=await api("/api/led/test",{});ledtFor(j.ms)}
+  try{const j=await api("/api/led/test",{});ledtFor(j.ms??10000)}
   catch(e){
     if(!tok)return;
     if(e.status===429)return ledtFor(e.j&&e.j.ms);

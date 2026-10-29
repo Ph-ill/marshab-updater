@@ -57,6 +57,14 @@ check(call("/api/login?day=8", {"crew": 8, "pin": "1234"})[0] == 400, "crew 8 do
 s, j = call("/api/login?day=8", {"crew": 0, "pin": "1234"})
 check(s == 200 and j["crew"] == 0 and j["first"] is True, "right code signs in, first time")
 check(call("/api/state?day=8", tok=j["token"])[0] == 200, "token works")
+token = j["token"]
+check(call("/api/led/test", {})[0] == 401, "test light needs a session")
+s, light = call("/api/led/test", {}, tok=token)
+check(s == 200 and light == {"ok": True, "ms": 10000}, "test light advertises 10 s")
+deadline, count = M.G.ledtest, M.G.ledtests
+s, light = call("/api/led/test", {}, tok=token)
+check(s == 429 and 8000 < light.get("ms", 0) <= 10000, "busy test light returns ms left")
+check((M.G.ledtest, M.G.ledtests) == (deadline, count), "busy tap does not restart the light")
 s, j = call("/api/me?day=8")
 check(s == 200 and j["crew"] == 0 and j["first"] is False, "same phone, same day: remembered")
 check(call("/api/me?day=8", ua="phone-b")[0] == 401, "another browser on the same IP isn't")
