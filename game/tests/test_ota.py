@@ -748,6 +748,16 @@ class FakeShip:
     def drop(name):
         sys.modules.pop(name, None)
 
+    # (main.py's state_busy is the ticks_ms a stream began: review 3 MAJOR-1)
+    @staticmethod
+    def ticks_ms():
+        import time as t
+        return t.ticks_ms() if hasattr(t, "ticks_ms") else int(t.monotonic() * 1000)
+
+    @staticmethod
+    def ticks_diff(a, b):
+        return a - b
+
 
 g = {"lvship": FakeShip, "asyncio": None}
 exec(main_src, g)
