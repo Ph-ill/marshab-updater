@@ -48,6 +48,16 @@ def _drop(name):
         del sys.modules[name]
     except KeyError:
         pass
+    # A submodule (lv.engine) is also an attribute of its package, which would keep it on
+    # the heap after sys.modules lets go (review 3 nit-3): drop that reference too.
+    i = name.rfind(".")
+    if i > 0:
+        p = sys.modules.get(name[:i])
+        if p is not None:
+            try:
+                delattr(p, name[i + 1:])
+            except Exception:
+                pass
 
 
 def keys_ok(keys):

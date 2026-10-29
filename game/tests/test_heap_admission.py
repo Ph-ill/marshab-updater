@@ -239,6 +239,30 @@ class SplitHelpers(unittest.TestCase):
             self.assertEqual(lvsetup.prepare(cfg), ("ship", None, "192.168.4.1", False))
             self.assertIsNone(made[-1])
 
+    def test_look_drops_new_submodules_from_their_package(self):
+        # review 3 nit-3: lvotak._look frees a submodule its import brought in, from
+        # sys.modules and from the package that also holds it as an attribute
+        import tempfile
+        import lvotak
+        with tempfile.TemporaryDirectory() as d:
+            os_ = __import__("os")
+            os_.mkdir(os_.path.join(d, "pkgr3"))
+            open(os_.path.join(d, "pkgr3", "__init__.py"), "w").close()
+            open(os_.path.join(d, "pkgr3", "sub.py"), "w").write("X = 1\n")
+            open(os_.path.join(d, "lvr3probe.py"), "w").write("from pkgr3 import sub\nOK = sub.X\n")
+            sys.path.insert(0, d)
+            try:
+                import pkgr3
+                lvotak._look("lvr3probe", ("OK",))
+                self.assertNotIn("lvr3probe", sys.modules)
+                self.assertNotIn("pkgr3.sub", sys.modules)
+                self.assertFalse(hasattr(pkgr3, "sub"))
+                self.assertIn("pkgr3", sys.modules)         # loaded before: kept
+            finally:
+                sys.path.remove(d)
+                for k in ("pkgr3", "pkgr3.sub", "lvr3probe"):
+                    sys.modules.pop(k, None)
+
     def test_boot_fallback_and_safe_stop(self):
         from unittest.mock import patch
         import lvsetup
