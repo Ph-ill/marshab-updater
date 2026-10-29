@@ -276,6 +276,26 @@ for where in ("write", "read", "rename"):
     check(name + ": the book in memory unchanged", p.book.codes[3] == json.loads(ORIG)["codes"][3])
     check(name + ": the current code still signs in", p.book.check(3, "3333", 0)[0] == K.OK)
     check(name + ": no crew.json.new / .old left", gone(PATH + ".new") and gone(PATH + ".old"))
+# Review #3 m5: crew.json.bak (lvsafe's restore source) follows a change at once, so a
+# crew.json lost before the next boot can't bring the old code back.
+fresh()
+p = Phone()
+with open(PATH + ".bak", "wb") as f:
+    f.write(ORIG)
+s, j = lvcode.change(p, type("R", (), {"body": b'{"old": "3333", "new": "6060"}', "header": lambda self, k: "tok3"})())
+with open(PATH + ".bak", "rb") as f:
+    bk = f.read()
+check("m5: the change also lands in crew.json.bak", s == 200 and bk == read() and bk != ORIG, s)
+check("m5: no crew.json.bak.new left", gone(PATH + ".bak.new"))
+fresh()
+p = Phone()
+with open(PATH + ".bak", "wb") as f:
+    f.write(ORIG)
+lvcode.fail = fail_at("bak")
+s, j = lvcode.change(p, type("R", (), {"body": b'{"old": "3333", "new": "6060"}', "header": lambda self, k: "tok3"})())
+lvcode.fail = None
+check("m5: the .bak can't be written: still 200 (crew.json is)", s == 200 and p.book.check(3, "6060", 0)[0] == K.OK, s)
+check("m5: ... and the stale .bak (the old code) is removed", gone(PATH + ".bak") and gone(PATH + ".bak.new"))
 # A file someone edited so the digest isn't there once: refused, untouched.
 with open(PATH, "wb") as f:
     f.write(ORIG.replace(b'"codes"', b'"was": "%s", "codes"' % json.loads(ORIG)["codes"][3].encode()))
@@ -310,6 +330,8 @@ if sys.implementation.name == "cpython":
     check("bench --code: the named one set", after.check(0, "4321", 0)[0] == K.OK)
     check("bench --code: the changed code kept", after.check(3, "6060", 0)[0] == K.OK)
     check("bench --code: the others kept", after.codes[1] == json.loads(ORIG)["codes"][1] and after.codes[5] is None)
+    with open(PATH + ".bak", "rb") as f:
+        check("m5: bench --code writes crew.json.bak the same", json.loads(f.read()) == json.loads(read()))
     check("bench --code: the codes aren't printed", "4321" not in buf.getvalue() and "6060" not in buf.getvalue())
 fresh()
 check("other paths go to the game", Server.routed == [])

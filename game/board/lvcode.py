@@ -29,6 +29,8 @@
 # either the old file or the new one). A rename that fails is a failure (crew.json as it
 # was): 0.2.5/0.2.6 then moved crew.json to crew.json.old first, which left a moment with
 # no crew.json at all; board/lvsafe.py still puts a crew.json back from a .old left by that.
+# Then crew.json.bak (board/lvsafe.py's backup) gets the same text at once (bak()), so a
+# crew.json lost before the next boot is put back with the new code, never the old one.
 # The in-memory book changes only after the file has. Codes are never printed or logged.
 # Only this ship's file changes: the other ships keep the old code until bench.py or the
 # updater's ship setup writes theirs. Reset this ship keeps crew.json (main.py RESET).
@@ -70,13 +72,38 @@ def save(path, old_digest, new_digest):
             raise OSError("crew.json.new reads back wrong")
         _hit("rename")
         os.rename(tmp, path)
-        return True
     except OSError:
         try:
             os.remove(tmp)
         except OSError:
             pass
         return False
+    bak(path, new)
+    return True
+
+
+def bak(path, text):
+    """crew.json.bak (board/lvsafe.py's last good copy, put back if crew.json is ever lost)
+    := the new crew.json at once, so a crew.json damaged before the next boot can't bring
+    the old code back (review #3 m5). Written whole (bak.new, read back, rename); if that
+    fails the stale .bak is removed instead (the next boot makes a fresh one from crew.json),
+    so an old code is never what a restore finds."""
+    import os
+    b = path + ".bak"
+    try:
+        _hit("bak")
+        with open(b + ".new", "w") as f:
+            f.write(text)
+        with open(b + ".new") as f:
+            if f.read() != text:
+                raise OSError("crew.json.bak.new reads back wrong")
+        os.rename(b + ".new", b)
+    except OSError:
+        for p in (b + ".new", b):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
 
 
 def change(phone, req):

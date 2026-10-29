@@ -126,6 +126,20 @@ await p.click("[data-ota=check]");
 await p.waitForFunction(() => document.querySelector("#v").textContent.includes("no internet"));
 ok("Check for updates with no internet says so", true);
 await shot(p, "ota-08-check-no-internet");
+ok("no internet: Available says it couldn't check", await p.$eval("#set-sw", (e) => /Available\s*Couldn't check/.test(e.textContent) && !e.textContent.includes("Up to date")));
+await p.context().close();
+
+// 3b. (Phill's iPhone) This phone once looked and saw the version the ship runs ("Up to
+// date"), then the latest check fails: Available must not still say "Up to date".
+p = await page(8056, { online: false });
+await p.waitForTimeout(1500);
+await goto(p, "set");
+await p.evaluate(() => { const b = otaLoad(); b.seen = OS_.v; b.ok = true; b.err = ""; b.at = Date.now() - 7 * 3600e3; otaSave(b); OB = b; view(); });
+ok("an earlier good look: Up to date", await p.$eval("#set-sw", (e) => /Available\s*Up to date/.test(e.textContent)));
+await p.click("[data-ota=check]");
+await p.waitForFunction(() => document.querySelector("#v").textContent.includes("no internet"));
+ok("then a failed check: Couldn't check, not Up to date, the no-internet note kept", await p.$eval("#set-sw", (e) => /Available\s*Couldn't check/.test(e.textContent) && !e.textContent.includes("Up to date") && /Checked\s*just now · no internet/.test(e.textContent)));
+await shot(p, "ota-09-failed-check-after-up-to-date");
 await p.context().close();
 
 // 4. A test ship reading a test branch (ship.json "ota_src"): the page fetches from that

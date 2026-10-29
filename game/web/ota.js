@@ -129,16 +129,26 @@ function otaScreen(){
   $("v").innerHTML=o+`</section>`;
   dock(I.step!=="done"?`<button class="btn sec" disabled><span>Installing</span><i>${I.step==="wait"?"restarting":"sending"}</i></button>`:I.ok||!OS_?`<button class="btn pri" data-ota=reload><span>Back aboard</span><i>reload</i></button>`:`<button class="btn sec" data-ota=clear><span>Back</span><i>←</i></button>`,"set");
 }
+// What the Available row says. Only the latest check counts: when it failed (no internet on
+// the ship's hotspot, say), an older look is no answer, so it never claims "Up to date".
+// An update already on this phone is shown either way.
+function otaChecking(b){return b.at&&Date.now()-b.at<OTA_WAIT+2000&&!b.ok&&!b.err}
+function otaAvail(st,b,r){
+  if(r)return h(r.v);
+  if(otaChecking(b))return "Checking";
+  if(b.at&&!b.ok)return "Couldn't check";
+  return b.seen&&st&&vcmp(b.seen,st.v)<=0?"Up to date":b.seen?h(b.seen)+" (not signed for this ship)":"—";
+}
 // Settings' Ship software section: what runs, what's ready, Install and Check for updates.
 function otaSect(){
   const st=OS_,b=OB||otaLoad(),r=otaFor(st),last=st&&st.last;
-  let o=`<section id=set-sw><div class=lab><span>Ship software</span>${otaNag()?`<span class=otan><i>update ready</i></span>`:""}</div><dl class="facts otaf"><dt>Installed</dt><dd class=m>${st?h(st.v||"unknown"):"—"}</dd><dt>Channel</dt><dd>${st?h(st.ch||"—"):"—"}</dd><dt>Available</dt><dd class=m>${r?h(r.v):b.seen&&st&&vcmp(b.seen,st.v)<=0?"Up to date":b.seen?h(b.seen)+" (not signed for this ship)":"—"}</dd><dt>Checked</dt><dd>${otaAgo(b.at)}${b.at&&!b.ok?" · no internet":""}</dd></dl>`;
+  let o=`<section id=set-sw><div class=lab><span>Ship software</span>${otaNag()?`<span class=otan><i>update ready</i></span>`:""}</div><dl class="facts otaf"><dt>Installed</dt><dd class=m>${st?h(st.v||"unknown"):"—"}</dd><dt>Channel</dt><dd>${st?h(st.ch||"—"):"—"}</dd><dt>Available</dt><dd class=m>${otaAvail(st,b,r)}</dd><dt>Checked</dt><dd>${otaAgo(b.at)}${b.at&&!b.ok?" · no internet":""}</dd></dl>`;
   if(last&&last.result==="rolled back")o+=`<p class=upd><b>Went back</b> · ${h(last.v)} didn't start, so your ship returned to ${h(last.prev)}.</p>`;
   else if(last&&last.result==="installed"&&last.v===(st&&st.v))o+=`<p class=fine>${h(last.v)} installed over the air.</p>`;
   if(!st)o+=`<p class=dim>Your ship can't take updates over the air yet. It needs one install over USB first.</p>`;
   else if(r)o+=`<p>${h(r.v)} is on this phone, ready for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p><p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
   else o+=`<p class=dim>This phone looks for updates on the internet. On your ship's Wi-Fi it usually can't, so if the check fails, try again on mobile data or another network and come back. Whatever it finds waits on this phone.</p>`;
-  if(st)o+=`<div class=otas>${r?`<button class="btn pri" data-ota=install><span>${otaNag()?"Install":"Try again:"} ${h(r.v)}</span><i>${Math.round(r.bytes/1024)} KB</i></button>`:""}<button class="btn sec" data-ota=check><span>Check for updates</span><i>${b.at&&Date.now()-b.at<OTA_WAIT+2000&&!b.ok&&!b.err?"checking":"github"}</i></button></div>`;
+  if(st)o+=`<div class=otas>${r?`<button class="btn pri" data-ota=install><span>${otaNag()?"Install":"Try again:"} ${h(r.v)}</span><i>${Math.round(r.bytes/1024)} KB</i></button>`:""}<button class="btn sec" data-ota=check><span>Check for updates</span><i>${otaChecking(b)?"checking":"github"}</i></button></div>`;
   return o+`</section>`;
 }
 const home_o=home;home=function(){
