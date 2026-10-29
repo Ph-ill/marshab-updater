@@ -42,6 +42,24 @@ OTA = "--ota" in sys.argv
 # run() installs it; the peer queues a hail for this ship, and a sixth phone hails the peer
 # through main.py's ota_route (board/lvliveapi.py, loaded per request) while the others play.
 LIVE = "--live" in sys.argv
+# a full day's hail.json to start from (FIXREVIEW2 B1: lvliveapi.HOUT sent, HIN received),
+# as a busy ship's would be by evening; --no-seed: an empty one
+SEED = LIVE and "--no-seed" not in sys.argv
+
+
+def seed_hails(p):
+    # written a line at a time (the test's own garbage, gone before anything is measured);
+    # its day unset, so the ship takes it as today's whatever the phones' clock says
+    e = 1792989200000
+    with open(p, "w") as f:
+        f.write('{"d": null, "n": 12, "o": [')
+        for k in range(12):
+            f.write('%s["%06x", %d, %d, %d, 2]' % (", " if k else "", k, 2 + k % 6, k % 8, e - 3600000 - k * 60000))
+        f.write('], "i": [')
+        for k in range(16):
+            f.write('%s["%06x", %d, %d, %d, 1, 0, %d, %d]' % (
+                ", " if k else "", 0x100 + k, 2 + k % 6, k % 8, e - k * 60000, 2 + k % 6, e - k * 60000 - 60000))
+        f.write(']}')
 # --everyone: the season where all eight crew play every day (build/season_log_all.bin,
 # python3 sim/season.py --everyone: about 2.5 times the reference season's records): the
 # busiest log a season is likely to have, everything else as above. The cap applies again
@@ -305,6 +323,9 @@ if WEB:
                 os.remove(DATA + "/" + n)
             except OSError:
                 pass
+        if SEED:
+            seed_hails(DATA + "/hail.json")
+            print("live: hail.json seeded with a full day (12 sent, 16 received)")
         lvlive.install(ship, DATA)            # as main.py's run() does
 else:
     handler = lvstat.server(ship)
@@ -499,6 +520,14 @@ if LIVE:
         ok = ok and hs_ok
         print("live: a hail at the signature check: %s (held, taken, acks, lvlivein loaded); Hail %s: %s" % (
             hs, "on" if L is not None else "off", "ok" if hs_ok else "FAIL"))
+    try:
+        import json
+        with open(DATA + "/hail.json") as f:
+            hj = json.load(f)
+        print("live: hail.json at the end: %d sent (%d today), %d received" % (len(hj["o"]), hj.get("n", -1), len(hj["i"])))
+        hj = None
+    except (OSError, ValueError, KeyError):
+        pass
     print("live: ship %s, peer %s, waiting %d/%d, lvliveapi and lvlivein %s: %s" % (
         L and L.n, PL and PL.n, len(L.out) if L else -1, len(PL.out) if PL else -1,
         "loaded" if "lvliveapi" in sys.modules or "lvlivein" in sys.modules else "dropped",

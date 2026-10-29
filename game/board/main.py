@@ -78,6 +78,7 @@ def home_screen(lvweb):
 def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
     route = web.route
+    clock_gate(web)
 
     async def ota_route(req, w):
         if req.path == "/api/reset":
@@ -151,6 +152,8 @@ def ota_hooks(lvweb, web):
             try:
                 if req.path == "/api/coex/ping":
                     return await lvliveapi.ping(lvweb, web, req, w)
+                if req.path == "/api/live" and req.method == "GET":
+                    return await lvliveapi.live(lvweb, web, req, w)     # (in pieces)
                 s, j = lvliveapi.api(web, req)
             finally:
                 lvship.drop("lvliveapi")
@@ -184,6 +187,35 @@ def ota_hooks(lvweb, web):
                 lvship.drop("lvota")
         return await route(req, w)
     web.route = ota_route
+
+
+class _Hdr:
+    # (a request's header getter, as lvphone.Phone.who wants a request)
+    def __init__(self, get):
+        self.header = get
+
+
+def clock_gate(web):
+    # Every phone request carries its clock (lvweb.route). Once the ship knows the time,
+    # only a signed-in phone may move it (FIXREVIEW3 f2: a stranger's phone on the hotspot
+    # set a day ahead can't turn the ship's day); the first one is anyone's.
+    c = getattr(getattr(web, "ship", None), "clock", None)
+    learn = getattr(c, "learn_headers", None)
+    if learn is None or not hasattr(c, "known"):
+        return
+
+    def learned(get):
+        if c.known():
+            # (the phone list made if need be: a crewmate signed in before a restart, whose
+            # token is kept, before any API request made it)
+            if not get("x-crew-token"):
+                return False
+            gp = getattr(web, "get_phone", None)
+            ph = gp() if gp is not None else getattr(web, "phone", None)
+            if ph is None or ph.who(_Hdr(get)) is None:
+                return False
+        return learn(get)
+    c.learn_headers = learned
 
 
 def net_hooks(lvweb, web):
@@ -435,9 +467,10 @@ def crashed(e, t0):
     trial = flag("ota/state.json")
     try:
         import lvsafe
-        # live: Hail's own code was in it (lvlivex turns Hail off for that crash only)
+        # live: Hail's own code was in it (lvlivex turns Hail off for that crash only),
+        # not the core's sync code going on through Hail's hooks (lvlive.CORE: FIXREVIEW2 J2)
         lvsafe.crashed(why, trial, time.ticks_diff(time.ticks_ms(), t0),
-                       live=("lvlive" in tb or "lvflick" in tb))
+                       live=("lvlive" in tb or "lvflick" in tb) and not getattr(sys.modules.get("lvlive"), "CORE", 0))
     except Exception as e2:
         print("crash: noting %r" % (e2,))
         note(trial)
@@ -676,6 +709,11 @@ def main():
                 # (the type only: the page shows live_why, never an exception's text)
                 ship.live, ship.live_why = None, "didn't start: " + type(e).__name__
                 print("live: " + ship.live_why)
+                try:                        # crewmates' pages: paused, not "needs the update"
+                    lvlive.pause(ship.node)
+                    ship.ble.adv = None
+                except Exception:
+                    pass
         if trial:
             asyncio.create_task(ota_ok(web, cfg["hotspot"] and wanted(cfg)))
         asyncio.create_task(healthy())
