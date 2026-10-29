@@ -10,6 +10,8 @@
 .otabar{height:8px;border:1px solid var(--ink);margin-top:var(--s3)}
 .otabar i{display:block;height:100%;background:var(--rust);transition:width .2s}
 .otas{margin-top:var(--s3)}
+.otasteps{padding-left:var(--s4);margin:var(--s2) 0 var(--s3)}
+.otasteps li+li{margin-top:var(--s2)}
 /* What's new (web/ota.js otaNotes): a release's few plain lines, a small rust square each,
    with the update that's ready in Settings and in Version history. */
 .otawn{margin-top:var(--s3)}
