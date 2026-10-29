@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""R1 (reworked in 0.3.0 review 2 M2-M4): one streamed state at a time, other API calls wait
-for it rather than being refused, a 503 only after TURN_MS; admission released on errors."""
+"""R1 (reworked in 0.3.0 review 2 M2-M4): one streamed state at a time, other API calls
+refused with 503 + Retry-After (which the page and ota.js replay) while one streams, light
+playback holds nothing off; admission released on errors."""
 import ast
 import asyncio
 from pathlib import Path
@@ -41,7 +42,7 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
-    async def test_overlap_waits_its_turn_then_proceeds(self):
+    async def test_overlap_is_refused_with_retry_after_before_loading(self):
         entered, release = asyncio.Event(), asyncio.Event()
         calls = []
 
@@ -54,41 +55,35 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         web = hooks(route)
         running = asyncio.create_task(web.route(request(), []))
         await entered.wait()
-        waiting = [asyncio.create_task(web.route(request(p), [])) for p in
-                   ("/api/state", "/api/login", "/api/crew")]
-        for _ in range(5):
-            await asyncio.sleep(0)
+        for path in ("/api/state", "/api/login", "/api/crew", "/api/ota", "/api/live"):
+            answer = []
+            await web.route(request(path), answer)
+            self.assertEqual(answer, [(503, "Retry-After: 1\r\n")])   # replayed by api()/otaFetch
         self.assertEqual(calls, ["/api/state"])     # nothing else allocates mid-stream
         release.set()
         await running
-        await asyncio.gather(*waiting)
-        self.assertEqual(sorted(calls), sorted(["/api/state", "/api/state", "/api/login", "/api/crew"]))
         self.assertFalse(web.state_busy)
+        await web.route(request("/api/login"), [])
+        self.assertEqual(calls, ["/api/state", "/api/login"])
 
-    async def test_503_only_after_the_turn_runs_out(self):
+    async def test_update_piece_holds_only_state_and_live(self):
         calls = []
 
         async def route(req, w):
             calls.append(req.path)
 
         web = hooks(route)
-        web.state_busy = True                       # a state that never finishes
-        for path in ("/api/login", "/api/live"):
+        web.ota_busy = 1
+        for path in ("/api/state", "/api/live"):
             answer = []
             await web.route(request(path), answer)
             self.assertEqual(answer, [(503, "Retry-After: 1\r\n")])
-        self.assertEqual(calls, [])
-        web.state_busy = False
-        web.ota_busy = 1                            # an update piece: state/live wait, others go
-        answer = []
-        await web.route(request("/api/login"), answer)
-        self.assertEqual(calls, ["/api/login"])
-        answer = []
-        await web.route(request(), answer)
-        self.assertEqual(answer[0][0], 503)
+        await web.route(request("/api/login"), [])
+        await web.route(request("/api/crew"), [])
+        self.assertEqual(calls, ["/api/login", "/api/crew"])
         web.ota_busy = 0
         await web.route(request(), [])
-        self.assertEqual(calls, ["/api/login", "/api/state"])
+        self.assertEqual(calls, ["/api/login", "/api/crew", "/api/state"])
 
     async def test_light_playback_does_not_hold_state_off(self):
         # review 2 M2: a hail's flicker (up to ~40 s) or Test light (10 s) no longer 503s
