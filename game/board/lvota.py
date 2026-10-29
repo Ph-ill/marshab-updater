@@ -15,6 +15,8 @@
 #   POST /api/ota/cancel          forget what is staged
 # Writes need a signed-in crew member (X-Crew-Token). A piece at the wrong offset gets
 # 409 {have}: the phone carries on from there, so a dropped connection costs one piece.
+# While the running set is still on trial (ota/state.json "trial"), upload and apply get
+# 409 {"err": BUSY}: ota/old/ is the trial's way back (0.3.0 fix review FR1 m5 / FR3 f3).
 #
 # The envelope is {"m": manifest JSON text, "sig": base64, "kid": key id}. The signature
 # (Ed25519, lvsig.py) is over TAG + sha256(m) and must come from a key in KEYS; the private
@@ -53,6 +55,14 @@ MAX_ENV = 8192
 MAX_FILE = 256 * 1024
 MAX_FILES = 40
 SPARE = 16 * 1024         # flash left free after staging (littlefs needs room to work)
+# While an update is on trial (ota/state.json "trial": main.py keeps it, lvotak.py, within a
+# minute or two of the restart, or lvboot rolls it back) nothing new is staged or applied.
+BUSY = "busy, try again in a couple of minutes"
+# The answer when the upload's own code (lvotap) won't load: not 503, which the page tries
+# again as "busy", since trying again can't help (0.3.0 fix review FR1 m3). Such a set is
+# never kept (lvotak.py), so it goes back to the one before by itself.
+DAMAGED = ("this ship's update code is damaged, so it can't take an update now. It goes "
+           "back to its last good version by itself; if it doesn't, it needs fixing over USB")
 # Ed25519 public keys allowed to sign an update: key id (first 8 hex of sha256(key)) -> key.
 KEYS = {"2111b2e9": unhexlify("0478d983c1a756c32acf10215359e6f0361ea4800ede2b50031256bcf0f4b58f")}
 reset = None              # tests: called instead of machine.reset()
@@ -285,13 +295,24 @@ def envelope_done(p, h, ok, why=None):
     # twice can never mix pieces of both (0.3.0, review R2).
     from lvotap import sha_file
     eh = sha_file(p)
-    with open(NEW + "/env", "w") as fh:      # kept as {"m": ...} for lvboot
-        json.dump({"m": ms}, fh)
     with open(NEW + "/eh", "w") as fh:
         fh.write(eh)
     _write_ix(m)
+    # The envelope is kept as {"m": ...} (what lvboot and manifest() read: the signature
+    # isn't needed once it checked out). Written beside it and swapped in only once ok is
+    # there (0.3.0 fix review FR1 m2): a memory error or a power cut before ok leaves the
+    # whole envelope as it came, so the phone's last piece again checks it (env_piece),
+    # instead of a shorter rewritten file that the phone's next piece no longer fits
+    # (409 have=<its size>, then 403 "unreadable update" for a good release). Cut between
+    # ok and the rename: env is still the whole envelope, which reads the same way.
+    with open(p + ".new", "w") as fh:
+        json.dump({"m": ms}, fh)
     with open(NEW + "/ok", "w") as fh:
         fh.write(m["version"])
+    try:
+        os.rename(p + ".new", p)                # littlefs: replaces it in one step
+    except OSError:                             # (kept whole: lvboot reads it all the same)
+        pass
     return 200, {"ok": True, "v": m["version"], "files": len(m["files"])}
 
 
@@ -369,12 +390,15 @@ def env_piece(q, off, body):
         n = 0
     if not 0 < n <= MAX_ENV:
         return 400, {"err": "bad request"}
-    if installing():
+    ph = phase()
+    if ph in ("ready", "swap"):
         # apply() said ready and the restart is ~1.5 s away (or lvboot is mid-swap): lvboot
         # reads ota/new/env as it is then, so nothing may touch it (0.3.0 review R3 M1: a
         # short envelope sent in that window was never checked, and its delete list was
         # swapped out all the same).
         return 409, {"err": "an update is being installed: wait for the restart", "have": None}
+    if ph == "trial":
+        return 409, {"err": BUSY, "have": None}
     p = NEW + "/env"
     if off and _size(p) == n and not _exists(NEW + "/ok"):
         # all of it is here but its check never answered (no heap for it, a dropped
@@ -401,10 +425,16 @@ def put(q, body):
     return lvotap.put(q, body)
 
 
+def phase():
+    """ota/state.json's phase: None (no update under way), "ready" or "swap" (apply() has
+    handed the staged update to lvboot), "trial" (the new set runs, not yet kept)."""
+    st = read_json(STATE)
+    return st.get("phase") if isinstance(st, dict) else None
+
+
 def installing():
     """apply() has handed the staged update to lvboot (ota/state.json ready or swap)."""
-    st = read_json(STATE)
-    return bool(st) and st.get("phase") in ("ready", "swap")
+    return phase() in ("ready", "swap")
 
 
 def ready():
@@ -418,6 +448,13 @@ def ready():
 
 
 def apply():
+    if phase() == "trial":
+        # The set that runs is still on trial (lvboot keeps ota/old/ for its rollback, and
+        # main.py hasn't called good() yet): a second update applied now would swap in over
+        # it, keep those old copies, and a rollback of it would leave a mix of three sets
+        # (0.3.0 fix review FR1 m5 / FR3 f3). The trial ends in a minute or two, kept or
+        # rolled back; then the update goes in as usual.
+        return 409, {"err": BUSY}
     m = ready()
     if m is None:
         return 409, {"err": "the update isn't all here yet"}
@@ -441,10 +478,11 @@ async def api(web, req, w):
     if web.get_phone().who(req) is None:
         return await lvweb.send_json(w, 401, {"err": "signed out"})
     if p == "/api/ota/put":
-        # The upload is lvotap.api's (main.py and lvsafe.py send it there). Only safe mode
-        # comes here with it, when lvotap.py itself won't load: say so rather than nothing
-        # (0.3.0 review R1 M2/m5; such a set is never kept, lvotak.py).
-        code, obj = 503, {"err": "this ship's update code didn't load", "have": None}
+        # The upload is lvotap.api's (main.py and lvsafe.py send it there). Nothing comes
+        # here with it now (safe mode answers DAMAGED itself when lvotap won't load); kept
+        # so that a caller that does still gets that answer, not silence (0.3.0 review R1
+        # M2/m5, fix review FR1 m3: not 503, which the page would retry as "busy").
+        code, obj = 500, {"err": DAMAGED, "have": None}
     elif p == "/api/ota/cancel":
         if installing():
             code, obj = 409, {"err": "an update is being installed: wait for the restart"}

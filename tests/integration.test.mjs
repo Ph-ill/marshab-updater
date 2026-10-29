@@ -297,4 +297,43 @@ await t('partial release installs only on its own core: stale /lv and old overri
   assert.equal(JSON.parse(readFileSync(join(board, 'version.json'), 'utf8')).frozen, 'abcdef012345');
 });
 
+await t('builder refuses a release whose lvota would turn down every later update (0.3.0 FR1 M1)', async () => {
+  // The release key's id and public key, as the ship pins them (game/board/lvota.py KEYS).
+  const m = readFileSync(join(repo, 'game/board/lvota.py'), 'utf8').match(/KEYS = \{"([0-9a-f]{8})": unhexlify\("([0-9a-f]{64})"\)\}/);
+  assert.ok(m && m[1] === '2111b2e9', 'lvota.py pins 2111b2e9');
+  const kt = mkdtempSync(join(tmpdir(), 'okeys-'));
+  for(const d of ['firmware', 'src-board']) mkdirSync(join(kt, d), { recursive: true });
+  writeFileSync(join(kt, 'firmware/runtime.json'), readFileSync(join(repo, 'firmware/runtime.json')));
+  const ks = join(kt, 'src-board');
+  writeFileSync(join(ks, 'main.py'), 'print("game")\n');
+  const kb = (v, extra = []) => spawnSync('python3', [join(repo, 'tools/build_release.py'), '--repo-root', kt, '--version', v,
+    '--channel', 'test', '--label', 'keys', '--source', ks, '--build-time', '2026-10-29T00:00:00+00:00', ...extra], { encoding: 'utf8' });
+  const other = 'ab'.repeat(32);     // a 32-byte key that isn't the release key
+  const cases = [
+    ['lvota.py', `KEYS = {"2111b2e9": unhexlify("${m[2]}")}\n`, 0],
+    ['lvota.py', 'KEYS = {}\n', /no KEYS, or an empty one/],
+    ['lvota.py', `KEYS = {"2111b2e9": unhexlify("${other}")}\n`, /doesn't hold the release key/],
+    ['lvota.py', `KEYS = {"2111b2e9": unhexlify("${m[2].slice(0, 62)}")}\n`, /isn't a 32-byte key/],
+    ['lvota.mpy', Buffer.concat([Buffer.from([77, 6, 0, 31]), Buffer.from(`2111b2e9\0${m[2]}\0`)]), 0],
+    ['lvota.mpy', Buffer.concat([Buffer.from([77, 6, 0, 31]), Buffer.from(`deadbeef\0${other}\0`)]), /lvota.mpy: KEYS doesn't hold/],
+  ];
+  let i = 0;
+  for(const [name, body, want] of cases){
+    for(const f of ['lvota.py', 'lvota.mpy']) rmSync(join(ks, f), { force: true });
+    writeFileSync(join(ks, name), body);
+    const r = kb(`9.9.${++i}-k`);
+    if(want === 0) assert.equal(r.status, 0, name + ': ' + r.stderr);
+    else { assert.notEqual(r.status, 0, name + ' should be refused'); assert.match(r.stderr, want); assert.match(r.stderr, /never take another update/); }
+  }
+  // a test build signed with a throwaway key names that key's id instead
+  rmSync(join(ks, 'lvota.mpy'));
+  writeFileSync(join(ks, 'lvota.py'), `KEYS = {"${createHash('sha256').update(Buffer.from(other, 'hex')).digest('hex').slice(0, 8)}": unhexlify("${other}")}\n`);
+  assert.notEqual(kb('9.9.20-k').status, 0);
+  const kid = createHash('sha256').update(Buffer.from(other, 'hex')).digest('hex').slice(0, 8);
+  assert.equal(kb('9.9.20-k', ['--ota-kid', kid]).status, 0);
+  // no lvota at all (the coex bench firmware): not checked
+  rmSync(join(ks, 'lvota.py'));
+  assert.equal(kb('9.9.21-k').status, 0);
+});
+
 console.log(`\n${pass} integration checks passed (board dir ${root})`);

@@ -85,6 +85,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--frozen", type=Path, default=None,
                     help="core manifest (game/tools/fw/cores/*.json): a partial release for the game firmware with that frozen core")
     ap.add_argument("--repo-root", type=Path, default=ROOT)
+    ap.add_argument("--ota-kid", action="append", default=[],
+                    help="key id the shipped lvota's KEYS must hold (repeatable; default "
+                         + ", ".join(OTA_KIDS) + ": a throwaway test key's id for test builds)")
     return ap.parse_args()
 
 
@@ -199,6 +202,43 @@ def mpy_twins(names: list[str]) -> list[str]:
     return [m + ".py" for m in OTA_CHAIN if m + ".mpy" in names and m + ".py" not in names]
 
 
+OTA_KIDS = ("2111b2e9",)    # = game/board/lvotak.py KIDS: the release key's id
+
+
+def ota_keys_why(payload: list[tuple[str, bytes]], kids: list[str]) -> str | None:
+    """None if the release's lvota (lvota.py or lvota.mpy at the root) pins one of `kids`,
+    else why not. A release whose lvota.KEYS lacks the release key installs fine, then turns
+    down every later update as "signed with a key this ship doesn't know", so only USB could
+    fix the ship (0.3.0 fix review FR1 M1; on the ship, lvotak.keys_ok refuses to keep such a
+    trial). lvota.py: KEYS read without running it (a dict of 32-byte keys, ids that match
+    sha256(key)[:4]). lvota.mpy: its string constants are stored as they are, so the key id
+    and the key's 64 hex digits must both be in it. A release with no lvota isn't checked."""
+    import ast
+    files = dict(payload)
+    if "lvota.py" in files:
+        keys = None
+        for node in ast.parse(files["lvota.py"].decode("utf-8")).body:
+            if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "KEYS":
+                try:
+                    keys = {k.value: bytes.fromhex(v.args[0].value)
+                            for k, v in zip(node.value.keys, node.value.values)}
+                except Exception:
+                    return "lvota.py: KEYS isn't a plain {kid: unhexlify(hex)} dict"
+        if not keys:
+            return "lvota.py has no KEYS, or an empty one"
+        if any(len(k) != 32 for k in keys.values()):
+            return "lvota.py: a KEYS entry isn't a 32-byte key"
+        if not any(kid in keys and hashlib.sha256(keys[kid]).hexdigest()[:8] == kid for kid in kids):
+            return f"lvota.py: KEYS doesn't hold the release key ({', '.join(kids)})"
+    if "lvota.mpy" in files:
+        b = files["lvota.mpy"]
+        found = {hashlib.sha256(bytes.fromhex(h.decode())).hexdigest()[:8]
+                 for h in re.findall(rb"(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])", b)}
+        if not any(kid in found and kid.encode() in b for kid in kids):
+            return f"lvota.mpy: KEYS doesn't hold the release key ({', '.join(kids)})"
+    return None
+
+
 FROZEN_COEX_DELETES = ("config.py", "index.html")   # the coex bench firmware's (game/bench/coex-test)
 
 
@@ -243,6 +283,10 @@ def main() -> None:
     for path, _ in payload:
         if any(path == k or (k.endswith("/") and path.startswith(k)) for k in preserve):
             raise SystemExit(f"{path} is both shipped and preserved; drop it from --preserve or the source")
+
+    why = ota_keys_why(payload, a.ota_kid or list(OTA_KIDS))
+    if why:
+        raise SystemExit(f"not building: {why}; the ship could never take another update over the air")
 
     if a.mpy_cross:
         mpy_check(a.mpy_cross, payload)

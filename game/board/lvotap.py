@@ -22,6 +22,8 @@ import sys
 OTA = "ota"
 NEW = OTA + "/new"
 IX = NEW + "/ix"
+STATE = OTA + "/state.json"
+BUSY = "busy, try again in a couple of minutes"     # = lvota.BUSY (not loaded for a piece)
 REC = 139                 # one ix line: "%08d" size, sha256 hex, path padded to 64, spaces, "\n"
 
 
@@ -115,8 +117,24 @@ def append(p, off, body, size):
     return None
 
 
+def trial():
+    """An update is on trial (ota/state.json "trial"): nothing is staged until it is kept or
+    rolled back (0.3.0 fix review FR1 m5 / FR3 f3; lvota.env_piece and apply refuse too).
+    Only a stat while no update is under way, which is every piece of an upload."""
+    if not _exists(STATE):
+        return False
+    import json
+    try:
+        with open(STATE) as fh:
+            return json.load(fh).get("phase") == "trial"
+    except Exception:
+        return False
+
+
 def piece(f, off, body):
     """A piece of file f (f >= 1) -> (status, JSON-able)."""
+    if trial():
+        return 409, {"err": BUSY, "have": None}
     if not _exists(NEW + "/ok"):
         return 409, {"err": "send the update's signature first", "have": None}
     e = entry(f)

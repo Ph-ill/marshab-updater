@@ -19,6 +19,7 @@ sys.path.insert(0, HERE + "/board")
 sys.path.insert(0, HERE + "/tests")
 import lvota   # noqa: E402
 import lvboot  # noqa: E402
+REAL_KEYS = dict(lvota.KEYS)      # the release key as shipped (the tests sign with a test key)
 
 FIX = HERE + "/build/ota-fixtures.json"
 ok = [0]
@@ -264,6 +265,68 @@ for _where in ("_verify", "_env_m"):
     check("R1 m1: its last piece again checks it (%s)" % _where, r[0] == 200 and r[1]["v"] == V1, r)
     check("R1 m1: ... staged as before (%s)" % _where, lvota.status()["staged"]["h"] ==
           binascii.hexlify(hashlib.sha256(raw).digest()).decode())
+# 0.3.0 fix review FR1 m2: the envelope kept for lvboot ({"m": ...}) is written to env.new
+# and swapped in only after ok. A memory error (or a power cut) after it is written but
+# before ok leaves the whole envelope as it came: the phone's 503 retry of the last piece
+# checks it again (before: env was already the shorter rewrite, the phone got 409 have=<its
+# size>, appended from there, and a good release ended in 403 "unreadable update").
+import json as _json  # noqa: E402
+
+
+class _DumpThenOom:
+    loads, load = staticmethod(_json.loads), staticmethod(_json.load)
+
+    @staticmethod
+    def dump(o, f):
+        _json.dump(o, f)
+        raise MemoryError("memory allocation failed")
+
+
+lvota.rmtree(lvota.NEW)
+lvota.json = _DumpThenOom
+try:
+    r = send_env(FX["env"][V1])
+finally:
+    lvota.json = _json
+check("FR1 m2: out of heap after env.new is written -> 503", r[0] == 503 and r[1]["have"] is None, r)
+check("FR1 m2: ... the envelope still whole, not ok", read(lvota.NEW + "/env") == raw
+      and read(lvota.NEW + "/ok") is None and lvota.status()["staged"] is None)
+_o = (len(raw) - 1) // 300 * 300
+r = lvota.put({"f": "0", "n": n, "o": str(_o)}, raw[_o:])
+check("FR1 m2: its last piece again checks it -> 200", r[0] == 200 and r[1]["v"] == V1, r)
+check("FR1 m2: ... env is the kept {m} form, no env.new left", read(lvota.NEW + "/env.new") is None
+      and _json.loads(read(lvota.NEW + "/env"))["m"] == FX["env"][V1]["m"]
+      and "sig" not in _json.loads(read(lvota.NEW + "/env")))
+# cut between ok and the rename: env is still the whole envelope, which reads the same way
+# (manifest(), lvboot's prepare(): json.load(f)["m"]) and the phone carries on with the files
+
+
+class _RenameOom:
+    def __getattr__(self, k):
+        return getattr(os, k)
+
+    @staticmethod
+    def rename(a, b):
+        if a.endswith("env.new"):
+            raise MemoryError("memory allocation failed")
+        return os.rename(a, b)
+
+
+lvota.rmtree(lvota.NEW)
+lvota.os = _RenameOom()
+try:
+    r = send_env(FX["env"][V1])
+finally:
+    lvota.os = os
+check("FR1 m2: cut after ok, before the rename -> 503", r[0] == 503, r)
+check("FR1 m2: ... staged all the same (ok, whole env)", read(lvota.NEW + "/ok") is not None
+      and read(lvota.NEW + "/env") == raw and lvota.manifest()["version"] == V1
+      and lvota.status()["staged"]["h"] == binascii.hexlify(hashlib.sha256(raw).digest()).decode())
+r = lvota.put({"f": "0", "n": n, "o": str(_o)}, raw[_o:])
+check("FR1 m2: ... the phone's retry is told it's all there (409 have=n)", r[0] == 409
+      and r[1]["have"] == len(raw), r)
+lvota.rmtree(lvota.NEW)
+check("FR1 m2: staged afresh", send_env(FX["env"][V1])[0] == 200 and read(lvota.NEW + "/env.new") is None)
 m = lvota.manifest()
 idx = [f[0] for f in m["files"]].index("www/app.html.gz") + 1
 size = m["files"][idx - 1][1]
@@ -342,7 +405,8 @@ s = lvota.read_json(lvota.STATE)
 check("trial, boot 1", s["phase"] == "trial" and s["boots"] == 1 and s["prev"] == "0.2.0-lv-test", s)
 check("R3 M1: lvboot swapped the signed set (nothing went to ota/old/data)", read("ota/old/data") is None
       and read("ota/old/data/log.bin") is None and "config.py" in s.get("gone", ["config.py"]), s)
-check("R3 M1: on trial, staging is allowed again", lvota.installing() is False)
+check("R3 M1: on trial, no longer installing (but busy: FR1 m5)", lvota.installing() is False
+      and lvota.phase() == "trial")
 ship_runs(FILES[V1], "0.2.1 running")
 check("config.py deleted (kept in ota/old)", read("config.py") is None and read("ota/old/config.py") == OLD["config.py"])
 check("installed() is 0.2.1", lvota.installed()["v"] == V1)
@@ -447,12 +511,29 @@ ship_runs(FILES[V1], "M2: leftovers")
 check("M2: staging the next update clears ota/old/", send_env(FX["env"]["0.2.2-lv-test"])[0] == 200
       and not [p for p in olds if read(p) is not None])
 lvota.rmtree(lvota.NEW)
-# while on trial, staging keeps ota/old/ (lvboot may still need it to roll back)
+# 0.3.0 fix review FR1 m5 / FR3 f3: while on trial nothing new is staged or applied (lvboot
+# keeps ota/old/ for this trial's rollback; a second update swapped in over it would roll
+# back to a mix of three sets): every envelope piece, every file piece and apply answer 409
+# "busy, try again in a couple of minutes", and ota/old/ and ota/new/ stay as they are.
 unsnap(before)
 rm(lvota.STATE + ".tmp")
-check("a second update while on trial", send_env(FX["env"]["0.2.2-lv-test"])[0] == 200)
-check("M2: on trial, staging keeps ota/old/", all(read(p) == before[p] for p in olds))
-lvota.rmtree(lvota.NEW)
+check("f3: on trial", lvota.phase() == "trial" and lvota.installing() is False)
+_news = dict((p, read(p)) for p in before if p.startswith(lvota.NEW + "/"))
+_e2 = json.dumps(FX["env"]["0.2.2-lv-test"]).encode()
+r = lvota.put({"f": "0", "n": str(len(_e2)), "o": "0"}, _e2[:300])
+check("f3: a second update's envelope while on trial -> 409 busy", r[0] == 409 and r[1]["have"] is None
+      and r[1]["err"] == lvota.BUSY == "busy, try again in a couple of minutes", r)
+r = lvota.put({"f": "0", "n": str(len(_e2)), "o": "0"}, _e2)
+check("f3: ... a whole one too", r[0] == 409 and r[1]["err"] == lvota.BUSY, r)
+r = lvota.put({"f": "0", "n": str(len(_e2)), "o": "300"}, _e2[300:600])
+check("f3: ... a later piece too", r[0] == 409 and r[1]["err"] == lvota.BUSY, r)
+r = lvota.put({"f": "1", "o": "0"}, b"x" * 10)
+check("f3: ... a file piece too", r[0] == 409 and r[1]["have"] is None and r[1]["err"] == lvota.BUSY, r)
+r = lvota.apply()
+check("f3: ... and apply", r[0] == 409 and r[1]["err"] == lvota.BUSY, r)
+check("f3: on trial, ota/old/ untouched", all(read(p) == before[p] for p in olds))
+check("f3: on trial, ota/new/ untouched", all(read(p) == b for p, b in _news.items())
+      and lvota.phase() == "trial")
 check("good(): kept", lvota.good() is True)
 check("last: installed", lvota.read_json(lvota.LAST)["result"] == "installed")
 check("cleaned up", read(lvota.STATE) is None and lvota.os.listdir("ota") == ["last.json"], lvota.os.listdir("ota"))
@@ -770,7 +851,8 @@ check("unknown: 404", c == 404)
 # R1 m5: lvota.api's put went to lvotap (dead on the board); now only safe mode's fallback
 # comes here, when lvotap.py won't load (R1 M2): an answer, not silence
 c, j = http(Req("POST", "/api/ota/put", {"f": "0", "n": "10", "o": "0"}, b"x", tok="tok"))
-check("R1 m5: put through lvota.api -> 503, says why", c == 503 and "update code" in j["err"], j)
+check("R1 m5 / FR1 m3: put through lvota.api -> 500 (not retried as busy), says why", c == 500
+      and j["err"] == lvota.DAMAGED and "damaged" in j["err"] and j["have"] is None, j)
 # R3 M1: cancel is refused between apply and the restart too
 lvota.write_json(lvota.STATE, {"phase": "ready", "v": "9.9.9"})
 c, j = http(Req("POST", "/api/ota/cancel", tok="tok"))
@@ -792,18 +874,47 @@ def run(c):
     return asyncio.run(c)
 
 
+# FR1 M1 / FR3 i1: lvota.KEYS must hold the release key (lvotak.KIDS) under its real id
+_test_keys = dict(lvota.KEYS)
+check("FR1 M1: the shipped KEYS pin 2111b2e9", list(REAL_KEYS) == ["2111b2e9"] and lvotak.KIDS == ("2111b2e9",))
+check("FR1 M1: keys_ok(the shipped KEYS)", lvotak.keys_ok(REAL_KEYS) is True)
+check("FR1 M1: keys_ok(the shipped + a test key)", lvotak.keys_ok(dict(REAL_KEYS, **_test_keys)) is True)
+_rk = REAL_KEYS["2111b2e9"]
+for _why, _k in (("empty", {}), ("not a dict", [("2111b2e9", _rk)]), ("None", None),
+                 ("only a test key", _test_keys),
+                 ("the id on another key", {"2111b2e9": binascii.unhexlify("ab" * 32)}),
+                 ("a 31-byte key", {"2111b2e9": _rk[:31]}),
+                 ("hex text, not bytes", {"2111b2e9": binascii.hexlify(_rk).decode()}),
+                 ("a bad extra key", dict(REAL_KEYS, x=b"short"))):
+    check("FR1 M1: keys_ok refuses %s" % _why, lvotak.keys_ok(_k) is False)
+lvota.KEYS = _test_keys
 sys.modules.pop("lvsig", None)
-_had = [m for m in ("lvotaq", "lvotap", "lvsig") if m in sys.modules]
+trial_state()
+try:
+    got = run(lvotak.keep(None, FAULT, FAULT_LAST))
+except Exception as e:
+    got = type(e).__name__
+check("FR1 M1: KEYS without the release key: the trial is not kept", got == "ValueError"
+      and lvota.read_json(lvota.STATE)["phase"] == "trial", got)
+rm(lvota.STATE)
+lvota.KEYS = dict(REAL_KEYS, **_test_keys)
+sys.modules.pop("lvsig", None)
+_had = [m for m in ("lvotaq", "lvotap", "lvsig", "lvsafe") if m in sys.modules]
 check("R1 M2: the update path checks out", run(lvotak.check()) is True)
-check("R1 M2: ... and leaves none of it loaded", not [m for m in ("lvotaq", "lvotap", "lvsig")
-                                                      if m in sys.modules and m not in _had])
+check("R1 M2: ... and leaves none of it loaded (lvsafe too)", not [m for m in ("lvotaq", "lvotap", "lvsig", "lvsafe")
+                                                                   if m in sys.modules and m not in _had])
+check("FR1 m4: lvsafe is part of it", [x for x in lvotak.NEEDS if x[0] == "lvsafe"])
 check("R1 M2: lvsig refuses the known signature tampered", lvotak.sig_ok() is True)
 # a module of the chain shadowed or broken (a stale .py ahead of the .mpy): not kept
 SH = HERE + "/build/ota-shadow-" + sys.implementation.name
 for name, src, want in (("lvsig", "def verify(a, b, c):\n    return True\n", "false"),
                         ("lvotaq", "X = 1\n", "ImportError"),
                         ("lvotap", "raise ImportError('damaged')\n", "ImportError"),
-                        ("lvsig", "syntax error here(\n", "SyntaxError")):
+                        ("lvsig", "syntax error here(\n", "SyntaxError"),
+                        # FR1 m4: a damaged safe mode is not kept either
+                        ("lvsafe", "raise ImportError('damaged')\n", "ImportError"),
+                        ("lvsafe", "def check(t):\n    pass\n", "ImportError"),
+                        ("lvsafe", "x = (\n", "SyntaxError")):
     try:
         os.mkdir(SH)
     except OSError:
