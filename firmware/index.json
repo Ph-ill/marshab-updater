@@ -13,7 +13,7 @@
       "date": "2026-10-28",
       "label": "Safe mode, and a power-safe Ship light switch (test)",
       "path": "/firmware/releases/0.2.7-ota-phone/release.json",
-      "bytes": 178138,
+      "bytes": 182545,
       "files": 25,
       "frozen": "2661c2144844",
       "ota": "2111b2e9"
