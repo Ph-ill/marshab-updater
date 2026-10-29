@@ -460,9 +460,10 @@ m_peer_end = m_peer - m_code + grow
 board = peak[0] - m_peer_end - m_fake  # what a board holds: no second ship, no fake radio
 BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # The cap is the Pico's: a 32-bit build. The 64-bit port's figure is printed for comparison.
-# Hail/Test light can own the pin for the entire run; the notifier must not write
-# over them. The separate TestPin and phone assertions cover those real playbacks.
-led_ok = (ship.led.enabled and (ship.led.writes >= 6 or (OTA and LIVE and TestPin.n >= 26)) if lvship.game_fw() or "--force" in sys.argv else
+# The notifier wrote its own pattern (6+ writes) in every mode, OTA+LIVE too: a hail's
+# flicker or Test light owns the pin only for its own seconds, not the run (0.3.0 review 2
+# n1: review 1 had let OTA+LIVE pass on Test light's writes alone).
+led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
 ok = (synced and http_ok[0] and led_ok and
       (base == 0 or BITS == 64 or (0 < board < 80000)))
@@ -524,13 +525,16 @@ if BAT:
     print("battery: %s after %d readings while idle, lvbatt %s: %s" % (
         B, bat[1], "loaded" if "lvbatt" in sys.modules else "dropped", "ok" if bat_ok else "FAIL"))
 if OTA and WEB:
-    # Two patterns: each has 6 blink edges, 6 breath edges and the final off.
-    # Busy HTTP/radio collapses PWM to solid middles, so 200 writes is not required.
-    # The phone also verifies both starts, durations and mid-playback exclusions.
-    lt_ok = TestPin.n >= 26 and "lvledtest" not in sys.modules
+    # Two patterns: each has 6 blink edges, 6 breath edges and the final off (26 writes).
+    # With the radio quiet the breaths are PWM steps (hundreds of writes): 200 required, as
+    # before review 1 (0.3.0 review 2 n1). With Hail's radio and phones busy (--live) the
+    # task gets fewer turns and a breath can collapse to its solid middles, so 26 there;
+    # tests/test_ledtest.py checks the PWM breaths themselves (>=100 writes each).
+    lt_min = 26 if LIVE else 200
+    lt_ok = TestPin.n >= lt_min and "lvledtest" not in sys.modules
     ok = ok and lt_ok
-    print("test light: pin writes %d, lvledtest %s: %s" % (
-        TestPin.n, "loaded" if "lvledtest" in sys.modules else "dropped", "ok" if lt_ok else "FAIL"))
+    print("test light: pin writes %d (at least %d), lvledtest %s: %s" % (
+        TestPin.n, lt_min, "loaded" if "lvledtest" in sys.modules else "dropped", "ok" if lt_ok else "FAIL"))
 if LIVE:
     # Hail both ways over the same syncs: the phone's to the peer acked back to this ship, the
     # peer's to this one taken (and acked); nothing refused as bad, lvliveapi dropped.
