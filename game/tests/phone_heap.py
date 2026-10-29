@@ -4,7 +4,7 @@ Starts tests/mp_sync_heap.py --phone under MicroPython (the board side, one proc
 plays two phones against it from here (tests/phone_flow.py over real sockets, so the
 phones' buffers aren't on the board's heap). Every answer is checked; the heap line and
 RESULT come from the board side, with the 80,000 B cap at 32-bit.
-  python3 tests/phone_heap.py MICROPYTHON [dir | frozen] [--led] [--bat] [--ota]  (from game/)
+  python3 tests/phone_heap.py MICROPYTHON [dir | frozen] [--led] [--bat] [--ota [--live]] [--everyone]  (from game/)
 --ota: a third phone uploads a signed update (the game firmware's own files as a newer
 version, signed with a test key) in pieces while the two play, the way web/ota.js does:
 a refused envelope first, a piece at a wrong offset, then everything; the board checks
@@ -250,6 +250,82 @@ async def bat_look(req, fail, log):
     log("bat: /api/bat answered %d looks, 72%% and charging" % n)
 
 
+async def live_hail(req, fail, log):
+    """--live: crew 5 opens the ship-to-ship page (GET /api/live), waits for ship 2 to show up
+    able to take hails, hails it (POST /api/live/hail), and polls until the peer's ship has
+    it ("Delivered"), taking the peer's hail meanwhile and marking it seen; /api/coex (no
+    session) is asked too. lvliveapi loads per request through main.py's ota_route."""
+    H = {"User-Agent": "heapV", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+
+    async def call(method, path, obj=None, tok=None):
+        h = dict(H)
+        if tok:
+            h["X-Crew-Token"] = tok
+        for _ in range(50):
+            try:
+                s, _, b = await req(method, path, bytes(json.dumps(obj), "utf-8") if obj is not None else b"", h)
+            except OSError:
+                s, b = 503, b"reset"
+            if s != 503:
+                break
+            await asyncio.sleep(0.2)
+        return s, b
+    await asyncio.sleep(4)
+    s, b = await call("POST", "/api/login", {"crew": 5, "pin": "1234"})
+    if s != 200:
+        return fail("live: sign-in %d %s" % (s, b))
+    tok = json.loads(b)["token"]
+    s, b = await call("GET", "/api/coex")
+    if s != 200 or "ble" not in json.loads(b):
+        return fail("live: /api/coex %d %s" % (s, b))
+    s, _ = await call("GET", "/api/live")
+    if s != 401:
+        return fail("live: /api/live without a session %d, want 401" % s)
+    j = None
+    for _ in range(600):
+        s, b = await call("GET", "/api/live", None, tok)
+        if s != 200:
+            return fail("live: /api/live %d %s" % (s, b))
+        j = json.loads(b)
+        if any(p["s"] == 1 and p.get("cap") for p in j["peers"]):
+            break
+        await asyncio.sleep(0.5)
+    else:
+        return fail("live: ship 2 never heard able to take hails: %s" % j)
+    s, b = await call("POST", "/api/live/hail", {"to": 1, "ph": 0}, tok)
+    if s != 200:
+        return fail("live: hail %d %s" % (s, b))
+    hid = json.loads(b)["id"]
+    s, b = await call("POST", "/api/live/hail", {"to": 1, "ph": 1}, tok)
+    if s != 429:
+        return fail("live: a second hail while the first is on its way %d %s, want 429" % (s, b))
+    got = sent = False
+    for _ in range(1200):
+        s, b = await call("GET", "/api/live", None, tok)
+        j = json.loads(b) if s == 200 else {}
+        for o in j.get("out", ()):
+            if o["id"] == hid and o["st"] >= 2:
+                sent = True
+        for i in j.get("in", ()):
+            if i["from"] == 1 and not got:
+                got = True
+                s2, b2 = await call("POST", "/api/live/seen", {"id": i["id"]}, tok)
+                if s2 != 200:
+                    return fail("live: seen %d %s" % (s2, b2))
+        if sent and got:
+            break
+        await asyncio.sleep(0.5)
+    else:
+        return fail("live: hail delivered %s, peer's hail in %s: %s" % (sent, got, j))
+    # The radio test's probes, 4 KB each (streamed by lvliveapi.ping), while the sync runs.
+    for k in range(6):
+        s, b = await call("GET", "/api/coex/ping?kb=4", None, tok)
+        if s != 200 or len(b) != 4096:
+            return fail("live: /api/coex/ping %d %d B" % (s, len(b)))
+    log("live: hailed ship 2 (delivered), a second refused while on its way, ship 2's hail in and seen,"
+        " 6 radio-test probes of 4 KB")
+
+
 def main(argv):
     mp, mode = argv[0], argv[1:]
     os.makedirs(DATA, exist_ok=True)
@@ -283,11 +359,15 @@ def main(argv):
             jobs.append(funnel_hello(req, fails.append, print))
             jobs.append(code_change(req, fails.append, print))
             jobs.append(led_test(req, fails.append, print))
+            if "--live" in mode:
+                jobs.append(live_hail(req, fails.append, print))
             if "--bat" in mode:
                 jobs.append(bat_look(req, fails.append, print))
         return await asyncio.gather(*jobs)
     try:
         asyncio.run(phones())
+    except Exception as e:           # a phone's own error: still show what the board said
+        fails.append("phones: %r" % (e,))
     finally:
         open(DATA + "/done", "w").close()
     out = p.stdout.read()

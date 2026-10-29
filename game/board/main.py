@@ -118,7 +118,13 @@ def ota_hooks(lvweb, web):
             if sh.clock.learn_headers(req.header):
                 sh.day_check()
             b = sh.bat
-            return await lvweb.send_json(w, 200, {"v": sh.v, "bat": b[:3] if b else None})
+            j = {"v": sh.v, "bat": b[:3] if b else None}
+            L = getattr(sh, "live", None)
+            if L is not None:
+                # lv: the ship-to-ship state's version (a hail or its receipt came in: the
+                # page asks /api/live).
+                j["lv"] = L.v
+            return await lvweb.send_json(w, 200, j)
         if req.path == "/api/hello" and req.method == "GET":
             # The home-screen funnel (board/lvfunnel.py, web/funnel.js): has the ship seen
             # this phone open the game from its icon? Loaded per request, like lvota.
@@ -127,7 +133,22 @@ def ota_hooks(lvweb, web):
                 return await lvweb.send_json(w, 200, lvfunnel.api(web, req))
             finally:
                 lvship.drop("lvfunnel")
+        if req.path.startswith("/api/live") or req.path.startswith("/api/coex"):
+            # Ship-to-ship (board/lvliveapi.py, web/live.js): Hail, the Settings switches, the
+            # radio check and its test's probe (streamed). Loaded per request, like lvota.
+            import lvliveapi
+            try:
+                if req.path == "/api/coex/ping":
+                    return await lvliveapi.ping(lvweb, web, req, w)
+                s, j = lvliveapi.api(web, req)
+            finally:
+                lvship.drop("lvliveapi")
+                lvship.drop("lvlivein")
+            return await lvweb.send_json(w, s, j)
         if req.path.startswith("/api/ota"):
+            if req.method != "GET":
+                # An update coming in from a phone: Hail holds its dials (lvlive.OTA_MS).
+                web.ship.ota_t = lvship.ticks_ms() or 1
             import lvota
             try:
                 return await lvota.api(web, req, w)
@@ -650,6 +671,15 @@ def main():
             import lvstat
             await asyncio.start_server(lvstat.server(ship), "0.0.0.0", cfg["http_port"])
             print("web: status only on http://%s/ (the phone game needs the game firmware)" % ip)
+        if ship.ble is not None:
+            # Ship-to-ship items (Hail: board/lvlive.py) over the sync link: on unless
+            # switched off, off by itself after a fault or crash.
+            try:
+                import lvlive
+                lvlive.install(ship, getattr(ship, "data", "/data"))
+            except Exception as e:
+                ship.live, ship.live_why = None, "didn't start: %r" % (e,)
+                print("live: " + ship.live_why)
         if trial:
             asyncio.create_task(ota_ok(web, cfg["hotspot"] and wanted(cfg)))
         asyncio.create_task(healthy())

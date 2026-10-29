@@ -340,6 +340,22 @@ def main(argv):
     seasons = int(argv[argv.index("--seasons") + 1]) if "--seasons" in argv else 0
     spoilers = "--spoilers" in argv  # otherwise summaries never print ending or card ids
 
+    if "--everyone" in argv:
+        # The memory tests' busiest likely season: all eight crew open the game every
+        # day of the season, never out of range, with the usual habits once there. Only
+        # build/season_log_all.bin is written (tests/mp_sync_heap.py --everyone); the
+        # reference season's outputs above stay as they are.
+        for pr in PROFILES:
+            pr["p"] = 1.0
+            pr.pop("offline", None)
+        pack = load_pack(pack_path)
+        st, authored, _, _ = reference_season(pack, seed=1)
+        with open(os.path.join(ROOT, "build", "season_log_all.bin"), "wb") as f:
+            for _, r in authored:
+                f.write(r)
+        print("everyone plays: %d records over %d days" % (len(authored), pack.season))
+        return 0
+
     if seasons:
         endings, fired_any, t0 = {}, {}, time.time()
         dil = {"owner": 0, "astronaut": 0}

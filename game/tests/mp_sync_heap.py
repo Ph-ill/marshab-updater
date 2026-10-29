@@ -38,6 +38,18 @@ BAT = "--bat" in sys.argv
 # build/heap-ota-mod/ (tests/phone_heap.py writes it: board/lvota.py with a test key and its
 # staging under build/heap-ota/), so a phone can upload a signed update while the others play.
 OTA = "--ota" in sys.argv
+# --live (with --phone --ota): ship-to-ship (board/lvlive.py) on both ships, as main.py's
+# run() installs it; the peer queues a hail for this ship, and a sixth phone hails the peer
+# through main.py's ota_route (board/lvliveapi.py, loaded per request) while the others play.
+LIVE = "--live" in sys.argv
+# --everyone: the season where all eight crew play every day (build/season_log_all.bin,
+# python3 sim/season.py --everyone: about 2.5 times the reference season's records): the
+# busiest log a season is likely to have, everything else as above. Report-only against the cap: the board's own copy of a log that size (lv/chlog.py, the frozen
+# lv-core 0.2.0's, ~30 B a record on the Pico: ~20 KB for 673 records) already takes 0.2.7
+# over 80,000 B at an update's signature check, Hail or not, and only a new core (a reflash,
+# not an update) can change that. Everything else is still checked; the cap figure is printed.
+EVERYONE = "--everyone" in sys.argv
+LOG = "build/season_log_all.bin" if EVERYONE else "build/season_log.bin"
 if LED or BAT:
     sys.path.insert(0, "tests/fakeboard")
     import fakeboard
@@ -107,10 +119,12 @@ from lv import record as R          # noqa: E402
 from lv import sync as S            # noqa: E402
 from lv.chlog import ChoiceLog      # noqa: E402
 from lv.ble import BleSync          # noqa: E402
+if LIVE:
+    import lvlive                    # resident on a board (lvlivein, lvlivex, lvliveapi and lvflick load per use)
 m_code = sample()
 
 FK = b"test-fleet-key-not-secret"
-with open("build/season_log.bin", "rb") as f:
+with open(LOG, "rb") as f:
     RAW = f.read()
 NREC = len(RAW) // R.LEN
 FAST = {"scan_every_ms": 6000, "scan_ms": 3000}
@@ -122,6 +136,37 @@ for i in range(NREC):
     if R.ship(r) == 1:
         plog.merge(r)
 peer = BleSync(S.Node(plog, 1, FK, 42), w.new(), FAST)
+if LIVE:
+    class PeerClock:                 # the peer has no phones: no time, so no hail light
+        def minute(self):
+            return None
+
+        def date(self):
+            return None
+
+        def known(self):
+            return False
+
+    class PeerShip:
+        ble, node, fk, clock, led, live, ledtest = peer, peer.node, FK, PeerClock(), None, None, None
+        live_why = None
+
+        def say(self, s):
+            pass
+    try:
+        os.mkdir(DATA + "-peer")
+    except OSError:
+        pass
+    for n in ("live.json", "livebox.json", "fault.json"):
+        try:
+            os.remove(DATA + "-peer/" + n)
+        except OSError:
+            pass
+    peer_link = lvlive.install(PeerShip(), DATA + "-peer")
+    import lvlivein                  # (per use, as lvliveapi loads it for a phone's hail)
+    lvlivein.send(peer_link, 1, 0, bytes((1, 0, 1)))        # "Good morning" to ship 1 (this one) from crew 2
+    lvship.drop("lvlivein")
+    lvlivein = None
 m_peer = sample()
 cfg = lvship.load_config("/nonexistent")
 cfg["day"] = 42
@@ -214,6 +259,13 @@ if WEB:
     src = g = None
     gc.collect()
     handler = web.handle
+    if LIVE:
+        for n in ("live.json", "livebox.json", "fault.json", "hail.json"):
+            try:
+                os.remove(DATA + "/" + n)
+            except OSError:
+                pass
+        lvlive.install(ship, DATA)            # as main.py's run() does
 else:
     handler = lvstat.server(ship)
 during = [0]
@@ -328,7 +380,7 @@ BITS = 64 if sys.maxsize > 2 ** 32 else 32
 led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
 ok = (synced and http_ok[0] and led_ok and
-      (base == 0 or BITS == 64 or (0 < board < 80000)))
+      (base == 0 or BITS == 64 or EVERYONE or (0 < board < 80000)))
 import lv                                   # noqa: E402
 if FROZEN:
     # the core is the frozen one (not hidden by a lv/ directory). Since lv-core 0.2.0 the glue
@@ -356,6 +408,9 @@ print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio
       "board peak (peak - peer - fake radio) %d B%s; main.py's resident code %d B (in the peak)" % (
           peak[0], got, t, m_peer_end, board, " (cap 80,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 80,000 B cap",
           m_main))
+if EVERYONE and BITS == 32 and board >= 80000:
+    print("heap: the everyone-plays season is %d B over the 80,000 B cap (report-only: the frozen "
+          "core's log, see --everyone above)" % (board - 80000 + 1))
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
@@ -384,6 +439,19 @@ if OTA and WEB:
     ok = ok and lt_ok
     print("test light: pin writes %d, lvledtest %s: %s" % (
         TestPin.n, "loaded" if "lvledtest" in sys.modules else "dropped", "ok" if lt_ok else "FAIL"))
+if LIVE:
+    # Hail both ways over the same syncs: the phone's to the peer acked back to this ship, the
+    # peer's to this one taken (and acked); nothing refused as bad, lvliveapi dropped.
+    L = ship.live
+    PL = peer_link
+    lv_ok = (L is not None and PL is not None and L.n["in"] >= 1 and PL.n["in"] >= 1 and not L.out
+             and not PL.out and L.n["bad"] == 0 and PL.n["bad"] == 0 and "lvliveapi" not in sys.modules
+             and "lvlivein" not in sys.modules)
+    ok = ok and lv_ok
+    print("live: ship %s, peer %s, waiting %d/%d, lvliveapi and lvlivein %s: %s" % (
+        L and L.n, PL and PL.n, len(L.out) if L else -1, len(PL.out) if PL else -1,
+        "loaded" if "lvliveapi" in sys.modules or "lvlivein" in sys.modules else "dropped",
+        "ok" if lv_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:
