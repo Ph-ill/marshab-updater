@@ -10,8 +10,10 @@
 #   GET  /api/coex            the radio check: Bluetooth sync and Wi-Fi side by side
 #   GET  /api/coex/ping?kb=N  the radio test's probe (main.py streams it: N KB, at most
 #                             PING_KB, in 512 B pieces, with the Bluetooth state then)
-# Everything but GET /api/coex needs a signed-in phone (401). The hailer is the ship's crew
-# member: crew N lives on ship N, so "to" is a ship as well as a crewmate.
+# Everything needs a signed-in phone (401; the radio check too since 0.3.0 review R3 m3). The
+# hailer is the ship's crew member: crew N lives on ship N, so "to" is a ship as well as a
+# crewmate. The page learns that something changed from "lv" in its 5 s GET /api/bat
+# (main.py: the Link's version), then asks GET /api/live; /api/hello has nothing of Hail.
 #
 # Hails are kept in /data/hail.json for the day (at most HMAX each way):
 #   o: [ref, to, phrase, epoch ms, state]  state 0 sending, 2 delivered, 3 seen, 4 didn't go
@@ -122,7 +124,10 @@ def state(sh, you):
     i = [{"id": h[0], "from": h[1], "by": h[6] if len(h) > 6 else h[1], "ph": h[2], "t": h[3], "seen": h[4],
           "back": 1 if h[5] else 0, "can": 1 if e and h[3] and e - h[3] < BACK_MS else 0,
           "sent": h[7] if len(h) > 7 else None} for h in j["i"]]
+    # why: the reason in a few fixed words (the page words it: web/live.js lvWhy); at: the
+    # day it paused itself, if it did
     r = {"on": L is not None, "why": getattr(sh, "live_why", None) if L is None else None,
+         "at": c.get("at") if L is None else None,
          "light": light(sh, c), "lv": L.v if L else 0,
          "me": sh.node.ship, "peers": peers, "out": o, "in": i, "today": today(j),
          "max": DAY_MAX, "lights": L.lc[1] if L and L.lc[0] == sh.clock.date() else 0,
@@ -290,11 +295,11 @@ def api(web, req):
     """main.py routes /api/live* and /api/coex here. -> (status, obj)"""
     sh = web.ship
     p = req.path
-    if p == "/api/coex" or p == "/api/live/coex":
-        return coex(sh) if req.method == "GET" else (404, {"err": "no such thing"})
     you = web.get_phone().who(req)
     if you is None:
         return 401, {"err": "signed out"}
+    if p == "/api/coex" or p == "/api/live/coex":
+        return coex(sh) if req.method == "GET" else (404, {"err": "no such thing"})
     if sh.clock.learn_headers(req.header):
         sh.day_check()
     if req.method == "GET" and p == "/api/live":

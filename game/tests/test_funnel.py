@@ -199,7 +199,8 @@ class LvShip:
 
 g = {"lvship": LvShip, "asyncio": asyncio}
 exec(src, g)
-check("RESET deletes the funnel's store", "funnel.bin" in g["RESET"], g["RESET"])
+import lvcode  # noqa: E402  (Reset this ship: lvcode.reset since 0.3.0)
+check("RESET deletes the funnel's store", "funnel.bin" in lvcode.RESET, lvcode.RESET)
 
 
 class FakeLvweb:

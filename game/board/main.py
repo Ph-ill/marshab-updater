@@ -81,7 +81,15 @@ def ota_hooks(lvweb, web):
 
     async def ota_route(req, w):
         if req.path == "/api/reset":
-            return await reset_ship(lvweb, web, req, w)
+            # "Reset this ship" (board/lvcode.py reset, web/settings.js). Loaded per request,
+            # like lvota (0.3.0: out of main.py's resident code).
+            import lvcode
+            try:
+                if await lvcode.reset(lvweb, web, req, w, reboot):
+                    print("reset: player progress clears in 1 s, then a restart")
+                return
+            finally:
+                lvship.drop("lvcode")
         if req.path.startswith("/ls/"):
             # iOS launch screens, www/ls/<W>x<H>.png (web/launch.py), as they are (a PNG
             # doesn't gzip). A prefix rather than seven STATIC entries: no RAM until asked.
@@ -149,8 +157,9 @@ def ota_hooks(lvweb, web):
                 lvship.drop("lvlivein")
             return await lvweb.send_json(w, s, j)
         if req.path.startswith("/api/ota"):
-            if req.method != "GET":
-                # An update coming in from a phone: Hail holds its dials (lvlive.OTA_MS).
+            if req.method != "GET" and web.get_phone().who(req) is not None:
+                # An update coming in from a signed-in phone: Hail holds its dials and takes
+                # no items (lvlive.OTA_MS). Signed-out POSTs can't hold Hail off (0.3.0 R3 m2).
                 web.ship.ota_t = lvship.ticks_ms() or 1
             if req.path == "/api/ota/put":
                 # The upload itself (board/lvotap.py, 0.3.0): ~3 KB of code, with lvota loaded
@@ -201,55 +210,6 @@ def net_hooks(lvweb, web):
             return r[:2] + b"\x81\x85\x00\x01\x00\x00\x00\x00\x00\x00" + r[12:len(r) - 16 * r[7]]
         return r
     lvweb.dns_answer = dns_answer
-
-
-# "Reset this ship" (the page's Settings): the players' progress goes, the ship's setup stays.
-# Deleted from /data: log.bin (every record this ship holds: taps, votes, gifts; other ships
-# in range sync theirs back), days.bin (the days told), clock.json (the saved flight day and
-# time; the launch date in ship.json brings the day back once a phone tells the time),
-# local.bin (what phones opened and saw), and funnel.bin (the phones the home-screen funnel
-# has seen, and which opened the game from the icon: board/lvfunnel.py). Sign-ins and
-# sessions live in RAM, so the restart forgets them.
-# fault.json (board/lvsafe.py: the crash count) goes too: a reset ship starts with a clean count.
-# Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
-# codes, including any changed in Settings: board/lvcode.py), their backups ship.json.bak and
-# crew.json.bak (lvsafe), the installed software and ota/ (the update state and rollback
-# copy), maint/safe.
-RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin", "fault.json")
-
-
-async def reset_ship(lvweb, web, req, w):
-    # POST /api/reset {confirm: this ship's number} with a signed-in X-Crew-Token, else
-    # 401/403 and nothing changes. 200, then the files go and the board restarts.
-    if req.method != "POST":
-        return await lvweb.send_json(w, 404, {"err": "no such thing"})
-    if web.get_phone().who(req) is None:
-        return await lvweb.send_json(w, 401, {"err": "signed out"})
-    sh = web.ship
-    try:
-        import json
-        ok = int(json.loads(req.body or b"{}")["confirm"]) == sh.cfg["ship_id"]
-    except Exception:
-        ok = False
-    if not ok:
-        return await lvweb.send_json(w, 403, {"err": "Type this ship's number to confirm."})
-    await lvweb.send_json(w, 200, {"ok": True, "restart_ms": 1500})
-
-    async def later():
-        await asyncio.sleep(1)
-        # No await from here on: nothing can write a file back before the restart.
-        import os
-        for f in RESET:
-            try:
-                os.remove(sh.data + "/" + f)
-            except OSError:
-                pass
-        print("reset: player progress cleared, restarting")
-        if reboot:
-            return reboot()
-        import machine
-        machine.reset()
-    asyncio.create_task(later())
 
 
 class Sink:
@@ -710,9 +670,11 @@ def main():
             # switched off, off by itself after a fault or crash.
             try:
                 import lvlive
+                ship.trial = trial          # (a crash from before an update: lvlivex.install)
                 lvlive.install(ship, getattr(ship, "data", "/data"))
             except Exception as e:
-                ship.live, ship.live_why = None, "didn't start: %r" % (e,)
+                # (the type only: the page shows live_why, never an exception's text)
+                ship.live, ship.live_why = None, "didn't start: " + type(e).__name__
                 print("live: " + ship.live_why)
         if trial:
             asyncio.create_task(ota_ok(web, cfg["hotspot"] and wanted(cfg)))

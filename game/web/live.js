@@ -139,6 +139,15 @@ async function lvTest(){
   LVR.run=0;if(route==="coex")view();
 }
 let LVC=null;
+// why Hail paused itself, in words (the ship's few fixed reasons, lvlivex.py; R2 m4: never
+// an exception's text) and when: "after a problem yesterday"
+function lvWhy(){
+  const w=LV.why||"",d=LV.at,t=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/86400000);
+  const when=d==null?"":d===t?" today":d===t-1?" yesterday":" on "+new Date(d*86400000).toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"});
+  if(w==="no Bluetooth")return "because its Bluetooth isn't running";
+  if(w==="no fleet key")return "because it isn't set up for the fleet yet";
+  return "after a problem"+when;
+}
 function lvSect(){
   if(!LV)return `<section id=set-live></section>`;
   let o=`<section id=set-live><div class=lab><span>Ship-to-ship</span><span>${LV.on?"on":"off"}</span></div>`;
@@ -148,7 +157,7 @@ function lvSect(){
     o+=`<p class=lvwhy>Hails are paused on every ship for now. Your ship still syncs the story with the fleet, and an update will bring hails back.</p><button class="btn sec" disabled><span>Ship-to-ship: paused</span><i>for the fleet</i></button>`;
   }else if(!LV.on){
     const f=LV.why&&LV.why!=="turned off";
-    o+=`<p class=${f?"lvwhy":"dim"}>${f?`Paused on its own: ${h(LV.why)}. Your ship turned hails off to stay safe; turn them back on when you like.`:"Hails between ships are off. Your ship still syncs the story with the fleet."}</p><button class="btn ${f?"pri":"sec"}" data-lvset=on><span>${f?"Turn back on":"Ship-to-ship: off"}</span><i>${f?"hails":"turn on"}</i></button>`;
+    o+=`<p class=${f?"lvwhy":"dim"}>${f?`Paused on its own ${h(lvWhy())}. Your ship turned hails off to stay safe; turn them back on when you like.`:"Hails between ships are off. Your ship still syncs the story with the fleet."}</p><button class="btn ${f?"pri":"sec"}" data-lvset=on><span>${f?"Turn back on":"Ship-to-ship: off"}</span><i>${f?"hails":"turn on"}</i></button>`;
   }else{
     o+=`<p class=dim>Hails travel from your ship to a crewmate's by Bluetooth. Only what you send goes, signed with your fleet's key.</p><button class="btn sec" data-lvset=off aria-pressed=true><span>Ship-to-ship: on</span><i>turn off</i></button>`;
     o+=`<button class="btn sec" data-lvset=light aria-pressed="${LV.light}"><span>Hail light: ${LV.light?"on":"off"}</span><i>${LV.light?"turn off":"turn on"}</i></button><p class=fine>Your ship's light flashes on and off for about 10 s when a hail lands. Unless you change it here, it does what your Ship light does. Never during quiet hours${LV.qw?` (${lvHM(LV.qw[0])} to ${lvHM(LV.qw[1])})`:""}, and at most ${LV.cap||12} a day (${LV.lights} so far).</p>${lvRest()?`<p class="fine lvrest">${lvRest()}</p>`:""}`;

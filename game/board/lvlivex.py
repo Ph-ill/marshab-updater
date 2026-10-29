@@ -102,6 +102,12 @@ def install(ship, data):
     c = load(cf) or {}
     why = None
     fx = crash(data)
+    if fx is not None and getattr(ship, "trial", False) and c.get("fx") != fx:
+        # The first boot of an update (often installed from safe mode, after that very
+        # crash): the crash was the old software's, so it doesn't turn Hail off; noted as
+        # dealt with, so the boot after the trial is kept doesn't either (0.3.0 R1 m2).
+        c["fx"] = fx
+        save(cf, c)
     # (a phone turned it back on since this very crash: leave it on)
     if fx is not None and c.get("on", True) and c.get("fx") != fx:
         why = "restarted after a fault"

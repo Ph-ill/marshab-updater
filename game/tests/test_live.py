@@ -206,6 +206,10 @@ check("hail when off: 409", st == 409, (st, j))
 st, j = api(s3, "/api/live", who=None)
 st2, j2 = lvliveapi.api(Web(s3), Req("/api/live", who=None))
 check("signed out: 401", st2 == 401)
+st, j = lvliveapi.api(Web(s3), Req("/api/coex", who=None))
+check("R3 m3: coex signed out: 401", st == 401, (st, j))
+st, j = lvliveapi.api(Web(s3), Req("/api/live/coex", who=None))
+check("R3 m3: live/coex signed out: 401", st == 401, (st, j))
 st, j = api(s3, "/api/coex")
 check("coex", st == 200 and j["ble"]["state"] == "idle" and j["live"] is None and "heap" in j, j)
 check("coex has no key", "test-fleet" not in json.dumps(j))
@@ -1027,6 +1031,61 @@ api(a, "/api/live/hail", "POST", {"to": 1, "ph": 1})
 t = run(w, [a, b], 60000, lambda: not a.live.out and a.ble.state == "idle")
 lvliveapi.GAP_MS = gap
 check("R2 M7: ... then it lights", t is not None and b.live.lc[1] == 1, b.live.lc)
+
+# ---- 0.3.0 review group C
+# R1 m2: the first boot of an update (a trial; often installed from safe mode, after the
+# very crash that sent it there) doesn't turn Hail off for the old software's crash, nor
+# does the boot after it
+d = TMP + "/trial"
+mkdir(d)
+with open(d + "/fault.json", "w") as f:
+    f.write('{"n": 2, "why": "MemoryError", "up": 70, "live": 1}')
+
+
+class TrialSh(Sh):
+    trial = True
+
+
+s = TrialSh(bluetooth.World(70), 0, d)
+check("R1 m2: a trial boot after a Hail crash: on", s.live is not None, s.live_why)
+s = Sh(bluetooth.World(71), 0, d)
+check("R1 m2: ... and the boot after the trial: still on", s.live is not None, s.live_why)
+with open(d + "/fault.json", "w") as f:
+    f.write('{"n": 1, "why": "ValueError", "up": 9, "live": 1}')
+s = Sh(bluetooth.World(72), 0, d)
+check("R1 m2: a new crash after the update: off", s.live is None, s.live_why)
+
+# R2 m4: the page gets the day it paused, the reason in fixed words (no exception text)
+st, j = api(s, "/api/live")
+check("R2 m4: paused: why in fixed words, and the day", j["why"] == "restarted after a fault"
+      and j["at"] == s.clock.date(), j)
+
+# R3 m4: a sender's box made again (a new epoch): its old epoch's items, played back, are
+# refused (not taken, not acked), the new epoch's go in
+w, (a, b) = fresh(73)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+api(a, "/api/live/hail", "POST", {"to": 1})
+rec = a.live.out[0][1]
+t = run(w, [a, b], 60000, lambda: not a.live.out and a.ble.state == "idle")
+check("R3 m4: first epoch's hail in", t is not None and b.live.n["in"] == 1, b.live.n)
+e1 = a.live.ep
+a.live.ep, a.live.seq = (e1 + 1) & 255, 0           # (as lvlivex.setup does for a new box)
+lvliveapi.GAP_MS, gap = 0, lvliveapi.GAP_MS
+api(a, "/api/live/hail", "POST", {"to": 1, "ph": 1})
+lvliveapi.GAP_MS = gap
+t = run(w, [a, b], 60000, lambda: not a.live.out and a.ble.state == "idle")
+check("R3 m4: the new epoch's hail in", t is not None and b.live.n["in"] == 2, b.live.n)
+check("R3 m4: the old epoch kept", b.live.hw[0][0] == a.live.ep and e1 in b.live.hw[0][2:], b.live.hw)
+bad0 = b.live.n["bad"]
+a.live.out.append([1, rec, a.clock.date()])
+a.live.nx[1], a.live.gap = [0, 0], 0
+run(w, [a, b], 30000, lambda: b.live.n["bad"] > bad0 and a.ble.state == "idle")
+check("R3 m4: the old epoch played back: refused", b.live.n["bad"] > bad0 and b.live.n["in"] == 2, b.live.n)
+check("R3 m4: ... not acked", len(a.live.out) == 1, a.live.out)
+del a.live.out[:]
+lvlivein.keep(b.live)
+x = lvlivein.load(b.data + "/livebox.json")["h"]["0"]
+check("R3 m4: the epochs left behind survive a restart", x[0] == a.live.ep and e1 in x[2:], x)
 
 rm_tree(TMP)
 print("test_live: %d checks passed" % n[0])

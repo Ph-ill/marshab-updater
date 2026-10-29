@@ -233,7 +233,7 @@ SCEN["live-off"] = async () => {
   await p.evaluate(() => go("set"));
   await p.waitForSelector("#set-live [data-lvset=on]");
   await p.$eval("#set-live", (e) => e.scrollIntoView());
-  ok("live-off: says why", /Paused on its own/.test(await p.textContent("#set-live")));
+  ok("live-off: says why in plain words, with the day (R2 m4)", /Paused on its own after a problem today\./.test(await p.textContent("#set-live")));
   await shot(p, "live-8-paused");
   await p.click("[data-lvset=on]");
   await p.waitForSelector("#set-live [data-lvset=off]");

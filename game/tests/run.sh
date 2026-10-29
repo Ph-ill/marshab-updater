@@ -15,8 +15,8 @@
 # (phone_heap.py ... --ota); signing and the release check (tests/test_ota_release.py);
 # the phone page's update notice and screens (web/ota.js) clicked through against the mock
 # (web/shots_ota.sh, needs playwright-core: PW=...); the home-screen card for each phone
-# browser (web/shots_a2hs.sh, the same); Settings and Reset this ship (board/main.py
-# reset_ship: tests/test_reset.py on all of them; web/shots_settings.sh against the mock).
+# browser (web/shots_a2hs.sh, the same); Settings and Reset this ship (board/lvcode.py
+# reset: tests/test_reset.py on all of them; web/shots_settings.sh against the mock).
 # The home-screen funnel (board/lvfunnel.py, the ship's memory of which phones opened the
 # game from the icon: tests/test_funnel.py on all of them; its /api/hello in the --ota heap
 # run; web/funnel.js in tests/app_e2e.mjs and web/shots_funnel.sh against the board's server).

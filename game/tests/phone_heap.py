@@ -259,8 +259,8 @@ async def bat_look(req, fail, log):
 async def live_hail(req, fail, log):
     """--live: crew 5 opens the ship-to-ship page (GET /api/live), waits for ship 2 to show up
     able to take hails, hails it (POST /api/live/hail), and polls until the peer's ship has
-    it ("Delivered"), taking the peer's hail meanwhile and marking it seen; /api/coex (no
-    session) is asked too. lvliveapi loads per request through main.py's ota_route."""
+    it ("Delivered"), taking the peer's hail meanwhile and marking it seen; /api/coex is asked
+    too, without a session (401) and with one. lvliveapi loads per request through main.py's ota_route."""
     H = {"User-Agent": "heapV", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
 
     async def call(method, path, obj=None, tok=None):
@@ -282,6 +282,9 @@ async def live_hail(req, fail, log):
         return fail("live: sign-in %d %s" % (s, b))
     tok = json.loads(b)["token"]
     s, b = await call("GET", "/api/coex")
+    if s != 401:
+        return fail("live: /api/coex without a session %d, want 401 (0.3.0 R3 m3)" % s)
+    s, b = await call("GET", "/api/coex", None, tok)
     if s != 200 or "ble" not in json.loads(b):
         return fail("live: /api/coex %d %s" % (s, b))
     s, _ = await call("GET", "/api/live")

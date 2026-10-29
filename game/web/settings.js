@@ -35,7 +35,7 @@ function setScreen(){
   if(b)o+=`<section id=set-bat><div class=lab><span>Battery</span></div>${batFacts(b)}</section>`;
   o+=`<section id=set-out><div class=lab><span>This phone</span></div><button class="btn sec" data-out=1><span>Not ${h(nm(S.you))}? Sign out</span><i>this phone</i></button></section>`;
   o+=chgSect(n);
-  o+=`<section id=set-rst class=rst><div class="lab r"><span>Reset this ship</span><span>can't be undone</span></div><p class=dim>Starts LV-${n} over: everyone's progress on it goes (the log, votes, gifts, sign-ins) and it restarts. Its name, Wi-Fi password and software stay. Ships in range may sync their records back.</p>`;
+  o+=`<section id=set-rst class=rst><div class="lab r"><span>Reset this ship</span><span>can't be undone</span></div><p class=dim>Starts LV-${n} over: everyone's progress on it goes (the log, votes, gifts, hails, sign-ins) and it restarts. Its name, Wi-Fi password and software stay. Ships in range may sync their records back.</p>`;
   if(RST==null)o+=`<button class="btn dgr" data-rst=ask><span>Reset this ship</span><i>LV-${n}</i></button>`;
   else o+=`<label class=rstl for=rstn>Type <b class=m>${n}</b>, this ship's number, to confirm</label><input id=rstn class=m inputmode=numeric autocomplete=off maxlength=2 aria-describedby=rste><p id=rste class=err role=alert>${RST!=="ask"&&RST!=="send"?h(RST):""}</p><div class=rstb><button class="btn dgr" data-rst=go disabled><span>${RST==="send"?"Resetting":"Reset"}</span><i>restarts</i></button><button class="btn sec" data-rst=no><span>Cancel</span></button></div>`;
   o+=`</section>`;
