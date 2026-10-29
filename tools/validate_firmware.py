@@ -25,11 +25,15 @@ NOT_LATEST = ("test",)  # listed for hand-picked installs only, never "latest"
 SHA = re.compile(r"^[0-9a-f]{64}$")
 CORE = re.compile(r"^[0-9a-f]{12}$")
 LVX = re.compile(r"^lvx/([a-z_][a-z0-9_]*)\.(mpy|py)$")
-errors, notes = [], []
+errors, notes, warns = [], [], []
 
 
 def err(msg):
     errors.append(msg)
+
+
+def warn(msg):      # worth a look, not a problem (published releases are never edited)
+    warns.append(msg)
 
 
 def load(path):
@@ -121,6 +125,12 @@ def check_frozen(rel, paths, name):
     for d in ("lv", "lvx"):
         if d not in (rel.get("delete") or []):
             err(f"{name}: a frozen-core release must delete {d} before installing")
+    # 0.3.0 R1 (REVIEW2 m1): the hand-built 0.2.4-0.2.7 lost these; build_release.py now adds them
+    if rel.get("channel") == "test" and not (rel.get("hotspot") or {}).get("prefix"):
+        warn(f"{name}: no hotspot.prefix (the updater page will say COEX-n; build with --hotspot-prefix LV-)")
+    for d in ("config.py", "index.html"):
+        if d not in (rel.get("delete") or []) and d not in paths:
+            warn(f"{name}: doesn't delete the coex bench's {d}")
     for d in rel.get("preserve") or []:
         if d.rstrip("/") in ("lv", "lvx") or d.startswith(("lv/", "lvx/")):
             err(f"{name}: must not preserve {d}")
@@ -279,6 +289,8 @@ check_runtime("--online" in sys.argv)
 check_served_tree()
 for n in notes:
     print("ok ", n)
+for w in warns:
+    print("WARN", w)
 for e in errors:
     print("ERR", e)
 print(f"{len(errors)} problem(s)")

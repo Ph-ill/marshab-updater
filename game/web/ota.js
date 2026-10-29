@@ -73,7 +73,7 @@ async function otaSend(f,bytes,n,extra){
   while(o<bytes.length||(!bytes.length&&o===0)){
     const [s,j]=await otaPut(`f=${f}${extra}&o=${o}`,bytes.subarray(o,o+n));
     if(s===409&&j.have!=null){o=j.have;continue}
-    if(s!==200)throw new Error(j.err||"The ship turned the update down.");
+    if(s!==200)throw Object.assign(new Error(j.err||"The ship turned the update down."),{status:s});
     o=j.have!=null?j.have:o+n;OI.done+=0;otaProg(f,o);
     if(j.done||!bytes.length)break;
   }
@@ -85,6 +85,27 @@ function otaBar(){
   const pc=I.step==="send"?Math.round(got*100/tot):I.step==="env"?0:100;
   return `<div id=otap><div class=otabar role=progressbar aria-valuemin=0 aria-valuemax=100 aria-valuenow=${pc}><i style="width:${pc}%"></i></div><p class=fine>${I.step==="env"?"Sending the signature":I.step==="send"?`File ${I.f} of ${sz.length} · ${Math.round(got/1024)} of ${Math.round(tot/1024)} KB`:I.step==="wait"?"Waiting for your ship to come back":"Done"}</p></div>`;
 }
+// SHA-256 of bytes, as hex: the page is served over plain http from the ship, where
+// crypto.subtle isn't available. Only used on the envelope (a few KB), once per install.
+function otaSha(b){
+  const K=[],H=[],r=(x,n)=>x>>>n|x<<32-n;
+  for(let c=2,k=0;k<64;c++){let p=1;for(let d=2;d*d<=c;d++)if(c%d==0){p=0;break}if(p){if(k<8)H[k]=Math.pow(c,1/2)*2**32|0;K[k++]=Math.pow(c,1/3)*2**32|0}}
+  const l=b.length,n=((l+9+63)>>6)<<6,m=new Uint8Array(n);m.set(b);m[l]=128;
+  const dv=new DataView(m.buffer);dv.setUint32(n-4,l*8>>>0);dv.setUint32(n-8,Math.floor(l/2**29));
+  const w=new Array(64);
+  for(let o=0;o<n;o+=64){
+    let [a,bb,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){
+      if(i<16)w[i]=dv.getUint32(o+4*i);
+      else w[i]=(r(w[i-15],7)^r(w[i-15],18)^w[i-15]>>>3)+w[i-7]+(r(w[i-2],17)^r(w[i-2],19)^w[i-2]>>>10)+w[i-16]|0;
+      const t1=h+(r(e,6)^r(e,11)^r(e,25))+(e&f^~e&g)+K[i]+w[i]|0,t2=(r(a,2)^r(a,13)^r(a,22))+(a&bb^a&c^bb&c)|0;
+      h=g;g=f;f=e;e=d+t1|0;d=c;c=bb;bb=a;a=t1+t2|0;
+    }
+    [a,bb,c,d,e,f,g,h].forEach((v,i)=>H[i]=H[i]+v|0);
+  }
+  return H.map((v)=>(v>>>0).toString(16).padStart(8,"0")).join("");
+}
+async function otaCancel(){try{await fetch("/api/ota/cancel",{method:"POST",headers:{"X-Crew-Token":tok}})}catch(e){}}
 async function otaInstall(){
   const r=otaFor(OS_);if(!r||OTA_BUSY)return;
   OTA_BUSY=true;OI={v:r.v,prev:OS_.v,step:"env",f:0,o:0,sizes:JSON.parse(JSON.parse(r.env).m).files.map((f)=>f[1]),msg:""};
@@ -92,13 +113,27 @@ async function otaInstall(){
   try{
     const st=await otaStatus();if(!st)throw new Error("Your ship didn't answer. Stay close and try again.");
     const n=st.chunk||1024,enc=new TextEncoder(),env=enc.encode(r.env);
-    const have=st.staged&&st.staged.v===r.v?st.staged.have:null;
-    if(!have)await otaSend(0,env,n,`&n=${env.length}`);
-    OI.step="send";view();
-    for(let i=0;i<r.files.length;i++){
-      if(have&&have[i]===OI.sizes[i])continue;
-      const b=Uint8Array.from(atob(r.files[i]),(c)=>c.charCodeAt(0));
-      await otaSend(i+1,b,n,"");
+    // Carry on from what the ship already has only if it staged this very envelope (the
+    // same bytes, by hash: a version signed twice never mixes). Anything else staged is
+    // cancelled first and the upload starts again from nothing.
+    let have=st.staged&&st.staged.v===r.v&&st.staged.h&&st.staged.h===otaSha(env)?st.staged.have:null;
+    if(st.staged&&!have)await otaCancel();
+    for(let k=0;;k++){
+      try{
+        if(!have){OI.step="env";view();await otaSend(0,env,n,`&n=${env.length}`)}
+        OI.step="send";view();
+        for(let i=0;i<r.files.length;i++){
+          if(have&&have[i]===OI.sizes[i])continue;
+          const b=Uint8Array.from(atob(r.files[i]),(c)=>c.charCodeAt(0));
+          await otaSend(i+1,b,n,"");
+        }
+        break;
+      }catch(e){
+        // A checksum the ship turned down while carrying on: what it kept isn't this
+        // update's. Cancel and send the whole thing once more, from the signature.
+        if(!have||e.status!==400||k)throw e;
+        await otaCancel();have=null;
+      }
     }
     const a=await fetch("/api/ota/apply",{method:"POST",headers:{"X-Crew-Token":tok}}),j=await a.json().catch(()=>({}));
     if(!a.ok)throw new Error(j.err||"Your ship wouldn't start the update.");

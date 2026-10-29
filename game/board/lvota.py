@@ -5,6 +5,8 @@
 # updating never carries it.
 #
 #   GET  /api/ota                 {ota, v, ch, core, chunk, free, staged, last, src}
+#                                 staged: {v, have, sizes, h: sha256 hex of the envelope as
+#                                 it arrived}; the phone resumes only on a matching h
 #   POST /api/ota/put?f=0&n=N&o=O the signed envelope, in pieces of at most `chunk` bytes
 #   POST /api/ota/put?f=I&o=O     file I of the manifest (1-based), raw bytes from offset O
 #   POST /api/ota/apply           everything staged and checked: restart into it
@@ -23,7 +25,7 @@
 # Each file is checked against its sha256 as soon as its last byte lands.
 #
 # Staging is ota/new/: env (the envelope), ok (written once the signature checked out),
-# f<I> while file I arrives, f<I>.ok once it matches. apply writes ota/state.json
+# eh (the envelope's sha256), f<I> while file I arrives, f<I>.ok once it matches. apply writes ota/state.json
 # {"phase": "ready"} and restarts; boot.py hands that to lvboot.py, which swaps the files
 # in (the old ones go to ota/old/), runs the new set on trial and puts the old one back if
 # it doesn't come up twice. main.py calls good() once the game has been up a while.
@@ -47,6 +49,7 @@ MAX_ENV = 8192
 MAX_FILE = 256 * 1024
 MAX_FILES = 40
 SPARE = 16 * 1024         # flash left free after staging (littlefs needs room to work)
+QUIET_MS = 60000          # the signature check waits this long at most for the radio (0.3.0)
 # Ed25519 public keys allowed to sign an update: key id (first 8 hex of sha256(key)) -> key.
 KEYS = {"2111b2e9": unhexlify("0478d983c1a756c32acf10215359e6f0361ea4800ede2b50031256bcf0f4b58f")}
 reset = None              # tests: called instead of machine.reset()
@@ -221,18 +224,28 @@ def check_manifest(m, inst=None, free=None):
     return None
 
 
-def open_envelope(raw):
-    """(manifest dict, None) if the envelope's signature checks out, else (None, why)."""
+def _env_m(p):
+    """The envelope at p -> (its manifest text, its parsed self)."""
+    with open(p) as fh:
+        env = json.loads(fh.read())
+    return env["m"], env
+
+
+def open_envelope(p):
+    """The envelope staged at path p -> (manifest dict, manifest text, None) if its signature
+    checks out, else (None, None, why). The check (lvsig) is the update's biggest moment for
+    the heap, so nothing of the envelope is held through it but the manifest's hash: the file
+    is read again afterwards, and must hash the same (0.3.0: ~7 KB less at the peak)."""
     try:
-        env = json.loads(raw)
-        m = env["m"]
+        m, env = _env_m(p)
         sig = a2b_base64(env["sig"])
         key = KEYS.get(env.get("kid"))
+        h = hashlib.sha256(m.encode()).digest()
     except Exception:
-        return None, "unreadable update"
+        return None, None, "unreadable update"
+    m = env = None
     if key is None:
-        return None, "signed with a key this ship doesn't know"
-    h = hashlib.sha256(m.encode() if isinstance(m, str) else m).digest()
+        return None, None, "signed with a key this ship doesn't know"
     import lvsig
     import sys
     try:
@@ -248,11 +261,14 @@ def open_envelope(raw):
         except KeyError:
             pass
     if not ok:
-        return None, "the signature doesn't match"
+        return None, None, "the signature doesn't match"
     try:
-        return json.loads(m), None
-    except ValueError:
-        return None, "unreadable update"
+        m = _env_m(p)[0]
+        if hashlib.sha256(m.encode()).digest() != h:
+            return None, None, "the update changed while it was checked"
+        return json.loads(m), m, None
+    except Exception:
+        return None, None, "unreadable update"
 
 
 def free_flash():
@@ -289,7 +305,12 @@ def status():
         for i in range(1, len(m["files"]) + 1):
             p = "%s/f%d" % (NEW, i)
             have.append(m["files"][i - 1][1] if _exists(p + ".ok") else max(0, _size(p)))
-        st["staged"] = {"v": m["version"], "have": have,
+        try:
+            with open(NEW + "/eh") as f:
+                eh = f.read(64)
+        except OSError:
+            eh = None       # staged by 0.2.7 or older: the phone starts again from nothing
+        st["staged"] = {"v": m["version"], "have": have, "h": eh,
                         "sizes": [f[1] for f in m["files"]]}
     else:
         st["staged"] = None
@@ -346,16 +367,21 @@ def put(q, body):
             return have
         if off + len(body) < n:
             return 200, {"ok": True, "have": off + len(body)}
-        with open(p) as fh:
-            raw = fh.read()
-        m, why = open_envelope(raw)
+        m, ms, why = open_envelope(p)
         if m is not None:
             why = check_manifest(m, free=free_flash())
         if why:
             rmtree(NEW)
             return 403, {"err": why}
+        # The staged envelope's hash, exactly as it came (sha256 of the bytes on flash,
+        # read in 512 B pieces: no second copy of it on the heap): the phone resumes an
+        # upload only if its own envelope hashes the same (web/ota.js), so a version signed
+        # twice can never mix pieces of both (0.3.0, review R2).
+        eh = _sha_file(p)
         with open(NEW + "/env", "w") as fh:      # kept as {"m": ...} for lvboot
-            json.dump({"m": json.loads(raw)["m"]}, fh)
+            json.dump({"m": ms}, fh)
+        with open(NEW + "/eh", "w") as fh:
+            fh.write(eh)
         with open(NEW + "/ok", "w") as fh:
             fh.write(m["version"])
         return 200, {"ok": True, "v": m["version"], "files": len(m["files"])}
@@ -415,6 +441,7 @@ async def api(web, req, w):
     if web.get_phone().who(req) is None:
         return await lvweb.send_json(w, 401, {"err": "signed out"})
     if p == "/api/ota/put":
+        await quiet(web, req.q, req.body or b"")
         code, obj = put(req.q, req.body or b"")
     elif p == "/api/ota/cancel":
         rmtree(NEW)
@@ -427,6 +454,30 @@ async def api(web, req, w):
     else:
         code, obj = 404, {"err": "no such thing"}
     return await lvweb.send_json(w, code, obj)
+
+
+async def quiet(web, q, body):
+    """Before the signature check (the envelope's last piece): wait, up to QUIET_MS, until
+    no Bluetooth sync is running and this is the only request being answered. The check
+    (lvsig, ~7 KB with its code) is the update's biggest moment for the heap; a sync with a
+    crewmate back from a long time away is the radio's, and two phones' /api/state answers
+    are the web server's. This way none of them is held at the same time as the check.
+    Nothing awaits between here and the end of the check, so nothing new starts in between
+    (syncs only start in the radio's poll, never in its interrupt handler, and requests
+    only in the server's tasks). The phone's upload has no time limit on a piece, so it
+    just waits; past QUIET_MS (a sync that won't end, phones that never pause) the check
+    goes ahead as before."""
+    try:
+        if q.get("f") != "0" or int(q.get("o", "-1")) + len(body) < int(q.get("n", "0")):
+            return
+    except ValueError:
+        return
+    b = getattr(getattr(web, "ship", None), "ble", None)
+    import lvship
+    t0 = lvship.ticks_ms()
+    while ((b is not None and b.busy()) or getattr(web, "busy", 0) > 1) \
+            and lvship.ticks_diff(lvship.ticks_ms(), t0) < QUIET_MS:
+        await lvship.sleep_ms(50)
 
 
 def restart(web):

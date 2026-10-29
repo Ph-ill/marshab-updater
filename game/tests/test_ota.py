@@ -11,6 +11,7 @@
 import sys
 import os
 import json
+import hashlib
 
 CPY = sys.implementation.name == "cpython"
 HERE = os.getcwd()
@@ -230,6 +231,13 @@ with open(lvota.SHIP, "wb") as f:
     f.write(ship0)
 st = lvota.status()
 check("status: staged, nothing yet", st["staged"]["v"] == V1 and sum(st["staged"]["have"]) == 0, st)
+# review R2 (0.3.0): the phone carries on only with the very envelope it would send now
+check("status: staged h = sha256 of the envelope's bytes", st["staged"]["h"] == binascii.hexlify(hashlib.sha256(raw).digest()).decode(), st["staged"].get("h"))
+_eh = read(lvota.NEW + "/eh")
+rm(lvota.NEW + "/eh")
+check("status: staged by 0.2.7 (no eh): h is None", lvota.status()["staged"]["h"] is None)
+write(lvota.NEW + "/eh", _eh)
+check("status: h back", lvota.status()["staged"]["h"] == binascii.hexlify(hashlib.sha256(raw).digest()).decode())
 m = lvota.manifest()
 idx = [f[0] for f in m["files"]].index("www/app.html.gz") + 1
 size = m["files"][idx - 1][1]
@@ -347,7 +355,10 @@ check("M2: cut points tried both sides of keeping", trial >= 1 and kept >= 3 and
 # the last cut left ota/old/ part-deleted: staging the next update clears it (no state
 # file: nothing could need it), and no boot ever looks at it
 unsnap(before)
-lvota.os = CutOs(len(olds) + 3)     # LAST, .tmp, the state file, then a few old copies
+# LAST, .tmp, the state file, what's left of ota/new/ (env, ok, eh and the directory), then
+# half the old copies (counted, not assumed: 0.3.0 added ota/new/eh)
+news = [p for p in before if p.startswith(lvota.NEW + "/")]
+lvota.os = CutOs(3 + len(news) + 1 + max(1, len(olds) // 2))
 try:
     lvota.good()
 except Cut:
