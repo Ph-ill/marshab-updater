@@ -321,9 +321,10 @@ def check(trial, d=D, say=print, got=None):
     return None
 
 
-def crashed(why, trial, up=0, d=D):
+def crashed(why, trial, up=0, d=D, live=False):
     """main.py caught a crash: count it (not on an update's trial) before the restart. Past
-    SAFE_CAP nothing more is written (a loop of them would only wear the flash)."""
+    SAFE_CAP nothing more is written (a loop of them would only wear the flash). live: the
+    traceback ran through Hail's code (lvlive*, lvflick), kept as "live" for lvlivex.crash."""
     if trial:
         return
     j = faults(d)
@@ -331,6 +332,10 @@ def crashed(why, trial, up=0, d=D):
     if n > SAFE_CAP:
         return
     j["n"], j["why"], j["up"] = n, str(why)[:64], up
+    if live:
+        j["live"] = 1
+    else:
+        j.pop("live", None)
     t = json.dumps(j)
     if not save(d + "/fault.json", t):
         save(d + "/fault.json", t)      # (save() has removed its .new: one more go)

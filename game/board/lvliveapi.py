@@ -14,9 +14,12 @@
 # member: crew N lives on ship N, so "to" is a ship as well as a crewmate.
 #
 # Hails are kept in /data/hail.json for the day (at most HMAX each way):
-#   o: [ref, to, phrase, epoch ms, state]  state 0 sending, 2 delivered, 3 seen, 4 expired
-#   i: [ref, from ship, phrase, epoch ms, seen, back, from crew (who was signed in there)]
-# A hail not delivered by the end of its day expires (its item leaves lvlive's out queue).
+#   o: [ref, to, phrase, epoch ms, state]  state 0 sending, 2 delivered, 3 seen, 4 didn't go
+#   i: [ref, from ship, phrase, epoch ms it arrived, seen, back, from crew (who was signed
+#       in there), epoch ms it was sent (to the minute, by its ship's clock) or None]
+# Hail back is offered for BACK_MS after it arrived (not after the phone first read it).
+# A hail not delivered by the end of its day expires (its item leaves lvlive's out queue:
+# lvlivein.expire, on the ship's own) and stays listed as "Didn't go" through the next day.
 # Fair use: one undelivered hail per crewmate, a 2 min gap to the same crewmate, 20 a day.
 import lvship
 import lvlive
@@ -40,17 +43,14 @@ def _ep(sh):
 def _hl(sh):
     j = load(sh.data + F) or {}
     if j.get("d") != sh.clock.date():
-        # A new day: undelivered hails expire, the lists start again.
+        # A new day: undelivered hails expire (lvlivein.expire takes them out of the queue)
+        # and are listed as "Didn't go" for one more day; the rest start again.
         L = sh.live
         if L is not None:
-            for o in j.get("o", ()):
-                if o[4] < 2:
-                    for q in L.out:
-                        if q[0] == o[1] and hexlify(q[1][2:5]).decode() == o[0]:
-                            L.out.remove(q)
-                            break
-            keep(L)
-        j = {"d": sh.clock.date(), "o": [], "i": []}
+            import lvlivein
+            lvlivein.expire(L)
+        g = [o[:4] + [4] for o in j.get("o", ()) if o[4] < 2]
+        j = {"d": sh.clock.date(), "o": g, "i": []}
     return j
 
 
@@ -60,16 +60,26 @@ def drain(sh, j):
     if L is None or not L.inb:
         return False
     now = _ep(sh)
-    for frm, b in L.inb:
+    for frm, b, t, up in L.inb:
         k = b[0]
+        if t is None and now and up is not None:
+            t = now - max(0, L.now - up)        # came before the clock was known: from uptime
         r = b[5:8]
         if k == 0 or k == 2:
             for o in j["o"]:
                 if o[1] == frm and o[0] == hexlify(r).decode():
                     o[4] = max(o[4], 2 if k == 0 else 3)
         elif k == 1:
-            j["i"].append([hexlify(b[2:5]).decode(), frm, b[5] % PHRASES, now, 0, b[6] & 1,
-                           b[7] if b[7] < 16 else frm])
+            # sent: the sender's clock to the minute (body bytes 3-4, lvlivein.mins), as
+            # epoch ms near the arrival time; None if it didn't say
+            sm, a = b[8] << 8 | b[9], t or now
+            if a and sm and sm != 65535:
+                a0 = a // 60000
+                sm = (a0 - ((a0 - sm) & 65535)) * 60000
+            else:
+                sm = None
+            j["i"].append([hexlify(b[2:5]).decode(), frm, b[5] % PHRASES, a, 0, b[6] & 1,
+                           b[7] if b[7] < 16 else frm, sm])
     del L.inb[:]
     j["i"] = j["i"][-HMAX:]
     keep(L)
@@ -77,10 +87,14 @@ def drain(sh, j):
 
 
 def _pending(L, o):
-    # 0 sending (the first two dials), 1 "will deliver" (waiting for them to be in range)
+    # 0 sending (the first two dials, to a ship heard just now), 1 "will deliver" (waiting
+    # for them to be in range)
     if L is None:
         return 1
     x = L.nx.get(o[1])
+    p = L.ble.peers.get(o[1])
+    if p is None or not p.seen or L.now - p.seen >= lvlive.NEAR:
+        return 1
     return 1 if x is None or x[0] >= 2 else 0
 
 
@@ -96,21 +110,34 @@ def state(sh, you):
         up = L.now if L is not None else None     # the loop's clock, as p.seen
         for k, p in ble.peers.items():
             i = p.info or {}
+            # cap: 1 takes hails, 0 doesn't (an older ship), None not known yet (heard before
+            # Hail started here); off: has Hail, paused (advert bit 6)
             peers.append({"s": k, "ago": max(0, (up - p.seen) // 1000) if up and p.seen else None,
-                          "cap": 1 if i.get("cap") else 0})
+                          "cap": (1 if i["cap"] else 0) if "cap" in i else None, "off": 1 if i.get("off") else 0})
     e = _ep(sh)
     o = []
     for h in j["o"]:
         st = h[4] if h[4] >= 2 else _pending(L, h)
         o.append({"id": h[0], "to": h[1], "ph": h[2], "t": h[3], "st": st})
     i = [{"id": h[0], "from": h[1], "by": h[6] if len(h) > 6 else h[1], "ph": h[2], "t": h[3], "seen": h[4],
-          "back": 1 if h[5] else 0, "can": 1 if e and h[3] and e - h[3] < BACK_MS else 0} for h in j["i"]]
+          "back": 1 if h[5] else 0, "can": 1 if e and h[3] and e - h[3] < BACK_MS else 0,
+          "sent": h[7] if len(h) > 7 else None} for h in j["i"]]
     r = {"on": L is not None, "why": getattr(sh, "live_why", None) if L is None else None,
-         "light": c.get("light", True), "lv": L.v if L else 0,
-         "me": sh.node.ship, "peers": peers, "out": o, "in": i, "today": len(j["o"]),
+         "light": light(sh, c), "lv": L.v if L else 0,
+         "me": sh.node.ship, "peers": peers, "out": o, "in": i, "today": today(j),
          "max": DAY_MAX, "lights": L.lc[1] if L and L.lc[0] == sh.clock.date() else 0,
-         "cap": lvlive.LIGHTS, "quiet": _quiet(sh)}
+         "cap": lvlive.LIGHTS, "quiet": _quiet(sh), "qw": list(getattr(sh.led, "q", None) or (1320, 420))}
     return r
+
+
+def light(sh, c):
+    # the hail light: as set in Settings, else as the Ship light is (lvflick.maybe, the same)
+    v = c.get("light")
+    return bool(getattr(sh.led, "enabled", False)) if v is None else v
+
+
+def today(j):
+    return len([h for h in j["o"] if h[4] != 4])     # (yesterday's "didn't go" don't count)
 
 
 def _quiet(sh):
@@ -134,14 +161,18 @@ def hail(sh, you, b):
             or not isinstance(ph, int) or not 0 <= ph < PHRASES:
         return 400, {"err": "Pick a crewmate."}
     p = sh.ble.peers.get(to) if sh.ble else None
-    if p is not None and p.info and not p.info.get("cap"):
+    if p is not None and p.info and "cap" in p.info and not p.info["cap"]:
+        if p.info.get("off"):
+            return 409, {"err": "Their ship isn't taking hails right now."}
         return 409, {"err": "Their ship needs the update before it can be hailed."}
     j = _hl(sh)
     drain(sh, j)
     e = _ep(sh)
-    if len(j["o"]) >= DAY_MAX:
+    if today(j) >= DAY_MAX:
         return 429, {"err": "That's today's hails: more tomorrow."}
     for h in j["o"]:
+        if h[4] == 4:
+            continue
         if h[1] == to and h[4] < 2:
             return 429, {"err": "Your last hail is still on its way."}
         if h[1] == to and e and h[3] and e - h[3] < GAP_MS:
@@ -151,7 +182,10 @@ def hail(sh, you, b):
         for h in j["i"]:
             if h[1] == to and e and h[3] and e - h[3] < BACK_MS:
                 back = 1
-    ref = send(L, 1, to, bytes((ph % PHRASES, back, you & 255)))
+    from lvlivein import mins
+    m = mins(sh.clock)
+    m = 65535 if m is None else m
+    ref = send(L, 1, to, bytes((ph % PHRASES, back, you & 255, m >> 8, m & 255)))
     j["o"].append([hexlify(ref).decode(), to, ph % PHRASES, e, 0])
     j["o"] = j["o"][-HMAX:]
     save(sh.data + F, j)
@@ -207,7 +241,7 @@ def setting(sh, b):
     elif c.get("on", True) and sh.ble is not None:
         lvlive.install(sh, sh.data)
         sh.say("live: turned on from a phone" if sh.live else "live: still off (%s)" % getattr(sh, "live_why", None))
-    return 200, {"ok": True, "on": sh.live is not None, "why": getattr(sh, "live_why", None)}
+    return 200, {"ok": True, "on": sh.live is not None, "why": getattr(sh, "live_why", None), "light": light(sh, c)}
 
 
 def coex(sh):

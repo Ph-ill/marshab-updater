@@ -38,8 +38,8 @@ def load(path):
 def keep(lk):
     """The Link's queues and counters to /data/livebox.json (lk.v: the page's version)."""
     lk.v += 1
-    save(lk.f, {"e": lk.ep, "s": lk.seq, "o": [[o[0], hexlify(o[1]).decode()] for o in lk.out],
-                "i": [[o[0], hexlify(o[1]).decode()] for o in lk.inb],
+    save(lk.f, {"e": lk.ep, "s": lk.seq, "o": [[o[0], hexlify(o[1]).decode(), o[2]] for o in lk.out],
+                "i": [[o[0], hexlify(o[1]).decode(), o[2]] for o in lk.inb],
                 "h": dict((str(k), v) for k, v in lk.hw.items()), "l": lk.lc})
 
 
@@ -57,7 +57,7 @@ def item(lk, kind, to, body, seq=None):
 def send(lk, kind, to, body):
     """Queue an item for ship `to` (0-7); -> its (epoch, seq) reference, 3 bytes."""
     it = item(lk, kind, to, body)
-    lk.out.append([to, it])
+    lk.out.append([to, it, lk.sh.clock.date()])     # (it goes when the day turns: expire)
     x = lk.nx.get(to)
     if x is None or x[0] >= 2:
         lk.nx[to] = [0, 0]
@@ -97,9 +97,15 @@ def take(lk, s, m, off):
         if h and h[0] == q[0] and q[1] <= h[1]:
             lk.n["dup"] += 1
             continue
-        lk.hw[frm] = q
+        if b[0] == 1 and old(lk, b):        # sent over a day ago: acked, not kept
+            lk.hw[frm] = q
+            lk.n["old"] += 1
+            ch = 1
+            continue
+        _in(lk, frm, b)                     # (kept before it's marked taken: a MemoryError
+        lk.hw[frm] = q                      # between the two and the repeat still goes in)
         lk.n["in"] += 1
-        _in(lk, frm, b)
+        lk.tf = 0
         ch = 1
         if b[0] == 1:                   # a hail: the light (a "seen" is quiet)
             flick(lk)
@@ -113,7 +119,35 @@ def _in(lk, frm, b):
     q = lk.inb
     if len(q) >= L.MAXIN:               # full (nobody's opened the game): the oldest goes
         q.pop(0)
-    q.append([frm, b])
+    c = lk.sh.clock                     # when it came: the phone's clock if known, and the
+    q.append([frm, b, int(c.epoch_ms()) if c.known() else None, lk.now])    # loop's ms
+
+
+def mins(c):
+    # The ship's clock as minutes since 1970, mod 65536 (a hail's send time); None unknown
+    return int(c.epoch_ms()) // 60000 & 65535 if c.known() else None
+
+
+def old(lk, b):
+    """A hail its sender's clock says went over a day ago (delivered late): not kept."""
+    t = b[8] << 8 | b[9]
+    m = mins(lk.sh.clock)
+    if t == 65535 or not t or m is None:    # (0: a sender that didn't say)
+        return False
+    a = (m - t) & 65535                 # minutes ago (a sender's clock a little ahead: ~65535)
+    return 1440 < a < 65536 - 60
+
+
+def expire(lk):
+    """Waiting items from an earlier day go (hail.json shows an undelivered hail as "Didn't
+    go" for a day: lvliveapi._hl); a "seen" for a crewmate who never came back goes too."""
+    d = lk.sh.clock.date()
+    k = [o for o in lk.out if d and o[2] != d]
+    if k:
+        for o in k:
+            lk.out.remove(o)
+        lk.n["gone"] += len(k)
+        keep(lk)
 
 
 def flick(lk):
@@ -127,22 +161,25 @@ def flick(lk):
 
 
 def dial(lk, b, now):
-    """Dial the first ship with a hail waiting that can take one now (Link.poll, idle radio);
-    sets lk.due, the earliest time another look is worth an import."""
+    """Dial the first ship with a hail waiting that can take one now (Link.poll, idle radio):
+    heard in the last L.NEAR, its own next dial due, and none to anyone for L.GAP; sets
+    lk.due, the earliest time another look is worth an import. Old items go first."""
+    expire(lk)
     due = now + 5000                # nobody in range: look again in 5 s
     for o in lk.out:
         to = o[0]
         p = b.peers.get(to)
         x = lk.nx.get(to) or [0, 0]
         if p is None or p.addr is None or not p.info or not p.info.get("cap") \
-                or (x[0] >= 2 and now - p.seen > L.HEARD):
+                or not p.seen or now - p.seen >= L.NEAR:
             continue
-        if p.info["busy"] or now < x[1]:
-            due = min(due, max(x[1], now + 1000))
+        if p.info["busy"] or now < x[1] or now < lk.gap:
+            due = min(due, max(x[1], lk.gap, now + 1000))
             continue
         x[0] += 1
         x[1] = now + (L.FAST if x[0] < 2 else L.EVERY)
         lk.nx[to] = x
+        lk.gap = now + L.GAP
         lk.forced = (p, p.fails, p.next_try, lk._for(to))
         lk.n["dial"] += 1
         b._connect(p, now)
@@ -162,6 +199,10 @@ def done(lk, f, p, s, now):
     p.fails, p.next_try = f[1], f[2]
     # anything left: the next session, but only if this one moved something (an
     # item the peer won't take, say a bad mac, keeps to the 2-then-1-a-minute dials)
-    if ok and lk._for(p.ship) < f[3]:
-        lk.nx[p.ship] = [0, now + 1000]
+    if ok:
+        lk.tf = 0
+        k = lk._for(p.ship)
+        if 0 < k < f[3]:                # moved some, more for them: straight on (the GAP
+            lk.nx[p.ship] = [0, now + 1000]     # is between crewmates, not within one)
+            lk.gap = 0
     lk.due = 0

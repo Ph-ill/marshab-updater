@@ -20,14 +20,20 @@ def setup(lk, ship, data, cfg):
     lk.forced = None
     lk.due = 0            # Link.poll: no dial is worth a look before this
     lk.now = 0
-    lk.n = {"dial": 0, "dial_ok": 0, "dial_fail": 0, "in": 0, "acked": 0, "dup": 0, "bad": 0, "out": 0}
+    lk.gap = 0            # no hail dial (to anyone) before this
+    lk.tf = 0             # MemoryErrors in a row (Link.fault: passing, up to L.TRANSIENT)
+    lk.n = {"dial": 0, "dial_ok": 0, "dial_fail": 0, "in": 0, "acked": 0, "dup": 0, "bad": 0, "out": 0,
+            "held": 0, "oom": 0, "old": 0, "gone": 0}
     b = load(lk.f) or {}
     lk.ep = b.get("e")
     if lk.ep is None:
         lk.ep = os.urandom(1)[0]
     lk.seq = b.get("s", 0)
-    lk.out = [[o[0], unhexlify(o[1])] for o in b.get("o", ())]
-    lk.inb = [[o[0], unhexlify(o[1])] for o in b.get("i", ())]
+    d = ship.clock.date()
+    # out: [to, item, the day it was queued]; in: [from, item, arrived (epoch ms or None),
+    # arrived (uptime ms: this boot's only, so None once read back)]
+    lk.out = [[o[0], unhexlify(o[1]), o[2] if len(o) > 2 else d] for o in b.get("o", ())]
+    lk.inb = [[o[0], unhexlify(o[1]), o[2] if len(o) > 2 else None, None] for o in b.get("i", ())]
     lk.hw = {}
     for k, v in b.get("h", {}).items():
         lk.hw[int(k)] = v
@@ -41,8 +47,8 @@ def fault(lk, e):
         sys.print_exception(e)
     except Exception:
         pass
-    why = "fault: %r" % (e,)
-    sh.say("live: off after a " + why)
+    why = "fault: %s" % (type(e).__name__,)
+    sh.say("live: off after a fault: %r" % (e,))
     L.unhook(lk)
     sh.live = None
     sh.live_why = why[:80]
@@ -73,12 +79,14 @@ def core_ok():
 
 def crash(data):
     """The crash board/lvsafe.py last counted, as a short fingerprint, or None. Only a
-    counted crash (fault.json "n" >= 1) counts: lvsafe also writes fault.json for a boot
-    note alone ("boot": a file put back, a ship.json that plays but isn't whole), which is
-    no reason to turn Hail off. The file is set aside (fault.last.json) after 10 healthy
-    minutes, so a crash only turns Hail off at the boot straight after it."""
+    counted crash (fault.json "n" >= 1) in Hail's own code (fault.json "live": main.py's
+    crashed() found lvlive*/lvflick in the traceback; 0.3.0 review R2 M3) counts: a web
+    server MemoryError or a story bug is no reason to turn Hail off, nor is a boot note
+    alone ("boot": a file put back, a ship.json that plays but isn't whole). The file is
+    set aside (fault.last.json) after 10 healthy minutes, so a crash only turns Hail off at
+    the boot straight after it."""
     j = load(data + "/fault.json")
-    if not j:
+    if not j or not j.get("live"):
         return None
     try:
         n = int(j.get("n", 0))
@@ -111,7 +119,15 @@ def install(ship, data):
         why = "no fleet key"
     ship.live_why = why
     ship.live = None
+    n = getattr(ship, "node", None)
+    try:
+        delattr(n, "advert")                # (a paused advert: the plain one back first)
+    except (AttributeError, TypeError):
+        pass
     if why:
+        if why != "core changed" and n is not None and getattr(ship, "ble", None) is not None:
+            L.pause(n)                      # Hail here, paused: crewmates' pages say so
+            ship.ble.adv = None
         return None
     lk = L.Link()
     setup(lk, ship, data, c)

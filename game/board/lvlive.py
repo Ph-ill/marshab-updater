@@ -24,25 +24,36 @@
 #     byte chosen when its box file is first made); a receiver keeps the highest (epoch,
 #     seq) taken from each ship and acks, but doesn't take again, anything not newer.
 #   * Delivery: a ship with an item for crewmate X dials X's last known address directly
-#     (no wait for a broadcast), at most twice in the first seconds (the second 5 s
-#     later), then once a minute while X was heard in the last 10 minutes. The normal
-#     sync's cooldown and failure backoff are put back as they were after these dials, so
-#     they never slow ordinary syncing. Any sync with X (either side dialling) carries
-#     them too.
-#   * Item kinds: 0 ack, 1 hail (body: phrase, back, from crew), 2 "seen" (body: the hail's
-#     epoch and seq). Any other kind (a later release's) is acked and dropped, so a newer
+#     (no wait for a broadcast), but only while X was heard in the last NEAR (30 s, about
+#     two scans): twice (the second FAST later), then once a minute. Across all crewmates
+#     at most one hail dial every GAP (20 s), so hails waiting for several ships out of
+#     range never tie up the one radio (0.3.0 review R2 M1). The normal sync's cooldown and
+#     failure backoff are put back as they were after these dials, so they never slow
+#     ordinary syncing. Any sync with X (either side dialling) carries them too.
+#   * Each waiting item keeps the day it was queued (the ship's clock.date()); it leaves
+#     the queue when the day turns, delivered or not (the page shows "Didn't go"), so a
+#     crewmate who never comes back can't keep a hail or a "seen" waiting for good.
+#   * Item kinds: 0 ack, 1 hail (body: phrase, back, from crew, the sender's clock when sent
+#     as minutes since 1970 mod 65536, big-endian, 0xFFFF unknown), 2 "seen" (body: the
+#     hail's epoch and seq). Any other kind (a later release's) is acked and dropped, so a newer
 #     ship's items never stick in an older ship's queue.
 #   * Advert ship byte: bit 5 = this ship reads live items (capability gating: nothing is
-#     queued for, dialled to or sent to a ship without it). Bit 6 is kept free.
+#     queued for, dialled to or sent to a ship without it). Bit 6 = this ship has Hail but
+#     it is paused (turned off, after a crash in Hail's own code, the fleet switch): its
+#     crewmates' pages say it isn't taking hails right now, not that it needs an update.
 #   * Coexistence: no hail dial starts while the ship's web server is mid-answer, or within
 #     OTA_MS of an update piece arriving from a phone (main.py sets ship.ota_t), so Hail
-#     never adds a link to a running upload. Links the other ship opens are as before.
+#     never adds a link to a running upload. Links the other ship opens are as before, but
+#     their items aren't taken (nor acked: the other ship sends them again) meanwhile.
 # Kill switches: ON below (a release can turn Hail off fleet-wide over the air), the
-# Settings switch (live.json "on"), and the fault net (any crash: off until a phone says).
-# Safety: every hooked call is wrapped; on any error the hooks come off (the originals
-# back, the session class and advert parser left as plain ones, the link finished as a
-# fault), live.json says why, and ordinary syncing carries on. A restart after a crash leaves live features off until a phone turns them back on
-# (Settings > Ship-to-ship). The light (lvflick.py) never plays during a link, in quiet
+# Settings switch (live.json "on"), and the fault net: a crash lvsafe counted whose
+# traceback names Hail's own modules (fault.json "live") turns it off at the next boot,
+# once per crash, until a phone turns it back on (Settings, or the Home card).
+# Safety: every hooked call is wrapped. A MemoryError is taken as passing (the link ends,
+# nothing taken is acked, so the peer sends it again; Hail stays on) up to TRANSIENT in a
+# row; any other error, or more of them, and the hooks come off (the originals back, the
+# session class and advert parser left as plain ones, the link finished as a fault),
+# live.json says why, and ordinary syncing carries on. The light (lvflick.py) never plays during a link, in quiet
 # hours, without a phone's clock since the start, or past the daily allowance (12).
 import lvship
 from lv import sync as S
@@ -50,10 +61,13 @@ from lv import sync as S
 MARK = 0xA7
 LEN = 20
 MAXI = 6
-FAST = 5000           # the second dial
+FAST = 20000          # the second dial
 EVERY = 60000         # then a waiting item: one dial a minute...
-HEARD = 600000        # ...while the peer was heard in the last 10 min
+NEAR = 30000          # ...while the peer was heard in the last 30 s
+GAP = 20000           # one hail dial at most per 20 s, all crewmates together
+TRANSIENT = 3         # MemoryErrors in a row taken as passing
 CAP = 32
+PAUSED = 64
 MAXIN = 24
 LIGHTS = 12           # hail flickers a day
 OTA_MS = 10000
@@ -69,6 +83,7 @@ def parse(adv):
         j = bytes(adv).find(b"\xff\xffLV")
         x = adv[j + 5] if 0 <= j < len(adv) - 5 else 0
         i["cap"] = x & CAP
+        i["off"] = x & PAUSED
     return i
 
 
@@ -103,9 +118,17 @@ class Session(Session0):
 class Link:
     # Made by lvlivex.setup (its state: the box file read back). Item work is lvlivein's.
     def take(self, s, m, off):
-        import lvlivein              # (only when a trailer came: items are rare)
+        if len(m) < off + 2 or m[off] != MARK:
+            return
+        if self.ota():
+            self.n["held"] += 1      # an update arriving: nothing taken, nothing acked
+            return
         try:
+            import lvlivein          # (only when a trailer came: items are rare)
             lvlivein.take(self, s, m, off)
+        except MemoryError:
+            del s.acks[:]            # passing: no acks, so the peer sends them again
+            self.n["oom"] += 1
         finally:
             lvship.drop("lvlivein")
 
@@ -126,12 +149,24 @@ class Link:
         a[5] |= CAP
         return bytes(a)
 
-    def web_busy(self):
-        w = getattr(self.sh, "web", None)
-        if w is not None and w.busy > 0:
-            return True
+    def ota(self):
         t = getattr(self.sh, "ota_t", 0)
         return bool(t) and lvship.ticks_diff(lvship.ticks_ms(), t) < OTA_MS
+
+    def web_busy(self):
+        w = getattr(self.sh, "web", None)
+        return w is not None and w.busy > 0 or self.ota()
+
+    def want(self, now):
+        # Worth loading lvlivein: an item past its day (it goes), or one for a crewmate
+        # heard in the last NEAR whose ship takes items now (cap: lvlivein.dial's own test).
+        # Else a waiting item costs no import at all (one for a paused ship nearby included).
+        d = self.sh.clock.date()
+        for o in self.out:
+            p = self.ble.peers.get(o[0])
+            if d and o[2] != d or p is not None and p.seen and now - p.seen < NEAR \
+                    and p.info and p.info.get("cap"):
+                return True
 
     def poll(self, now):
         b = self.ble
@@ -140,11 +175,14 @@ class Link:
             # dialling lives in lvlivein, loaded only when a dial could be due (`due`: the
             # earliest next dial, or a re-check in 1-5 s), so a waiting hail costs no heap
             if self.out and now >= self.due and b.state == "idle" and not self.web_busy():
-                import lvlivein
-                try:
-                    lvlivein.dial(self, b, now)
-                finally:
-                    lvship.drop("lvlivein")
+                if self.want(now):
+                    import lvlivein
+                    try:
+                        lvlivein.dial(self, b, now)
+                    finally:
+                        lvship.drop("lvlivein")
+                else:
+                    self.due = now + 5000
             self.poll0(now)
         except Exception as e:
             self.fault(e)
@@ -171,6 +209,15 @@ class Link:
         return n
 
     def fault(self, e):
+        if isinstance(e, MemoryError) and self.tf < TRANSIENT:
+            self.tf += 1                 # passing (the heap's tightest moment): Hail stays on
+            self.n["oom"] += 1
+            try:
+                if self.ble.state != "idle":
+                    self.fin0(self.now, "live: no memory")
+            except Exception:
+                pass
+            return
         try:
             import lvlivex
             lvlivex.fault(self, e)
@@ -195,7 +242,19 @@ def unhook(lk):
     except (AttributeError, TypeError):
         pass
     lk.node.live = None
+    pause(lk.node)
     b.adv = None
+
+
+def pause(node):
+    # Hail here but not running: the advert's bit 6 (PAUSED) says so to crewmates' ships
+    a0 = node.advert
+
+    def adv(busy=False):
+        a = bytearray(a0(busy))
+        a[5] |= PAUSED
+        return bytes(a)
+    node.advert = adv
 
 
 def install(ship, data=D):

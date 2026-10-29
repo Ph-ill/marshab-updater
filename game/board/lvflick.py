@@ -1,17 +1,20 @@
 # The hail light (lvlive.py's flick): when a crewmate's hail arrives, the ship's light
 # flickers for FLICK_MS so someone nearby knows to look.
 # Loaded for the start and dropped (lvship.drop); the task keeps the code alive for its ~10 s.
-#   * 4 Hz at most (125 ms on, 125 ms off, full on/off writes: no PWM, no busy-wait); it
+#   * 3 Hz at most (167 ms on, 167 ms off, full on/off writes: no PWM, no busy-wait; under
+#     the 3 flashes a second of the photosensitivity guidelines, WCAG 2.3.1); it
 #     only ever lights at the start of an "on" half, so a link starting and stopping
 #     meanwhile can't make it switch faster.
 #   * It waits (up to WAIT_MS) until no BLE link or HTTP request is in progress, since it
 #     usually starts in the middle of the sync that brought the item, and pauses dark while
 #     one runs.
 #   * The Ship light (lvled.Led, if on) is held dark meanwhile exactly as "Test light" does
-#     (lvledtest._hold), and sh.ledtest is set, so a test tap meanwhile gets a 429 and the two
-#     never write the pin at once.
-# maybe() checks first: the hail light switch, a known clock (a phone's, since the start),
-# quiet hours, the daily allowance (lvlive.LIGHTS, 12) and that no test is playing.
+#     (lvledtest._hold: a light it left on mid-pattern goes dark at once), the pin is
+#     written dark before the wait, and sh.ledtest is set, so a test tap meanwhile gets a
+#     429 and the two never write the pin at once.
+# maybe() checks first: the hail light switch (unset: as the Ship light is, so a ship whose
+# light was turned off doesn't flicker for hails either), a known clock (a phone's, since
+# the start), quiet hours, the daily allowance (lvlive.LIGHTS, 12) and that no test is playing.
 try:
     import asyncio
 except ImportError:  # pragma: no cover
@@ -19,7 +22,7 @@ except ImportError:  # pragma: no cover
 import lvship
 
 FLICK_MS = 10000
-HALF = 125              # ms on, then ms off: 4 Hz
+HALF = 167              # ms on, then ms off: 3 Hz
 WAIT_MS = 30000
 
 
@@ -28,6 +31,8 @@ async def play(sh, pin, T):
     t0 = ticks_ms()
     lit = 0
     try:
+        T._hold(sh)
+        pin.value(0)            # (dark from the start, whatever was lit before)
         while T._busy(sh) and ticks_diff(ticks_ms(), t0) < WAIT_MS:
             T._hold(sh)
             await sleep_ms(200)
@@ -41,7 +46,7 @@ async def play(sh, pin, T):
             k = t // HALF
             if T._busy(sh):
                 dark = k        # a link or a request: dark for the rest of this half too,
-            # so a busy flag that comes and goes can never flicker it faster than 4 Hz
+            # so a busy flag that comes and goes can never flicker it faster than 3 Hz
             v = 1 if k % 2 == 0 and k != dark else 0
             if v != lit:
                 pin.value(v)
@@ -63,7 +68,10 @@ def maybe(lk):
     sh = lk.sh
     c = sh.clock
     m, d = c.minute(), c.date()
-    if not lk.cfg.get("light", True) or m is None or not c.known():
+    v = lk.cfg.get("light")
+    if v is None:
+        v = getattr(sh.led, "enabled", False)
+    if not v or m is None or not c.known():
         return False
     q = getattr(sh.led, "q", None) or (1320, 420)
     if (m >= q[0] or m < q[1]) if q[0] > q[1] else q[0] <= m < q[1]:

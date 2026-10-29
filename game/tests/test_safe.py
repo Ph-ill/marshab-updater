@@ -940,9 +940,16 @@ trial = [False]
 g["reboot"] = lambda: boots.append(1)
 g["flag"] = lambda p: trial[0]
 real = lvsafe.crashed
-lvsafe.crashed = lambda why, trial, up: noted.append((why, trial, up))
+lvsafe.crashed = lambda why, trial, up, live=False: noted.append((why, trial, up)) or lives.append(live)
+lives = []
 try:
     g["crashed"](ValueError("boom"), 0)
+    try:                          # 0.3.0 review R2 M3: a crash in Hail's own code says so
+        import lvlive
+        lvlive.parse(None)
+    except Exception as e:
+        g["crashed"](e, 0)
+    noted.pop()
     trial[0] = True
     g["crashed"](ValueError("x" * 99), 0)
     trial[0] = False
@@ -959,11 +966,14 @@ except BaseException as e:
     check("crashed never raises", False, repr(e))
 lvsafe.crashed = real
 check("crashed: noted", noted[0] == ("ValueError: boom", False, 1000), noted)
+check("R2 M3: a crash elsewhere: not Hail's", lives[0] is False, lives)
+if hasattr(sys, "print_exception"):     # (MicroPython: the traceback is read for it)
+    check("R2 M3: a crash in lvlive: Hail's", lives[1] is True, lives)
 check("m9: the trial read at the crash", noted[1][1] is True and len(noted[1][0]) < 64, noted)
 j = json.loads(get(FD))
 check("M3: no heap for lvsafe: noted the short way", j["n"] == 2 and j["why"] == "noted the short way", j)
 check("M3: not on a trial either", files() == ["fault.json"], files())
-check("crashed: restart every time", boots == [1] * 5, boots)
+check("crashed: restart every time", boots == [1] * 6, boots)
 put(FD, '{"n": 5, "why": "x"}')
 g["note"](False)
 check("M3: the short way stops at the cap too", json.loads(get(FD))["n"] == 5)
@@ -1027,7 +1037,7 @@ if sys.implementation.name == "micropython":
             await asyncio.sleep(1)
         asyncio.run(run())
 
-    def measure(why, trial, up):
+    def measure(why, trial, up, live=False):
         gc.collect()
         seen.append((gc.mem_alloc() - base, why))
     lvsafe.crashed = measure

@@ -69,6 +69,8 @@ def _hold(sh, let_go=False):
     # Keep lvled.Led (the Ship light, when on) dark and off the pin; let_go: look again now.
     l = sh.led
     if getattr(l, "enabled", False) and hasattr(l, "seq"):
+        if l.lit:
+            l._write(0)                 # (lit mid-pattern: dark now, not after the hold)
         l.seq = None
         l.mid = l.lit = 0
         n = l.clock.uptime()
