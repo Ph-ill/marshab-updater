@@ -215,6 +215,7 @@ writeFileSync(coreJson, JSON.stringify({ id: 'lv-core', version: '9.9.9', core: 
 const sb = join(tree, 'src-board');
 writeFileSync(join(sb, 'main.py'), 'print("game")\n');
 writeFileSync(join(sb, 'lvship.mpy'), Buffer.from([77, 6, 0, 31]));
+writeFileSync(join(sb, 'lvotap.mpy'), Buffer.from([77, 6, 0, 31, 2]));
 writeFileSync(join(sb, 'www/app.html.gz'), Buffer.from([31, 139, 8, 0]));
 writeFileSync(join(sb, 'lvx/engine.mpy'), Buffer.from([77, 6, 0, 31, 1]));
 const build = (version, extra = []) => spawnSync('python3', [join(repo, 'tools/build_release.py'), '--repo-root', tree, '--version', version,
@@ -231,6 +232,11 @@ await t('partial release: builder ships only lvx/ overrides of frozen modules, v
   assert.ok(rel.delete.includes('lv') && rel.delete.includes('lvx'), 'clears lv/ and old overrides first');
   // 0.3.0 R1: a --frozen build deletes the coex bench's config.py and index.html by default
   assert.ok(rel.delete.includes('config.py') && rel.delete.includes('index.html'), 'clears the coex bench files by default');
+  // 0.3.0 R1 M2: the .py twin of each update-path .mpy goes first (MicroPython imports X.py
+  // ahead of X.mpy); only the update path's (each name costs the signature check's heap peak)
+  assert.ok(rel.delete.includes('lvotap.py'), 'deletes a stale lvotap.py next to the shipped lvotap.mpy');
+  assert.ok(!rel.delete.includes('lvship.py'), 'no twin outside the update path');
+  assert.ok(!rel.delete.includes('main.mpy') && !rel.delete.some(d => d.startsWith('lvboot.')), 'no twin for a .py it ships, never lvboot');
   assert.equal(JSON.parse(readFileSync(join(tree, 'firmware/index.json'), 'utf8')).releases[0].frozen, 'abcdef012345');
   r = validate();
   assert.equal(r.status, 0, r.stdout);

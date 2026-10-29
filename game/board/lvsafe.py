@@ -527,10 +527,16 @@ def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
             if p == "/status":
                 return await lvweb.send(w, 200, "SAFE %s\n" % why, "text/plain")
         if p == "/api/ota/put":
-            import lvotap               # the upload (0.3.0): lvota only for the envelope
             try:
-                return await lvotap.api(web, req, w)
+                import lvotap           # the upload (0.3.0): lvota only for the envelope
+            except ImportError as e:    # damaged: lvota.api answers (R1 M2), never silence
+                sh.say("safe: upload code %r" % (e,))
+                lvotap = None
+            try:
+                if lvotap is not None:
+                    return await lvotap.api(web, req, w)
             finally:
+                lvotap = None
                 import sys
                 sys.modules.pop("lvotap", None)
                 sys.modules.pop("lvota", None)

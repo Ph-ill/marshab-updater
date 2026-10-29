@@ -128,9 +128,12 @@ async function otaInstall(){
         break;
       }catch(e){
         // A checksum the ship turned down while carrying on: what it kept isn't this
-        // update's. Cancel and send the whole thing once more, from the signature.
-        if(!have||e.status!==400||k)throw e;
-        await otaCancel();have=null;
+        // update's. Cancel and send the whole thing once more, from the signature. And a
+        // file the ship refused for want of a checked signature (409, no have: its check
+        // ran out of memory and nothing answered): send the signature again, once.
+        if(k||!(e.status===409||have&&e.status===400))throw e;
+        if(e.status===400)await otaCancel();
+        have=null;
       }
     }
     const a=await fetch("/api/ota/apply",{method:"POST",headers:{"X-Crew-Token":tok}}),j=await a.json().catch(()=>({}));

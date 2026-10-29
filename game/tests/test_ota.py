@@ -223,6 +223,32 @@ rm(lvota.NEW + "/eh")
 check("status: staged by 0.2.7 (no eh): h is None", lvota.status()["staged"]["h"] is None)
 write(lvota.NEW + "/eh", _eh)
 check("status: h back", lvota.status()["staged"]["h"] == binascii.hexlify(hashlib.sha256(raw).digest()).decode())
+# 0.3.0 review R1 m1: the envelope's check runs out of heap -> 503 (the phone's otaPut
+# tries again after a pause), not 403 "unreadable update", and nothing is thrown away: the
+# envelope stays on flash, and its last piece sent again (off == have == n) checks it.
+import lvotap  # noqa: E402
+
+
+def _oom(*a):
+    raise MemoryError("memory allocation failed")
+
+
+for _where in ("_verify", "_env_m"):
+    _mod = lvotap if _where == "_verify" else lvota
+    _real = getattr(_mod, _where)
+    setattr(_mod, _where, _oom)
+    try:
+        r = send_env(FX["env"][V1])
+    finally:
+        setattr(_mod, _where, _real)
+    check("R1 m1: envelope check out of heap (%s) -> 503" % _where, r[0] == 503 and r[1]["have"] is None, r)
+    check("R1 m1: ... envelope kept, not ok (%s)" % _where, read(lvota.NEW + "/env") == raw
+          and read(lvota.NEW + "/ok") is None and lvota.status()["staged"] is None)
+    _o = (len(raw) - 1) // 300 * 300
+    r = lvota.put({"f": "0", "n": n, "o": str(_o)}, raw[_o:])
+    check("R1 m1: its last piece again checks it (%s)" % _where, r[0] == 200 and r[1]["v"] == V1, r)
+    check("R1 m1: ... staged as before (%s)" % _where, lvota.status()["staged"]["h"] ==
+          binascii.hexlify(hashlib.sha256(raw).digest()).decode())
 m = lvota.manifest()
 idx = [f[0] for f in m["files"]].index("www/app.html.gz") + 1
 size = m["files"][idx - 1][1]
@@ -274,12 +300,34 @@ ship_runs(OLD, "staged, not applied")
 r = lvota.apply()
 check("apply", r[0] == 200 and r[1]["v"] == V1, r)
 check("state ready", lvota.read_json(lvota.STATE)["phase"] == "ready")
+# 0.3.0 review R3 M1: between apply() and the restart, lvboot will read ota/new/env as it is
+# then; a short envelope sent in that window (never checked: it isn't complete) used to
+# replace it, and lvboot swapped out its delete list (data/). Now every envelope piece, a
+# whole one too, and a cancel are refused while the state is ready (or swap).
+_env0, _ok0, _ix0 = read(lvota.NEW + "/env"), read(lvota.NEW + "/ok"), read(lvota.NEW + "/ix")
+_evil = b'{"m":"{\\"files\\":[],\\"delete\\":[\\"data\\"]}"}'
+for _ph in ("ready", "swap"):
+    _st = lvota.read_json(lvota.STATE)
+    lvota.write_json(lvota.STATE, dict(_st, phase=_ph))
+    r = lvota.put({"f": "0", "n": str(len(_evil) + 100), "o": "0"}, _evil)
+    check("R3 M1: a partial envelope after apply (%s) -> 409" % _ph, r[0] == 409 and r[1]["have"] is None, r)
+    r = lvota.put({"f": "0", "n": str(len(_evil)), "o": "0"}, _evil)
+    check("R3 M1: a whole one too (%s) -> 409" % _ph, r[0] == 409, r)
+    r = lvota.put({"f": "0", "n": str(len(_env0)), "o": "100"}, _env0[100:200])
+    check("R3 M1: a later piece too (%s) -> 409" % _ph, r[0] == 409, r)
+    check("R3 M1: the staged update untouched (%s)" % _ph, read(lvota.NEW + "/env") == _env0
+          and read(lvota.NEW + "/ok") == _ok0 and read(lvota.NEW + "/ix") == _ix0)
+    lvota.write_json(lvota.STATE, _st)
+check("R3 M1: installing() while ready", lvota.installing() is True)
 ship_runs(OLD, "applied, before the restart")
 
 # -- the restart: boot.py swaps it in, on trial
 check("boot: swap -> trial", lvboot.run() == "trial")
 s = lvota.read_json(lvota.STATE)
 check("trial, boot 1", s["phase"] == "trial" and s["boots"] == 1 and s["prev"] == "0.2.0-lv-test", s)
+check("R3 M1: lvboot swapped the signed set (nothing went to ota/old/data)", read("ota/old/data") is None
+      and read("ota/old/data/log.bin") is None and "config.py" in s.get("gone", ["config.py"]), s)
+check("R3 M1: on trial, staging is allowed again", lvota.installing() is False)
 ship_runs(FILES[V1], "0.2.1 running")
 check("config.py deleted (kept in ota/old)", read("config.py") is None and read("ota/old/config.py") == OLD["config.py"])
 check("installed() is 0.2.1", lvota.installed()["v"] == V1)
@@ -669,6 +717,85 @@ c, j = http(Req("POST", "/api/ota/apply", tok="tok"))
 check("apply, nothing staged: 409", c == 409)
 c, j = http(Req("POST", "/api/ota/nope", tok="tok"))
 check("unknown: 404", c == 404)
+# R1 m5: lvota.api's put went to lvotap (dead on the board); now only safe mode's fallback
+# comes here, when lvotap.py won't load (R1 M2): an answer, not silence
+c, j = http(Req("POST", "/api/ota/put", {"f": "0", "n": "10", "o": "0"}, b"x", tok="tok"))
+check("R1 m5: put through lvota.api -> 503, says why", c == 503 and "update code" in j["err"], j)
+# R3 M1: cancel is refused between apply and the restart too
+lvota.write_json(lvota.STATE, {"phase": "ready", "v": "9.9.9"})
+c, j = http(Req("POST", "/api/ota/cancel", tok="tok"))
+check("R3 M1: cancel while ready -> 409", c == 409, (c, j))
+rm(lvota.STATE)
+
+# -- 0.3.0 review R1 M2: before a trial is kept, the update path itself is checked
+# (board/lvotak.py): lvotaq, lvotap, lvota, lvsig import and lvsig checks RFC 8032's test 1.
+import lvotak  # noqa: E402
+FAULT, FAULT_LAST = "data/fault.json", "data/fault.last.json"
+
+
+def trial_state():
+    lvota.write_json(lvota.STATE, {"phase": "trial", "v": V3, "prev": V2, "boots": 1,
+                                   "put": [], "had": [], "gone": []})
+
+
+def run(c):
+    return asyncio.run(c)
+
+
+sys.modules.pop("lvsig", None)
+_had = [m for m in ("lvotaq", "lvotap", "lvsig") if m in sys.modules]
+check("R1 M2: the update path checks out", run(lvotak.check()) is True)
+check("R1 M2: ... and leaves none of it loaded", not [m for m in ("lvotaq", "lvotap", "lvsig")
+                                                      if m in sys.modules and m not in _had])
+check("R1 M2: lvsig refuses the known signature tampered", lvotak.sig_ok() is True)
+# a module of the chain shadowed or broken (a stale .py ahead of the .mpy): not kept
+SH = HERE + "/build/ota-shadow-" + sys.implementation.name
+for name, src, want in (("lvsig", "def verify(a, b, c):\n    return True\n", "false"),
+                        ("lvotaq", "X = 1\n", "ImportError"),
+                        ("lvotap", "raise ImportError('damaged')\n", "ImportError"),
+                        ("lvsig", "syntax error here(\n", "SyntaxError")):
+    try:
+        os.mkdir(SH)
+    except OSError:
+        pass
+    with open(SH + "/" + name + ".py", "w") as f:
+        f.write(src)
+    sys.path.insert(0, SH)
+    sys.modules.pop(name, None)
+    if CPY:
+        import importlib
+        importlib.invalidate_caches()
+    trial_state()
+    write(FAULT, b'{"n": 1, "why": "x"}')
+    try:
+        got = run(lvotak.keep(None, FAULT, FAULT_LAST))
+    except Exception as e:
+        got = type(e).__name__
+    finally:
+        sys.path.remove(SH)
+        os.remove(SH + "/" + name + ".py")
+        sys.modules.pop(name, None)
+    check("R1 M2: %s broken (%s): trial not kept" % (name, want), got is False if want == "false"
+          else got in (want, "ImportError", "SyntaxError"), got)
+    check("R1 M2: %s broken: still on trial, the fault count kept" % name,
+          lvota.read_json(lvota.STATE)["phase"] == "trial" and read(FAULT) is not None)
+rm(SH)
+# main.py's kept(): False (tried again in 5 s) on any failure, never raises
+kept_src = open(HERE + "/board/main.py").read()
+kept_src = kept_src[kept_src.index("async def kept"):kept_src.index("\ndef restart")]
+gk = {"lvship": FakeShip, "FAULT": FAULT, "FAULT_LAST": FAULT_LAST}
+exec(kept_src, gk)
+lvotak.check, _chk = _oom, lvotak.check
+sys.modules["lvotak"] = lvotak
+check("R1 M2: main.py kept(): a MemoryError -> False, still on trial", run(gk["kept"](None)) is False
+      and lvota.read_json(lvota.STATE)["phase"] == "trial")
+import lvotak  # noqa: E402,F811
+lvotak.check = _chk
+check("R1 M2: main.py kept(): the path works -> kept", run(gk["kept"](None)) is True
+      and read(lvota.STATE) is None and lvota.read_json(lvota.LAST)["result"] == "installed")
+check("R1 M2: ... the fault count starts clean", read(FAULT) is None and read(FAULT_LAST) is not None)
+check("R1 M2: kept() dropped lvotak", "lvotak" not in sys.modules)
+rm(FAULT_LAST)
 data_same("end")
 
 print("test_ota on %s: %d checks ok (%d power cuts in the swap and the rollback)" % (
