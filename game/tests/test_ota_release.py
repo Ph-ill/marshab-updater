@@ -78,6 +78,16 @@ try:
     check("manifest: every file but boot.py and lvboot", [f[0] for f in m["files"]] ==
           [f["path"] for f in rel["files"] if f["path"] not in ("boot.py", "lvboot.mpy")])
     check("manifest: nothing protected deleted", not any(p.split("/")[0] in ("data", "ota", "boot.py") for p in m["delete"]))
+    import lvota
+    check("the ship's own manifest check accepts it", lvota.check_manifest(m, {"v": None, "core": m["core"]}) is None,
+          lvota.check_manifest(m, {"v": None, "core": m["core"]}))
+    # a partial release (on a game firmware) deletes lv/ and lvx/ (a stock layout's core
+    # left over from a USB install would shadow the frozen one): the ship must still take it
+    # (review #3 m4 refuses lv/ only as a file to install)
+    m2 = dict(m, delete=list(m["delete"]) + ["lv", "lvx"])
+    check("a partial release's delete of lv and lvx: accepted", lvota.check_manifest(m2, {"v": None, "core": m["core"]}) is None)
+    m3 = dict(m, files=m["files"] + [["lv/__init__.mpy", 1, "0" * 64]])
+    check("a release installing lv/: refused", lvota.check_manifest(m3, {"v": None, "core": m["core"]}) == "bad file entry")
     check("the ship's verify accepts it (lvsig)", lvsig.verify(PUB, b"LV-OTA-1\n" + hashlib.sha256(env["m"].encode()).digest(),
                                                               base64.b64decode(env["sig"])))
     idx = json.loads((tmp / "firmware/index.json").read_text())
@@ -117,5 +127,18 @@ try:
           '"2111b2e9"' in (GAME / "board/lvota.py").read_text())
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
+# Every signed release in this repo still passes this branch's own lvota.check_manifest (a
+# ship that runs this lvota must take the next one: its delete names lv and lvx).
+import lvota  # noqa: E402
+n = 0
+for rp in sorted((ROOT / "firmware/releases").glob("*/release.json")):
+    r = json.loads(rp.read_text())
+    if not r.get("ota"):
+        continue
+    m = json.loads(r["ota"]["m"])
+    why = lvota.check_manifest(m, {"v": None, "core": m["core"]})
+    check("signed %s: this lvota takes it" % rp.parent.name, why is None, why)
+    n += 1
+print("signed releases checked with this lvota:", n)
 print("RESULT", "PASS" if not fails else "FAIL %d" % fails)
 sys.exit(1 if fails else 0)

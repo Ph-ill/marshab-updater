@@ -190,6 +190,11 @@ for name, want in (("tampered", "signature"), ("otherkey", "signature"), ("unkno
 for p, bad in (("lv/engine.mpy", True), ("lv", True), ("lv.py", True), ("lv.mpy", True),
                ("lvx/engine.mpy", False), ("lvota.mpy", False), ("lvweb.mpy", False), ("www/lv/x", False)):
     check("bad_path %r: %s" % (p, bad), lvota.bad_path(p) is bad)
+# ... but a release may delete them (every partial release deletes lv and lvx: a shadow
+# left by a USB install of the stock layout), and still nothing protected
+for p, bad in (("lv", False), ("lvx", False), ("lv.py", False), ("lv.mpy", False), ("data", True),
+               ("ota", True), ("boot.py", True), ("lvboot.mpy", True)):
+    check("bad_path %r as a delete: %s" % (p, bad), lvota.bad_path(p, True) is bad)
 r = lvota.put({"f": "0", "n": "20", "o": "0"}, b'{"m": "x", "sig": "!!"')
 r = lvota.put({"f": "0", "n": "20", "o": "22"}, b"x")
 check("envelope: past its size", r[0] == 400 or r[0] == 409, r)
