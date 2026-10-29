@@ -319,7 +319,7 @@ function otaSect(){
   if(last&&last.result==="rolled back")o+=`<p class=upd><b>Went back</b> · ${h(last.v)} didn't start, so your ship returned to ${h(last.prev)}.</p>`;
   else if(last&&last.result==="installed"&&last.v===(st&&st.v))o+=`<p class=fine>${h(last.v)} installed over the air.</p>`;
   if(!st&&OTA_NONE)o+=`<p class=dim>Your ship can't take updates over the air yet. It needs one install over USB first.</p>`;
-  else if(!st)o+=`<p class=dim>Your ship hasn't said what it runs yet. Stay on its Wi-Fi; this page asks again.</p>`;
+  else if(!st)o+=`<p class=dim>Your ship hasn't said what it runs yet. Stay on its Wi-Fi; this page asks again every 30 seconds.</p>`;
   else if(r)o+=`<p>${h(r.v)} is ready on this phone for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p>${otaClean(r.notes).length?`<div class=otawn><div class=otawh>What's new</div>${otaNotes(r.notes)}</div>`:""}<p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
   else o+=`<p class=dim>You need internet to check. Your ship's Wi-Fi usually can't reach it. Keep this app open; your download waits on this phone until you rejoin your ship.</p>`;
   if(st){
@@ -336,9 +336,23 @@ const home_o=home;home=function(){
   if(!r||OTA_LATER===r.v||OTA_BUSY||S.ending!==NONE)return;
   $("v").insertAdjacentHTML("afterbegin",`<div class=otab role=status><p><b>Update ready</b> · Ship software ${h(r.v)} is on this phone. Install it now? Your ship restarts for about half a minute. It's in Settings too.</p><div><button class="btn pri" data-ota=install><span>Install</span><i>${Math.round(r.bytes/1024)} KB</i></button><button class="btn sec" data-ota=later><span>Later</span></button></div></div>`);
 };
+// After each refresh, if the ship hasn't said what it runs yet, ask it (review 3 m4): in the
+// background, never awaited, so sign-in and the page don't wait on /api/ota's busy replays
+// (otaFetch, up to OTA_TURN); one ask at a time; while it still hasn't answered, again
+// every OTA_ASK_MS (what Settings' "this page asks again" promises).
+const OTA_ASK_MS=30000;let OTA_ASKING=null,OTA_ASK_T=0;
+function otaAsk(){
+  if(OS_||OTA_NONE||OTA_BUSY||OTA_ASKING)return;
+  clearTimeout(OTA_ASK_T);OTA_ASK_T=0;
+  OTA_ASKING=otaStatus().catch(()=>null).then(()=>{
+    OTA_ASKING=null;
+    if(OS_){if(route==="home"||route==="set")view();otaCheck(false)}
+    else if(!OTA_NONE)OTA_ASK_T=setTimeout(()=>{OTA_ASK_T=0;otaAsk()},OTA_ASK_MS);
+  });
+}
 const refresh_o=refresh;refresh=async function(){
   await refresh_o();
-  if(!OS_&&!OTA_NONE&&!OTA_BUSY){await otaStatus();if(OS_){if(route==="home"||route==="set")view();otaCheck(false)}}
+  otaAsk();
 };
 document.addEventListener("click",(ev)=>{
   const el=ev.target.closest("button[data-ota]");if(!el||el.disabled)return;

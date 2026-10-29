@@ -361,3 +361,27 @@ test('review2 M4: an upload piece rides out admission 503s past the old four tri
   assert.equal(r[0], 503, 'gives up after the replay window, without a USB message');
   assert.doesNotMatch(q.run('otaWhy(503,{})'), /USB/);
 });
+test('review3 m4: refresh never waits on /api/ota; it asks in the background and again every 30 s', async () => {
+  let up = false;
+  const p = phone(() => (up ? response({ ...ship, v: '0.3.0' }) : busy()));
+  p.run('OS_=null');
+  let done = false; p.run('refresh()').then(() => { done = true; });
+  await flush();
+  assert.equal(done, true, 'refresh (and so sign-in) did not wait on the busy /api/ota');
+  assert.equal(p.calls.length, 1);
+  // a second refresh meanwhile doesn't start a second ask
+  await p.run('refresh()'); await flush(); assert.equal(p.calls.length, 1);
+  // the busy replays run out (otaFetch's OTA_TURN): no status, so a 30 s retry is set
+  for (let i = 0; i < 200 && !p.timers.size; i++) await flush();
+  for (let i = 0; i < 200; i++) {
+    const t = [...p.timers].find(([, x]) => x.ms !== 30000); if (!t) break;
+    p.timers.delete(t[0]); p.advance(t[1].ms); t[1].fn(); await flush();
+  }
+  assert.equal(p.run('OS_'), null);
+  assert.match(p.run('otaSect()'), /this page asks again every 30 seconds/);
+  up = true; const n = p.calls.length;
+  p.fire(30000); for (let i = 0; i < 5; i++) await flush();
+  assert.ok(p.calls.length > n, 'asked again after 30 s');
+  assert.equal(p.run('OS_.v'), '0.3.0');
+  assert.doesNotMatch(p.run('otaSect()'), /hasn't said what it runs/);
+});
