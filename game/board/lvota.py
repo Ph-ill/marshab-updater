@@ -175,7 +175,7 @@ def installed():
     return {"v": j.get("version"), "ch": j.get("channel"), "core": core}
 
 
-def bad_path(p):
+def bad_path(p, delete=False):
     if not isinstance(p, str) or not p or p.startswith("/") or "\\" in p or len(p) > 64:
         return True
     parts = p.split("/")
@@ -184,10 +184,12 @@ def bad_path(p):
     top = parts[0]
     # lv/ (or lv.py, lv.mpy): ahead of .frozen on sys.path, it shadows the frozen core
     # (lv.firmware "shadowed"), so the phone game and its /api/ota would never start again:
-    # no update can carry one (review #3 m4). (lvx/ is the core's own way to replace one lv
-    # module, and stays allowed.)
-    return (top in ("data", "ota", "boot.py", "lv", "lv.py", "lv.mpy") or top.startswith("lvboot.")
-            or top.startswith("."))
+    # no update can install one (review #3 m4). Deleting one is the cure, and every partial
+    # release lists "lv" in its delete (tools/build_release.py), so delete may name them.
+    # (lvx/ is the core's own way to replace one lv module, and stays allowed.)
+    if not delete and top in ("lv", "lv.py", "lv.mpy"):
+        return True
+    return top in ("data", "ota", "boot.py") or top.startswith("lvboot.") or top.startswith(".")
 
 
 def check_manifest(m, inst=None, free=None):
@@ -212,7 +214,7 @@ def check_manifest(m, inst=None, free=None):
         seen.append(f[0])
         total += f[1]
     for p in m.get("delete") or ():
-        if bad_path(p) or p in seen:
+        if bad_path(p, True) or p in seen:
             return "bad delete entry"
     if free is not None and total + SPARE > free:
         return "not enough flash on the ship"
