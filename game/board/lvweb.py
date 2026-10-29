@@ -29,6 +29,12 @@ except AttributeError:     # CPython (the tests)
 
 MAX_CONN = 4
 READ_MS = 5000
+# A phone that stops taking bytes mid-answer (walked out of range, locked its screen, Wi-Fi
+# stalled) would leave drain() waiting until lwIP gives up on its retransmits, minutes. With
+# /api/state or /api/live streaming, that held every other phone's /api/* off (main.py's
+# admission, 0.3.0 review 3 MAJOR-1). Every write here waits at most DRAIN_MS; then the
+# request fails (TimeoutError), Server.handle closes the socket and the admission is released.
+DRAIN_MS = 15000
 MAX_BODY = 512
 CHUNK = 512
 probe = None        # tests: called at the server's busiest points (tests/mp_sync_heap.py)
@@ -109,6 +115,13 @@ def head(code, ctype, length=None, gz=False, extra=""):
         "" if length is None else "Content-Length: %d\r\n" % length, extra), "utf-8")
 
 
+async def drain(writer):
+    """writer.drain() with a deadline (DRAIN_MS): raises TimeoutError if the phone stalls."""
+    if hasattr(asyncio, "wait_for_ms"):
+        return await asyncio.wait_for_ms(writer.drain(), DRAIN_MS)
+    return await asyncio.wait_for(writer.drain(), DRAIN_MS / 1000)
+
+
 async def send(writer, code, body=b"", ctype="application/json", extra=""):
     if isinstance(body, str):
         body = bytes(body, "utf-8")
@@ -117,7 +130,7 @@ async def send(writer, code, body=b"", ctype="application/json", extra=""):
         writer.write(body)
     if probe:
         probe()
-    await writer.drain()
+    await drain(writer)
 
 
 async def send_json(writer, code, obj):
@@ -144,7 +157,7 @@ async def send_file(writer, path, ctype, gz=True):
             writer.write(mv[:k])
             if probe:
                 probe()
-            await writer.drain()
+            await drain(writer)
     finally:
         f.close()
 

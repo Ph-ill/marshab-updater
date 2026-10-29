@@ -212,7 +212,7 @@ async def live(lvweb, web, req, w):
         k += PIECE
         if k == 3 * PIECE and lvweb.probe:
             lvweb.probe()
-        await w.drain()
+        await lvweb.drain(w)
 
 
 def body(g):
@@ -397,9 +397,9 @@ async def ping(lvweb, web, req, w):
         z = b" " * 512
         for _ in range(2 * kb):
             w.write(z)
-            await w.drain()
+            await lvweb.drain(w)
     else:
-        await w.drain()
+        await lvweb.drain(w)
 
 
 def api(web, req):

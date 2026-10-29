@@ -27,6 +27,7 @@ def hooks(route):
     g = {"reboot": None, "lvship": NS(ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b,
                                       sleep_ms=sleep_ms, drop=lambda n: None)}
     exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec"), g)
+    g["_clock"] = clock
 
     async def send(w, status, body=b"", **kwargs):
         w.append((status, kwargs.get("extra", "")))
@@ -34,6 +35,7 @@ def hooks(route):
     wire = NS(send=send, dns_answer=lambda q, ip: None)
     web = NS(route=route, ship=NS(clock=None, ledtest=None))
     g["ota_hooks"](wire, web)
+    web.clock = clock
     return web
 
 
@@ -110,6 +112,93 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(OSError):
             await web.route(request(), [])
         self.assertFalse(web.state_busy)
+
+    async def test_stalled_stream_frees_other_phones_after_the_write_deadline(self):
+        # review 3 MAJOR-1: a phone that stops reading mid-/api/state (out of range, screen
+        # locked) used to hold every other phone's /api/* off until lwIP gave up (minutes).
+        # Each stream write now waits at most lvweb.DRAIN_MS; then the stream fails (its
+        # socket is closed by Server.handle) and admission is released.
+        import time
+        import lvweb
+
+        class Stalled:
+            def write(self, b):
+                pass
+
+            async def drain(self):
+                await asyncio.Event().wait()       # never takes another byte
+
+        calls = []
+
+        async def route(req, w):
+            calls.append(req.path)
+            if req.path == "/api/state":
+                await lvweb.drain(Stalled())
+
+        saved = lvweb.DRAIN_MS
+        lvweb.DRAIN_MS = 200
+        try:
+            web = hooks(route)
+            t0 = time.monotonic()
+            stuck = asyncio.create_task(web.route(request(), []))
+            await asyncio.sleep(0.02)
+            answer = []
+            await web.route(request("/api/login"), answer)
+            self.assertEqual(answer, [(503, "Retry-After: 1\r\n")])     # held while it streams
+            with self.assertRaises(asyncio.TimeoutError):
+                await stuck
+            self.assertLess(time.monotonic() - t0, 2.0)       # the deadline, not minutes
+            self.assertFalse(web.state_busy)
+            answer = []
+            await web.route(request("/api/login"), answer)
+            self.assertEqual(answer, [])
+            self.assertEqual(calls, ["/api/state", "/api/login"])
+        finally:
+            lvweb.DRAIN_MS = saved
+
+    async def test_send_and_file_streams_use_the_write_deadline(self):
+        import lvweb
+
+        class Stalled:
+            def write(self, b):
+                pass
+
+            async def drain(self):
+                await asyncio.Event().wait()
+
+        saved = lvweb.DRAIN_MS
+        lvweb.DRAIN_MS = 50
+        try:
+            with self.assertRaises(asyncio.TimeoutError):
+                await lvweb.send(Stalled(), 200, "{}")
+            with self.assertRaises(asyncio.TimeoutError):
+                await lvweb.send_file(Stalled(), str(ROOT / "board/lvweb.py"), "text/plain", False)
+        finally:
+            lvweb.DRAIN_MS = saved
+
+    async def test_stale_busy_mark_is_ignored_after_20_s(self):
+        # the backstop: a state_busy mark that somehow outlived its stream holds nobody off
+        # for more than ~20 s
+        calls = []
+
+        async def route(req, w):
+            calls.append(req.path)
+
+        web = hooks(route)
+        web.clock[0] = 1000
+        web.state_busy = 1000
+        answer = []
+        await web.route(request("/api/login"), answer)
+        self.assertEqual(answer, [(503, "Retry-After: 1\r\n")])
+        web.clock[0] = 1000 + 19000
+        answer = []
+        await web.route(request("/api/login"), answer)
+        self.assertEqual(answer, [(503, "Retry-After: 1\r\n")])
+        web.clock[0] = 1000 + 20001
+        answer = []
+        await web.route(request("/api/login"), answer)
+        self.assertEqual(answer, [])
+        self.assertEqual(calls, ["/api/login"])
 
 
 class SplitHelpers(unittest.TestCase):

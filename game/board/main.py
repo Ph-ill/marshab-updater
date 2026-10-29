@@ -94,20 +94,28 @@ def ota_hooks(lvweb, web):
     # A light playback (Test light, a hail's flicker) holds nothing off any more (review 2
     # M2): its task keeps only lvlight's helpers and its own small play(), measured with a
     # full state in the heap runs.
-    web.state_busy = False
+    # A stalled phone (review 3 MAJOR-1): every stream write waits at most lvweb.DRAIN_MS
+    # (15 s), then the request fails, its socket is closed and the finally below clears
+    # state_busy. As a backstop, state_busy is the ticks_ms the stream began (0: none) and a
+    # mark older than BUSY_MS is ignored, so nothing can hold every phone off for longer.
+    web.state_busy = 0
     web.ota_busy = 0
+
+    def held():
+        t = web.state_busy
+        return t and lvship.ticks_diff(lvship.ticks_ms(), t) < 20000
 
     async def ota_route(req, w):
         if req.path.startswith("/api/"):
             heavy = req.method == "GET" and req.path in ("/api/state", "/api/live")
-            if web.state_busy or (heavy and web.ota_busy):
+            if held() or (heavy and web.ota_busy):
                 return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
             if heavy and req.path == "/api/state":
-                web.state_busy = True
+                web.state_busy = lvship.ticks_ms() or 1
                 try:
                     return await route(req, w)
                 finally:
-                    web.state_busy = False
+                    web.state_busy = 0
         if req.path == "/api/reset":
             # "Reset this ship" (board/lvcode.py reset, web/settings.js). Loaded per request,
             # like lvota (0.3.0: out of main.py's resident code).
@@ -190,11 +198,11 @@ def ota_hooks(lvweb, web):
                 if req.path == "/api/coex/ping":
                     return await lvliveapi.ping(lvweb, web, req, w)
                 if req.path == "/api/live" and req.method == "GET":
-                    web.state_busy = True
+                    web.state_busy = lvship.ticks_ms() or 1
                     try:
                         return await lvliveapi.live(lvweb, web, req, w)     # (in pieces)
                     finally:
-                        web.state_busy = False
+                        web.state_busy = 0
                 s, j = lvliveapi.api(web, req)
             finally:
                 lvship.drop("lvliveapi")

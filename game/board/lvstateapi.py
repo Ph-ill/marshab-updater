@@ -118,7 +118,7 @@ def state_writer(self, you, last, minute):
                 if k >= 384 or (i == len(refs) - 1 and k):
                     w.write(b2a_base64(carry[:k])[:-1])
                     carry = carry[k:]
-                    await w.drain()
+                    await lvweb.drain(w)
         finally:
             days.readers -= 1
         if carry:
@@ -129,5 +129,5 @@ def state_writer(self, you, last, minute):
         w.write(b"}")
         if lvphone.probe:
             lvphone.probe()
-        await w.drain()
+        await lvweb.drain(w)
     return write
