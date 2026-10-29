@@ -35,6 +35,23 @@ def load(path):
         return None
 
 
+EPOCHS = 4              # a sender's past epochs kept (lk.hw: [epoch, seq, older epochs...])
+
+
+def forget(sh):
+    # Reset this ship (lvcode.reset, 0.3.0 review R2 m10): the hails that came in and
+    # no phone has read go. The rest of livebox.json stays: its epoch, sequence and each
+    # sender's highest taken (replay protection), and this ship's own waiting items.
+    L = getattr(sh, "live", None)
+    if L is not None:
+        del L.inb[:]
+    p = sh.data + "/livebox.json"
+    b = load(p)
+    if b and b.get("i"):
+        b["i"] = []
+        save(p, b)
+
+
 def keep(lk):
     """The Link's queues and counters to /data/livebox.json (lk.v: the page's version)."""
     lk.v += 1
@@ -91,12 +108,19 @@ def take(lk, s, m, off):
                     ch = 1
                     break
             continue
-        s.acks.append(item(lk, 0, frm, b[2:5], 0))
         q = [b[2], b[3] << 8 | b[4]]
         h = lk.hw.get(frm)
+        if h and h[0] != q[0] and q[0] in h[2:]:
+            # an epoch this sender has left behind (its box file was made again since): a
+            # recording played back (0.3.0 review R3 m4). Not taken, not acked.
+            lk.n["bad"] += 1
+            continue
+        s.acks.append(item(lk, 0, frm, b[2:5], 0))
         if h and h[0] == q[0] and q[1] <= h[1]:
             lk.n["dup"] += 1
             continue
+        if h:                               # the epochs left behind, newest first
+            q += h[2:] if h[0] == q[0] else ([h[0]] + h[2:])[:EPOCHS]
         if b[0] == 1 and old(lk, b):        # sent over a day ago: acked, not kept
             lk.hw[frm] = q
             lk.n["old"] += 1

@@ -1261,5 +1261,6 @@ lvsafe.faults = lambda d=None: {}
 g["safe_mode"]({}, "off: ship.json can't be read just now")
 check("m3: off for a read error: no rest, restarts", rested == [1] and boots == [1, 1])
 lvsafe.faults, lvsafe.rest = real_f, real_r
-check("RESET clears fault.json (m11)", "fault.json" in g["RESET"])
+import lvcode  # noqa: E402  (Reset this ship: lvcode.reset since 0.3.0)
+check("RESET clears fault.json (m11)", "fault.json" in lvcode.RESET, lvcode.RESET)
 print("test_safe: %d checks ok (%s)" % (ok[0], sys.implementation.name))

@@ -33,7 +33,7 @@
 # crew.json lost before the next boot is put back with the new code, never the old one.
 # The in-memory book changes only after the file has. Codes are never printed or logged.
 # Only this ship's file changes: the other ships keep the old code until bench.py or the
-# updater's ship setup writes theirs. Reset this ship keeps crew.json (main.py RESET).
+# updater's ship setup writes theirs. Reset this ship keeps crew.json (RESET below).
 from lv import codes as K
 from lv.clock import ticks_ms
 
@@ -142,3 +142,67 @@ def change(phone, req):
         return 500, {"err": "The ship couldn't save it. Your current code still works."}
     book.codes[you] = d
     return 200, {"ok": True}
+
+
+# "Reset this ship" (the page's Settings, POST /api/reset from main.py's ota_route): the players' progress goes, the ship's setup stays.
+# Deleted from /data: log.bin (every record this ship holds: taps, votes, gifts; other ships
+# in range sync theirs back), days.bin (the days told), clock.json (the saved flight day and
+# time; the launch date in ship.json brings the day back once a phone tells the time),
+# local.bin (what phones opened and saw), and funnel.bin (the phones the home-screen funnel
+# has seen, and which opened the game from the icon: board/lvfunnel.py). Sign-ins and
+# sessions live in RAM, so the restart forgets them.
+# fault.json (board/lvsafe.py: the crash count) goes too: a reset ship starts with a clean count.
+# Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
+# codes, including any changed in Settings: board/lvcode.py), their backups ship.json.bak and
+# crew.json.bak (lvsafe), the installed software and ota/ (the update state and rollback
+# copy), maint/safe.
+RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin", "fault.json", "hail.json")
+
+
+async def reset(lvweb, web, req, w, reboot=None):
+    # POST /api/reset {confirm: this ship's number} with a signed-in X-Crew-Token, else
+    # 401/403 and nothing changes. 200 (-> True), then the files go and the board restarts (reboot:
+    # main.py's, for the tests; else machine.reset). Moved here from main.py in 0.3.0 so
+    # its code is only in RAM for the request (main.py imports this module per request and
+    # drops it; the restart task below keeps what it needs).
+    try:
+        import asyncio
+    except ImportError:  # pragma: no cover
+        import uasyncio as asyncio
+    if req.method != "POST":
+        return await lvweb.send_json(w, 404, {"err": "no such thing"})
+    if web.get_phone().who(req) is None:
+        return await lvweb.send_json(w, 401, {"err": "signed out"})
+    sh = web.ship
+    try:
+        import json
+        ok = int(json.loads(req.body or b"{}")["confirm"]) == sh.cfg["ship_id"]
+    except Exception:
+        ok = False
+    if not ok:
+        return await lvweb.send_json(w, 403, {"err": "Type this ship's number to confirm."})
+    await lvweb.send_json(w, 200, {"ok": True, "restart_ms": 1500})
+
+    async def later():
+        await asyncio.sleep(1)
+        # No await from here on: nothing can write a file back before the restart.
+        import os
+        for f in RESET:
+            try:
+                os.remove(sh.data + "/" + f)
+            except OSError:
+                pass
+        # Hail (0.3.0 review R2 m10): hail.json went above; hails no phone has read yet go
+        # too (lvlivein.forget, per use)
+        try:
+            import lvlivein
+            lvlivein.forget(sh)
+        except Exception:
+            pass
+        # (nothing printed here: lvcode never prints, test_code.py; main.py says it)
+        if reboot:
+            return reboot()
+        import machine
+        machine.reset()
+    asyncio.create_task(later())
+    return True

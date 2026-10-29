@@ -199,7 +199,7 @@ try {
   await click('#top .gear');
   await until(`route==="set"&&!!document.querySelector('#set-rst')`, 4000, 'Settings open');
   check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),...(document.getElementById("set-live")?["set-live"]:[]),"set-out","set-code","set-rst"].join()`)), 'Settings sections in order, Your code above Reset, Reset last');
-  // Reset this ship (main.py reset_ship on the board): refused without a session, without the
+  // Reset this ship (board/lvcode.py reset, from main.py): refused without a session, without the
   // ship's number and with another; still signed in after (the success is tests/test_reset.py).
   const rst = JSON.parse(await ev(`(async()=>{const f=(b,t)=>fetch("/api/reset",{method:"POST",headers:t?{"X-Crew-Token":tok}:{},body:b}).then((r)=>r.status);const n=S.here+1;return JSON.stringify([await f(JSON.stringify({confirm:n}),0),await f("{}",1),await f(JSON.stringify({confirm:n%8+1}),1),await fetch("/api/state",{headers:{"X-Crew-Token":tok}}).then((r)=>r.status)])})()`));
   check(rst.join() === '401,403,403,200', 'reset refused without a session / confirm / the right number: ' + rst.join());
@@ -315,7 +315,7 @@ try {
   await visit('/', UA.sheet);
   await until(`FN.scr==='LEAVE_KNOWN'`, 8000, 'captive sheet, phone with the icon');
   check(/from your icon/.test(await scr()) && !(await ev(`!!document.querySelector('[data-who],[data-fn=here]')`)), 'captive sheet, phone with the icon: ' + await scr());
-  // 4. Reset this ship forgets it (funnel.bin is in main.py RESET).
+  // 4. Reset this ship forgets it (funnel.bin is in lvcode.py RESET).
   const lr = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H, body: JSON.stringify({ crew: C, pin: '1234' }) })).json();
   const rr = await fetch(BASE + '/api/reset', { method: 'POST', headers: { ...H, 'X-Crew-Token': lr.token }, body: JSON.stringify({ confirm: st.here + 1 }) });
   check(rr.status === 200, 'reset: ' + rr.status);

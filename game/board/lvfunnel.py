@@ -24,7 +24,7 @@
 #   stamp    when the ship last heard from the phone: epoch hours // 4, mod 256 (0..255)
 # 32 phones in 256 bytes, written whole (funnel.bin.new, then a rename) and only when a
 # record changes. A full store gives the stalest record that isn't installed to a new phone.
-# "Reset this ship" (main.py RESET) deletes it.
+# "Reset this ship" (lvcode.py RESET) deletes it.
 N = 32
 REC = 8
 INSTALLED = 1

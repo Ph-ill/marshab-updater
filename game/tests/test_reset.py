@@ -1,7 +1,8 @@
-# "Reset this ship" on the ship (board/main.py reset_ship, POST /api/reset): refused without
+# "Reset this ship" on the ship (board/lvcode.py reset, POST /api/reset through main.py's
+# ota_route, which imports lvcode per request and drops it): refused without
 # a signed-in crew session, refused without the right confirm (no number, a wrong one, a
 # GET), and on success it deletes only the players' progress and the crash count in /data
-# (main.RESET) and restarts, leaving ship.json and crew.json (and their .bak) byte-for-byte
+# (lvcode.RESET) and restarts, leaving ship.json and crew.json (and their .bak) byte-for-byte
 # as they were, and the installed software and ota/ (update state, rollback copy)
 # untouched. The game's other requests and /api/ota* still go where they went. Runs on
 # CPython and MicroPython:
@@ -17,6 +18,7 @@ except ImportError:  # pragma: no cover
 
 HERE = os.getcwd()
 sys.path.insert(0, HERE + "/board")
+sys.path.insert(1, HERE)                  # (lv/: lvlivein, for the hails that came in)
 import lvweb  # noqa: E402
 
 ok = [0]
@@ -35,7 +37,8 @@ SHIP = b'{"ship_id": 4, "hotspot_password": "placeholder-pass", "ota_src": "plac
 CREW = b'{"schema": 1, "salt": "00", "codes": []}'
 GONE = {"log.bin": bytes(range(256)) * 2, "days.bin": b"\x01\x02\x03", "clock.json": b'{"t": 1}',
         "local.bin": b"\x05\x06", "funnel.bin": b"ip\x7f\x00\x00\x01\x03\x10" * 2,
-        "fault.json": b'{"n": 1, "why": "ValueError: x"}'}        # 0.2.7: the crash count too
+        "fault.json": b'{"n": 1, "why": "ValueError: x"}',        # 0.2.7: the crash count too
+        "hail.json": b'{"d": 1, "o": [], "i": [["7f0003", 0, 0, 1, 0, 0, 0]]}'}   # 0.3.0 R2 m10
 KEEP = {"data/ship.json": SHIP, "data/crew.json": CREW, "data/safe": b"",
         "data/ship.json.bak": SHIP, "data/crew.json.bak": CREW,      # lvsafe's backups stay
         "main.py": b"# main\n", "www/app.html.gz": b"page", "ota/state.json": b'{"phase": "ok"}',
@@ -70,7 +73,14 @@ def read(rel):
         return None
 
 
+# Hail's box (0.3.0 review R2 m10): what came in and no phone read yet goes; the epoch,
+# sequence, each sender's highest taken (replay protection) and this ship's own waiting
+# items stay
+BOX = {"e": 7, "s": 3, "o": [[1, "aa", 20000]], "i": [[2, "bb", None]], "h": {"2": [5, 9]}, "l": [0, 0]}
+
+
 def fixture():
+    write("data/livebox.json", json.dumps(BOX).encode())
     for k, v in KEEP.items():
         write(k, v)
     for k, v in GONE.items():
@@ -91,11 +101,27 @@ def progress_there(name):
 src = open(HERE + "/board/main.py").read()
 src = src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")]
 rebooted = []
-g = {"lvship": None, "asyncio": asyncio}
+
+
+class LS:
+    # main.py's lvship as ota_route uses it: lvcode (Reset) is imported per request, dropped
+    dropped = []
+
+    @staticmethod
+    def drop(n):
+        LS.dropped.append(n)
+        sys.modules.pop(n, None)
+
+
+g = {"lvship": LS, "asyncio": asyncio}
 exec(src, g)
 g["reboot"] = lambda: rebooted.append(1)
-check("RESET is the progress files only", sorted(g["RESET"]) == sorted(GONE)
-      and "ship.json" not in g["RESET"] and "crew.json" not in g["RESET"], g["RESET"])
+import lvcode  # noqa: E402
+RESET = lvcode.RESET
+check("RESET is the progress files only", sorted(RESET) == sorted(GONE)
+      and "ship.json" not in RESET and "crew.json" not in RESET, RESET)
+check("RESET lives in lvcode now (0.3.0: out of main.py's resident code)", "RESET" not in g
+      and "reset_ship" not in g)
 
 
 class FakeLvweb:
@@ -183,16 +209,34 @@ check("reset: 200 before anything goes", c == 200 and j.get("ok") and j.get("res
 check("reset: answered first, files still there until the restart", read("data/log.bin") == GONE["log.bin"])
 c, j = http(Req("POST", "/api/reset", b'{"confirm": 4}', tok="tok"), wait=1.3)
 check("reset: restarts", len(rebooted) >= 1, rebooted)
+check("reset: lvcode dropped after the request", "lvcode" in LS.dropped and "lvcode" not in sys.modules, LS.dropped)
 for k in GONE:
     check("reset: data/%s deleted" % k, read("data/" + k) is None)
 kept("reset")
 check("reset: ship.json untouched", read("data/ship.json") == SHIP)
+bx = json.loads(read("data/livebox.json"))
+check("R2 m10: reset: hails that came in are gone", bx.get("i") == [], bx)
+check("R2 m10: reset: replay protection and own waiting items kept",
+      all([bx.get(k) == BOX[k] for k in ("e", "s", "o", "h")]), bx)
 
 # Again with the progress already gone (a second tap): still fine, still restarts.
 n = len(rebooted)
 c, j = http(Req("POST", "/api/reset", b'{"confirm": 4}', tok="tok"), wait=1.3)
 check("reset twice: fine", c == 200 and len(rebooted) == n + 1)
 kept("reset twice")
+
+# 0.3.0 review R3 m2: only a signed-in phone's update request holds Hail off (ship.ota_t)
+LS.ticks_ms = staticmethod(lambda: 777)
+for name, tok, want in (("signed out", None, 0), ("a session nobody has", "old", 0), ("signed in", "tok", 777)):
+    srv.ship.ota_t = 0
+    try:
+        asyncio.run(srv.route(Req("POST", "/api/ota/cancel", b"{}", tok=tok), Wr()))
+    except Exception:
+        pass                      # (lvota against the stand-in server: not what's checked)
+    check("R3 m2: POST /api/ota, %s: ota_t %s" % (name, want), srv.ship.ota_t == want, srv.ship.ota_t)
+for m in ("lvota", "lvotap", "lvotaq"):
+    sys.modules.pop(m, None)
+Server.routed = []
 
 # The rest of the API is untouched by the hook.
 for r in (Req("GET", "/api/state", tok="tok"), Req("POST", "/api/resets", b"{}", tok="tok")):
