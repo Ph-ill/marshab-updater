@@ -2,12 +2,15 @@
 """The release side of over-the-air updates: tools/ota/sign_release.py signs a release the
 way a ship would take it, and tools/validate_firmware.py (the repo's release check) accepts
 it and catches a broken one. Runs in a temp copy of firmware/ with a TEST key (seed 0..31)
-and a lvota.py whose KEYS hold only that key; the release key is never touched.
+and a lvota.py whose KEYS hold that key plus the ships' real PUBLIC keys (read from
+game/board/lvota.py), so the branch's real signed releases in the copy still validate; the
+release signing key is never touched.
 
   python3 game/tests/test_ota_release.py"""
 import base64
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -40,8 +43,15 @@ try:
     for x in ("index.html", "styles.css", "favicon.svg"):
         shutil.copy(ROOT / x, tmp / x)
     (tmp / "game/board").mkdir(parents=True)
+    # Trust the TEST key and the ships' real public keys (public, from the repo's lvota.py):
+    # the temp copy holds this branch's real signed releases (e.g. 0.2.x-ota-phone, kid
+    # 2111b2e9), and with only the test key trusted validate_firmware rejects every one of
+    # them ("not one the ships trust"), which fails "passes, says signed" for no real reason.
+    real = dict(re.findall(r'"([0-9a-f]{8})":\s*unhexlify\("([0-9a-f]{64})"\)', (GAME / "board/lvota.py").read_text()))
+    check("the repo's lvota.py lists its real public key(s)", "2111b2e9" in real, sorted(real))
+    keys = dict(real, **{KID: PUB.hex()})
     (tmp / "game/board/lvota.py").write_text(
-        'from binascii import unhexlify\nKEYS = {"%s": unhexlify("%s")}\n' % (KID, PUB.hex()))
+        'from binascii import unhexlify\nKEYS = {%s}\n' % ", ".join('"%s": unhexlify("%s")' % kv for kv in sorted(keys.items())))
     key = tmp / "test.pem"
     key.write_text(ed25519.dump_pem(SEED))
     rp = tmp / "firmware/releases" / V / "release.json"
