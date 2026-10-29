@@ -954,7 +954,7 @@ try:
     g["crashed"](ValueError("x" * 99), 0)
     trial[0] = False
 
-    def oom(*a):
+    def oom(*a, **k):        # (takes live= too, so the fault is the MemoryError meant, not a TypeError)
         raise MemoryError()
     lvsafe.crashed = oom
     g["crashed"](MemoryError(), 0)
