@@ -81,12 +81,57 @@ def home_screen(lvweb):
                          "/icon.png": i, "/apple-touch-icon.png": i, "/apple-touch-icon-precomposed.png": i})
 
 
+def http_admission(lvweb, web):
+    # One parser/response working set, plus one bounded unread socket. A browser
+    # navigation cannot replay a 503 like an API caller, so let that next socket
+    # wait outside web.busy (OTA/radio admission must not wait on the waiter).
+    handle = getattr(web, "handle", None)
+    if handle is None:
+        return
+    lock = asyncio.Lock()
+    web.http_waiting = 0
+
+    async def busy(w):
+        web.refused += 1
+        try:
+            await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
+        finally:
+            await web._close(w)
+
+    async def admitted(r, w):
+        if web.http_waiting >= 2:
+            return await busy(w)
+        web.http_waiting += 1
+        acquired = False
+        try:
+            try:
+                if hasattr(asyncio, "wait_for_ms"):
+                    await asyncio.wait_for_ms(lock.acquire(), 15000)
+                else:
+                    await asyncio.wait_for(lock.acquire(), 15)
+                acquired = True
+            except asyncio.TimeoutError:
+                return await busy(w)
+            return await handle(r, w)
+        except BaseException:
+            if not acquired:
+                await web._close(w)
+            raise
+        finally:
+            if acquired:
+                lock.release()
+            web.http_waiting -= 1
+
+    web.handle = admitted
+
+
 def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
     # Bound request-parser/socket working sets as well as API dispatch. Extra
     # phones receive the existing 503 + Retry-After before reading a request.
     # The admitted phone can still stream while the radio commits a move.
     lvweb.MAX_CONN = 1
+    http_admission(lvweb, web)
     route = web.route
     clock_gate(web)
     # Admission for the heavy answers, decided before Phone.state_writer (or lvliveapi.live)

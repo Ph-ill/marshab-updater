@@ -16,7 +16,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "board")]
 def hooks(route):
     source = ROOT / "board/main.py"
     tree = ast.parse(source.read_text())
-    names = {"ota_hooks", "clock_gate", "_Hdr", "net_hooks"}
+    names = {"ota_hooks", "clock_gate", "_Hdr", "net_hooks", "http_admission"}
     nodes = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.name in names]
     clock = [0]
 
@@ -24,7 +24,7 @@ def hooks(route):
         clock[0] += ms
         await asyncio.sleep(0)
 
-    g = {"reboot": None, "lvship": NS(ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b,
+    g = {"reboot": None, "asyncio": asyncio, "lvship": NS(ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b,
                                       sleep_ms=sleep_ms, drop=lambda n: None, free=lambda: 100000)}
     exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec"), g)
     g["_clock"] = clock
@@ -45,6 +45,117 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
+    async def test_unread_waiter_deadline_refuses_and_closes(self):
+        answers, closed = [], []
+
+        async def timeout(coro, seconds):
+            self.assertEqual(seconds, 15)
+            coro.close()
+            raise asyncio.TimeoutError
+
+        async def handle(reader, writer):
+            self.fail("timed-out admission must not read the request")
+
+        async def close(writer):
+            closed.append(writer)
+
+        async def send(writer, status, body=b"", **kwargs):
+            answers.append((status, kwargs.get("extra")))
+
+        source = ROOT / "board/main.py"
+        node = next(n for n in ast.parse(source.read_text()).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "http_admission")
+        scope = {"asyncio": NS(Lock=asyncio.Lock, wait_for=timeout, TimeoutError=asyncio.TimeoutError)}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+        web = NS(handle=handle, _close=close, refused=0)
+        scope["http_admission"](NS(send=send), web)
+        await web.handle(1, 1)
+        self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
+        self.assertEqual(closed, [1])
+        self.assertEqual(web.http_waiting, 0)
+        self.assertEqual(web.refused, 1)
+
+    async def test_cancelled_unread_waiter_closes_and_releases_slot(self):
+        entered, release = asyncio.Event(), asyncio.Event()
+        closed = []
+
+        async def handle(reader, writer):
+            entered.set()
+            await release.wait()
+
+        async def close(writer):
+            closed.append(writer)
+
+        source = ROOT / "board/main.py"
+        node = next(n for n in ast.parse(source.read_text()).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "http_admission")
+        scope = {"asyncio": asyncio}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+        web = NS(handle=handle, _close=close)
+        scope["http_admission"](NS(), web)
+        first = asyncio.create_task(web.handle(1, 1))
+        await entered.wait()
+        waiting = asyncio.create_task(web.handle(2, 2))
+        await asyncio.sleep(0)
+        self.assertEqual(web.http_waiting, 2)
+        waiting.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await waiting
+        self.assertEqual(closed, [2])
+        self.assertEqual(web.http_waiting, 1)
+        release.set()
+        await first
+        await web.handle(3, 3)
+        self.assertEqual(web.http_waiting, 0)
+
+    async def test_unread_waiter_does_not_parse_or_count_as_web_busy(self):
+        from unittest.mock import patch
+        import lvweb
+        entered, release = asyncio.Event(), asyncio.Event()
+        parsed, answers, closed = [], [], []
+        web = lvweb.Server(NS(http_hits=0), say=lambda s: None)
+
+        async def read_req(reader):
+            parsed.append(reader)
+            return request("/")
+
+        async def route(req, writer):
+            entered.set()
+            await release.wait()
+
+        async def send(writer, status, body=b"", **kwargs):
+            answers.append((status, kwargs.get("extra")))
+
+        async def close(writer):
+            closed.append(writer)
+
+        source = ROOT / "board/main.py"
+        tree = ast.parse(source.read_text())
+        node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "http_admission")
+        scope = {"asyncio": asyncio}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+        web.route, web._close = route, close
+        scope["http_admission"](lvweb, web)
+        with patch.object(lvweb, "MAX_CONN", 1), \
+                patch.object(lvweb, "read_req", read_req), \
+                patch.object(lvweb, "send", send):
+            first = asyncio.create_task(web.handle(1, 1))
+            await entered.wait()
+            waiting = asyncio.create_task(web.handle(2, 2))
+            await asyncio.sleep(0)
+            self.assertEqual(web.http_waiting, 2)
+            self.assertEqual(web.busy, 1)
+            self.assertEqual(parsed, [1])
+            await web.handle(3, 3)
+            self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
+            self.assertEqual(closed, [3])
+            release.set()
+            await asyncio.gather(first, waiting)
+        self.assertEqual(parsed, [1, 2])
+        self.assertEqual(web.served, 2)
+        self.assertEqual(web.busy, 0)
+        self.assertEqual(web.http_waiting, 0)
+
     async def test_single_socket_refuses_second_before_parsing(self):
         from unittest.mock import patch
         import lvweb
