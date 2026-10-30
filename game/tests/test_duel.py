@@ -782,5 +782,112 @@ for early in (False, True):
     D.take(a.live, 1, 7, D.gid(g) + D.unhexlify(g["l"]) + D.unhexlify(g["salt"]))
     check("verified reveal has no echo loop", not a.live.out)
 
+# Review round 4 item 2: crossing resignations keep each local loss immutable,
+# but deterministically void this game's record in either END delivery order.
+for first in (0, 1):
+    for delayed in (False, True):
+        w, a, b = fresh(44)
+        start(w, a, b)
+        ships = (a, b)
+        for s in ships:
+            j = D.box(s.live)
+            j["r"][str(1 - s.node.ship)] = [2, 3]
+            D.store(s.live, j)
+            check("crossing resign accepted", act(s, "resign") == 200)
+        ends = [next(o[1][5:16] for o in s.live.out if o[1][0] == 8) for s in ships]
+        proofs = [next(o[1][5:16] for o in s.live.out if o[1][0] == 7) for s in ships]
+        if delayed:
+            # Verification can beat the other END, including across reboot.
+            s = ships[first]
+            D.take(s.live, 1 - first, 7, proofs[1 - first])
+            check("loss counted before delayed END", game(s).get("counted") == 1
+                  and D.box(s.live)["r"][str(1 - first)] == [2, 4])
+            lvlivex.setup(s.live, s, s.data, s.live.cfg)
+        for receiver in (first, 1 - first):
+            s = ships[receiver]
+            D.take(s.live, 1 - receiver, 8, ends[1 - receiver])
+            check("local resignation never reversed", game(s)["win"] is False)
+        settled(w, a, b)
+        for s in ships:
+            check("crossing resign done without result", game(s)["s"] == "done"
+                  and game(s).get("mutual") and not game(s).get("counted")
+                  and D.box(s.live)["r"][str(1 - s.node.ship)] == [2, 3])
+            check("mutual second-person phone status", D.view(s.live)[0]["status"]
+                  == "Your game ended with both ships standing down. No result.")
+            check("mutual status survives streamed phone snapshot", lvliveapi.state(s, 0)["duel"][0]["status"]
+                  == "Your game ended with both ships standing down. No result.")
+            # Fresh-envelope semantic duplicates cannot subtract twice or restart.
+            D.take(s.live, 1 - s.node.ship, 8, ends[1 - s.node.ship])
+            D.take(s.live, 1 - s.node.ship, 7, proofs[1 - s.node.ship])
+            check("mutual duplicates keep prior record", D.box(s.live)["r"][str(1 - s.node.ship)] == [2, 3]
+                  and not game(s).get("counted") and game(s)["s"] == "done")
+
+# Without any earlier record, a counted loss is removed rather than leaving a
+# phantom duel. Before acceptance the inviter can already have counted locally.
+w, a, b = fresh(45)
+act(a, "new")
+act(a, "invite", layout=LAY)
+settled(w, a, b)
+check("pre-accept crossing inviter resign", act(a, "resign") == 200)
+check("pre-accept local loss counted", game(a).get("counted") == 1)
+check("pre-accept crossing invitee resign", act(b, "resign") == 200)
+settled(w, a, b)
+check("pre-accept crossing no records", not D.box(a.live)["r"] and not D.box(b.live)["r"]
+      and game(a)["s"] == game(b)["s"] == "done")
+
+# Real final-shot histories: END can arrive before or after the fleet-ending
+# SHOT/ANSWER. The first local terminal decision wins; later END cannot rewrite
+# fleet win/loss, including after reveal verification has counted the result.
+for receiver in (0, 1):
+    for end_first in (False, True):
+        w, a, b = fresh(46)
+        start(w, a, b)
+        for k, cell in enumerate((0, 1, 2, 12, 13)):
+            act(b, "fire", cell=cell)
+            settled(w, a, b)
+            act(a, "fire", cell=20 + k)
+            settled(w, a, b)
+        check("race final shot queued", act(b, "fire", cell=35) == 200)
+        ident = D.gid(game(a))
+        shot = next(o[1][5:16] for o in b.live.out if o[1][0] == 5)
+        s = (a, b)[receiver]
+        ending = ident + bytes((2,)) + bytes(8)
+        if receiver == 1:
+            D.take(a.live, 1, 5, shot)
+            move = next(o[1][5:16] for o in a.live.out if o[1][0] == 6)
+        else:
+            move = shot
+        if end_first:
+            D.take(s.live, 1 - receiver, 8, ending)
+        D.take(s.live, 1 - receiver, 5 if receiver == 0 else 6, move)
+        expected = True if end_first else bool(receiver)
+        check("race first terminal outcome", game(s)["win"] is expected)
+        if not end_first:
+            check("fleet ending refuses local resign", act(s, "resign") == 409)
+        for reason in (1, 2, 3, 4, 5):
+            D.take(s.live, 1 - receiver, 8, ident + bytes((reason,)) + bytes(8))
+            check("unverified terminal outcome is immutable", game(s)["s"] == "reveal"
+                  and game(s)["win"] is expected
+                  and game(s).get("why") == (2 if end_first else None))
+        peer = game((b, a)[receiver])
+        D.take(s.live, 1 - receiver, 7, ident + D.unhexlify(peer["l"]) + D.unhexlify(peer["salt"]))
+        check("race verified terminal counts", game(s)["s"] == "done" and game(s).get("counted") == 1)
+        record = D.box(s.live)["r"]
+        for reason in (1, 2, 3, 4, 5):
+            D.take(s.live, 1 - receiver, 8, ident + bytes((reason,)) + bytes(8))
+            check("late END preserves terminal cause and record", game(s)["s"] == "done"
+                  and game(s)["win"] is expected and D.box(s.live)["r"] == record
+                  and game(s).get("why") == (2 if end_first else None))
+
+# A locally submitted resignation also wins against an in-flight final SHOT or
+# ANSWER, not just against another END. No transcript advances after resigning.
+for receiver in (0, 1):
+    s, operation = persistence_case("answer" if receiver == 0 else "reveal")
+    check("in-flight local resignation", act(s, "resign") == 200)
+    before = game(s)["h"]
+    operation()
+    check("in-flight fleet result cannot reverse resignation", game(s)["win"] is False
+          and game(s)["why"] == 2 and game(s)["h"] == before)
+
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

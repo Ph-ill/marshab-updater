@@ -6,6 +6,7 @@ const DU_OPEN=["draft","wait","invited","active","reveal"];
 function duGames(){return LV?.duel||[]}
 function duGame(to){return duGames().find(g=>g.to===to)}
 function duStatus(g){
+  if(g.status)return g.status;
   const name=nm(g.to);
   if(g.s==="draft")return "Hide your fleet";
   if(g.s==="invited")return name+" invited you";

@@ -96,7 +96,25 @@ def take(lk, frm, kind, b, j):
         why = b[2]
         if why not in (1, 2, 3, 4, 5, 6):
             return
-        if why == 2 and g["s"] in ACTIVE:
+        if why == 2 and g.get("why") == 2 and g.get("win") is False and g["s"] in ("reveal", "done"):
+            if g.get("mutual"):
+                return
+            # A local resignation is immutable, even after verification/counting.
+            # Crossing ENDs agree on no result; retract only this game's loss.
+            g["mutual"] = 1
+            if g.get("counted"):
+                r = j["r"][str(frm)]
+                r[1] -= 1
+                if r == [0, 0]:
+                    del j["r"][str(frm)]
+                g["counted"] = 0
+            reveal(lk, g)
+            finish(lk, j, g)
+        elif why != 6 and g.get("win") is not None:
+            # Fleet results and either resignation outcome already chose a side.
+            # Other late END reasons must not replace that terminal decision.
+            return
+        elif why == 2 and g["s"] in ACTIVE:
             g["why"] = 2
             g["win"], g["s"] = True, "reveal"
             reveal(lk, g)

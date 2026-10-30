@@ -205,6 +205,9 @@ def reveal(lk, g):
 def finish(lk, j, g):
     if not g.get("verified") or g.get("win") is None or g.get("counted"):
         return
+    if g.get("mutual"):
+        terminal(g, "done")
+        return
     r = j["r"].get(str(g["to"]), [0, 0])
     r[0 if g["win"] else 1] += 1
     j["r"][str(g["to"])] = r
