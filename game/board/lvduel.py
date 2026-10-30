@@ -153,6 +153,12 @@ def sweep(lk, j):
             g["t"] = t
             changed = t is not None or changed
         age = t - g["t"] if t is not None and g.get("t") is not None else 0
+        if g.get("light_dirty"):
+            before = g.get("sync")
+            sync(lk, g)
+            if before != g.get("sync"):
+                g.pop("light_dirty", None)
+                changed = True
         if g["s"] == "wait" and age >= 3600 and not g.get("update"):
             g["update"] = True
             changed = True
@@ -176,6 +182,15 @@ def maintain(lk):
     j = box(lk)
     if sweep(lk, j):
         store(lk, j)
+
+
+def lighting(lk):
+    j = box(lk)
+    for g in j["g"]:
+        if g["s"] in ACTIVE and g["s"] != "draft":
+            g["light_dirty"] = True
+    sweep(lk, j)
+    store(lk, j)
 
 
 def room(j):

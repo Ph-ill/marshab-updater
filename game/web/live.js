@@ -181,6 +181,7 @@ function lvSect(){
     o+=`<p class=dim>Hails travel from your ship to a crewmate's by Bluetooth. Only what you send goes, signed with your fleet's key.</p><button class="btn sec" data-lvset=off aria-pressed=true><span>Ship-to-ship: on</span><i>turn off</i></button>`;
     o+=`<button class="btn sec" data-lvset=light aria-pressed="${LV.light}"><span>Flicker for hails: ${LV.light?"on":"off"}</span><i>${LV.light?"turn off":"turn on"}</i></button><p class=fine>${LV.light?"Your ship's light flashes on and off for about 10 s when a hail lands, whether or not the Ship light is on.":"Hails land without the light. Crewmates' phones say a hail reaches you as a note."} Never during quiet hours${LV.qw?` (${lvHM(LV.qw[0])} to ${lvHM(LV.qw[1])})`:""}, and at most ${LV.cap||12} a day (${LV.lights} so far).</p>${lvRest()?`<p class="fine lvrest">${lvRest()}</p>`:""}`;
   }
+  if(LV.on)o+=`<button class="btn sec" data-lvset=dl aria-pressed="${LV.dl!==false}"><span>Flicker for your turn: ${LV.dl!==false?"on":"off"}</span><i>${LV.dl!==false?"turn off":"turn on"}</i></button><p class=fine>Two slow pulses when an invitation or a turn arrives. The light shares the hail allowance and rests in quiet hours. ${LV.dl===false?"Your turns show on your page without the light.":""}</p>`;
   return o+`<button class=go data-go=coex style="margin-top:var(--s3)"><span class=lab><span>Radio check</span><span>Wi-Fi + Bluetooth</span></span><b>How your ship's radio is doing</b></button></section>`;
 }
 const setScreen_lv=setScreen;setScreen=function(){

@@ -1,0 +1,14 @@
+.du-grid{display:grid;grid-template-columns:20px repeat(6,minmax(0,1fr));gap:3px;margin:var(--s3) 0;max-width:360px}
+.du-axis{display:flex;align-items:center;justify-content:center;font:13px var(--mono);color:var(--ink2)}
+.du-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1px solid var(--rule);font:24px var(--mono);color:var(--ink);min-width:0}
+.du-cell.ship{background:var(--tint);border-color:var(--ink2)}
+.du-cell.hit{color:var(--rust-t);border-color:var(--rust-t)}
+.du-cell.miss{color:var(--ink2)}
+.du-cell.sunk{box-shadow:inset 0 0 0 1px var(--rust-t)}
+.du-cell.selected{outline:2px solid var(--ink);outline-offset:-2px;background:var(--tint)}
+.du-cell:not([disabled]):active{background:var(--tint)}
+.du-small{max-width:210px}.du-small .du-cell{font-size:18px}
+.du-tools{display:flex;gap:var(--s2);margin-top:var(--s2)}
+.du-tools .btn{flex:1;min-width:0;padding:var(--s2);font-size:13px;letter-spacing:0;text-align:center;justify-content:center}
+.du-tools .btn+.btn{margin-top:0}.du-tools [aria-pressed=true]{background:var(--ink);color:var(--paper)}
+#du-home>.btn{margin-top:var(--s3)}

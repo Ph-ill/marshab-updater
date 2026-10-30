@@ -376,6 +376,12 @@ def setting(sh, b):
     _in().save(cf, c)
     if L is not None:
         L.cfg = c
+        if "dl" in b:
+            import lvduel
+            try:
+                lvduel.lighting(L)
+            finally:
+                lvship.drop("lvduel")
         if not c.get("on", True):
             lvlive.unhook(L)
             sh.live = None
@@ -384,7 +390,7 @@ def setting(sh, b):
     elif c.get("on", True) and sh.ble is not None:
         lvlive.install(sh, sh.data)
         sh.say("live: turned on from a phone" if sh.live else "live: still off (%s)" % getattr(sh, "live_why", None))
-    return 200, {"ok": True, "on": sh.live is not None, "why": getattr(sh, "live_why", None), "light": light(c)}
+    return 200, {"ok": True, "on": sh.live is not None, "why": getattr(sh, "live_why", None), "light": light(c), "dl": c.get("dl", True)}
 
 
 def coex(sh):

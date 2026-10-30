@@ -45,6 +45,7 @@ def main():
                        ("a2hs.js", "/*A2HS_JS*/"), ("a2hs.css", "/*A2HS_CSS*/"),
                        ("settings.js", "/*SET_JS*/"), ("settings.css", "/*SET_CSS*/"),
                        ("live.js", "/*LIVE_JS*/"), ("live.css", "/*LIVE_CSS*/"),
+                       ("duel.js", "/*DUEL_JS*/"), ("duel.css", "/*DUEL_CSS*/"),
                        ("fullscreen.js", "/*FS_JS*/"), ("fullscreen.css", "/*FS_CSS*/"),
                        ("funnel.js", "/*FUN_JS*/"), ("funnel.css", "/*FUN_CSS*/")):
         path = os.path.join(HERE, name)

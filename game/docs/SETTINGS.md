@@ -55,6 +55,16 @@ the second person, no spoilers, no jargon.
 - Notes are text, never markup: `otaClean()` keeps strings only, 3 lines of 160 characters
   at most, and they reach the page through `h()`.
 
+## Asteroid duel turn light
+
+Ship-to-ship has a separate **Flicker for your turn** switch below **Flicker for
+hails**. It defaults on (`live.json`, `dl`) and controls only the two slow pulses
+for an invitation or your next turn. It uses the existing software-PWM pin path,
+waits until the link is over, stays dark during quiet hours, and shares Hail's
+12-play daily allowance. Turning it off leaves every move on the page. The duel
+SYNC reports this independent setting to the opponent's page; the Hail advert's
+no-light bit still describes hails only.
+
 ## Test light
 
 So you can see a ship's LED works without opening the case, whether the Ship light is on

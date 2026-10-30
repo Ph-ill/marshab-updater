@@ -34,6 +34,10 @@ from lv import record as R
 SAFE = "--safe" in sys.argv           # board/lvsafe.py's safe-mode server instead (web/safe.js)
 if SAFE:
     sys.argv.remove("--safe")
+DUEL = "--duel" in sys.argv
+if DUEL:
+    sys.argv.remove("--duel")
+    sys.argv.append("--live")
 LIVE = "--live" in sys.argv           # ship-to-ship (board/lvlive.py) on, with a few hails (web/live.js)
 if LIVE:
     sys.argv.remove("--live")
@@ -76,7 +80,7 @@ for n in os.listdir("web/launch"):
     copy("web/launch/" + n, ROOT + "www/ls/" + n)
 copy("build/pack.bin", ROOT + "pack.bin")
 copy("build/engage.bin", ROOT + "engage.bin")
-for n in ("local.bin", "days.bin", "clock.json", "funnel.bin", "live.json", "livebox.json", "hail.json", "fault.json"):
+for n in ("local.bin", "days.bin", "clock.json", "funnel.bin", "live.json", "livebox.json", "hail.json", "fault.json", "duel.json"):
     try:
         os.remove(DATA + "/" + n)
     except OSError:
@@ -201,8 +205,68 @@ for it in ship.st.pend:
         break
 
 
+async def duel_peer():
+    # A deterministic opponent for phone screenshots; board-side rules and signed
+    # envelopes are real. Radio loss/retry is exercised in test_duel.py instead.
+    import bluetooth
+    import lvduel
+    from lv import sync as sync
+    from lv.chlog import ChoiceLog
+    from lv.ble import BleSync
+    class PeerShip:
+        def say(self, text):
+            pass
+    peer = PeerShip()
+    peer.data = DATA + "/duel-peer"
+    try:
+        os.mkdir(peer.data)
+    except OSError:
+        pass
+    for n in ("livebox.json", "duel.json"):
+        try:
+            os.remove(peer.data + "/" + n)
+        except OSError:
+            pass
+    peer.fk, peer.clock, peer.led, peer.web, peer.ledtest = ship.fk, ship.clock, None, None, None
+    peer.node = sync.Node(ChoiceLog(ship.fk), 0, ship.fk, 3)
+    world = bluetooth.World(31)
+    peer.ble = BleSync(peer.node, world.new())
+    lvlive.install(peer, peer.data)
+    peer.live.cfg["dl"] = False
+    class Session:
+        def __init__(self, frm):
+            self.to, self.acks = frm, []
+    def deliver(a, b):
+        it = [o[1] for o in a.live.out if o[0] == b.node.ship][:6]
+        if not it:
+            return
+        s = Session(a.node.ship)
+        b.live.take(s, bytes((lvlive.MARK, len(it))) + b"".join(it), 0)
+        if s.acks:
+            a.live.take(Session(b.node.ship), bytes((lvlive.MARK, len(s.acks))) + b"".join(s.acks), 0)
+    while True:
+        deliver(ship, peer)
+        games = lvduel.view(peer.live)
+        if games:
+            g = games[0]
+            if g["s"] == "invited":
+                lvduel.action(peer.live, {"action": "accept", "to": ship.node.ship, "layout": [[0, 0], [12, 0], [35, 0]]})
+            elif g["turn"] and not g["pending"]:
+                # Miss until all empty cells are used. The phone can finish first.
+                own = lvduel.view(ship.live)
+                occupied = [c for row in (own[0]["layout"] or []) for c in row] if own else []
+                fired = [z[1] for z in g["shots"]]
+                choices = [c for c in range(36) if c not in fired and c not in occupied]
+                if choices:
+                    lvduel.action(peer.live, {"action": "fire", "to": ship.node.ship, "cell": choices[0]})
+        deliver(peer, ship)
+        await asyncio.sleep(.05)
+
+
 async def main():
     await asyncio.start_server(srv.handle, "127.0.0.1", PORT)
+    if DUEL:
+        asyncio.create_task(duel_peer())
     print("CREW %d" % crew)
     print("READY %d" % PORT)
     try:

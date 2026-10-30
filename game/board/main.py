@@ -439,7 +439,7 @@ def crashed(e, t0):
         # live: Hail's own code was in it (lvlivex turns Hail off for that crash only),
         # not the core's sync code going on through Hail's hooks (lvlive.CORE: FIXREVIEW2 J2)
         lvsafe.crashed(why, trial, time.ticks_diff(time.ticks_ms(), t0),
-                       live=("lvlive" in tb or "lvflick" in tb) and not getattr(sys.modules.get("lvlive"), "CORE", 0))
+                       live=("lvlive" in tb or "lvflick" in tb or "lvduel" in tb) and not getattr(sys.modules.get("lvlive"), "CORE", 0))
     except Exception as e2:
         print("crash: noting %r" % (e2,))
         note(trial)
