@@ -266,7 +266,7 @@ def finish(lk, j, g):
 def sweep(lk, j):
     t = now(lk)
     changed = False
-    for g in j["g"]:
+    for g in j["g"][:]:
         if g["s"] not in ACTIVE:
             continue
         z = timer(lk, g)
@@ -274,6 +274,10 @@ def sweep(lk, j):
             g["t"] = t
             changed = t is not None or changed
         age = t - g["t"] if t is not None and g.get("t") is not None else 0
+        if g["s"] == "draft" and (age >= 3 * DAY or z[1] >= 3 * DAY * 1000):
+            j["g"].remove(g)
+            changed = True
+            continue
         if g.get("light_dirty"):
             before = g.get("sync")
             sync(lk, g)
@@ -544,7 +548,7 @@ def action(lk, b):
     a, to = b.get("action"), b.get("to")
     if not integer(to, 0, 7) or to == lk.node.ship:
         return 400, {"err": "Pick a crewmate."}
-    if len(lk.out) >= 24 and a not in ("resign", "call", "new"):
+    if len(lk.out) >= 24 and a not in ("resign", "call", "new", "discard"):
         return 429, {"err": "Your previous moves are on their way."}
     peer = lk.ble.peers.get(to)
     if a == "new" and peer is not None and peer.info and not peer.info.get("cap"):
@@ -559,6 +563,10 @@ def action(lk, b):
         j["g"].append(g)
     elif g is None:
         return 409, {"err": "No duel is open."}
+    elif a == "discard":
+        if g["s"] != "draft":
+            return 409, {"err": "Your fleet is locked."}
+        j["g"].remove(g)
     elif a in ("lock", "invite", "accept"):
         if g.get("l") and g["s"] in ("wait", "active") and any(z[0] in (3, 4) for z in g.get("q", [])):
             store(lk, j)

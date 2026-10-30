@@ -80,6 +80,7 @@ function duScreen(to){
   else if(g.s==="draft"||g.s==="invited"){
     o+=`<p class=dim>Place your 3-cell, 2-cell and 1-cell ships. Keep an empty cell between ship edges. Tap a ship, then a cell. Tap the same cell to turn.</p><section><div class=lab><span>Your field</span><span>${h(nm(to))}</span></div><div class=du-tools>${[3,2,1].map((n,i)=>`<button class="btn sec" data-duship=${i} aria-pressed="${DU_SHIP===i}">${n} cell${n===1?"":"s"}</button>`).join("")}</div>${duGrid(duCells(DU_POS),[],"place")}<div class=du-tools><button class="btn sec" data-duturn=1>Turn</button><button class="btn sec" data-dushuffle=1>Shuffle</button></div><p class=fine>${duLegal(DU_POS)?"Your field is ready. Locking keeps it fixed for this duel.":"Place all three ships without overlap or touching edges."}</p></section>`;
     if(g.s==="invited")o+=`<button class="btn sec" data-duact=decline><span>Decline invitation</span></button>`;
+    else o+=`<button class="btn sec" data-duact=discard ${DU_BUSY?"disabled":""}><span>Discard your draft</span></button>`;
     duDock(`<button class="btn pri" data-duact=${g.s==="invited"?"accept":"invite"} ${duLegal(DU_POS)&&!DU_BUSY?"":"disabled"}><span>Lock in and ${g.s==="invited"?"join":"invite"}</span></button>`);
   }else{
     const ended=!DU_OPEN.includes(g.s),can=g.turn&&!g.pending&&!DU_BUSY;
@@ -106,7 +107,7 @@ document.addEventListener("click",async ev=>{
   const action=d.dunew!=null?"new":d.duact,to=d.dunew!=null?+d.dunew:DU_TO;
   if((action==="resign"||action==="call")&&!confirm(action==="resign"?"Resign this duel? This counts as a loss.":"Put this duel away without a result?"))return;
   DU_BUSY=true;DU_ERR="";view();
-  try{await api("/api/live/duel",{action,to,layout:DU_POS,cell:DU_CELL});DU_CELL=null;await lvLoad();if(action==="new"){DU_TO=null;go("duel/"+to)}}
+  try{await api("/api/live/duel",{action,to,layout:DU_POS,cell:DU_CELL});DU_CELL=null;await lvLoad();if(action==="new"){DU_TO=null;go("duel/"+to)}if(action==="discard")go("duel")}
   catch(e){DU_ERR=e.message||"Your move did not go. Try again."}
   finally{DU_BUSY=false;view()}
 });

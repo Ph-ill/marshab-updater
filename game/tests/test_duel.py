@@ -696,5 +696,17 @@ for to, item, date in list(a.live.out):
 D.maintain(a.live)
 check("rejections retire after durable delivery", not D.box(a.live).get("e") and not a.live.out)
 
+# Unsent drafts can be discarded under pressure without protocol traffic.
+w, a, b = fresh(42)
+for to in (1, 2, 3):
+    check("abandon draft", D.action(a.live, {"action": "new", "to": to})[0] == 200)
+check("discard draft", act(a, "discard") == 200)
+check("discard is silent", not a.live.out and len(D.box(a.live)["g"]) == 2)
+check("fourth after discard", D.action(a.live, {"action": "new", "to": 4})[0] == 200)
+a.clock.t += 4 * 86400000
+D.maintain(a.live)
+check("stale drafts removed silently", not D.box(a.live)["g"] and not a.live.out)
+check("fourth after expiry", D.action(a.live, {"action": "new", "to": 5})[0] == 200)
+
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

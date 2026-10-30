@@ -15,6 +15,8 @@ const states=['loading','pick','missing','draft','invited','wait','active','reve
 for(const state of states)for(const busy of [false,true]){
   c.LV=state==='loading'?null:{duel:state==='missing'?[]:[{to:0,s:state,shots:[],incoming:[],record:[0,0]}]};
   vm.runInContext(`DU_BUSY=${busy};duScreen(${state==='pick'?'null':'0'})`,c);
+  if(state==='draft')assert.match(elements.v.innerHTML,/data-duact=discard/,'draft has discard');
+  else assert.doesNotMatch(elements.v.innerHTML,/data-duact=discard/,'only drafts have discard');
   assert.match(dockHtml,/<button\b[^>]*data-go=["']?home\b[^>]*>\s*<span>Home<\/span>/,state+' has an accessible Home button');
   assert.doesNotMatch(dockHtml,/<button\b[^>]*data-go=["']?home\b[^>]*disabled/,state+' Home stays enabled');
 }
