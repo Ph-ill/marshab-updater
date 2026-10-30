@@ -159,7 +159,8 @@ pronouns in templated text; no story text, no ending names.
 
 ## 5. Memory
 
-The 32-bit board budget is 100,000 B. The gate uses non-collecting operation
+The 32-bit install budget is 110,000 B (owner decision, 2026-10-30). The frozen
+firmware selftest retains its separate 80 KB check. The gate uses non-collecting operation
 probes, not the former post-GC retained-heap figures.
 * Resident: the kind dispatch in lvlivein (already loaded per use) passes kinds 3-9 to
   lvduel; nothing new stays loaded between links. Target: under 0.5 KB resident.
@@ -175,7 +176,7 @@ probes, not the former post-GC retained-heap figures.
 * Probes run inside JSON input reads, serialization writes, save read-back,
   duel storage and view/HTTP construction, without calling gc.collect. The
   normal board allocation threshold bounds uncollected churn independently of
-  probes. The target is at most 97,000 B; the failing gate remains 100,000 B.
+  probes. The target is at most 105,000 B; the failing gate is 110,000 B.
   This simulation does not establish real-Pico fragmentation or BLE heap margin.
 
 ## 6. Tests

@@ -671,7 +671,7 @@ BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # n1: review 1 had let OTA+LIVE pass on Test light's writes alone).
 led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
-HEAP_CAP = 100000
+HEAP_CAP = 110000
 ok = (synced and http_ok[0] and led_ok and
       (base == 0 or BITS == 64 or (0 < board <= HEAP_CAP)))
 import lv                                   # noqa: E402
@@ -699,12 +699,12 @@ print("heap: fake radio module %d, code (lvship + lv incl. sync, ble) %d, peer %
       "and the story at day 42 %d" % (m_fake, m_code - m_fake, m_peer - m_code, m_ship - m_peer))
 print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio time); peer and fake world at the end %d; "
       "board peak (peak - peer - fake radio) %d B%s; main.py's resident code %d B (in the peak)" % (
-          peak[0], got, t, m_peer_end, board, " (cap 100,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 100,000 B cap",
+          peak[0], got, t, m_peer_end, board, " (cap 110,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 110,000 B cap",
           m_main))
 print("heap: the peak came with %s" % where[0])
 print("heap: board peak by moment: %s" % ", ".join("%s %d B" % (k, kpeak[k] - m_peer_end - m_fake) for k in sorted(kpeak)))
 if EVERYONE and BITS == 32:
-    print("heap: the everyone-plays season: %d B to spare under the 100,000 B cap" % (HEAP_CAP - board))
+    print("heap: the everyone-plays season: %d B to spare under the 110,000 B cap" % (HEAP_CAP - board))
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
