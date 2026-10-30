@@ -67,10 +67,8 @@ def flush(lk, j):
         if len(retained) != len(j["e"]):
             j["e"] = retained
             changed = True
-    if changed:
-        # A crash here replays identical bodies, never a new commitment/move.
-        lvship.free()
-        I.save(lk.sh.data + F, j)
+    # The caller checkpoints only after releasing this helper's globals.
+    return changed
 
 
 def gid(g):

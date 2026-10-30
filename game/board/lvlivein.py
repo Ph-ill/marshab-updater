@@ -284,10 +284,15 @@ def duel_store(lk, j):
     import lvduelstore
     try:
         lvduelstore.cleanout(lk, j)
-        lvduelstore.flush(lk, j)
+        changed = lvduelstore.flush(lk, j)
     finally:
         lvship.drop("lvduelstore")
         lvduelstore = None
+    if changed:
+        # Replay helpers have returned before checkpointing cleared intents.
+        # A crash before this write replays identical bodies, never a new move.
+        lvship.free()
+        save(lk.sh.data + "/duel.json", j)
 
 
 def mins(c):

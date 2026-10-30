@@ -96,7 +96,9 @@ def cleanout(lk, j, orphans=False):
 
 
 def flush(lk, j):
-    return persist("flush", lk, j)
+    if persist("flush", lk, j):
+        lvship.free()
+        save(lk.sh.data + F, j)
 
 
 def belongs(o, g):

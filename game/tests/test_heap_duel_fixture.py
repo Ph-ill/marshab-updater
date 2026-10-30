@@ -20,6 +20,32 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_replay_helper_is_released_before_intent_checkpoint(self):
+        import weakref
+        from types import ModuleType
+        from unittest.mock import patch
+        import lvlivein as I
+        helper = ModuleType("lvduelstore")
+        helper.cleanout = lambda *args: None
+        helper.flush = lambda *args: True
+        ref = weakref.ref(helper)
+        saves = []
+
+        def save(path, state):
+            if saves:
+                self.assertNotIn("lvduelstore", sys.modules)
+                self.assertIsNone(ref(), "replay globals remain rooted at checkpoint")
+            saves.append(state)
+
+        box = {"g": [], "r": {}}
+        link = NS(v=0, sh=NS(data="unused"))
+        with patch.dict(sys.modules), patch.object(I, "save", save):
+            sys.modules["lvduelstore"] = helper
+            helper = None
+            I.duel_store(link, box)
+        self.assertEqual(saves, [box, box])
+        self.assertEqual(link.v, 1)
+
     def test_radio_publication_releases_the_whole_rule_module(self):
         import builtins
         import weakref
@@ -313,7 +339,7 @@ class WorstDuelHeap(unittest.TestCase):
         with patch.object(lvship, "free", lambda: events.append("admit")), \
                 patch.object(D, "queued", lambda *args: False), \
                 patch.object(I, "send", lambda *args: events.append("enqueue")), \
-                patch.object(I, "save", lambda *args: events.append("save")):
+                patch.object(D, "save", lambda *args: events.append("save")):
             D.flush(link, box)
         self.assertEqual(events, ["admit", "enqueue", "admit", "enqueue", "admit", "save"])
         self.assertEqual(game["q"], [])
