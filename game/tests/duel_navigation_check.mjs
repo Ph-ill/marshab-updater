@@ -30,3 +30,12 @@ for(const state of ['draft','invited']){
   assert.equal(vm.runInContext('JSON.stringify(DU_POS)',c),'[null,null,null]','replacement ID has independent placement');
 }
 console.log('duel placement: draft and invitation cross-duel navigation PASS');
+const fleet=[[0,1,2],[12,13],[35]];
+c.LV={duel:[{id:'reveal',to:0,s:'active',their:fleet,layout:fleet,shots:[[1,0,1]],incoming:[],record:[0,0]}]};
+vm.runInContext('duScreen(0)',c);
+const firstGrid=()=>elements.v.innerHTML.split('class="du-grid ')[1].split('</div>')[0];
+assert.doesNotMatch(firstGrid(),/du-cell ship/,'opponent unshot cells hidden before completion');
+c.LV.duel[0].s='done';
+vm.runInContext('duScreen(0)',c);
+assert.equal((firstGrid().match(/du-cell ship/g)||[]).length,5,'all previously unshot opponent ship cells revealed');
+console.log('duel reveal: pre-end masking and previously unshot cells PASS');

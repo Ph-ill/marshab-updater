@@ -64,6 +64,8 @@ try{
   await refreshUntil(()=>duGame(0)?.turn&&!duGame(0)?.pending);
   assert.equal(await page.evaluate(()=>duGame(0).nl),true,"opponent light off is honest");
   await shots("playing");await leaveAndReturn();
+  assert.equal(await page.evaluate(async()=>(await api('/api/live')).duel.find(g=>g.to===0).their),null,'pre-end API hides opponent fleet');
+  assert.equal(await page.locator('.du-grid').first().locator('.ship').count(),0,'pre-end rendered cells hide opponent fleet');
   for(const cell of [0,1,2,12,13,35]){
     await refreshUntil(()=>duGame(0)?.turn&&!duGame(0)?.pending);
     await page.click(`[data-ducell='${cell}']`);assert.ok(await page.isEnabled("[data-duact=fire]"),"tap then fire");
@@ -72,8 +74,21 @@ try{
   }
   await refreshUntil(()=>duGame(0)?.s==="done");
   assert.deepEqual(await page.evaluate(()=>duGame(0).record),[1,0],"record");
-  assert.equal(await page.locator(".du-grid").count(),2,"both reveals");await shots("ended");await leaveAndReturn();
+  const fleet=[[0,1,2],[12,13],[35]];
+  assert.deepEqual(await page.evaluate(()=>duGame(0).their),fleet,'exact completed opponent fleet');
+  assert.deepEqual(await page.evaluate(async()=>(await api('/api/live')).duel.find(g=>g.to===0).their),fleet,'completed API fleet');
+  await shots("ended");await leaveAndReturn();
   await page.click("[data-dunew='0']");await page.waitForSelector("[data-duplace]");assert.equal(await page.evaluate(()=>duGame(0).s),"draft","rematch");
+  await page.click('[data-dushuffle]');await page.click('[data-duact=invite]');
+  await refreshUntil(()=>duGame(0)?.turn&&!duGame(0)?.pending);
+  assert.equal(await page.evaluate(()=>duGame(0).their),null,'rematch has no early reveal');
+  page.once('dialog',d=>d.accept());await page.click('[data-duact=resign]');
+  await refreshUntil(()=>duGame(0)?.s==='done');
+  assert.deepEqual(await page.evaluate(()=>duGame(0).their),fleet,'resignation reveals exact opponent fleet');
+  const unshot=await page.evaluate(()=>duGame(0).their.flat().filter(c=>!duGame(0).shots.some(z=>z[1]===c)).sort((a,b)=>a-b));
+  assert.ok(unshot.length>0,'completion covers previously unshot ship cells');
+  const visible=await page.locator('.du-grid').first().locator('.du-cell.ship').evaluateAll(es=>es.map(e=>{const s=e.getAttribute('aria-label');return 'ABCDEF'.indexOf(s[0])+6*(+s[1]-1)}).sort((a,b)=>a-b));
+  assert.deepEqual(visible,unshot,'all and only previously unshot opponent ship cells revealed');
   await page.locator("#dock [data-go=home]").click();await page.waitForSelector("#du-home");
   await page.getByRole("button",{name:/^Settings/}).click();await page.waitForSelector("[data-lvset=dl]");
   await page.click("[data-lvset=dl]");await page.waitForFunction(()=>LV.dl===false);await shots("settings-off");
