@@ -57,6 +57,8 @@ def tcp(port, host="127.0.0.1"):
                 # EOF once HTTP framing proves the answer is complete.
                 if total is not None and len(raw) >= total:
                     break
+            if total is not None and len(raw) != total:
+                raise EOFError("incomplete HTTP response: %d of %d bytes" % (len(raw), total))
             return parse(raw)
         finally:
             w.close()

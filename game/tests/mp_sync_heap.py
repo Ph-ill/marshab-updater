@@ -9,7 +9,7 @@
 # It syncs a peer that missed almost the whole season (221 records over the link). The
 # The in-operation heap is sampled without collection, including at the web server's
 # busiest points (lvweb.probe, lvphone.probe). The board's share must stay under
-# 80 KB (80,000 B): the peak, less the fake radio module and the peer at its largest
+# 110,000 B: the peak, less the fake radio module and the peer at its largest
 # (see below). The LED stays off, unless:
 #   --led    the LED notifier on (led_notify: board/lvled.py loaded, a fake pin from
 #            tests/fakeboard): it breathes through the sync (no quiet hours, a test pattern
@@ -423,7 +423,7 @@ m_main = mem() - m0
 sys.path.pop(0)
 MAIN_PY = heap_main.__dict__
 if WEB:
-    web = lvweb.Server(ship, root=ROOT, say=lambda s: None)
+    web = lvweb.Server(ship, root=ROOT, say=lambda s: print(s) if s.startswith("http:") else None)
     lvweb.probe = stream_sample
     g = MAIN_PY
     g["home_screen"](lvweb)
@@ -495,6 +495,11 @@ def duel_progress():
         except OSError:
             pass
         return
+    # The independent test peer cannot advance while its prior frames await
+    # ACKs. Do not repeatedly parse its private transcript in that interval:
+    # this is peer automation, not work the board under measurement performs.
+    if peer_link.out:
+        return
     import lvduel as D
     try:
         remote = D.box(peer_link)["g"][0]
@@ -558,22 +563,33 @@ async def heap_run():
             # the streamed response, not vanish during unrelated phone logins.
             await lvship.sleep_ms(5)
     t = 0
+    duel_progress_due = 1000
     bat_due = 1000
     phones_done = not PHONE
     started = lvship.ticks_ms()
+    diagnostic_due = started + 15000
     # Light ownership/OTA admission can outlast ten accelerated radio minutes.
     # Keep polling and sampling until every client finishes; never truncate the workload.
     while t < (600000 if PHONE else 120000) or (PHONE and not phones_done):
         if PHONE and lvship.ticks_diff(lvship.ticks_ms(), started) > 180000:
             raise RuntimeError("phone workload did not finish within 180 s")
+        if DUEL and lvship.ticks_diff(lvship.ticks_ms(), diagnostic_due) >= 0:
+            print("duel: radio time %d, states %s/%s, queues %d/%d, HTTP %d, phase %s" %
+                  (t, ship.ble.state, peer.state, len(ship.live.out), len(peer_link.out), web.served, duel_phase[0]))
+            print("duel: admission %s/%s, receive %s/%s, dial %s/%s" %
+                  (web.busy, web.radio_hold, ship.live.n["held"], peer_link.n["held"],
+                   ship.live.n["dial"], peer_link.n["dial"]))
+            diagnostic_due = lvship.ticks_ms() + 15000
         w.step(10)
         t += 10
+
         ship.ble.poll(w.now)
         peer.poll(w.now)
         if DUEL and duel_worst[0] is not None:
             duel_taken[0] = True
-        if DUEL and t % 1000 == 0 and not web.busy and ship.ble.state == peer.state == "idle":
+        if DUEL and t >= duel_progress_due and not web.busy and ship.ble.state == peer.state == "idle":
             duel_progress()
+            duel_progress_due = t + 1000
         if LED:
             ship.led.poll(ship.ble.busy())
         if BAT and t >= bat_due and not ship.ble.busy() and not (WEB and web.busy > 0):

@@ -21,6 +21,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -370,6 +371,8 @@ async def duel_phone(req, who, fire, fail, log):
     h["X-Crew-Token"] = json.loads(raw)["token"]
     fired = False
     stage = 0
+    started = time.monotonic()
+    observed = None
     async def phase(name):
         with open(DATA + "/duel-phase", "w") as f:
             f.write(name)
@@ -383,11 +386,19 @@ async def duel_phone(req, who, fire, fail, log):
             await asyncio.sleep(.05)
         raise RuntimeError("duel phase was not observed: " + name)
     for k in range(400):
-        s, _, raw = await req("GET", "/api/live", None, h)
+        s, headers, raw = await req("GET", "/api/live", None, h)
         if s != 200:
             return fail("duel: live status %d" % s)
-        games = json.loads(raw).get("duel", [])
+        try:
+            games = json.loads(raw).get("duel", [])
+        except ValueError:
+            log("duel: malformed live response headers=%r body=%r" % (headers, raw))
+            raise
         g = next((g for g in games if g["to"] == 1), None)
+        progress = (stage, g.get("s"), g.get("n"), g.get("pending")) if g else None
+        if progress != observed:
+            log("duel: phone %d after %.1f s: %r" % (who, time.monotonic() - started, progress))
+            observed = progress
         # Both phones must actually receive all three long histories. Seeded
         # n=68 is not success: require the injected 69th + phone's 70th answer.
         if len(games) != 3 or {x["to"] for x in games} != {1, 2, 3} or any(
@@ -545,6 +556,8 @@ def main(argv):
                     if answer[0] != 503:
                         return answer
                 except OSError:
+                    if p.poll() is not None:
+                        raise RuntimeError("board process exited during " + path)
                     if method != "GET":
                         raise
                 await asyncio.sleep(0.2)

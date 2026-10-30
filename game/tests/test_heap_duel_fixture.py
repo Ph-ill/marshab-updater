@@ -5,6 +5,7 @@ import asyncio
 import json
 from pathlib import Path
 import sys
+import time
 import unittest
 from types import SimpleNamespace as NS
 
@@ -20,6 +21,39 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_socket_client_rejects_a_short_content_length_body(self):
+        import phone_flow
+
+        async def run():
+            async def serve(reader, writer):
+                await reader.readline()
+                writer.write(b"HTTP/1.0 200 OK\r\nContent-Length: 9\r\n\r\n{}")
+                await writer.drain()
+                writer.close()
+                await writer.wait_closed()
+
+            server = await asyncio.start_server(serve, "127.0.0.1", 0)
+            try:
+                request = phone_flow.tcp(server.sockets[0].getsockname()[1])
+                with self.assertRaisesRegex(EOFError, "incomplete HTTP response"):
+                    await request("GET", "/api/live")
+            finally:
+                server.close()
+                await server.wait_closed()
+
+        asyncio.run(run())
+
+    def test_test_peer_does_not_parse_while_its_previous_frames_wait(self):
+        from unittest.mock import patch
+        for stage in (0, 1):
+            queued = [[0, b"frame"]]
+            scope = dict(duel_peer_stage=[stage], peer_link=NS(out=queued))
+            functions(ROOT / "tests/mp_sync_heap.py", {"duel_progress"}, scope)
+            with patch.dict(sys.modules, {"lvduel": None}):
+                scope["duel_progress"]()
+            self.assertEqual(queued, [[0, b"frame"]])
+            self.assertEqual(scope["duel_peer_stage"], [stage])
+
     def test_idle_maintenance_does_not_import_receive_rules(self):
         import builtins
         from unittest.mock import patch
@@ -458,7 +492,7 @@ class WorstDuelHeap(unittest.TestCase):
             self.assertEqual(I.load(path), new)  # never rename an unverified new file
 
     def test_phone_checks_all_three_and_waits_for_new_moves(self):
-        scope = functions(ROOT / "tests/phone_heap.py", {"duel_phone"}, {"json": json, "asyncio": asyncio})
+        scope = functions(ROOT / "tests/phone_heap.py", {"duel_phone"}, {"json": json, "asyncio": asyncio, "time": time})
         games = [dict(to=to, n=n, p=None, s="active", shots=[], incoming=[], turn=False, pending=False)
                  for to, n in ((1, 68), (2, 70), (3, 70))]
         for g in games:
@@ -525,6 +559,88 @@ class WorstDuelHeap(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     scope["critical_duel"](box)
                 undo()
+
+    def test_complete_live_response_is_valid_json_with_long_histories(self):
+        from unittest.mock import patch
+        import lvliveapi as api
+        top = {"on": True, "duel": [dict(to=to, history="Aa" * 71, even=False, n=71)
+                        for to in (1, 2, 3)]}
+        outgoing = [["%06x" % n, 2, n % 8, 1793000000000, 2] for n in range(6)]
+        incoming = [["%06x" % n, 2, n % 8, 1793000000000, 0, 1, 2, None] for n in range(6)]
+        snapshot = ([(1, 0, 1, 0, 0)], outgoing, [2] * 6, incoming, 1793000000000, top)
+        chunks, drains = [], []
+        async def drain():
+            drains.append(True)
+        writer = NS(write=lambda b: chunks.append(bytes(b)), drain=drain)
+        wire = NS(head=lambda status, kind, n: str(n).encode(), probe=None)
+        web = NS(ship=NS(clock=NS(learn_headers=lambda h: False)),
+                 get_phone=lambda: NS(who=lambda req: 0))
+        with patch.object(api, "_prep", return_value=snapshot):
+            asyncio.run(api.live(wire, web, NS(header=None), writer, True))
+        body = b"".join(chunks[1:])
+        self.assertEqual(int(chunks[0]), len(body))
+        self.assertEqual(json.loads(body), json.loads("".join(api.parts(*snapshot))))
+        self.assertEqual(len(drains), len(chunks) - 1)
+        self.assertTrue(all(len(b) <= api.PIECE for b in chunks[1:]))
+        self.assertTrue(all(len(g["shots"]) + len(g["incoming"]) == 71
+                            for g in json.loads(body)["duel"]))
+
+        async def sockets():
+            import lvweb
+            errors = []
+
+            async def serve(reader, writer):
+                try:
+                    await reader.readline()
+                    await api.live(lvweb, web, NS(header=None), writer, True)
+                except Exception as error:
+                    errors.append(error)
+                finally:
+                    writer.close()
+                    await writer.wait_closed()
+
+            server = await asyncio.start_server(serve, "127.0.0.1", 0)
+            port = server.sockets[0].getsockname()[1]
+            try:
+                for _ in range(3):
+                    reader, writer = await asyncio.open_connection("127.0.0.1", port)
+                    writer.write(b"GET /api/live HTTP/1.0\r\n")
+                    await writer.drain()
+                    header = await reader.readuntil(b"\r\n\r\n")
+                    length = next(int(line.split(b":", 1)[1]) for line in header.split(b"\r\n")
+                                  if line.lower().startswith(b"content-length:"))
+                    response = await reader.read()
+                    self.assertEqual(len(response), length)
+                    self.assertEqual(json.loads(response), json.loads(body))
+                    writer.close()
+                    await writer.wait_closed()
+                self.assertEqual(errors, [])
+            finally:
+                server.close()
+                await server.wait_closed()
+
+        with patch.object(api, "_prep", return_value=snapshot):
+            asyncio.run(sockets())
+
+    def test_live_stream_splits_large_utf8_tokens_without_changing_bytes(self):
+        from unittest.mock import patch
+        import lvliveapi as api
+        chunks = []
+        async def drain():
+            pass
+        writer = NS(write=lambda b: chunks.append(bytes(b)), drain=drain)
+        wire = NS(head=lambda status, kind, n: str(n).encode(), probe=None)
+        web = NS(ship=NS(clock=NS(learn_headers=lambda h: False)),
+                 get_phone=lambda: NS(who=lambda req: 0))
+        tokens = ('{"value":"', '\u00e9' * 600, '"}')
+        with patch.object(api, "_prep", return_value=()), \
+                patch.object(api, "parts", side_effect=lambda: iter(tokens)):
+            asyncio.run(api.live(wire, web, NS(header=None), writer, True))
+        body = b"".join(chunks[1:])
+        self.assertEqual(body, "".join(tokens).encode())
+        self.assertEqual(len(body), int(chunks[0]))
+        self.assertTrue(all(len(chunk) <= api.PIECE for chunk in chunks[1:]))
+        self.assertEqual(json.loads(body)["value"], '\u00e9' * 600)
 
     def test_reveal_replay_decodes_once_and_checks_every_answer(self):
         from unittest.mock import patch
