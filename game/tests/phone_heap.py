@@ -369,6 +369,19 @@ async def duel_phone(req, who, fire, fail, log):
         return fail("duel: sign-in %d" % s)
     h["X-Crew-Token"] = json.loads(raw)["token"]
     fired = False
+    stage = 0
+    async def phase(name):
+        with open(DATA + "/duel-phase", "w") as f:
+            f.write(name)
+        for _ in range(400):
+            try:
+                with open(DATA + "/duel-phase-ack") as f:
+                    if f.read() == name:
+                        return
+            except OSError:
+                pass
+            await asyncio.sleep(.05)
+        raise RuntimeError("duel phase was not observed: " + name)
     for k in range(400):
         s, _, raw = await req("GET", "/api/live", None, h)
         if s != 200:
@@ -378,13 +391,39 @@ async def duel_phone(req, who, fire, fail, log):
         # Both phones must actually receive all three long histories. Seeded
         # n=68 is not success: require the injected 69th + phone's 70th answer.
         if len(games) != 3 or {x["to"] for x in games} != {1, 2, 3} or any(
-                x["n"] < 68 or len(x["shots"]) + len(x["incoming"]) != x["n"] or
-                x["s"] != "active" for x in games):
+                len(x["shots"]) + len(x["incoming"]) != x["n"] for x in games) or any(
+                x["n"] != 70 or x["s"] != "active" for x in games if x["to"] in (2, 3)):
             return fail("duel: missing or truncated worst-case histories")
-        if g and g["n"] == 70 and g["p"] is None and all(x["n"] == 70 for x in games):
-            log("duel: phone %d saw three 70-shot histories and the new autonomous answer" % who)
+        if not fire:
+            if g["s"] == "draft" and g["n"] == 0:
+                log("duel: observer saw terminal/rematch flow with both other long histories intact")
+                return
+        elif stage == 0 and g["s"] == "done" and g["n"] == 71:
+            if len(g["their"] or []) != 3 or g["win"] is not False:
+                return fail("duel: terminal reveal was not verified")
+            log("duel: 71st shot and mutual reveal with complete transcript replay")
+            open(DATA + "/duel-rematch", "w").close()
+            stage = 1
+        elif stage == 1 and g["s"] == "invited":
+            await phase("accept")
+            s, _, raw = await req("POST", "/api/live/duel", json.dumps({"action": "accept", "to": 1, "layout": [[0, 0], [12, 0], [35, 0]]}).encode(), h)
+            if s != 200:
+                return fail("duel: accept %d %s" % (s, raw))
+            stage = 2
+        elif stage == 2 and g["s"] == "active" and not g["pending"]:
+            await phase("resign")
+            s, _, raw = await req("POST", "/api/live/duel", json.dumps({"action": "resign", "to": 1}).encode(), h)
+            if s != 200:
+                return fail("duel: resign %d %s" % (s, raw))
+            stage = 3
+        elif stage == 3 and g["s"] == "done" and not g["pending"]:
+            await phase("new")
+            s, _, raw = await req("POST", "/api/live/duel", json.dumps({"action": "new", "to": 1}).encode(), h)
+            if s != 200:
+                return fail("duel: new %d %s" % (s, raw))
+            log("duel: phone accept/resign/new with two other 70-shot games")
             return
-        if fire and not fired and g and g["turn"] and not g["pending"]:
+        if fire and stage == 0 and not fired and g and g["turn"] and not g["pending"]:
             s, _, raw = await req("POST", "/api/live/duel", json.dumps({"action": "fire", "to": 1, "cell": 34}).encode(), h)
             if s != 200:
                 return fail("duel: fire %d %s" % (s, raw))
@@ -468,6 +507,11 @@ def main(argv):
     if "--safe" in mode:
         return safe_main(mp, mode)
     os.makedirs(DATA, exist_ok=True)
+    for name in ("duel-rematch", "duel-phase", "duel-phase-ack"):
+        try:
+            os.remove(DATA + "/" + name)
+        except OSError:
+            pass
     try:
         os.remove(DATA + "/funnel.bin")      # the phones the last run's ship remembered
     except OSError:

@@ -167,8 +167,12 @@ hail_sig = []
 HAIL_M = [None]
 DUEL_M = [None]
 duel_taken = [False]
+duel_held = [False]
 duel_injecting = [False]
 duel_worst = [None]
+duel_terminal = [None]
+duel_phase = ["long"]
+duel_peer_stage = [0]
 
 
 class HailSes:
@@ -194,6 +198,10 @@ def sample():
     k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
     if m > kpeak.get(k, 0):
         kpeak[k] = m
+    if DUEL:
+        phase = "duel-" + duel_phase[0]
+        if m > kpeak.get(phase, 0):
+            kpeak[phase] = m
     # Settings also imports lvsig for its self-check, outside OTA admission.
     # Only the upload verifier installs our web probe on that module.
     if (k == "sig" and getattr(sys.modules["lvsig"], "probe", None) is stream_sample
@@ -220,12 +228,12 @@ def sample():
 
 
 def critical_duel(j):
-    if duel_injecting[0] and duel_worst[0] is None:
+    if duel_worst[0] is None:
         games, rejects = j["g"], j.get("e", [])
         session = ship.ble.sess
         assert isinstance(session, lvlive.Session) and session.to == 1 and w.links
-        assert web.busy > 0 and "lvliveapi" in sys.modules
-        # The forced real-radio move still commits during the live stream, but
+        assert duel_held[0] and not web.radio_hold and "lvliveapi" not in sys.modules
+        # The forced real-radio move commits after the live stream releases it;
         # rule evaluation must finish before persistence holds its buffers.
         assert "lvduelrx" not in sys.modules
         assert "lvduel" not in sys.modules
@@ -239,24 +247,28 @@ def critical_duel(j):
         duel_worst[0] = (tuple(g["n"] for g in games),
                          sum(len(g.get("q", ())) for g in games + rejects), 24)
         sample()
+        peer_link.sh.web.radio_hold = False
 
 
 def stream_sample():
     # Release the peer only inside the live response's streaming callback.
     # Its HELLO carries the shot through fake GATT and the actual Session._msg.
-    if DUEL and not duel_taken[0] and not duel_injecting[0] and "lvliveapi" in sys.modules:
+    if DUEL and not duel_held[0] and not duel_injecting[0] and "lvliveapi" in sys.modules:
         duel_injecting[0] = True
         try:
             before = ship.live.n["in"]
+            held_before = ship.live.n["held"]
             ship.ble.next_scan = w.now + 120000
             for i in range(12000):
                 w.step(10)
                 peer.poll(w.now)
                 ship.ble.poll(w.now)
-                if ship.live.n["in"] > before:
-                    duel_taken[0] = True
+                if ship.live.n["held"] > held_before:
+                    duel_held[0] = True
                     break
-            assert duel_taken[0] and duel_worst[0] is not None
+            assert duel_held[0] and ship.live.n["in"] == before
+            assert len(ship.live.out) == 24 and all(o[1][0] == 2 for o in ship.live.out)
+            assert web.radio_hold and "lvduelrx" not in sys.modules
         finally:
             ship.ble.next_scan = w.now
             duel_injecting[0] = False
@@ -436,6 +448,12 @@ if WEB:
         if DUEL:
             import lvduel
             seed_duels(ship.live, peer_link)
+            # The peer is busy receiving until the deferred shot commits. Its
+            # unacknowledged receipts keep all 24 real outbox entries resident
+            # across the first held session and its retry, not only the stream.
+            peer_link.sh.web = HailSes()
+            peer_link.sh.web.radio_hold = True
+            peer_link.sh.web.busy = 0
             # The peer's 69th shot is held until the first streamed live response.
             assert lvduel.action(peer_link, {"action": "fire", "to": 0, "cell": 34})[0] == 200
             shot = next(o for o in peer_link.out if o[1][0] == 5)
@@ -464,6 +482,49 @@ def done_flag():
         return False
 
 
+def duel_progress():
+    # Test peer automation only; every local transition still uses phone HTTP.
+    if duel_peer_stage[0] >= 2:
+        try:
+            with open(DATA + "/duel-phase") as f:
+                phase = f.read()
+            if phase != duel_phase[0]:
+                duel_phase[0] = phase
+                with open(DATA + "/duel-phase-ack", "w") as f:
+                    f.write(phase)
+        except OSError:
+            pass
+        return
+    import lvduel as D
+    try:
+        remote = D.box(peer_link)["g"][0]
+        if duel_peer_stage[0] == 0 and remote["n"] == 70 and remote["s"] == "active" and not peer_link.out:
+            duel_phase[0] = "terminal"
+            assert D.action(peer_link, {"action": "fire", "to": 0, "cell": 35})[0] == 200
+            duel_peer_stage[0] = 1
+        if duel_peer_stage[0] == 1 and remote["s"] == "done":
+            local = D.box(ship.live)["g"][0]
+            if local["s"] == "done":
+                assert local["n"] == remote["n"] == 71
+                assert len(local["h"]) == len(remote["h"]) == 142
+                assert local.get("verified") and remote.get("verified")
+                assert local.get("counted") and remote.get("counted")
+                duel_terminal[0] = (local["n"], remote["n"], local["verified"], remote["verified"])
+                try:
+                    os.stat(DATA + "/duel-rematch")
+                except OSError:
+                    return
+                duel_phase[0] = "new-invite"
+                assert D.action(peer_link, {"action": "new", "to": 0})[0] == 200
+                assert D.action(peer_link, {"action": "invite", "to": 0, "layout": [[0, 0], [12, 0], [35, 0]]})[0] == 200
+                duel_peer_stage[0] = 2
+
+    finally:
+        D = None
+        lvship.drop("lvduel")
+        lvship.drop("lvlivein")
+
+
 async def heap_run():
     srv = None
     port = 18000 + (gc.mem_free() % 997 if hasattr(gc, "mem_free") else 0)
@@ -489,7 +550,7 @@ async def heap_run():
     if PHONE:
         print("PORT %d" % port)
         ready_started = lvship.ticks_ms()
-        while web.served < 2 or (DUEL and not duel_taken[0]):
+        while web.served < 2 or (DUEL and not duel_held[0]):
             if lvship.ticks_diff(lvship.ticks_ms(), ready_started) > 30000 or done_flag():
                 raise RuntimeError("duel: first measured live stream never accepted its move")
             # Duel admission is exercised before the radio can free receipt
@@ -509,6 +570,10 @@ async def heap_run():
         t += 10
         ship.ble.poll(w.now)
         peer.poll(w.now)
+        if DUEL and duel_worst[0] is not None:
+            duel_taken[0] = True
+        if DUEL and t % 1000 == 0 and not web.busy and ship.ble.state == peer.state == "idle":
+            duel_progress()
         if LED:
             ship.led.poll(ship.ble.busy())
         if BAT and t >= bat_due and not ship.ble.busy() and not (WEB and web.busy > 0):
@@ -713,15 +778,17 @@ if DUEL:
     import json
     with open(DATA + "/duel.json") as f:
         dg = json.load(f)["g"]
-    duel_ok = (duel_taken[0] and duel_worst[0] is not None and len(dg) == 3 and
+    duel_ok = (duel_taken[0] and duel_worst[0] is not None and duel_terminal[0] == (71, 71, 1, 1) and len(dg) == 3 and
                all(g["n"] == 70 and len(g["h"]) == 140 and g["s"] == "active" and
-                   g["p"] is None and not g.get("q") for g in dg) and
+                   g["p"] is None and not g.get("q") for g in dg if g["to"] in (2, 3)) and
+               next(g for g in dg if g["to"] == 1)["s"] == "draft" and
                "lvduel" not in sys.modules and absent_ok)
     ok = ok and duel_ok
     print("duel: measured concurrent transcripts/obligations/outbox %s; final shots %s; "
-          "move during /api/live %s, rules dropped %s: %s" % (
+          "move deferred by /api/live then committed %s, rules dropped %s: %s" % (
               duel_worst[0], [g["n"] for g in dg], duel_taken[0],
               "lvduel" not in sys.modules, "ok" if duel_ok else "FAIL"))
+    print("duel: terminal mutual transcript verification %s; phone accept/resign/new: %s" % (duel_terminal[0], "ok" if duel_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:

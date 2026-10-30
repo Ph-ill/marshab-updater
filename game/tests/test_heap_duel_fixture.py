@@ -260,7 +260,7 @@ class WorstDuelHeap(unittest.TestCase):
             link.n["held"] += 1
         link.take = take
         probe = lambda: None
-        scope = dict(gc=NS(mem_alloc=lambda: 1), base=0, sys=sys,
+        scope = dict(gc=NS(mem_alloc=lambda: 1), base=0, sys=sys, DUEL=False,
                      kpeak={}, peak=[2], HAIL_M=[b"frame"], hail_sig=[],
                      ship=NS(live=link), stream_sample=probe,
                      HailSes=lambda: NS(acks=[]))
@@ -470,13 +470,17 @@ class WorstDuelHeap(unittest.TestCase):
                 return 200, {}, b'{"token":"test"}'
             polls.append(path)
             if len(polls) == 2:
-                games[0]["n"] = 70
+                games[0]["n"] = 71
                 games[0]["shots"].append([70, 34, 0])
                 games[0]["incoming"].append([69, 34, 0])
+                games[0]["incoming"].append([71, 35, 10])
+                games[0]["s"] = "done"
+            if len(polls) == 3:
+                games[0].update(n=0, s="draft", shots=[], incoming=[])
             return 200, {}, json.dumps({"duel": games}).encode()
         asyncio.run(scope["duel_phone"](req, 4, False, failures.append, logs.append))
         self.assertEqual(failures, [])
-        self.assertGreaterEqual(len(polls), 2)  # old >=2 test returned at the seeded state
+        self.assertGreaterEqual(len(polls), 3)  # never stop at the seeded state or n=70
         self.assertTrue(logs)
 
     def test_measurement_requires_live_obligations_not_just_seeded_history(self):
@@ -488,12 +492,14 @@ class WorstDuelHeap(unittest.TestCase):
         box = dict(g=games, e=[dict(q=[[8, "00" * 11]]) for _ in range(7)],
                    r={str(n): [123, 123] for n in range(1, 8)})
         sampled = []
-        scope = dict(duel_injecting=[True], duel_worst=[None],
+        scope = dict(duel_injecting=[False], duel_held=[True], duel_worst=[None],
+                     peer_link=NS(sh=NS(web=NS(radio_hold=True))),
                      ship=NS(live=NS(out=[[1, bytes((2,))]] * 24), ble=NS(sess=Session())),
-                     lvlive=NS(Session=Session), w=NS(links=[1]), web=NS(busy=1), sys=sys,
+                     lvlive=NS(Session=Session), w=NS(links=[1]), web=NS(busy=0, radio_hold=False), sys=sys,
                      sample=lambda: sampled.append(True))
         functions(ROOT / "tests/mp_sync_heap.py", {"critical_duel"}, scope)
-        with patch.dict(sys.modules, {"lvliveapi": NS()}):
+        with patch.dict(sys.modules):
+            sys.modules.pop("lvliveapi", None)
             sys.modules.pop("lvduel", None)
             scope["critical_duel"](box)
             self.assertEqual(scope["duel_worst"][0], ((69, 70, 70), 10, 24))
@@ -508,7 +514,7 @@ class WorstDuelHeap(unittest.TestCase):
             for change, undo in (
                 (lambda: games[1].update(q=[]), lambda: games[1].update(q=[[9, "00" * 11]])),
                 (lambda: box["e"].pop(), lambda: box["e"].append(dict(q=[[8, "00" * 11]]))),
-                (lambda: setattr(scope["web"], "busy", 0), lambda: setattr(scope["web"], "busy", 1)),
+                (lambda: setattr(scope["web"], "radio_hold", True), lambda: setattr(scope["web"], "radio_hold", False)),
                 (lambda: setattr(scope["ship"].ble, "sess", NS(to=1)),
                  lambda: setattr(scope["ship"].ble, "sess", Session())),
                 (lambda: scope["ship"].live.out.pop(),
@@ -520,11 +526,33 @@ class WorstDuelHeap(unittest.TestCase):
                     scope["critical_duel"](box)
                 undo()
 
+    def test_reveal_replay_decodes_once_and_checks_every_answer(self):
+        from unittest.mock import patch
+        import lvduellayout as layout
+        raw = layout.encode([[0, 0], [12, 0], [35, 0]])
+        h = ""
+        for n in range(1, 72):
+            cell = (n - 1) // 2
+            r = layout.result(raw, list(range(cell)), cell)
+            h += chr(65 + cell) + chr(97 + r)
+        for even in (True, False):
+            with patch.object(layout, "fleet", wraps=layout.fleet) as decode:
+                self.assertTrue(layout.replay(raw, h, even))
+                decode.assert_called_once_with(raw)
+            offset = 2 if even else 0
+            bad = h[:offset + 1] + "a" + h[offset + 2:]
+            self.assertFalse(layout.replay(raw, bad, even))
+            # Duplicate cells and malformed layouts still invalidate verification.
+            duplicate = h[:offset + 4] + h[offset:offset + 2] + h[offset + 6:]
+            self.assertFalse(layout.replay(raw, duplicate, even))
+        with self.assertRaises(ValueError):
+            layout.replay(bytes((255, 255, 255)), h, True)
+
     def test_operation_probes_never_collect_or_deliver_directly(self):
         from unittest.mock import Mock
         gc = NS(mem_alloc=lambda: 125000, collect=Mock(side_effect=AssertionError("collection")))
         scope = dict(gc=gc, base=1000, HAIL_M=[None], sys=NS(modules={}),
-                     kpeak={}, peak=[0], where=[""], PER_USE=(), duel_injecting=[False])
+                     kpeak={}, peak=[0], where=[""], PER_USE=(), duel_injecting=[False], DUEL=False)
         functions(ROOT / "tests/mp_sync_heap.py", {"sample"}, scope)
         self.assertEqual(scope["sample"](), 124000)
         self.assertEqual(scope["peak"], [124000])
