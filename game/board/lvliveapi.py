@@ -66,6 +66,9 @@ async def wdrain(w):
 
 
 def _in():
+    # Box operations are synchronous phases; do not inherit discarded parsed
+    # files or encoder garbage from the preceding phase of this request.
+    lvship.free()
     import lvlivein
     return lvlivein
 

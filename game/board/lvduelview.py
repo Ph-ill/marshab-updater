@@ -1,4 +1,5 @@
 # Compact phone snapshot, loaded after the duel rules have been released.
+import lvship
 from binascii import unhexlify
 from lvlivein import load, probe
 
@@ -26,6 +27,7 @@ def fleet(layout):
 
 def view(lk):
     # maintain() has already applied expiry/recovery before this read-only snapshot.
+    lvship.free()
     j = load(lk.sh.data + "/duel.json") or {"g": [], "r": {}}
     # Rejection intents are not phone state. Release them before building views,
     # and consume this private parsed copy so old games do not overlap new views.

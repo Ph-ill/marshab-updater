@@ -15,6 +15,7 @@ def integer(v, lo, hi):
 
 
 def layout_call(name, *args):
+    lvship.free()
     import lvduellayout
     try:
         value = getattr(lvduellayout, name)(*args)
@@ -77,6 +78,7 @@ def box(lk):
 
 def store(lk, j):
     # Write-ahead intents: no item may reach livebox before its game state does.
+    lvship.free()
     save(lk.sh.data + F, j)
     lk.v += 1
     probe()
@@ -130,6 +132,9 @@ def flush(lk, j):
         for kind, body in q:
             body = unhexlify(body)
             if not queued(lk, g, kind, body):
+                # Each durable enqueue is a separate persistence phase. Do not
+                # carry the previous file's serialization garbage into it.
+                lvship.free()
                 send(lk, kind, g["to"], body)
             if kind == 7:
                 g["sent"] = 1
@@ -143,6 +148,7 @@ def flush(lk, j):
             changed = True
     if changed:
         # A crash here replays identical bodies, never a new commitment/move.
+        lvship.free()
         save(lk.sh.data + F, j)
 
 
@@ -332,8 +338,8 @@ def take(lk, frm, kind, b):
         if change is None:
             return False
         # Rule evaluation and persistence are separate phases. Release the
-        # receiver's bytecode and scratch lists before allocating save buffers.
-        lvship.free()
+        # receiver's bytecode and scratch lists; store reclaims that phase
+        # before allocating save buffers.
         try:
             store(lk, j)
         except Exception:

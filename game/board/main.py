@@ -224,6 +224,9 @@ def ota_hooks(lvweb, web):
                         lvship.drop("lvduel")
                         lvduel = None
                 maintained = True
+            # Recovery's parsed box and released rules must be reclaimed before
+            # admitting the HTTP encoder, not at some later allocation failure.
+            lvship.free()
             import lvliveapi
             try:
                 if req.path == "/api/coex/ping":

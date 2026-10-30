@@ -111,6 +111,9 @@ def forget(sh):
 
 def keep(lk):
     """The Link's queues and counters to /data/livebox.json (lk.v: the page's version)."""
+    # Inbound rules have returned before the trailer checkpoint. Reclaim their
+    # released frames/modules before this separate persistence transaction.
+    lvship.free()
     lk.v += 1
     save(lk.f, None, boxparts(lk))
 

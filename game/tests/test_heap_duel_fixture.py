@@ -134,6 +134,37 @@ class WorstDuelHeap(unittest.TestCase):
             self.assertEqual(len(stages), 1)
             self.assertEqual(game["h"][-2:], "ca")
 
+    def test_failed_unknown_reply_does_not_consume_its_retry_window(self):
+        from unittest.mock import patch
+        import lvduel as D
+        import lvship
+        clock = NS(known=lambda: False)
+        link = NS(sh=NS(clock=clock), node=NS(ship=0), duel_times={},
+                  duel_unknown=123, out=[], cfg={})
+        with patch.object(D, "box", lambda lk: dict(g=[], r={})), \
+                patch.object(D, "store", side_effect=OSError("save failed")), \
+                patch.object(lvship, "ticks_ms", lambda: 3600124):
+            with self.assertRaises(OSError):
+                D.take(link, 1, 5, bytes((0x48, 1, 1, 0)) + bytes(7))
+        self.assertEqual(link.duel_unknown, 123)
+        self.assertNotIn("lvduelrx", sys.modules)
+
+    def test_recovery_enqueues_reclaim_between_persistence_phases(self):
+        from unittest.mock import patch
+        import lvduel as D
+        import lvship
+        events = []
+        link = NS(out=[], sh=NS(data="unused"))
+        game = dict(to=1, q=[[9, "00" * 11], [6, "00" * 11]])
+        box = dict(g=[game])
+        with patch.object(lvship, "free", lambda: events.append("admit")), \
+                patch.object(D, "queued", lambda *args: False), \
+                patch.object(D, "send", lambda *args: events.append("enqueue")), \
+                patch.object(D, "save", lambda *args: events.append("save")):
+            D.flush(link, box)
+        self.assertEqual(events, ["admit", "enqueue", "admit", "enqueue", "admit", "save"])
+        self.assertEqual(game["q"], [])
+
     def test_save_streams_probes_and_rejects_corrupt_readback(self):
         import gc
         import tempfile
