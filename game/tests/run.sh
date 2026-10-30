@@ -64,12 +64,15 @@ python3 tests/test_phone.py
 python3 tests/test_cal.py
 python3 tests/test_clock_auth.py
 python3 tests/test_heap_admission.py
+python3 tests/test_heap_duel_fixture.py
 python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py
 python3 tests/test_safe.py
 python3 tests/test_live.py
 python3 tests/test_duel.py
+node tests/duel_navigation_check.mjs
+node tests/shots_story_check.mjs
 python3 tests/test_ota_release.py
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
