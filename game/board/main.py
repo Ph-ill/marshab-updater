@@ -81,10 +81,11 @@ def home_screen(lvweb):
                          "/icon.png": i, "/apple-touch-icon.png": i, "/apple-touch-icon-precomposed.png": i})
 
 
-def http_admission(lvweb, web):
-    # One parser/response working set, plus one bounded unread socket. A browser
-    # navigation cannot replay a 503 like an API caller, so let that next socket
-    # wait outside web.busy (OTA/radio admission must not wait on the waiter).
+def http_admission(lvweb, web, slots=8):
+    # One parser/response working set, with bounded unread browser connections.
+    # Startup fetches static data, icons and API state concurrently. Static loads
+    # cannot replay a 503, so queue that burst outside web.busy without parsing
+    # it (OTA/radio admission must not wait on these unread sockets).
     handle = getattr(web, "handle", None)
     if handle is None:
         return
@@ -99,7 +100,7 @@ def http_admission(lvweb, web):
             await web._close(w)
 
     async def admitted(r, w):
-        if web.http_waiting >= 2:
+        if web.http_waiting >= slots:
             return await busy(w)
         web.http_waiting += 1
         acquired = False

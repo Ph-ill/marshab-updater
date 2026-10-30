@@ -45,6 +45,42 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
+    async def test_browser_startup_burst_queues_unread_with_one_owner(self):
+        source = ROOT / "board/main.py"
+        node = next(n for n in ast.parse(source.read_text()).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "http_admission")
+        scope = {"asyncio": asyncio}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+        entered, release = asyncio.Event(), asyncio.Event()
+        parsed, closed, answers = [], [], []
+
+        async def handle(reader, writer):
+            parsed.append(reader)
+            entered.set()
+            await release.wait()
+
+        async def close(writer):
+            closed.append(writer)
+
+        async def send(writer, status, body=b"", **kwargs):
+            answers.append((status, kwargs.get("extra")))
+
+        web = NS(handle=handle, _close=close, refused=0)
+        scope["http_admission"](NS(send=send), web)
+        first = asyncio.create_task(web.handle(1, 1))
+        await entered.wait()
+        waiting = [asyncio.create_task(web.handle(n, n)) for n in range(2, 9)]
+        await asyncio.sleep(0)
+        self.assertEqual(web.http_waiting, 8)
+        self.assertEqual(parsed, [1])
+        await web.handle(9, 9)
+        self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
+        self.assertEqual(closed, [9])
+        release.set()
+        await asyncio.gather(first, *waiting)
+        self.assertEqual(parsed, list(range(1, 9)))
+        self.assertEqual(web.http_waiting, 0)
+
     async def test_upload_retries_instead_of_owning_http_while_light_plays(self):
         from unittest.mock import AsyncMock, patch
         import lvotaq
@@ -162,7 +198,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         scope = {"asyncio": asyncio}
         exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
         web.route, web._close = route, close
-        scope["http_admission"](lvweb, web)
+        scope["http_admission"](lvweb, web, slots=2)
         with patch.object(lvweb, "MAX_CONN", 1), \
                 patch.object(lvweb, "read_req", read_req), \
                 patch.object(lvweb, "send", send):
