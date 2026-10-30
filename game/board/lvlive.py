@@ -91,6 +91,13 @@ LIGHTS = 12           # hail flickers a day
 OTA_MS = 10000
 ON = True             # the fleet-wide kill switch: a release with False turns Hail off
 D = "/data"
+PHRASES = 8
+DAY_MAX = 20
+HOUT = 12
+HIN = 16
+SHOW = 6
+BACK_MS = 600000
+F = "/hail.json"
 CORE = 0              # set when an error from the core's sync code goes on as a crash
 Session0 = S.Session
 parse0 = S.parse_advert
@@ -174,7 +181,7 @@ class Link:
         if self.ota() or getattr(getattr(self.sh, "web", None), "radio_hold", False):
             # A full game-state answer owns the large working set. Leave the
             # trailer unacknowledged: its durable sender retries after release.
-            # Compact /api/live streams do not hold radio receive off.
+            # Live snapshots also exclude receive/reveal rule working sets.
             self.n["held"] += 1
             return
         z = None

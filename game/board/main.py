@@ -264,6 +264,7 @@ def ota_hooks(lvweb, web):
             # Ship-to-ship (board/lvliveapi.py, web/live.js): Hail, the Settings switches, the
             # radio check and its test's probe (streamed). Loaded per request, like lvota.
             maintained = False
+            snapshot = None
             if req.path == "/api/live" and req.method == "GET" and web.get_phone().who(req) is not None:
                 # Apply recovery before loading the HTTP encoder: its code need not
                 # coexist with the rules and the parsed three-game durable box.
@@ -278,6 +279,17 @@ def ota_hooks(lvweb, web):
                         lvship.drop("lvlivein")
                         lvlivein = None
                 maintained = True
+                # Hail persistence is synchronous: finish it before importing
+                # the encoder, then keep only the immutable phone-visible slice
+                # and the private duel box for the separate view-building phase.
+                lvship.free()
+                import lvliveops
+                try:
+                    snapshot = lvliveops._prep(sh, True)
+                finally:
+                    lvship.drop("lvliveops")
+                    lvliveops = None
+                    lvship.drop("lvlivein")
             # Recovery's parsed box and released rules must be reclaimed before
             # admitting the HTTP encoder, not at some later allocation failure.
             lvship.free()
@@ -288,7 +300,7 @@ def ota_hooks(lvweb, web):
                 if req.path == "/api/live" and req.method == "GET":
                     web.state_busy = lvship.ticks_ms() or 1
                     try:
-                        return await lvliveapi.live(lvweb, web, req, w, maintained)     # (in pieces)
+                        return await lvliveapi.live(lvweb, web, req, w, maintained, snapshot)     # (in pieces)
                     finally:
                         web.state_busy = 0
                 s, j = lvliveapi.api(web, req)

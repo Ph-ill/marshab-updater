@@ -5,8 +5,8 @@
 #   GET  /api/live            the switches, crewmates heard, the newest SHOW (6) of today's
 #                             hails each way (no, ni: how many there are), the light's day
 #                             (lights of cap) and quiet ([from, to] min or null). Made from
-#                             small pieces into one buffer of its length and written PIECE
-#                             bytes at a time (live(), from main.py): never a dict of the
+#                             small pieces and written at most PIECE bytes at a time
+#                             (live(), from main.py): never a dict of the
 #                             whole list or a string built up by copies (FIXREVIEW2 B1)
 #   POST /api/live/hail       {to, ph, back}   hail crewmate `to` (0-based) with phrase ph
 #   POST /api/live/seen       {id}             "X saw it": tell the hailer it was seen
@@ -37,16 +37,10 @@ import lvlive
 # /api/live can let it go before its answer goes out (main.py's finally drops it as well)
 
 
-PHRASES = 8          # web/live.js has the words; the radio carries the number
+from lvlive import PHRASES, DAY_MAX, HOUT, HIN, SHOW, BACK_MS, F
 GAP_MS = 120000
-DAY_MAX = 20
-HOUT = 12            # kept in hail.json: sent...
-HIN = 16             # ...and received
-SHOW = 6             # GET /api/live: the newest this many each way
-BACK_MS = 600000     # "Hail back" within 10 minutes
 PING_KB = 8
 PIECE = 256          # GET /api/live goes out this many bytes at a time
-F = "/hail.json"
 
 # review 3 MAJOR-1: a phone that stops taking bytes mid-stream (out of range, screen locked,
 # Wi-Fi stalled) would leave drain() waiting until lwIP gives up, minutes, with main.py's
@@ -93,7 +87,10 @@ def _hl(sh):
 
 
 def _prep(sh, maintained=False):
-    snapshot = _call("_prep", sh, maintained)
+    return _view(sh, _call("_prep", sh, maintained))
+
+
+def _view(sh, snapshot):
     if isinstance(snapshot[-1].get("duel"), dict):
         # Hail preparation has returned and dropped its operation module. Reclaim
         # it before the view builder allocates beside the private parsed duel box.
@@ -165,7 +162,7 @@ def state(sh, you):
     return json.loads("".join(parts(*_prep(sh))))
 
 
-async def live(lvweb, web, req, w, maintained=False):
+async def live(lvweb, web, req, w, maintained=False, snapshot=None):
     # GET /api/live (main.py): signed in, the clock learned as api() does, then the answer
     # with a Content-Length, PIECE bytes at a time with a drain after each. The answer is
     # counted from a compact immutable snapshot, then streamed without a response-sized
@@ -176,7 +173,7 @@ async def live(lvweb, web, req, w, maintained=False):
         return await lvweb.send_json(w, 401, {"err": "signed out"})
     if sh.clock.learn_headers(req.header):
         sh.day_check()
-    snapshot = _prep(sh, maintained)
+    snapshot = _prep(sh, maintained) if snapshot is None else _view(sh, snapshot)
     # Snapshot construction has returned; its parsed files and operation code
     # must not survive into the two encoding passes or a concurrent radio save.
     lvship.free()

@@ -1,9 +1,8 @@
 # Synchronous Hail operations and snapshots; released before HTTP streaming.
 import lvship
 import lvlive
-import lvliveapi as A
 from binascii import hexlify
-from lvliveapi import PHRASES, DAY_MAX, HOUT, HIN, SHOW, BACK_MS, F
+from lvlive import PHRASES, DAY_MAX, HOUT, HIN, SHOW, BACK_MS, F
 
 def _in():
     # Box operations are synchronous phases; do not inherit discarded parsed
@@ -184,6 +183,7 @@ def _quiet(sh):
 
 
 def hail(sh, you, b):
+    import lvliveapi as A
     L = sh.live
     if L is None:
         return 409, {"err": "Ship-to-ship is off.", "why": getattr(sh, "live_why", None)}
