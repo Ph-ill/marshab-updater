@@ -590,7 +590,11 @@ for which in ("invite", "accept", "shot", "answer", "reveal", "end", "resign", "
 for boundary in range(5):
     for after in (False, True):
         s, unused = persistence_case("answer")
-        body = bytes((5, 0, 77, 0, 1)) + D.gid(game(s)) + bytes((11, 35)) + bytes(7)
+        # Continue the peer's accepted epoch, rather than randomly colliding
+        # with it and having replay protection skip the injected save fault.
+        epoch, previous = s.live.hw[1][:2]
+        sequence = previous + 1
+        body = bytes((5, 0, epoch, sequence >> 8, sequence & 255)) + D.gid(game(s)) + bytes((11, 35)) + bytes(7)
         frame = bytes((lvlive.MARK, 1)) + body + I.mac(s.live, 1, body)
         session = Trailer(1)
         calls = [0]
