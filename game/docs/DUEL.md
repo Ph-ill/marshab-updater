@@ -159,16 +159,24 @@ pronouns in templated text; no story text, no ending names.
 
 ## 5. Memory
 
-0.3.0 peaks at about 77 KB with everyone aboard (71 KB normal); the budget is 100 KB.
+The 32-bit board budget is 100,000 B. The gate uses non-collecting operation
+probes, not the former post-GC retained-heap figures.
 * Resident: the kind dispatch in lvlivein (already loaded per use) passes kinds 3-9 to
   lvduel; nothing new stays loaded between links. Target: under 0.5 KB resident.
-* lvduel.py is imported when a duel item arrives or a duel request comes in, and
-  dropped after (lvship.drop), like lvlivein/lvliveapi. Target: under 6 KB while loaded,
-  duel.json parsed in place (3 games, about 1.5 KB).
-* GET /api/live gains a "duel" part (games, written in pieces like the rest), so no new
-  heavy endpoint; POST /api/live/duel takes the moves.
-* Target peak: under 85 KB with everyone aboard and a duel move arriving during a phone's
-  /api/live; must stay under 100 KB in every heap sim.
+* lvduel holds shared state/recovery helpers. Radio rules, phone actions, layout
+  validation/scoring and phone snapshots load separately and are dropped after use.
+  Recovery runs before the HTTP encoder loads; duel POSTs do not load the Hail API.
+* Atomic saves stream JSON through a hashing writer and verify it in 256-byte
+  reads before rename. livebox queues encode one entry at a time, without a
+  second expanded queue. Transcript iteration does not expand all shots at once.
+* GET /api/live keeps a compact private snapshot, counts its encoded length and
+  streams the same snapshot in bounded pieces. A radio move between drains
+  cannot change that response. No response-sized JSON buffer is retained.
+* Probes run inside JSON input reads, serialization writes, save read-back,
+  duel storage and view/HTTP construction, without calling gc.collect. The
+  normal board allocation threshold bounds uncollected churn independently of
+  probes. The target is at most 97,000 B; the failing gate remains 100,000 B.
+  This simulation does not establish real-Pico fragmentation or BLE heap margin.
 
 ## 6. Tests
 
@@ -185,8 +193,11 @@ pronouns in templated text; no story text, no ending names.
 * **Phone e2e** (web/shots_duel.mjs + shots_duel.sh, Playwright on the fake board): the
   home card, pick, hide (place, turn, shuffle, lock in), fire, the end screen, the Settings
   switch; screenshots for review at 375 px and 320 px, light and dark.
-* **Heap** (tests/phone_heap.py --duel, mp_sync_heap.py): a duel move taken and answered
-  during a sync with two phones on /api/live and everyone aboard; the peak reported and
-  checked against the 100 KB cap (the check fails above the cap, never just prints).
+* **Heap** (tests/phone_heap.py --duel, mp_sync_heap.py): a held SHOT travels
+  through fake GATT and the real Session._msg during streamed /api/live.
+  The critical probe requires an active session, three near-limit transcripts,
+  seven pending rejection replies, seven populated pair records and 24 Seen
+  receipts still occupying the outbox. The operation peak gates RESULT and the
+  process exit status; a cap overrun is never merely printed.
 * All existing suites stay green: stock `env -u LV_FROZEN_MP game/tests/run.sh`, lv32
   `game/tests/run.sh`, root `tests/run.sh`.

@@ -7,7 +7,7 @@
 # the whole season in the log, the story replayed to the last day, BLE sync (lv/ble.py on
 # the fake radio from tests/fakeble) and the web server answering over a real socket.
 # It syncs a peer that missed almost the whole season (221 records over the link). The
-# live heap (after gc) is sampled through all of it, including at the web server's
+# The in-operation heap is sampled without collection, including at the web server's
 # busiest points (lvweb.probe, lvphone.probe). The board's share must stay under
 # 80 KB (80,000 B): the peak, less the fake radio module and the peer at its largest
 # (see below). The LED stays off, unless:
@@ -92,7 +92,7 @@ def seed_duels(lk, peer_lk):
     # not fixture construction, must recover these obligations under pressure.
     rejections = []
     for to in range(1, 8):
-        g = D.fresh(lk, to, bytes((0x52, to)), to, "called")
+        g = {"to": to, "id": hexlify(bytes((0x52, to))).decode(), "s": "called"}
         D.end(lk, g, 5)
         rejections.append(g)
     D.save(lk.sh.data + D.F, {"g": games, "r": dict((str(to), [123, 123]) for to in range(1, 8)),
@@ -180,7 +180,7 @@ class HailSes:
 # requests and the radio (printed at the end, so a cap overrun says what it coincided with)
 PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
            "lvcode", "lvledtest", "lvbatt", "lvsafe", "lvcheck", "lvstateapi",
-           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel")
+           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel", "lvduelrx", "lvduelaction", "lvduelview", "lvduellayout", "lvlivecfg")
 
 
 def mem():
@@ -189,31 +189,8 @@ def mem():
 
 
 def sample():
-    if DUEL_M[0] is not None and not duel_taken[0] and not duel_injecting[0] and "lvliveapi" in sys.modules:
-        duel_injecting[0] = True
-        try:
-            L = globals()["ship"].live
-            n0 = L.n["in"]
-            L.take(HailSes(), DUEL_M[0], 0)
-            duel_taken[0] = L.n["in"] > n0
-            if not duel_taken[0]:
-                raise RuntimeError("duel: full-outbox inbound move was not durably accepted")
-        finally:
-            duel_injecting[0] = False
-    if DUEL and duel_injecting[0] and "lvduel" in sys.modules and duel_worst[0] is None:
-        # Inside the real inbound rules call, while its parsed box and the
-        # already-built three-game HTTP response coexist. Drop the audit copy
-        # before sampling: only the board's actual working set is measured.
-        import json
-        with open(DATA + "/duel.json") as f:
-            audit = json.load(f)["g"]
-        duel_worst[0] = (tuple(g["n"] for g in audit),
-                         sum(len(g.get("q", ())) for g in audit), len(ship.live.out))
-        assert len(audit) == 3 and all(g["s"] == "active" and g["n"] >= 68 and
-                                       len(g["h"]) == 2 * g["n"] and g.get("q") for g in audit)
-        assert duel_worst[0][2] == 24
-        audit = f = None
-    m = mem()
+    # No collection at operation probes: include temporary working allocations.
+    m = (gc.mem_alloc() - base) if hasattr(gc, "mem_alloc") else -1
     k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
     if m > kpeak.get(k, 0):
         kpeak[k] = m
@@ -222,7 +199,7 @@ def sample():
         h0, i0, se = L.n["held"], L.n["in"], HailSes()
         L.take(se, HAIL_M[0], 0)
         hail_sig.append((L.n["held"] - h0, L.n["in"] - i0, len(se.acks), "lvlivein" in sys.modules))
-        m2 = mem()
+        m2 = (gc.mem_alloc() - base) if hasattr(gc, "mem_alloc") else -1
         if m2 > kpeak[k]:
             kpeak[k] = m2
     if m > peak[0]:
@@ -232,13 +209,52 @@ def sample():
                 "+".join(n for n in PER_USE if n in sys.modules) or "no per-use module",
                 getattr(globals().get("web"), "busy", "-"),
                 globals()["ship"].ble.state if "ship" in globals() else "-")
+            where[0] += "; stage " + str(getattr(globals().get("lvship"), "heap_stage", "-"))
+            where[0] += "; injection " + str(duel_injecting[0])
         except Exception as e:
             where[0] = "? %r" % (e,)
     return m
 
 
+def critical_duel(j):
+    if duel_injecting[0] and duel_worst[0] is None:
+        games, rejects = j["g"], j.get("e", [])
+        session = ship.ble.sess
+        assert isinstance(session, lvlive.Session) and session.to == 1 and w.links
+        assert web.busy > 0 and "lvliveapi" in sys.modules
+        assert len(ship.live.out) == 24 and all(o[1][0] == 2 for o in ship.live.out)
+        assert len(games) == 3 and all(g["s"] == "active" and g["n"] >= 68 and
+               len(g["h"]) == 2 * g["n"] and g.get("q") for g in games)
+        assert len(rejects) == 7 and all(g.get("q") for g in rejects) and len(j["r"]) == 7
+        duel_worst[0] = (tuple(g["n"] for g in games),
+                         sum(len(g.get("q", ())) for g in games + rejects), 24)
+        sample()
+
+
+def stream_sample():
+    # Release the peer only inside the live response's streaming callback.
+    # Its HELLO carries the shot through fake GATT and the actual Session._msg.
+    if DUEL and not duel_taken[0] and not duel_injecting[0] and "lvliveapi" in sys.modules:
+        duel_injecting[0] = True
+        try:
+            before = ship.live.n["in"]
+            ship.ble.next_scan = w.now + 120000
+            for i in range(12000):
+                w.step(10)
+                peer.poll(w.now)
+                ship.ble.poll(w.now)
+                if ship.live.n["in"] > before:
+                    duel_taken[0] = True
+                    break
+            assert duel_taken[0] and duel_worst[0] is not None
+        finally:
+            ship.ble.next_scan = w.now
+            duel_injecting[0] = False
+    return sample()
+
+
 import bluetooth                    # noqa: E402  (the fake)
-m_fake = sample()
+m_fake = mem()
 import lvship                        # noqa: E402
 # The web server the board runs: the phone game's (lvweb) on the game firmware or with
 # --phone; the bench status server (lvstat) on stock MicroPython.
@@ -256,7 +272,7 @@ from lv.chlog import ChoiceLog      # noqa: E402
 from lv.ble import BleSync          # noqa: E402
 if LIVE:
     import lvlive                    # resident on a board (lvlivein, lvlivex, lvliveapi and lvflick load per use)
-m_code = sample()
+m_code = mem()
 
 FK = b"test-fleet-key-not-secret"
 with open(LOG, "rb") as f:
@@ -305,7 +321,7 @@ if LIVE:
         HAIL_M[0] = bytes((lvlive.MARK, 1)) + peer_link.out[0][1]
     lvship.drop("lvlivein")
     lvlivein = None
-m_peer = sample()
+m_peer = mem()
 cfg = lvship.load_config("/nonexistent")
 cfg["day"] = 42
 cfg["ble"] = FAST
@@ -328,7 +344,7 @@ if LED and ship.led.enabled:
     ship._led("test")
     ship._led("gift")
 WANT = ship.node.digest()
-m_ship = sample()
+m_ship = mem()
 
 try:
     import asyncio
@@ -386,7 +402,7 @@ sys.path.pop(0)
 MAIN_PY = heap_main.__dict__
 if WEB:
     web = lvweb.Server(ship, root=ROOT, say=lambda s: None)
-    lvweb.probe = sample
+    lvweb.probe = stream_sample
     g = MAIN_PY
     g["home_screen"](lvweb)
     if OTA or DUEL:
@@ -416,7 +432,8 @@ if WEB:
             DUEL_M[0] = bytes((lvlive.MARK, 1)) + shot[1]
             # Do not deliver before a phone's streamed /api/live. The first
             # probe takes it and samples lvduel while all of its state is live.
-            ship.duel_probe = sample
+            ship.duel_probe = critical_duel
+            lvship.heap_probe = sample
             shot = lvduel = None
             # seed_duels was defined before the gc baseline: retain its code so
             # dropping test-only bytecode cannot artificially lower board peak.
@@ -642,8 +659,9 @@ if LIVE:
     PL = peer_link
     # The two absent opponents retain exactly their bounded durable SYNCs.
     # They are part of the measured workload, never silently discarded to pass.
-    absent_ok = (DUEL and len(L.out) == 2 and {o[0] for o in L.out} == {2, 3} and
-                 all(o[1][0] == 9 for o in L.out))
+    absent_ok = (DUEL and len(L.out) == 8 and
+                 sum(o[1][0] == 9 and o[0] in (2, 3) for o in L.out) == 2 and
+                 sum(o[1][0] == 8 and o[0] in range(2, 8) for o in L.out) == 6)
     lv_ok = (L is not None and PL is not None and L.n["in"] >= 1 and PL.n["in"] >= 1 and (not L.out or absent_ok)
              and not PL.out and L.n["bad"] == 0 and PL.n["bad"] == 0 and "lvliveapi" not in sys.modules
              and "lvlivein" not in sys.modules)
