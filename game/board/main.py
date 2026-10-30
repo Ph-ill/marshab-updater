@@ -310,10 +310,17 @@ def ota_hooks(lvweb, web):
                     if req.method == "POST" and web.get_phone().who(req) is not None:
                         import lvotaq
                         try:
-                            await lvotaq.quiet(web, req.q, req.body or b"")
+                            # Do not occupy the single HTTP owner while a light
+                            # plays: its next tap must reach the 429 check now,
+                            # not start another playback after this wait ends.
+                            light_busy = lvotaq.lit(web.ship, lvship)
+                            if not light_busy:
+                                await lvotaq.quiet(web, req.q, req.body or b"")
                         finally:
                             lvotaq = None
                             lvship.drop("lvotaq")
+                        if light_busy:
+                            return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
                     import lvotap
                     try:
                         return await lvotap.api(web, req, w, True)

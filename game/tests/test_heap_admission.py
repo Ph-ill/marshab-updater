@@ -45,6 +45,33 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
+    async def test_upload_retries_instead_of_owning_http_while_light_plays(self):
+        from unittest.mock import AsyncMock, patch
+        import lvotaq
+
+        async def route(req, writer):
+            self.fail("upload must use its own handler")
+
+        web = hooks(route)
+        web.get_phone = lambda: NS(who=lambda req: 0)
+        web.ship.ledtest = 0
+        req = NS(path="/api/ota/put", method="POST", q={}, body=b"piece")
+        answers = []
+        quiet = AsyncMock()
+        upload = AsyncMock(return_value="uploaded")
+        with patch.object(lvotaq, "quiet", quiet), \
+                patch.dict(sys.modules, {"lvotap": NS(api=upload)}):
+            await web.route(req, answers)
+            self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
+            quiet.assert_not_awaited()
+            upload.assert_not_awaited()
+            self.assertEqual(web.ota_busy, 0)
+            web.ship.ledtest = None
+            self.assertEqual(await web.route(req, answers), "uploaded")
+            quiet.assert_awaited_once()
+            upload.assert_awaited_once()
+            self.assertEqual(web.ota_busy, 0)
+
     async def test_unread_waiter_deadline_refuses_and_closes(self):
         answers, closed = [], []
 
