@@ -207,8 +207,8 @@ lvota.rmtree(lvota.NEW)
 ship_runs(OLD, "after refusals")
 data_same("after refusals")
 
-# The split duel payload has 43 files; retain an explicit bounded file count.
-for count, accepted in ((43, True), (48, True), (49, False)):
+# Keep the current payload and stepping-stone capacity within a bounded file count.
+for count, accepted in ((43, True), (48, True), (49, True), (64, True), (65, False)):
     m = json.loads(FX["env"]["0.2.1-lv-test"]["m"])
     m["files"] = [["lvpart%d.mpy" % i, 1, "0" * 64] for i in range(count)]
     why = lvota.check_manifest(m)
