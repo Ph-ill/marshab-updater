@@ -36,6 +36,15 @@
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
 cd "$(dirname "$0")/.."
+# Focused check: MICROPYTHON=/path/to/micropython game/tests/run.sh --duel
+MP="${MICROPYTHON:-$(command -v micropython || true)}"
+if [ "${1:-}" = "--duel" ]; then
+  if [ -z "$MP" ]; then
+    echo "micropython not found (set MICROPYTHON=...)" >&2
+    exit 1
+  fi
+  exec "$MP" tests/test_duel.py
+fi
 python3 tools/lvc.py
 python3 tools/lve.py
 python3 tests/test_core.py
@@ -84,7 +93,6 @@ python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
 LV_FROZEN_MP="$LV_FROZEN_MP" MPY_CROSS="$MPY_CROSS" python3 tests/test_fw_split.py
-MP="${MICROPYTHON:-$(command -v micropython || true)}"
 if [ -n "$MP" ]; then
   "$MP" -X heapsize=160k tests/mp_check.py
   "$MP" tests/mp_codes.py

@@ -19,9 +19,18 @@ import lvlivein as I
 import lvduel as D
 import lvship
 
+try:
+    from time import ticks_add
+except ImportError:  # Match lv.clock's CPython ticks_diff fallback.
+    def ticks_add(t, delta):
+        return (t + delta) & 0x3fffffff
+
+TICKS_MAX = ticks_add(0, -1)
 real_ticks = lvship.ticks_ms
 elapsed = [0]
-lvship.ticks_ms = lambda: (real_ticks() + elapsed[0]) & 0x3fffffff
+# Use the same period as lvship.ticks_diff (not always 2^30 on unix).
+# Total simulated uptime can exceed ticks_add's signed half-period bound.
+lvship.ticks_ms = lambda: (real_ticks() + elapsed[0]) & TICKS_MAX
 
 
 def idle(s, ms):
@@ -51,6 +60,11 @@ def clean(path):
         os.rmdir(path)
     except OSError:
         pass
+
+
+check("native tick wrap preserves elapsed time",
+      lvship.ticks_diff(ticks_add(TICKS_MAX - 1000, 172801000),
+                        TICKS_MAX - 1000) == 172801000)
 
 
 class Clock0:
@@ -199,7 +213,7 @@ a.live.out[:] = []             # simulate an acked-but-lost answer
 import lvship
 old_tick = lvship.ticks_ms
 tick = old_tick()
-lvship.ticks_ms = lambda: (tick + 3600001) & 0x3fffffff
+lvship.ticks_ms = lambda: ticks_add(tick, 3600001)
 j = D.box(b.live)
 D.sync(b.live, j["g"][0])
 D.store(b.live, j)
@@ -241,7 +255,7 @@ settled(w, a, b)
 a.clock.t += 3600001
 old_tick = lvship.ticks_ms
 tick = old_tick()
-lvship.ticks_ms = lambda: (tick + 3600001) & 0x3fffffff
+lvship.ticks_ms = lambda: ticks_add(tick, 3600001)
 check("old ship warning", D.view(a.live)[0]["update"])
 lvship.ticks_ms = old_tick
 idle(a, 3 * 86400000)
@@ -774,7 +788,7 @@ for early in (False, True):
         D.maintain(b.live)
         saved_tick = lvship.ticks_ms
         tick = saved_tick()
-        lvship.ticks_ms = lambda: (tick + 21600001) & 0x3fffffff
+        lvship.ticks_ms = lambda: ticks_add(tick, 21600001)
         try:
             D.maintain(b.live)
         finally:
@@ -960,16 +974,16 @@ idle(a, 86400000 + 1000)
 D.maintain(a.live)
 check("known reboot expires at total three days", game(a)["s"] == "called")
 old_tick = lvship.ticks_ms
-wrap = [0x3fffffff - 1000]
-lvship.ticks_ms = lambda: wrap[0] & 0x3fffffff
+wrap = [TICKS_MAX - 1000]
+lvship.ticks_ms = lambda: wrap[0]
 try:
     w, a, b = fresh(48)
     a.clock.known = lambda: False
     act(a, "new")
-    wrap[0] += 86400000
+    wrap[0] = ticks_add(wrap[0], 86400000)
     D.maintain(a.live)
     check("wrapped tick preserves one day", D.maint_call("age", a.live, game(a)) == 86400)
-    wrap[0] += 2 * 86400000
+    wrap[0] = ticks_add(wrap[0], 2 * 86400000)
     D.maintain(a.live)
     check("wrapped tick expires draft", not D.box(a.live)["g"])
 finally:
