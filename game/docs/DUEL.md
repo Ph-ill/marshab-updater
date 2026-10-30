@@ -1,0 +1,174 @@
+# The asteroid duel (0.3.1)
+
+A Battleship-style game between two ships, played over the same ship-to-ship link Hail
+uses (board/lvlive.py). Nobody's phone joins another ship's Wi-Fi: each player stays on
+their own ship, and each move is one small item carried ship to ship whenever the two ships
+meet. A turn can take seconds (ships side by side) or a day (a crewmate away from their
+desk); the game doesn't mind.
+
+This file is the design. The code is board/lvduel.py (the rules, the field, the items;
+loaded per use), board/lvduelapi.py (what a phone asks for; loaded per request) and
+web/duel.js + web/duel.css (the screens).
+
+## 1. The game
+
+* **Field:** 6 x 6 asteroid field, columns A-F, rows 1-6 (36 cells). Small enough to read
+  on a phone held in one hand and to answer in one radio item.
+* **Fleet:** three ships, 3, 2 and 1 cells long (6 cells), straight lines, across or down,
+  never overlapping and never touching end to end or side by side (so a hit next to a
+  finished ship is always a miss: fewer wasted shots, shorter games).
+* **Hiding:** you place your fleet on your own phone (tap a ship, tap a cell, tap again to
+  turn it; or "Shuffle" for a random legal layout). "Lock in" fixes the layout for the
+  whole game; it can't be changed after the invitation goes (the ship stores it and
+  commits to it, section 3).
+* **Turns:** the player who was invited fires first (the inviter already chose the
+  moment). One shot per turn, fired from your own ship's page. The other ship answers by
+  itself (hit, miss, or "that sinks the 2-cell ship"): the defender doesn't need to have
+  their phone out, so the answer can come back in the same link as the shot.
+* **Win:** sink all three ships (6 hits). Then both ships reveal their layouts and check
+  each other's answers (section 3). The record between each pair of crewmates is kept
+  ("3-2 between you").
+* **Ending early:** "Resign" (any time, counts as a loss), "Decline" an invitation, and
+  "Call it" once the other side hasn't moved for 3 days (the game is put away, no result).
+  An invitation not answered in 3 days is put away too.
+* **Limits:** one game at a time with each crewmate, at most 3 games going at once.
+
+## 2. On the air
+
+Duel moves are Hail items (lvlive.py, "On the air"): 20 bytes each, kind, to, epoch,
+seq (2), body (11), mac (4), riding the sync HELLO/DONE trailer, numbered per sender, acked,
+de-duplicated and replay-checked exactly like a hail. Nothing about the core sync, the
+trailer, the mac or the dial schedule changes. 0.3.0 ships ack and drop kinds above 2, so a
+0.3.1 ship's duel items never stick in an older ship's queue.
+
+Kinds (body is 11 bytes; g = game id, 2 bytes, random, chosen by the inviter):
+
+| kind | name    | body |
+|------|---------|------|
+| 3    | INVITE  | v (1, protocol version, 1 for 0.3.1), g (2), commit (8) |
+| 4    | ACCEPT  | v (1), g (2), commit (8) |
+| 5    | SHOT    | g (2), n (1, shot number, 1-36, both players' shots counted together), cell (1, 0-35) |
+| 6    | ANSWER  | g (2), n (1, the shot answered), cell (1), result (1: 0 miss, 1 hit, 2/3/4 hit and sinks the 1/2/3-cell ship, +8 when that was the last ship) |
+| 7    | REVEAL  | g (2), layout (3), salt (6) |
+| 8    | END     | g (2), why (1: 1 decline, 2 resign, 3 called, 4 version not supported, 5 busy/too many games, 6 cheat found) |
+| 9    | SYNC    | g (2), n (1, the last shot this ship has), last cell (1), last result (1), state (1) |
+
+* **Layout (3 bytes):** the 3-ship's first cell (6 bits) and direction (1), the 2-ship's
+  first cell and direction, the 1-ship's cell: 20 bits, high bits first, 4 bits zero.
+* **Commit (8 bytes):** sha256(b"LVD1" + g + layout + salt)[:8], the salt 6 random bytes
+  (os.urandom) made when the layout locks. The commit goes out in INVITE/ACCEPT; the layout
+  and salt only in REVEAL, at the end.
+* **Versioning:** v in INVITE/ACCEPT. A ship that gets a v it doesn't speak answers
+  END why=4 and the page says the crewmate needs to update. Higher kinds (10+) from a later
+  release are acked and dropped. A later protocol may add kinds; it keeps these meanings.
+* **Ships that can't duel:** Hail's capability bit says a ship reads items, not which
+  kinds. A 0.3.0 ship acks an INVITE and never answers, so an invitation acked with no
+  ACCEPT/END after the crewmate's ship has been met twice more (or 1 hour) shows "Their ship
+  may need 0.3.1"; it's put away after 3 days like any invitation. (If the core's sync
+  HELLO carries the firmware version, use that instead and refuse up front.)
+
+### Timeouts, slow and dropped links
+
+* Delivery is Hail's: dial the crewmate while they're near (twice, then once a minute,
+  with the shared 20 s gap and backoff), and carry along on any sync either side starts.
+  A dropped link just means the item isn't acked yet; it goes again on the next one.
+* **Duel items don't expire at the end of the day** (hails do, lvlivein.expire). They
+  wait until acked or until their game is put away (3 days idle). The queue shares Hail's
+  out-box with its existing size cap; a duel item is never pushed out by hails.
+* Idempotent by (g, n): a SHOT or ANSWER with an n already taken is acked and ignored; a
+  SHOT out of turn (not the other side's turn by this ship's count) is ignored and
+  answered with SYNC.
+* **Resync:** whenever a ship sees a move it can't place (unknown g, n skipped, wrong
+  turn), or a game has had no move from the other side for 6 hours while it's their turn
+  and their ship has been met, it sends SYNC with its own view. The side that is behind
+  re-sends its last SHOT/ANSWER (kept in duel.json for exactly this); if the views
+  disagree in a way neither can repair (both think it's their own turn with different
+  n), the lower ship number's view wins and the other ship re-sends. A SYNC is never sent
+  more than once an hour per game.
+* The box file is /data/duel.json (atomic save through lvlivein.save, read back), at
+  most 3 games plus the record per crewmate, about 1.5 KB at worst.
+
+### Cheating resistance
+
+The game is among friends, but the protocol shouldn't let a modified ship (or a phone
+poking the API) win by moving its fleet:
+* Layouts are locked and committed (commit above) before the first shot; the other side
+  keeps the commit and every answer it was given.
+* Answers come from the ship, not the phone, and the API has no way to change a layout
+  after lock-in.
+* At the end both ships REVEAL; each checks the revealed layout against the commit and
+  replays every answer it got against it. Any mismatch: the game is marked "Their answers
+  didn't match their field" (no win counted for them), END why=6 is sent. The page states
+  it plainly, without accusing anyone of anything.
+* A layout that breaks the fleet rules (overlap, touching, off the field) fails the same
+  way.
+* The 6-byte salt makes guessing the layout from the commit impractical (2^48 x the few
+  hundred legal layouts), and the item mac (fleet key) means only the fleet's ships can
+  make moves at all. Shot cells are checked on the board (0-35, not already fired).
+
+## 3. The phone
+
+Matches Settings and Hail: the same sections (`.lab` headers), `.row` buttons with the
+crewmate portrait, `.btn sec` dock buttons, `.dim`/`.fine` text. No emoji, no gradients,
+no new fonts.
+
+1. **Home card** ("Asteroid duel", right label "your move" when one is): up to 3 rows, one
+   per game: "Your turn", "Kim's turn", "Kim invited you", "Waiting for Kim to join",
+   "Your shot's on its way". Empty: one line of how it works and "Start a duel".
+2. **Pick a crewmate**: crewmates' rows (a ship that can't, greyed with the reason).
+3. **Hide your fleet**: your 6 x 6 field, the three ships to place, Shuffle, Turn, then
+   "Lock in and invite" (or "Lock in and join" when answering an invitation).
+4. **Game screen**: their field on top (your shots: hit, miss, sunk outline; tap a cell,
+   then "Fire"), your field below, small (their shots on your ships). A line says whose
+   turn it is and where the last move stands ("On its way", "Arrived 2 min ago").
+   "Resign" sits at the bottom behind a confirm.
+5. **End**: "You sank their fleet in 14 shots" / "Kim sank your fleet"; both fields
+   revealed; the record; "Rematch".
+
+Words: second person ("Your turn", "You sank..."), crewmates by name, never he/she/they
+pronouns in templated text; no story text, no ending names.
+
+## 4. The light
+
+* When a SHOT lands on a ship (its player's turn now), that ship's light flickers: the
+  "your move" pattern, two slow pulses (0.6 s on, 0.4 s off) repeated for about 8 s, so it
+  reads differently from a hail's 3 Hz. Software PWM through lvflick (lvled's pin), never
+  during a link, never in quiet hours, and counted in the same daily allowance as hails.
+* Its own switch in Settings, next to "Flicker for hails": **"Flicker for your turn"**,
+  on by default (live.json "dl"). Off: the turn shows on the page only, and the
+  opponent's page says "Their light is off; they'll see it on their page".
+* An INVITE flickers the same way; ANSWER, REVEAL, END and SYNC are quiet.
+
+## 5. Memory
+
+0.3.0 peaks at about 77 KB with everyone aboard (71 KB normal); the budget is 100 KB.
+* Resident: the kind dispatch in lvlivein (already loaded per use) passes kinds 3-9 to
+  lvduel; nothing new stays loaded between links. Target: under 0.5 KB resident.
+* lvduel.py is imported when a duel item arrives or a duel request comes in, and
+  dropped after (lvship.drop), like lvlivein/lvliveapi. Target: under 6 KB while loaded,
+  duel.json parsed in place (3 games, about 1.5 KB).
+* GET /api/live gains a "duel" part (games, written in pieces like the rest), so no new
+  heavy endpoint; POST /api/live/duel takes the moves.
+* Target peak: under 85 KB with everyone aboard and a duel move arriving during a phone's
+  /api/live; must stay under 100 KB in every heap sim.
+
+## 6. Tests
+
+* **game/tests/test_duel.py** (CPython and the MicroPython unix ports, stock and lv32):
+  two virtual ships on the fake radio (tests/fakeble) through the real frozen lv/ble.py
+  and lv/sync.py: a whole game (invite, accept, alternate shots, answers in the same link,
+  last ship, both reveals, commits and answers check out, the record); out-of-turn, a
+  repeated cell, off the field; dropped links (the fake radio drops every Nth message) and
+  a game still finishing; long gaps (a day between moves: no expiry); SYNC repairs a lost
+  ANSWER; a ship that moves its fleet mid-game is caught at the reveal; a broken layout;
+  decline, resign, call it (not before 3 days), crossing invitations, too many games, an
+  old (0.3.0) ship never answering; v mismatch; the turn light (switch off, quiet hours,
+  allowance); fuzz: random duel items never raise.
+* **Phone e2e** (web/shots_duel.mjs + shots_duel.sh, Playwright on the fake board): the
+  home card, pick, hide (place, turn, shuffle, lock in), fire, the end screen, the Settings
+  switch; screenshots for review at 375 px and 320 px, light and dark.
+* **Heap** (tests/phone_heap.py --duel, mp_sync_heap.py): a duel move taken and answered
+  during a sync with two phones on /api/live and everyone aboard; the peak reported and
+  checked against the 100 KB cap (the check fails above the cap, never just prints).
+* All existing suites stay green: stock `env -u LV_FROZEN_MP game/tests/run.sh`, lv32
+  `game/tests/run.sh`, root `tests/run.sh`.
