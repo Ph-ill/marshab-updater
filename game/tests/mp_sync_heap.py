@@ -180,7 +180,7 @@ class HailSes:
 # requests and the radio (printed at the end, so a cap overrun says what it coincided with)
 PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
            "lvcode", "lvledtest", "lvbatt", "lvsafe", "lvcheck", "lvstateapi",
-           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel", "lvduelrx", "lvduelaction", "lvduelview", "lvduellayout", "lvlivecfg", "lvduelmaint", "lvliveops", "lvduelother")
+           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel", "lvduelrx", "lvduelaction", "lvduelview", "lvduellayout", "lvlivecfg", "lvduelmaint", "lvliveops", "lvduelother", "lvduelstore")
 
 
 def mem():
@@ -228,6 +228,7 @@ def critical_duel(j):
         # The forced real-radio move still commits during the live stream, but
         # rule evaluation must finish before persistence holds its buffers.
         assert "lvduelrx" not in sys.modules
+        assert "lvduel" not in sys.modules
         assert "lvduelmaint" not in sys.modules
         assert "lvliveops" not in sys.modules
         assert "lvduelother" not in sys.modules

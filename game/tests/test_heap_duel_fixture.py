@@ -20,6 +20,46 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_radio_publication_releases_the_whole_rule_module(self):
+        import builtins
+        import weakref
+        from types import ModuleType
+        from unittest.mock import patch
+        import lvlivein as I
+        events = []
+        box = {"g": [], "r": {}}
+        rules = ModuleType("lvduel")
+        rules.receive = lambda *args: (box, (True, None))
+        ref = weakref.ref(rules)
+
+        def store(link, state):
+            self.assertNotIn("lvduel", sys.modules)
+            self.assertIsNone(ref(), "receive globals remain rooted during save")
+            self.assertIs(state, box)
+            events.append("save")
+
+        def load(path):
+            events.append("parse")
+            return box
+
+        original_import = builtins.__import__
+
+        def importing(name, *args, **kwargs):
+            if name == "lvduel":
+                self.assertEqual(events, ["parse"], "rules imported before box parsing")
+                events.append("rules")
+            return original_import(name, *args, **kwargs)
+
+        link = NS(sh=NS(data="unused", duel_probe=lambda state: events.append("probe")))
+        with patch.dict(sys.modules), patch.object(I, "load", load), \
+                patch.object(builtins, "__import__", importing):
+            sys.modules["lvduel"] = rules
+            rules = None
+            sys.modules["lvduelstore"] = NS(store=store)
+            self.assertTrue(I.duel_take(link, 1, 5, bytes(11)))
+            self.assertNotIn("lvduelstore", sys.modules)
+        self.assertEqual(events, ["parse", "rules", "save", "probe"])
+
     def test_active_maintenance_defers_but_expiry_and_clock_backfill_do_not(self):
         from unittest.mock import patch
         import lvduel as D
@@ -234,9 +274,11 @@ class WorstDuelHeap(unittest.TestCase):
                 self.assertNotIn("lvduelother", sys.modules)
                 return 0
 
+            import lvlivein as I
+            import lvduelstore as S
             with patch.object(D, "box", lambda lk: box), \
-                    patch.object(D, "save", save), \
-                    patch.object(D, "flush", lambda *args: None), \
+                    patch.object(I, "save", save), \
+                    patch.object(S, "flush", lambda *args: None), \
                     patch.object(D, "result", score), \
                     patch.object(lvship, "free", lambda: 0):
                 self.assertTrue(D.take(link, 1, 5, bytes((0x48, 1, 69, 34)) + bytes(7)))
@@ -261,6 +303,7 @@ class WorstDuelHeap(unittest.TestCase):
     def test_recovery_enqueues_reclaim_between_persistence_phases(self):
         from unittest.mock import patch
         import lvduel as D
+        import lvlivein as I
         import lvship
         events = []
         link = NS(out=[], sh=NS(data="unused"))
@@ -268,8 +311,8 @@ class WorstDuelHeap(unittest.TestCase):
         box = dict(g=[game])
         with patch.object(lvship, "free", lambda: events.append("admit")), \
                 patch.object(D, "queued", lambda *args: False), \
-                patch.object(D, "send", lambda *args: events.append("enqueue")), \
-                patch.object(D, "save", lambda *args: events.append("save")):
+                patch.object(I, "send", lambda *args: events.append("enqueue")), \
+                patch.object(I, "save", lambda *args: events.append("save")):
             D.flush(link, box)
         self.assertEqual(events, ["admit", "enqueue", "admit", "enqueue", "admit", "save"])
         self.assertEqual(game["q"], [])
@@ -296,6 +339,27 @@ class WorstDuelHeap(unittest.TestCase):
             self.assertIn("parse", stages)  # inside the input read, not only after json.load
             self.assertIn("save", stages)
             real_open = builtins.open
+            buffers = []
+
+            class Readback(BytesIO):
+                def read(self, *args):
+                    raise AssertionError("readback must reuse its buffer")
+
+                def readinto(self, buffer):
+                    buffers.append(id(buffer))
+                    return super().readinto(buffer)
+
+            def reusable(p, mode="r", *args, **kwargs):
+                if p == path + ".new" and mode == "rb":
+                    with real_open(p, mode) as f:
+                        return Readback(f.read())
+                return real_open(p, mode, *args, **kwargs)
+
+            with patch.object(builtins, "open", reusable):
+                I.save(path, new)
+            self.assertGreater(len(buffers), 2)
+            self.assertEqual(len(set(buffers)), 1)
+
             def opened(p, mode="r", *args, **kwargs):
                 if p == path + ".new" and mode == "rb":
                     return BytesIO(b"corrupted")
@@ -342,10 +406,14 @@ class WorstDuelHeap(unittest.TestCase):
                      sample=lambda: sampled.append(True))
         functions(ROOT / "tests/mp_sync_heap.py", {"critical_duel"}, scope)
         with patch.dict(sys.modules, {"lvliveapi": NS()}):
+            sys.modules.pop("lvduel", None)
             scope["critical_duel"](box)
             self.assertEqual(scope["duel_worst"][0], ((69, 70, 70), 10, 24))
             self.assertEqual(sampled, [True])
             scope["duel_worst"][0] = None
+            with patch.dict(sys.modules, {"lvduel": NS()}):
+                with self.assertRaises(AssertionError):
+                    scope["critical_duel"](box)
             with patch.dict(sys.modules, {"lvduelrx": NS()}):
                 with self.assertRaises(AssertionError):
                     scope["critical_duel"](box)
