@@ -496,6 +496,7 @@ async def heap_run():
             # the streamed response, not vanish during unrelated phone logins.
             await lvship.sleep_ms(5)
     t = 0
+    bat_due = 1000
     phones_done = not PHONE
     started = lvship.ticks_ms()
     # Light ownership/OTA admission can outlast ten accelerated radio minutes.
@@ -509,9 +510,10 @@ async def heap_run():
         peer.poll(w.now)
         if LED:
             ship.led.poll(ship.ble.busy())
-        if BAT and t % 1000 == 0 and not ship.ble.busy() and not (WEB and web.busy > 0):
+        if BAT and t >= bat_due and not ship.ble.busy() and not (WEB and web.busy > 0):
             ship.bat_poll()                  # as lvship's loop does, only while nothing is busy
             bat[1] += 1
+            bat_due = t + 1000
         if t % 50 == 0:
             sample()
             await lvship.sleep_ms(1 if PHONE else 0)
