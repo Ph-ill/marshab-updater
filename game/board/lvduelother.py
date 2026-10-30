@@ -1,7 +1,7 @@
 # Invitation, reveal and recovery rules, not retained while scoring a shot.
 from lvduel import (ACTIVE, belongs, commit, emit, end, finish, fleet, fresh,
                     gid, hexlify, history, keep, lvship, mine, now, rejected,
-                    repeat, result, reveal, room, sync, terminal, unhexlify)
+                    repeat, result, reveal, room, sync, terminal, unhexlify, layout_call)
 
 
 def take(lk, frm, kind, b, j):
@@ -69,16 +69,10 @@ def take(lk, frm, kind, b, j):
             layout, salt = b[2:5], b[5:11]
             ok = False
             try:
-                fleet(layout)
                 ok = hexlify(commit(ident, layout, salt)).decode() == g.get("c")
-                fired = []
-                for n, cell, r in history(g):
-                    if mine(lk, g, n):
-                        if cell in fired or result(layout, fired, cell) != r:
-                            ok = False
-                        fired.append(cell)
+                ok = layout_call("replay", layout, g["h"], g["i"] == lk.node.ship) and ok
             except ValueError:
-                pass
+                ok = False
             if not ok:
                 # Undo a previously counted result if a contradictory reveal follows it.
                 if g.get("counted"):

@@ -39,7 +39,22 @@ def encode(slots):
 
 
 def result(layout, fired, cell):
+    return score(fleet(layout), fired, cell)
+
+
+def replay(layout, transcript, even):
     ships = fleet(layout)
+    fired = []
+    for i in range(0, len(transcript), 2):
+        if ((i // 2 + 1) % 2 == 0) == even:
+            cell, r = ord(transcript[i]) - 65, ord(transcript[i + 1]) - 97
+            if cell in fired or score(ships, fired, cell) != r:
+                return False
+            fired.append(cell)
+    return True
+
+
+def score(ships, fired, cell):
     for cells in ships:
         if cell in cells:
             hit = all(c == cell or c in fired for c in cells)
