@@ -120,8 +120,32 @@ def http_admission(lvweb, web, slots=8):
             raise
         finally:
             if acquired:
-                lock.release()
-            web.http_waiting -= 1
+                try:
+                    if getattr(web, "radio_turn", False):
+                        web.radio_turn = False
+                        # The response and its modules are gone, and handle has
+                        # cleared web.busy. Keep the next parser unread while
+                        # the radio gets a real turn, even under continuous polls.
+                        await lvship.sleep_ms(250)
+                        started = lvship.ticks_ms()
+                        ble = getattr(web.ship, "ble", None)
+                        retry = getattr(web, "radio_retry", None)
+                        link = getattr(web.ship, "live", None)
+                        # A deferred trailer may need another dial after an
+                        # idle gap. Wait for receive progress, not just idle;
+                        # bound an absent sender so phones cannot wait forever.
+                        while lvship.ticks_diff(lvship.ticks_ms(), started) < (15000 if retry is not None else 2000):
+                            waiting = retry is not None and link is not None and link.n["in"] == retry
+                            if not waiting and (ble is None or ble.state == "idle"):
+                                break
+                            await lvship.sleep_ms(25)
+                        web.radio_retry = None
+                        web.radio_pending = ble is not None and ble.state != "idle"
+                finally:
+                    lock.release()
+                    web.http_waiting -= 1
+            else:
+                web.http_waiting -= 1
 
     web.handle = admitted
 
@@ -130,7 +154,7 @@ def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
     # Bound request-parser/socket working sets as well as API dispatch. Extra
     # phones receive the existing 503 + Retry-After before reading a request.
-    # The admitted phone can still stream while the radio commits a move.
+    # Heavy state/live streams defer item receive until their snapshot is gone.
     lvweb.MAX_CONN = 1
     http_admission(lvweb, web)
     route = web.route
@@ -165,14 +189,26 @@ def ota_hooks(lvweb, web):
             heavy = req.method == "GET" and req.path in ("/api/state", "/api/live")
             if held() or (heavy and web.ota_busy):
                 return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
+            if heavy and getattr(web, "radio_pending", False):
+                ble = getattr(web.ship, "ble", None)
+                if ble is not None and ble.state != "idle":
+                    return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
+                web.radio_pending = False
+            if heavy:
+                # Include failed preparation/imports, not only completed streams.
+                web.radio_turn = True
             if heavy and req.path == "/api/state":
                 web.state_busy = lvship.ticks_ms() or 1
                 web.radio_hold = True
+                link = getattr(web.ship, "live", None)
+                deferred = link.n["held"] if link is not None else 0
                 try:
                     return await route(req, w)
                 finally:
                     web.radio_hold = False
                     web.state_busy = 0
+                    if link is not None and link.n["held"] > deferred:
+                        web.radio_retry = link.n["in"]
         if req.path == "/api/reset":
             # "Reset this ship" (board/lvcode.py reset, web/settings.js). Loaded per request,
             # like lvota (0.3.0: out of main.py's resident code).
@@ -299,10 +335,18 @@ def ota_hooks(lvweb, web):
                     return await lvliveapi.ping(lvweb, web, req, w)
                 if req.path == "/api/live" and req.method == "GET":
                     web.state_busy = lvship.ticks_ms() or 1
+                    # Do not overlap receive/reveal rules and a phone snapshot.
+                    # Unacknowledged trailers retry after this bounded stream.
+                    web.radio_hold = True
+                    link = getattr(web.ship, "live", None)
+                    deferred = link.n["held"] if link is not None else 0
                     try:
-                        return await lvliveapi.live(lvweb, web, req, w, maintained, snapshot)     # (in pieces)
+                        return await lvliveapi.live(lvweb, web, req, w, maintained, snapshot)
                     finally:
+                        web.radio_hold = False
                         web.state_busy = 0
+                        if link is not None and link.n["held"] > deferred:
+                            web.radio_retry = link.n["in"]
                 s, j = lvliveapi.api(web, req)
             finally:
                 lvship.drop("lvliveapi")

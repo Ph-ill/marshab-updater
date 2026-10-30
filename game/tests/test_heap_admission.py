@@ -138,6 +138,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(web.http_waiting, 0)
         self.assertEqual(web.refused, 1)
 
+
     async def test_cancelled_unread_waiter_closes_and_releases_slot(self):
         entered, release = asyncio.Event(), asyncio.Event()
         closed = []
@@ -318,7 +319,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         await web.route(request("/api/login"), [])
         self.assertEqual(calls, ["/api/state", "/api/login"])
 
-    async def test_live_stream_keeps_radio_admitted(self):
+    async def test_live_stream_holds_radio_until_snapshot_is_released(self):
         from unittest.mock import patch
         import lvliveapi
 
@@ -326,13 +327,276 @@ class Admission(unittest.IsolatedAsyncioTestCase):
             self.fail("live should use its streaming handler")
 
         async def live(*args):
-            self.assertFalse(web.radio_hold)
+            self.assertTrue(web.radio_hold)
 
         web = hooks(route)
         web.get_phone = lambda: NS(who=lambda req: None)
         with patch.object(lvliveapi, "live", live):
             await web.route(request("/api/live"), [])
         self.assertFalse(web.radio_hold)
+
+    async def test_failed_live_stream_releases_radio_and_http_admission(self):
+        from unittest.mock import patch
+        import lvliveapi
+
+        async def route(req, w):
+            self.fail("live must use its streaming handler")
+
+        async def live(*args):
+            self.assertTrue(web.radio_hold)
+            self.assertTrue(web.state_busy)
+            raise asyncio.CancelledError
+
+        web = hooks(route)
+        web.get_phone = lambda: NS(who=lambda req: None)
+        with patch.object(lvliveapi, "live", live):
+            with self.assertRaises(asyncio.CancelledError):
+                await web.route(request("/api/live"), [])
+        self.assertFalse(web.radio_hold)
+        self.assertFalse(web.state_busy)
+
+    async def test_authenticated_snapshot_precedes_encoder_import(self):
+        import builtins
+        from unittest.mock import patch
+        events = []
+        snapshot = ([], [], [], [], None, {"duel": []})
+
+        async def route(req, w):
+            self.fail("live must use its streaming handler")
+
+        def prepare(sh, maintained):
+            self.assertTrue(maintained)
+            self.assertEqual(events, [])
+            events.append("prepare")
+            return snapshot
+
+        async def live(wire, got, req, writer, maintained, prepared):
+            self.assertIs(prepared, snapshot)
+            self.assertEqual(events, ["prepare", "encoder"])
+            self.assertTrue(got.radio_hold)
+
+        original = builtins.__import__
+
+        def importing(name, *args, **kwargs):
+            if name == "lvliveapi":
+                events.append("encoder")
+            return original(name, *args, **kwargs)
+
+        web = hooks(route)
+        web.get_phone = lambda: NS(who=lambda req: 0)
+        web.ship.live = None
+        web.ship.clock = NS(learn_headers=lambda h: False)
+        req = NS(path="/api/live", method="GET", header=None)
+        with patch.dict(sys.modules, {"lvliveops": NS(_prep=prepare), "lvliveapi": NS(live=live)}), \
+                patch.object(builtins, "__import__", importing):
+            await web.route(req, [])
+        self.assertFalse(web.radio_hold)
+        self.assertFalse(web.state_busy)
+
+    async def test_live_stream_can_defer_an_existing_radio_session(self):
+        from unittest.mock import patch
+        import lvliveapi
+
+        async def route(req, w):
+            self.fail("live must use its streaming handler")
+
+        async def live(*args):
+            self.assertTrue(web.radio_hold)
+
+        web = hooks(route)
+        web.ship.ble = NS(state="sync")
+        web.get_phone = lambda: NS(who=lambda req: None)
+        answers = []
+        with patch.object(lvliveapi, "live", live):
+            await web.route(request("/api/live"), answers)
+        self.assertEqual(answers, [])
+        self.assertFalse(web.radio_hold)
+        self.assertFalse(web.state_busy)
+
+    async def test_continuous_live_streams_give_radio_reveal_an_unread_turn(self):
+        from unittest.mock import patch
+        source = ROOT / "board/main.py"
+        node = next(n for n in ast.parse(source.read_text()).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "http_admission")
+        events, clock = [], [0]
+        ble = NS(state="idle")
+
+        async def quiet(ms):
+            self.assertEqual(web.busy, 0)
+            self.assertFalse(web.radio_hold)
+            self.assertEqual(web.http_waiting, 2)
+            clock[0] += ms
+            events.append("radio")
+            # An idle radio still needs a sender's retry. The next queued
+            # phone must remain unread until that reveal makes receive progress.
+            if clock[0] >= 300:
+                ble.state = "idle"
+                web.ship.live.n["in"] += 1
+            await asyncio.sleep(0)
+
+        scope = dict(asyncio=asyncio, lvship=NS(sleep_ms=quiet,
+                     ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b))
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+        entered, release = asyncio.Event(), asyncio.Event()
+        async def route(req, writer):
+            self.fail("live must use its streaming handler")
+        web = hooks(route)
+        web.ship.ble = ble
+        web.ship.live = NS(n={"held": 0, "in": 0})
+        web.busy = 0
+        web.refused = 0
+        web.get_phone = lambda: NS(who=lambda req: None)
+
+        async def live(*args):
+            self.assertTrue(web.radio_hold)
+            events.append("live")
+            if len(events) == 1:
+                web.ship.live.n["held"] += 1
+            entered.set()
+            await release.wait()
+
+        async def handle(reader, writer):
+            web.busy += 1
+            try:
+                await web.route(request("/api/live"), writer)
+            finally:
+                web.busy -= 1
+
+        web.handle = handle
+        scope["http_admission"](NS(), web)
+        import lvliveapi
+        with patch.object(lvliveapi, "live", live):
+            first = asyncio.create_task(web.handle(None, []))
+            await entered.wait()
+            second = asyncio.create_task(web.handle(None, []))
+            await asyncio.sleep(0)
+            release.set()
+            # The final request also receives a quiet turn, with no waiter.
+            original = scope["lvship"].sleep_ms
+            async def turns(ms):
+                if events.count("live") == 1:
+                    await original(ms)
+                else:
+                    self.assertEqual(web.busy, 0)
+                    self.assertFalse(web.radio_hold)
+            scope["lvship"].sleep_ms = turns
+            await asyncio.gather(first, second)
+        self.assertEqual(events, ["live", "radio", "radio", "radio", "live"])
+        self.assertEqual(ble.state, "idle")
+        self.assertEqual(web.http_waiting, 0)
+
+    async def test_deferred_radio_turn_is_bounded_when_the_sender_disappears(self):
+        source = ROOT / "board/main.py"
+        node = next(n for n in ast.parse(source.read_text()).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "http_admission")
+        clock = [0]
+        async def quiet(ms):
+            self.assertEqual(web.busy, 0)
+            self.assertFalse(web.radio_hold)
+            clock[0] += ms
+        async def handle(reader, writer):
+            web.radio_turn = True
+            web.radio_retry = 7
+        scope = dict(asyncio=asyncio, lvship=NS(sleep_ms=quiet,
+                     ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b))
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+        web = NS(handle=handle, busy=0, radio_hold=False,
+                 ship=NS(ble=NS(state="idle"), live=NS(n={"in": 7})))
+        scope["http_admission"](NS(), web)
+        await web.handle(None, None)
+        self.assertEqual(clock[0], 15250)
+        self.assertIsNone(web.radio_retry)
+        self.assertFalse(web.radio_pending)
+        self.assertEqual(web.http_waiting, 0)
+
+    async def test_live_snapshot_does_not_impose_a_fixed_retry_window(self):
+        from unittest.mock import patch
+        import lvliveapi
+        calls = []
+
+        async def route(req, w):
+            calls.append(req.path)
+
+        async def live(*args):
+            self.assertTrue(web.radio_hold)
+            calls.append("live")
+
+        web = hooks(route)
+        web.get_phone = lambda: NS(who=lambda req: None)
+        with patch.object(lvliveapi, "live", live):
+            await web.route(request("/api/live"), [])
+            answers = []
+            await web.route(request("/api/live"), answers)
+            self.assertEqual(answers, [])
+            await web.route(request("/api/login"), [])
+            web.clock[0] += 2000
+            await web.route(request("/api/live"), [])
+        self.assertEqual(calls, ["live", "live", "/api/login", "live"])
+        self.assertFalse(web.radio_hold)
+
+    async def test_unfinished_radio_turn_refuses_heavy_but_not_light_dispatch(self):
+        calls = []
+        async def route(req, writer):
+            calls.append(req.path)
+        web = hooks(route)
+        web.ship.ble = NS(state="sync")
+        web.radio_pending = True
+        for path in ("/api/state", "/api/live"):
+            answers = []
+            await web.route(request(path), answers)
+            self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
+        await web.route(request("/api/login"), [])
+        self.assertFalse(web.radio_hold)
+        web.ship.ble.state = "idle"
+        await web.route(request("/api/state"), [])
+        self.assertEqual(calls, ["/api/login", "/api/state"])
+        self.assertFalse(web.radio_pending)
+
+    async def test_failed_live_preparation_still_schedules_a_radio_turn(self):
+        from unittest.mock import patch
+        async def route(req, writer):
+            self.fail("live must not dispatch here")
+        web = hooks(route)
+        web.get_phone = lambda: NS(who=lambda req: 0)
+        web.ship.live = None
+        web.ship.clock = NS(learn_headers=lambda h: False)
+        def prepare(*args):
+            raise MemoryError("snapshot")
+        with patch.dict(sys.modules, {"lvliveops": NS(_prep=prepare)}):
+            with self.assertRaises(MemoryError):
+                await web.route(NS(path="/api/live", method="GET", header=None), [])
+        self.assertTrue(web.radio_turn)
+        self.assertFalse(web.radio_hold)
+
+    async def test_cancelled_radio_turn_releases_admission_and_slot(self):
+        source = ROOT / "board/main.py"
+        node = next(n for n in ast.parse(source.read_text()).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "http_admission")
+        entered = asyncio.Event()
+        async def quiet(ms):
+            entered.set()
+            await asyncio.Event().wait()
+        async def handle(reader, writer):
+            web.radio_turn = True
+        scope = dict(asyncio=asyncio, lvship=NS(sleep_ms=quiet))
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+        web = NS(handle=handle)
+        scope["http_admission"](NS(), web)
+        task = asyncio.create_task(web.handle(None, None))
+        await entered.wait()
+        task.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await task
+        self.assertEqual(web.http_waiting, 0)
+        # The captured handle schedules another turn; cancel it only after it
+        # acquires admission, proving the lock was not leaked by cancellation.
+        entered.clear()
+        task = asyncio.create_task(web.handle(None, None))
+        await asyncio.wait_for(entered.wait(), 1)
+        task.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await task
+        self.assertEqual(web.http_waiting, 0)
 
     async def test_cancelled_state_releases_radio(self):
         entered = asyncio.Event()
@@ -497,6 +761,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
 
 
 class SplitHelpers(unittest.TestCase):
+
     def test_envelope_releases_request_body_before_verification(self):
         from unittest.mock import patch
         import lvota
