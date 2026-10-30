@@ -3,8 +3,10 @@
 // installed, an update that went back, and a check with no internet. GitHub is stood in for by
 // the mock's /gh/ (a release signed with the TEST key, filler files). Every story line on
 // screen is swapped for placeholder text, as in shots_you.mjs. Exits non-zero if a step fails.
-//   game/web/shots_ota.sh OUTDIR   (starts mocks on 8056 ota=0.2.0 and 8057 ota=0.2.0,back)
+//   game/web/shots_ota.sh OUTDIR   (starts mocks on 8056 ota=0.2.0, 8057 ota=0.2.0,back,
+//   and 8066 ota=0.2.0 for what's new, section 5)
 import { createRequire } from "module";
+import { readFileSync } from "fs";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || "playwright-core");
 const out = process.argv[2] || "shots";
@@ -12,7 +14,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME });
 const PH = "Placeholder text: story hidden from this screenshot.";
 const GH = "https://raw.githubusercontent.com/Ph-ill/marshab-updater/main/";
 let ua = 0, fails = 0;
-const ok = (what, c) => { console.log((c ? "ok   " : "FAIL ") + what); if (!c) fails++; };
+const ok = (what, c, why) => { console.log((c ? "ok   " : "FAIL ") + what + (!c && why ? "\n       " + why : "")); if (!c) fails++; };
 
 function blank(x) {
   if (typeof x === "string") return x.length > 18 && x.includes(" ") ? PH : x;
@@ -21,10 +23,14 @@ function blank(x) {
   return x;
 }
 const GHB = "https://raw.githubusercontent.com/Ph-ill/marshab-updater/";
-async function page(port, { online = true, src = null, asked = null } = {}) {
-  const ctx = await browser.newContext({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 ota/${ua++}`,
-    viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
+const IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+const ANDROID = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36";
+// idx: changes GitHub's index.json on its way to the phone (section 5's notes with markup in).
+async function page(port, { online = true, src = null, asked = null, w = 390, ht = 844, android = false, idx = null } = {}) {
+  const ctx = await browser.newContext({ userAgent: `${android ? ANDROID : IOS} ota/${ua++}`,
+    viewport: { width: w, height: ht }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: "light", timezoneId: "America/Chicago" });
   const p = await ctx.newPage();
+  p.on("console", (m) => { if (m.text().startsWith("stage:")) console.log(m.text()); });
   p.on("pageerror", (e) => { console.error("pageerror", e.message); fails++; });
   // Past the install guide (web/funnel.js), as after "Play in this browser this time".
   await p.addInitScript(() => sessionStorage.setItem("lv.here", "1"));
@@ -45,6 +51,7 @@ async function page(port, { online = true, src = null, asked = null } = {}) {
     if (!online) return route.abort("internetdisconnected");
     if (!u.startsWith(gh)) return route.fulfill({ status: 404, body: "" });
     const r = await route.fetch({ url: `http://localhost:${port}/gh/` + u.slice(gh.length) });
+    if (idx && route.request().url().endsWith("index.json")) return route.fulfill({ response: r, json: idx(await r.json()) });
     await route.fulfill({ response: r });
   });
   if (src) await p.route(/\/api\/ota$/, async (route) => {
@@ -63,11 +70,11 @@ async function page(port, { online = true, src = null, asked = null } = {}) {
   await p.waitForSelector("#dock nav");
   return p;
 }
-async function shot(p, name) {
+async function shot(p, name, { full = false } = {}) {
   await p.evaluate((ph) => { for (const li of document.querySelectorAll(".log li, .epi p")) li.textContent = ph; }, PH);
   await p.waitForTimeout(150);
-  const f = `${out}/${name}-light-390x844.png`;
-  await p.screenshot({ path: f });
+  const v = p.viewportSize(), f = `${out}/${name}-light-${v.width}x${v.height}.png`;
+  await p.screenshot({ path: f, fullPage: full });
   console.log(f);
 }
 const goto = (p, r) => p.evaluate((r) => go(r), r);
@@ -123,8 +130,8 @@ await p.waitForTimeout(1500);
 ok("no internet: no notice, no error", !(await p.$(".otab")) && !(await p.$(".off")));
 await goto(p, "set");
 await p.click("[data-ota=check]");
-await p.waitForFunction(() => document.querySelector("#v").textContent.includes("no internet"));
-ok("Check for updates with no internet says so", true);
+await p.waitForFunction(() => document.querySelector("#v").textContent.includes("couldn't reach GitHub"));
+ok("Check for updates with no internet explains the network failure", true);
 await shot(p, "ota-08-check-no-internet");
 ok("no internet: Available says it couldn't check", await p.$eval("#set-sw", (e) => /Available\s*Couldn't check/.test(e.textContent) && !e.textContent.includes("Up to date")));
 await p.context().close();
@@ -134,11 +141,14 @@ await p.context().close();
 p = await page(8056, { online: false });
 await p.waitForTimeout(1500);
 await goto(p, "set");
+// (the page's own first look is in the background since review 3 m4: let it finish first,
+// or its result lands on top of the earlier good look set up here)
+await p.waitForFunction(() => typeof OS_ !== "undefined" && OS_ && !document.querySelector("#set-sw").textContent.includes("Checking"), null, { timeout: 15000 });
 await p.evaluate(() => { const b = otaLoad(); b.seen = OS_.v; b.ok = true; b.err = ""; b.at = Date.now() - 7 * 3600e3; otaSave(b); OB = b; view(); });
-ok("an earlier good look: Up to date", await p.$eval("#set-sw", (e) => /Available\s*Up to date/.test(e.textContent)));
+ok("an earlier good look: Up to date", await p.$eval("#set-sw", (e) => /Available\s*Up to date/.test(e.textContent)), await p.$eval("#set-sw", (e) => e.textContent));
 await p.click("[data-ota=check]");
-await p.waitForFunction(() => document.querySelector("#v").textContent.includes("no internet"));
-ok("then a failed check: Couldn't check, not Up to date, the no-internet note kept", await p.$eval("#set-sw", (e) => /Available\s*Couldn't check/.test(e.textContent) && !e.textContent.includes("Up to date") && /Checked\s*just now · no internet/.test(e.textContent)));
+await p.waitForFunction(() => document.querySelector("#v").textContent.includes("couldn't reach GitHub"));
+ok("then a failed check: Couldn't check, not Up to date, with network steps", await p.$eval("#set-sw", (e) => /Available\s*Couldn't check/.test(e.textContent) && !e.textContent.includes("Up to date") && /Checked\s*just now/.test(e.textContent) && e.textContent.includes("Turn Wi-Fi off") && e.textContent.includes("storage is separate")));
 await shot(p, "ota-09-failed-check-after-up-to-date");
 await p.context().close();
 
@@ -152,6 +162,117 @@ ok("test branch: the release fetched from the branch", await p.evaluate(() => {
   const b = JSON.parse(localStorage.getItem("lv.ota")); return b.src === "ota-phonetest" && b.rel.v === "0.2.1"; }));
 ok("test branch: index and release from ota-phonetest only", asked.length >= 2
    && asked.every((u) => u.startsWith(GHB + "ota-phonetest/firmware/")) && asked.some((u) => u.endsWith("/firmware/index.json")));
+await p.context().close();
+
+// 5. Carrying on with an upload that was cut short (0.3.0, review R2): only when the ship
+// staged this very envelope (the same sha256); anything else is cancelled and sent again
+// from nothing, and so is a resume the ship turns down with a checksum error (400). On the
+// ",back" mock, which stays on 0.2.0, so the same update can be offered again and again.
+async function stage(p, { env2 = false, files = 1, part = 0 } = {}) {
+  return p.evaluate(async ({ env2, files, part }) => {
+    const r = otaFor(OS_ || await otaStatus());
+    let e = r.env;
+    if (env2) { const j = JSON.parse(e); j.sig = (j.sig[0] === "A" ? "B" : "A") + j.sig.slice(1); e = JSON.stringify(j); }
+    const put = async (q, b) => (await fetch("/api/ota/put?" + q, { method: "POST", body: b, headers: { "X-Crew-Token": tok } })).status;
+    const env = new TextEncoder().encode(e);
+    for (let o = 0; o < env.length; o += 1024) await put(`f=0&n=${env.length}&o=${o}`, env.subarray(o, o + 1024));
+    for (let i = 0; i < files; i++) {
+      const b = Uint8Array.from(atob(r.files[i]), (c) => c.charCodeAt(0));
+      for (let o = 0; o < b.length; o += 1024) await put(`f=${i + 1}&o=${o}`, b.subarray(o, o + 1024));
+    }
+    if (part) { const b = Uint8Array.from(atob(r.files[files]), (c) => c.charCodeAt(0)); await put(`f=${files + 1}&o=0`, b.subarray(0, part)); }
+    const st = await (await fetch("/api/ota")).json();
+    if (!st.staged) console.log("stage: " + JSON.stringify({ st, n: env.length, tok: !!tok }));
+    return st.staged;
+  }, { env2, files, part });
+}
+async function install(p) {
+  const log = [];
+  const on = (r) => { const u = r.url(); if (r.method() === "POST" && u.includes("/api/ota/")) log.push(u.replace(/^.*\/api\/ota\//, "")); };
+  p.on("request", on);
+  await p.evaluate(() => { otaInstall(); });
+  await p.waitForSelector("[data-ota=clear]", { timeout: 60000 });
+  p.off("request", on);
+  return log;
+}
+p = await page(8057);
+await p.waitForTimeout(1200);
+let sg = await stage(p, { files: 2 });
+ok("R2: the ship reports the staged envelope's hash", sg && /^[0-9a-f]{64}$/.test(sg.h) && await p.evaluate((h) => h === otaSha(new TextEncoder().encode(otaFor(OS_).env)), sg.h));
+let log = await install(p);
+ok("R2: same envelope: carries on, no cancel, the signature and the done files not sent again",
+  !log.includes("cancel") && !log.some((x) => x.startsWith("put?f=0&")) && !log.some((x) => /^put\?f=[12]&/.test(x)) && log.some((x) => x.startsWith("put?f=3&")) && log.includes("apply"), log.join(" "));
+await p.context().close();
+await new Promise((r) => setTimeout(r, 6500));   // a restart signs everyone out: a fresh page
+p = await page(8057); await p.waitForTimeout(1200);
+sg = await stage(p, { env2: true, files: 2 });
+ok("R2: a version signed twice stages a different hash", sg && sg.h !== await p.evaluate(() => otaSha(new TextEncoder().encode(otaFor(OS_).env))), JSON.stringify(sg));
+log = await install(p);
+const c = log.indexOf("cancel"), e0 = log.findIndex((x) => x.startsWith("put?f=0&") && x.endsWith("&o=0"));
+ok("R2: a different envelope: cancelled, then everything from offset 0", c === 0 && e0 === 1 && log.some((x) => x === "put?f=1&o=0") && log.includes("apply"), log.join(" "));
+await p.context().close();
+await new Promise((r) => setTimeout(r, 6500));
+p = await page(8057); await p.waitForTimeout(1200);
+sg = await stage(p, { files: 1, part: 1024 });
+await p.evaluate(async () => fetch("/api/ota/mockbad?f=2", { method: "POST", headers: { "X-Crew-Token": tok } }));
+log = await install(p);
+const b4 = log.findIndex((x) => x.startsWith("put?f=2&")), c2 = log.indexOf("cancel");
+ok("R2: a 400 while carrying on: cancelled and sent again from the signature",
+  b4 >= 0 && c2 > b4 && log[c2 + 1] && log[c2 + 1].startsWith("put?f=0&") && log[c2 + 1].endsWith("&o=0") && log.slice(c2).includes("put?f=1&o=0") && log.includes("apply"), log.join(" "));
+ok("R2: the outcome is the ship's (went back), not an error", await p.$eval("#v", (e) => e.textContent.includes("went back to 0.2.0")));
+await p.context().close();
+
+// 5. What's new (0.3.0, group G), on an iPhone (390) and an Android phone (412): the ready
+// update's few lines in Settings, before Install; Version history online (GitHub's index.json,
+// newest first, the installed one and the ready one marked) and offline (the ship's own lines
+// from GET /api/ota/notes, and how to see the rest); Back to Settings.
+for (const [w, ht, android] of [[390, 844, false], [412, 915, true]]) {
+  p = await page(8066, { w, ht, android });
+  await goto(p, "set");
+  await p.waitForSelector("#set-sw .otaw li", { timeout: 15000 });
+  const wn = await p.$$eval("#set-sw .otaw li", (l) => l.map((x) => x.textContent));
+  ok(`${w}: Settings shows the ready update's what's new, before Install`, wn.length === 3 && wn[0].startsWith("Hail a crewmate") &&
+    await p.evaluate(() => !!(document.querySelector("#set-sw .otawn").compareDocumentPosition(document.querySelector("#set-sw [data-ota=install]")) & Node.DOCUMENT_POSITION_FOLLOWING)), wn.join(" | "));
+  await p.evaluate(() => scrollTo(0, document.querySelector("#set-sw").offsetTop - 60));
+  await shot(p, "whatsnew-01-settings-update-ready");
+  await p.click("[data-ota=hist]");
+  await p.waitForSelector(".otahv");
+  const rows = await p.$$eval(".otahv", (l) => l.map((x) => [...x.querySelectorAll(".lab span")].map((s) => s.textContent)));
+  ok(`${w}: history online: newest first, installed and ready marked`, JSON.stringify(rows.map((r) => r[0])) === '["0.2.1","0.2.0","0.1.9","0.1.8"]' &&
+    rows[0][1] === "Ready to install" && rows[1][1] === "Installed" && rows[2][1] === "Oct 21" && await p.$$eval(".otahv.on", (l) => l.length === 1), JSON.stringify(rows));
+  ok(`${w}: history online: each version's lines, no offline note`, await p.$$eval(".otahv .otaw li", (l) => l.length === 7) && !(await p.$(".otahc")));
+  await p.evaluate(() => scrollTo(0, 0));
+  await shot(p, "whatsnew-02-history-online");
+  await shot(p, "whatsnew-02-history-online-full", { full: true });
+  await p.click("[data-ota=back]");
+  ok(`${w}: Back returns to Settings, on Version history`, await p.$eval("#v h1", (e) => e.textContent === "Settings") && await p.evaluate(() => document.activeElement && document.activeElement.dataset.ota === "hist"));
+  await p.context().close();
+  p = await page(8066, { w, ht, android, online: false });
+  await goto(p, "set");
+  // Offline the lines come from the page itself (web/build.py bakes whatsnew.json into
+  // OTA_WN); the mock's "0.2.0" isn't a real version, so it borrows 0.2.7-ota-phone's.
+  const WN = JSON.parse(readFileSync(new URL("../tools/ota/whatsnew.json", import.meta.url), "utf8"));
+  ok(`${w}: the page carries whatsnew.json`, await p.evaluate((wn) => JSON.stringify(OTA_WN["0.3.0-ota-phone"]) === JSON.stringify(wn["0.3.0-ota-phone"]) && !("_about" in OTA_WN), WN));
+  const asked = [];
+  p.on("request", (r) => { if (r.url().includes("/api/ota/")) asked.push(r.url()); });
+  await p.evaluate((n) => { OTA_WN["0.2.0"] = n; }, WN["0.2.7-ota-phone"]);
+  await p.click("[data-ota=hist]");
+  await p.waitForSelector(".otahc", { timeout: 15000 });
+  const off = await p.$$eval(".otahv", (l) => l.map((x) => x.textContent));
+  ok(`${w}: history offline: installed notes remain with guidance for older versions`, off.length === 1 && off[0].includes("0.2.0") && off[0].includes("Installed") && off[0].includes("simple safe mode") &&
+    await p.$eval(".otahc", (e) => e.textContent.includes("couldn't reach GitHub") && e.textContent.includes("Older versions are listed online") && e.textContent.includes("To see them, check again on mobile data or another Wi-Fi network")), off.join(" | "));
+  ok(`${w}: history offline: no /api/ota/ request for it`, asked.length === 0, asked.join(" "));
+  await shot(p, "whatsnew-03-history-offline");
+  await p.context().close();
+}
+// What's new is text: markup in index.json's notes shows as typed, never runs; at most 3 lines
+// of NOTE_LEN (120, tools/ota/whatsnew.py) characters; anything not a string is dropped.
+p = await page(8066, { idx: (j) => { j.releases[0].notes = ["<b>bold</b> & <img src=x onerror=\"window.PWN=1\">", 7, "x".repeat(500), "four", "five"]; return j; } });
+await goto(p, "set");
+await p.waitForSelector("#set-sw .otaw li", { timeout: 15000 });
+const li = await p.$$eval("#set-sw .otaw li", (l) => l.map((x) => [x.textContent, x.children.length]));
+ok("notes are text: no markup made, no script run", li[0][0] === '<b>bold</b> & <img src=x onerror="window.PWN=1">' && li[0][1] === 0 && !(await p.$("#set-sw .otaw b, #set-sw .otaw img")) && await p.evaluate(() => window.PWN === undefined), JSON.stringify(li));
+ok("notes capped: 3 strings, 120 characters each (whatsnew.NOTE_LEN)", li.length === 3 && li[1][0] === "x".repeat(120) && li[2][0] === "four", JSON.stringify(li.map((x) => x[0].length)));
 await p.context().close();
 await browser.close();
 console.log(fails ? `FAIL ${fails}` : "ota shots: all ok");

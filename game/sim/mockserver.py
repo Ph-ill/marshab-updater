@@ -395,7 +395,10 @@ class H(BaseHTTPRequestHandler):
                         G.tokens.clear()
                         G.book.phones = []
                 elif u.path == "/api/ota/cancel":
-                    G.ota.m = None
+                    G.ota.m, G.ota.env = None, b""
+                    code, obj = 200, {"ok": True}
+                elif u.path == "/api/ota/mockbad":   # shots_ota.mjs: file f's next piece fails (400)
+                    G.ota.bad = int(q.get("f", ["0"])[0])
                     code, obj = 200, {"ok": True}
                 else:
                     code, obj = 404, {"err": "no such thing"}
@@ -437,9 +440,10 @@ class H(BaseHTTPRequestHandler):
                 left = int((G.ledtest - _time.monotonic()) * 1000)
                 if left > 0:
                     return self.send(429, {"err": "The light is already testing.", "ms": left})
-                G.ledtest = _time.monotonic() + 4.0
+                ms = 10000
+                G.ledtest = _time.monotonic() + ms / 1000
                 G.ledtests += 1
-            return self.send(200, {"ok": True, "ms": 4000})
+            return self.send(200, {"ok": True, "ms": ms})
         if u.path == "/api/code":    # Change your code: board/lvcode.py itself, the file kept in memory
             sys.path.insert(0, os.path.join(ROOT, "board"))
             import lvcode

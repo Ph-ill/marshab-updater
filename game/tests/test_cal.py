@@ -277,7 +277,11 @@ class OnTheShip(unittest.TestCase):
         s, j = ph.api(Req("GET", "/api/crew"))
         self.assertEqual((s, j["day"], j["launch"], j["until"], j["start"]), (200, 0, "2026-10-24", 600, 360))
         s, j = ph.api(Req("POST", "/api/login", json.dumps({"crew": 0, "pin": "1234"}).encode()))
-        self.assertEqual((s, j["until"]), (409, 600))
+        # Authentication is available before launch; the story still waits.
+        # This fixture has no crew codes configured, so login reaches CodeBook.
+        self.assertEqual((s, j["err"]), (409, "No code set up for this name yet."))
+        self.assertEqual(ph.api(Req("GET", "/api/me"))[0], 401)
+        self.assertEqual(ph.api(Req("GET", "/api/state"))[0], 409)
         self.assertEqual(ph.api(Req("GET", "/api/v"))[0], 200)
         sh.clock.learn(ms(2026, 10, 24, 6, 0, -300), -300)
         sh.day_check()

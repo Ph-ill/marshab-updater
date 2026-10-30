@@ -15,8 +15,8 @@
 # (phone_heap.py ... --ota); signing and the release check (tests/test_ota_release.py);
 # the phone page's update notice and screens (web/ota.js) clicked through against the mock
 # (web/shots_ota.sh, needs playwright-core: PW=...); the home-screen card for each phone
-# browser (web/shots_a2hs.sh, the same); Settings and Reset this ship (board/main.py
-# reset_ship: tests/test_reset.py on all of them; web/shots_settings.sh against the mock).
+# browser (web/shots_a2hs.sh, the same); Settings and Reset this ship (board/lvcode.py
+# reset: tests/test_reset.py on all of them; web/shots_settings.sh against the mock).
 # The home-screen funnel (board/lvfunnel.py, the ship's memory of which phones opened the
 # game from the icon: tests/test_funnel.py on all of them; its /api/hello in the --ota heap
 # run; web/funnel.js in tests/app_e2e.mjs and web/shots_funnel.sh against the board's server).
@@ -29,6 +29,9 @@
 # (board/lvledtest.py, POST /api/led/test from main.py's ota_route: tests/test_ledtest.py on
 # all of them in real time on a fake pin; two tests on a counted pin in the --ota heap run;
 # the button in tests/app_e2e.mjs against the board's server and web/shots_settings.sh).
+# Ship-to-ship Hail (board/lvlive.py, lvliveapi.py, lvflick.py: tests/test_live.py on all of
+# them, with fuzzing of the radio side; both ships hailing in the --live heap run, again with
+# the everyone-plays-every-day season; web/live.js in web/shots_v03.sh against the board's server).
 #   MICROPYTHON=/path/to/micropython MPY_CROSS=/path/to/mpy-cross \
 #   LV_FROZEN_MP=/path/to/micropython-lv32 [PW=/path/to/playwright-core] game/tests/run.sh
 set -e
@@ -53,13 +56,19 @@ python3 tests/mp_sync.py
 python3 tests/test_you_voice.py
 node tests/render_check.mjs
 python3 web/build.py
+node --test web/settings.test.mjs web/api.test.mjs web/ota.test.mjs
+# raw-fetch callers treat the ship's 503 + Retry-After as busy, not a miss (review 3 m3)
+node tests/busy_retry.mjs
 python3 tests/mock_check.py
 python3 tests/test_phone.py
 python3 tests/test_cal.py
+python3 tests/test_clock_auth.py
+python3 tests/test_heap_admission.py
 python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py
 python3 tests/test_safe.py
+python3 tests/test_live.py
 python3 tests/test_ota_release.py
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
@@ -81,6 +90,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_ota.py; fi
   "$MP" tests/test_safe.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_safe.py; fi
+  "$MP" tests/test_live.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_live.py; fi
   "$MP" tests/test_reset.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_reset.py; fi
   "$MP" tests/test_funnel.py
@@ -123,8 +134,18 @@ if [ -n "$MP" ]; then
       # ...and a third phone uploading a signed update meanwhile (board/lvota.py, lvsig.py),
       # and the home-screen funnel's /api/hello (board/lvfunnel.py, loaded and dropped).
       # and a fourth phone changing a crew code and back (board/lvcode.py, loaded and dropped),
-      # and a fifth tapping Test light twice (board/lvledtest.py: its ~4 s pattern a task).
+      # and a fifth tapping Test light twice (board/lvledtest.py: its 10 s pattern a task).
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live
+      # Hail on both ships (board/lvlive.py), now with the season where all eight crew
+      # play every day (sim/season.py --everyone): the cap checked too (0.3.0: the upload
+      # through board/lvotap.py, ~1 KB to spare; 0.2.7 was ~84.5 KB here).
+      python3 sim/season.py --everyone
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live --everyone
+      # Safe mode (board/lvsafe.py: a ship that keeps crashing) takes a whole signed update
+      # while another phone looks around (tests/mp_safe_heap.py): where an update that ran
+      # out of heap with the game loaded is tried again, so it must fit with room to spare.
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" --safe
     fi
     # tools/bench.py against fake boards: stock MicroPython (must refuse, naming the .uf2)
     # and, with LV_FROZEN_MP, the game firmware (install, settings, selftest, report).
@@ -141,16 +162,24 @@ fi
 CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || true)}"
 if [ -n "$CHROME" ] && command -v node > /dev/null; then
   CHROME="$CHROME" node --experimental-websocket tests/app_e2e.mjs 9
+  # a wrong first phone clock: sign-in, Settings and Ship software through the countdown it
+  # starts, then the right day from a signed-in phone (0.3.0 review 2 M1)
+  CHROME="$CHROME" node --experimental-websocket tests/app_clock_e2e.mjs
   BPY="${LV_FROZEN_MP:-$MP}"
   if [ -n "$BPY" ]; then
     CHROME="$CHROME" BOARD_PY="$BPY -X heapsize=1m" node --experimental-websocket tests/app_e2e.mjs 9
+  fi
+  if [ -n "$MP" ]; then
+    # (the interpreter without frozen board glue: phone_serve puts board/ after .frozen, so on
+    # the lv32 build it would serve 0.2.0's frozen lvphone instead of the code under test)
+    CHROME="$CHROME" BOARD_PY="$MP -X heapsize=1m" node --experimental-websocket tests/app_clock_e2e.mjs
   fi
   if [ -n "$PW" ]; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_ota.sh "$O/ota"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_a2hs.sh "$O/a2hs"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_settings.sh "$O/settings"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_funnel.sh "$O/funnel"; rm -rf "$O"
-    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_v03.sh "$O/v03"; rm -rf "$O"
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_v03.sh "$O/v03" safe live live-off; rm -rf "$O"
   else
     echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi

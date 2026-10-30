@@ -33,12 +33,19 @@ function fnMark(on){
   try{history.replaceState(history.state,"",location.pathname+(q?"?"+q:"")+location.hash)}catch(e){}
 }
 async function fnHello(icon){
-  const c=window.AbortController?new AbortController():null,t=setTimeout(()=>c&&c.abort(),4000);
-  try{
-    const r=await fetch(`/api/hello?ctx=${FN.k}${icon?"&m=icon":""}`,{cache:"no-store",signal:c&&c.signal,
-      headers:{"X-Phone-Time":String(Date.now()),"X-Phone-TZ":String(-new Date().getTimezoneOffset())}});
-    return r.ok?await r.json():null;
-  }catch(e){return null}finally{clearTimeout(t)}
+  // review 3 m3: a 503 + Retry-After is the ship's admission (another phone's state is
+  // streaming), not "never seen": ask again after it, up to 8 times, before treating the
+  // answer as unknown (which would take the ADD path and lose the home-screen mark)
+  for(let i=0;;i++){
+    const c=window.AbortController?new AbortController():null,t=setTimeout(()=>c&&c.abort(),4000);
+    try{
+      const r=await fetch(`/api/hello?ctx=${FN.k}${icon?"&m=icon":""}`,{cache:"no-store",signal:c&&c.signal,
+        headers:{"X-Phone-Time":String(Date.now()),"X-Phone-TZ":String(-new Date().getTimezoneOffset())}});
+      const ra=r.status===503&&+r.headers.get("Retry-After");
+      if(ra&&i<8){clearTimeout(t);await new Promise((f)=>setTimeout(f,Math.min(5,ra)*1000));continue}
+      return r.ok?await r.json():null;
+    }catch(e){return null}finally{clearTimeout(t)}
+  }
 }
 function fnDecide(rec){
   const k=FN.k,inst=!!(rec&&rec.installed)||(fnAnd()&&fnLS("lv.icon")==="1");

@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import gzip
 import datetime as dt
 import hashlib
 import json
@@ -78,6 +79,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--runtime", default="1.29.0", help="minimum MicroPython version")
     ap.add_argument("--boards", default="RPI_PICO_W,RPI_PICO2_W")
     ap.add_argument("--notes", default="", help="short operator notes shown in the UI")
+    ap.add_argument("--whats-new", default=None, type=Path,
+                    help="what's new for players (Settings on the phone): a JSON list or a text file, one line each, "
+                         "1-3 lines of at most 120 characters; default: this version's lines in game/tools/ota/whatsnew.json")
     ap.add_argument("--date", default=dt.date.today().isoformat())
     ap.add_argument("--build-time", default=None, help="ISO timestamp stored in version.json (default: now); pin it for reproducible builds")
     ap.add_argument("--mpy-cross", default=None, help="path to mpy-cross for a syntax check of every .py")
@@ -85,6 +89,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--frozen", type=Path, default=None,
                     help="core manifest (game/tools/fw/cores/*.json): a partial release for the game firmware with that frozen core")
     ap.add_argument("--repo-root", type=Path, default=ROOT)
+    ap.add_argument("--ota-kid", action="append", default=[],
+                    help="key id the shipped lvota's KEYS must hold (repeatable; default "
+                         + ", ".join(OTA_KIDS) + ": a throwaway test key's id for test builds)")
     return ap.parse_args()
 
 
@@ -184,6 +191,61 @@ def vkey(version: str):
     return nums + ((1, "") if not pre else (0, pre))
 
 
+OTA_CHAIN = ("lvota", "lvotap", "lvotaq", "lvotak", "lvsig", "lvsafe", "lvweb")
+
+
+def mpy_twins(names: list[str]) -> list[str]:
+    """The X.py of each module on the update path that the release ships as X.mpy only:
+    MicroPython imports X.py ahead of X.mpy, so a stale one (a USB install, a hand-copied fix)
+    would run instead of the update's own module, and a broken one that way could keep itself
+    (0.3.0 review R1 M2). The update path only (OTA_CHAIN: the upload, the signature check, the
+    keep check, safe mode and the web server they answer through): every name here goes into
+    the signed envelope, which the ship holds whole at its heap peak (the signature check), so
+    a twin for every shipped .mpy (about 25) would cost the install that peak about 1 KB.
+    lvboot is never deleted over the air (lvota's bad_path refuses lvboot.*; USB only)."""
+    return [m + ".py" for m in OTA_CHAIN if m + ".mpy" in names and m + ".py" not in names]
+
+
+OTA_KIDS = ("2111b2e9",)    # = game/board/lvotak.py KIDS: the release key's id
+
+
+def ota_keys_why(payload: list[tuple[str, bytes]], kids: list[str]) -> str | None:
+    """None if the release's lvota (lvota.py or lvota.mpy at the root) pins one of `kids`,
+    else why not. A release whose lvota.KEYS lacks the release key installs fine, then turns
+    down every later update as "signed with a key this ship doesn't know", so only USB could
+    fix the ship (0.3.0 fix review FR1 M1; on the ship, lvotak.keys_ok refuses to keep such a
+    trial). lvota.py: KEYS read without running it (a dict of 32-byte keys, ids that match
+    sha256(key)[:4]). lvota.mpy: its string constants are stored as they are, so the key id
+    and the key's 64 hex digits must both be in it. A release with no lvota isn't checked."""
+    import ast
+    files = dict(payload)
+    if "lvota.py" in files:
+        keys = None
+        for node in ast.parse(files["lvota.py"].decode("utf-8")).body:
+            if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "KEYS":
+                try:
+                    keys = {k.value: bytes.fromhex(v.args[0].value)
+                            for k, v in zip(node.value.keys, node.value.values)}
+                except Exception:
+                    return "lvota.py: KEYS isn't a plain {kid: unhexlify(hex)} dict"
+        if not keys:
+            return "lvota.py has no KEYS, or an empty one"
+        if any(len(k) != 32 for k in keys.values()):
+            return "lvota.py: a KEYS entry isn't a 32-byte key"
+        if not any(kid in keys and hashlib.sha256(keys[kid]).hexdigest()[:8] == kid for kid in kids):
+            return f"lvota.py: KEYS doesn't hold the release key ({', '.join(kids)})"
+    if "lvota.mpy" in files:
+        b = files["lvota.mpy"]
+        found = {hashlib.sha256(bytes.fromhex(h.decode())).hexdigest()[:8]
+                 for h in re.findall(rb"(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])", b)}
+        if not any(kid in found and kid.encode() in b for kid in kids):
+            return f"lvota.mpy: KEYS doesn't hold the release key ({', '.join(kids)})"
+    return None
+
+
+FROZEN_COEX_DELETES = ("config.py", "index.html")   # the coex bench firmware's (game/bench/coex-test)
+
+
 def main() -> None:
     a = parse_args()
     root = a.repo_root.resolve()
@@ -201,13 +263,29 @@ def main() -> None:
     if a.frozen:
         names = [r.as_posix() for r in rels]
         frozen, overrides = frozen_spec(a.frozen.resolve(), names)
-        for d in ["lv", "lvx"] + frozen_stale(frozen, names):   # never a stale full install,
-            if d not in a.delete:                                 # an old override or a copy
-                a.delete.append(d)                                # of a now-frozen module
+        # never a stale full install, an old override or a copy of a now-frozen module; and
+        # never the coex bench firmware's own files on a board it replaces (config.py,
+        # index.html: 0.2.0/0.2.2 deleted them, the hand-built 0.2.4-0.2.7 didn't), unless
+        # this release ships them itself (review REVIEW2 m1, 0.3.0 R1)
+        coex = [d for d in FROZEN_COEX_DELETES if d not in names]
+        for d in ["lv", "lvx"] + frozen_stale(frozen, names) + coex + mpy_twins(names):
+            if d not in a.delete:
+                a.delete.append(d)
     elif any(r.parts[0] == "lvx" for r in rels):
         raise SystemExit("lvx/ overrides only work on the game firmware: give --frozen <core manifest>")
 
     created = a.build_time or dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
+    # What's new, for players (game/tools/ota/whatsnew.py): in the index entry (the phone's
+    # Settings and Version history, online) and release.json's "whats_new". Never in
+    # version.json or the signed manifest: the ship reads those while it updates, and its heap
+    # has no room for them (0.3.0). Offline, the phone shows the installed version's lines
+    # from the page the ship serves (www/app.html.gz, signed with the release: game/web/
+    # build.py bakes whatsnew.json into it), checked below.
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "game" / "tools" / "ota"))
+    import whatsnew
+    news = whatsnew.read_file(a.whats_new) if a.whats_new else whatsnew.lines_for(a.version)
+    if news is None and frozen:
+        print(f"note: no what's new for {a.version} (game/tools/ota/whatsnew.json or --whats-new)", file=sys.stderr)
     version_meta = {
         "schema": 2, "project": PROJECT, "version": a.version,
         "channel": a.channel, "runtime": "micropython", "min_runtime": a.runtime, "build": created,
@@ -216,10 +294,24 @@ def main() -> None:
     payload: list[tuple[str, bytes]] = [(r.as_posix(), (source / r).read_bytes()) for r in rels if r.as_posix() != "version.json"]
     payload.append(("version.json", (json.dumps(version_meta, separators=(",", ":")) + "\n").encode()))
 
+    page = dict(payload).get("www/app.html.gz")
+    if news and page:
+        try:
+            html = gzip.decompress(page).decode("utf-8")
+        except (OSError, EOFError, UnicodeDecodeError):
+            html = None
+        if html is not None and json.dumps(news[0])[1:-1] not in html:
+            raise SystemExit(f"www/app.html.gz doesn't carry {a.version}'s what's new: add it to "
+                             "game/tools/ota/whatsnew.json, rebuild the page (game/web/build.py), then build")
+
     preserve = sorted(set(["data/"] + a.preserve + a.log))
     for path, _ in payload:
         if any(path == k or (k.endswith("/") and path.startswith(k)) for k in preserve):
             raise SystemExit(f"{path} is both shipped and preserved; drop it from --preserve or the source")
+
+    why = ota_keys_why(payload, a.ota_kid or list(OTA_KIDS))
+    if why:
+        raise SystemExit(f"not building: {why}; the ship could never take another update over the air")
 
     if a.mpy_cross:
         mpy_check(a.mpy_cross, payload)
@@ -245,6 +337,7 @@ def main() -> None:
         "channel": a.channel,
         "label": a.label,
         "notes": a.notes,
+        **({"whats_new": news} if news else {}),
         "date": a.date,
         "created_at": created,
         "device": "raspberry-pi-pico-w",
@@ -273,7 +366,8 @@ def main() -> None:
     index = json.loads(index_path.read_text()) if index_path.exists() else {"schema": 2, "project": PROJECT, "latest": None, "channels": {}, "releases": []}
     entry = {"version": a.version, "channel": a.channel, "date": a.date, "label": a.label,
              "path": "/" + (rel_dir / "release.json").as_posix(), "bytes": total, "files": len(files),
-             **({"frozen": frozen["requires"]} if frozen else {})}
+             **({"frozen": frozen["requires"]} if frozen else {}),
+             **({"notes": news} if news else {})}
     releases = [r for r in index.get("releases", []) if r.get("version") != a.version] + [entry]
     releases.sort(key=lambda r: vkey(r["version"]), reverse=True)
     index["releases"] = releases

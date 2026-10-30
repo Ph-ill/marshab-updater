@@ -575,6 +575,82 @@ check("safe: the update status", code == 200 and b.get("ota") == 1, (code, b))
 check("lvota dropped", "lvota" not in sys.modules)
 code, b = call(web, "POST", "/api/ota/cancel")
 check("safe: update writes need sign-in", code == 401)
+# 0.3.0 review R1 M2: safe mode's upload goes to lvotap; if that won't load (damaged, or a
+# broken copy ahead of it), lvota.api answers instead of the request dying unanswered
+_sh = ROOT + "/shadow"
+os.mkdir(_sh)
+
+
+def shadowed(src, t=None):
+    put(_sh + "/lvotap.py", src)
+    sys.path.insert(0, _sh)
+    sys.modules.pop("lvotap", None)
+    if sys.implementation.name == "cpython":
+        import importlib
+        importlib.invalidate_caches()
+    said = []
+    _say, sh.say = sh.say, said.append
+    try:
+        code, b = call(web, "POST", "/api/ota/put?f=0&n=10&o=0", b"x", tok=tok if t is None else t)
+    finally:
+        sh.say = _say
+        sys.path.remove(_sh)
+        sys.modules.pop("lvotap", None)
+    return code, b, said
+
+
+# 0.3.0 fix review FR1 m3: whatever goes wrong loading it, a clear answer the page doesn't
+# retry as "busy" (500 DAMAGED; before, only ImportError was caught here, and lvota.api's
+# own answer was a 503 the page called "busy")
+code, b, _said = shadowed("raise ImportError('damaged')\n")
+check("R1 M2 / FR1 m3: safe mode, lvotap won't load: 500, says it's damaged", code == 500
+      and b["err"] == lvsafe.DAMAGED and "damaged" in b["err"] and "USB" in b["err"], (code, b))
+check("R1 M2: ... and says why in the log", _said and "upload code ImportError" in _said[0], _said)
+check("R1 M2: ... nothing left loaded", "lvotap" not in sys.modules and "lvota" not in sys.modules)
+for _src, _e in (("x = (\n", "SyntaxError"), ("raise ValueError('x')\n", "ValueError"),
+                 ("raise OSError(5)\n", "OSError"), ("api = None\n", "TypeError")):
+    code, b, _said = shadowed(_src)
+    check("FR1 m3: lvotap %s: 500 damaged, not retried" % _e, code == 500 and b["err"] == lvsafe.DAMAGED,
+          (code, b))
+    check("FR1 m3: ... logged as %s" % _e, _said and _said[0] == "safe: upload code " + _e, _said)
+    check("FR1 m3: ... nothing left loaded (%s)" % _e, "lvotap" not in sys.modules and "lvota" not in sys.modules)
+# 0.3.0 review 2 m3: what goes wrong taking a piece is not "damaged, fix over USB"; and an
+# answer already started is never followed by a second one
+code, b, _said = shadowed("async def api(web, req, w):\n    raise KeyError('k')\n")
+check("review2 m3: lvotap loads, a piece fails (KeyError): 500, not damaged", code == 500
+      and b["err"] != lvsafe.DAMAGED and "USB" not in b["err"] and "Install" in b["err"], (code, b))
+check("review2 m3: ... logged as the piece's failure", _said == ["safe: upload piece KeyError"], _said)
+check("review2 m3: ... nothing left loaded", "lvotap" not in sys.modules and "lvota" not in sys.modules)
+code, b, _said = shadowed("async def api(web, req, w):\n    raise MemoryError('no heap')\n")
+check("review2 m3: out of heap taking a piece: 503 busy", code == 503 and b["err"] == "busy", (code, b))
+_W2 = []
+
+
+async def _late():
+    put(_sh + "/lvotap.py", "import lvweb\nasync def api(web, req, w):\n    await lvweb.send_json(w, 200, {'ok': 1})\n"
+        "    raise ValueError('after')\n")
+    sys.path.insert(0, _sh)
+    sys.modules.pop("lvotap", None)
+    if sys.implementation.name == "cpython":
+        import importlib
+        importlib.invalidate_caches()
+    w = W()
+    try:
+        await web.route(req("POST", "/api/ota/put?f=0&n=10&o=0", b"x", tok), w)
+    finally:
+        sys.path.remove(_sh)
+        sys.modules.pop("lvotap", None)
+    return w.b
+
+
+_b = asyncio.run(_late())
+check("review2 m3: an answer had started: just the one", _b.count(b"HTTP/1.0") == 1
+      and _b.startswith(b"HTTP/1.0 200"), _b[:60])
+code, b, _said = shadowed("raise MemoryError('memory allocation failed')\n")
+check("FR1 m3: out of heap loading it: 503 busy (worth a retry)", code == 503 and b["err"] == "busy", (code, b))
+code, b, _said = shadowed("raise ValueError('x')\n", t="nope")
+check("FR1 m3: signed out: 401, not the damage", code == 401, (code, b))
+rm(_sh)
 code, b = call(web, "POST", "/api/safe/retry")
 check("safe: retry needs sign-in", code == 401)
 code, b = call(web, "GET", "/hotspot-detect.html")
@@ -615,6 +691,10 @@ g = {"__name__": "main_test"}
 exec(src, g)
 web.ok2xx = 7
 web.served, sh.http_hits = 3, 4
+# safe mode's start() runs main.py's net_hooks, which sets lvweb.MAX_BODY to a whole upload
+# piece (1 KB); the upload probe sends one (FR1 m1)
+_mb0 = lvweb.MAX_BODY
+lvweb.MAX_BODY = 1024
 check("m7: the safe server serves the page", asyncio.run(g["serves"](web)) is True)
 check("m7: the counts a phone moves left as they were", (web.ok2xx, web.served, sh.http_hits) == (7, 3, 4),
       (web.ok2xx, web.served, sh.http_hits))
@@ -687,6 +767,17 @@ web.phone.who = lambda req: 0
 check("m1: /api/ota/put open to anyone: no keep", asyncio.run(g["serves"](web)) is False)
 del web.phone.who
 check("m1: ... and refused again: serves", asyncio.run(g["serves"](web)) is True)
+# 0.3.0 fix review FR1 m1: the upload route is probed even after a phone's 2xx (main.PUT),
+# with a full 1 KB piece: a set whose lvweb.MAX_BODY can't take lvota.CHUNK is not kept
+check("FR1 m1: PUT is the upload probe alone", [p[:2] for p in g["PUT"]] == [("POST", "/api/ota/put")], g["PUT"])
+check("FR1 m1: the upload probe passes on its own", asyncio.run(g["serves"](web, g["PUT"])) is True)
+_mb = lvweb.MAX_BODY
+lvweb.MAX_BODY = 1023
+check("FR1 m1: MAX_BODY under a piece (413): no keep", asyncio.run(g["serves"](web, g["PUT"])) is False)
+lvweb.MAX_BODY = _mb
+web.phone.who = lambda req: 0
+check("FR1 m1: upload open to anyone: no keep, phone's 2xx or not", asyncio.run(g["serves"](web, g["PUT"])) is False)
+del web.phone.who
 rm(D + "/ota") if lvsafe.exists(D + "/ota") else None
 # a request that raises mid-way (said by Server.handle, the answer may be half out) fails
 real_api = web.phone.api
@@ -713,6 +804,7 @@ check("M1: and the counts still as they were", (web.ok2xx, web.served, sh.http_h
       (web.ok2xx, web.served, sh.http_hits, web.refused))
 os.rename("www/app.html.gz", "www/gone")
 check("m7: no page, no keep", asyncio.run(g["serves"](web)) is False)
+lvweb.MAX_BODY = _mb0
 os.chdir(HERE)
 
 # ---- main.py: the keep rule, crashes, tasks, safe mode off -------------------------------
@@ -791,19 +883,37 @@ class FakeWeb:
         self.ok2xx = 0
         self.served = 0
         self.up = False
+        self.put = True    # its /api/ota/put refuses an unsigned piece (401)
         self.ship = FakeShip()
         self.ship.http_hits = 0
 
     async def handle(self, r, w):
         post = r.b.startswith(b"POST")
-        w.write(b"HTTP/1.0 500 Oops\r\n" if not self.up else b"HTTP/1.0 401 Unauthorized\r\n" if post
-                else b"HTTP/1.0 200 OK\r\n")
+        w.write(b"HTTP/1.0 401 Unauthorized\r\n" if post and (self.up or self.put)
+                else b"HTTP/1.0 500 Oops\r\n" if not self.up or post else b"HTTP/1.0 200 OK\r\n")
         if self.up and not post:
             self.ok2xx += 1
 
 
 sys.modules["lvota"] = FakeOta
 g["OTA_OK_MS"] = 10
+
+
+async def fake_kept(web):
+    # main.py's kept(): board/lvotak.py's keep() as it is (lvota.good(), fault.json set aside,
+    # lvota let go), its update-path check (tested in tests/test_ota.py) taken as passed
+    import lvotak
+
+    async def ok(web=None):
+        return True
+    lvotak.check = ok
+    try:
+        return await lvotak.keep(web, g["FAULT"], g["FAULT_LAST"])
+    finally:
+        sys.modules.pop("lvotak", None)
+
+
+g["kept"] = fake_kept
 
 
 async def keeps(fw, how):
@@ -820,6 +930,25 @@ a, b2 = asyncio.run(keeps(fw, lambda f: setattr(f, "ok2xx", 1)))
 check("keep: not without a 2xx", a == 0)
 check("keep: after the first 2xx", b2 == 1)
 check("lvota dropped after", "lvota" not in sys.modules)
+# FR1 m1: a phone's 2xx doesn't excuse a broken upload route
+sys.modules["lvota"] = FakeOta
+FakeOta.n = 0
+fw = FakeWeb()
+fw.put = False
+
+
+async def no_put(fw):
+    t = asyncio.create_task(g["ota_ok"](fw))
+    await asyncio.sleep(0.2)
+    fw.ok2xx = 1
+    await asyncio.sleep(0.2)
+    a = FakeOta.n
+    t.cancel()
+    await asyncio.sleep(0)
+    return a
+
+
+check("FR1 m1: a phone's 2xx, the upload route broken: not kept", asyncio.run(no_put(fw)) == 0)
 sys.modules["lvota"] = FakeOta
 FakeOta.n = 0
 fw = FakeWeb()
@@ -901,14 +1030,21 @@ trial = [False]
 g["reboot"] = lambda: boots.append(1)
 g["flag"] = lambda p: trial[0]
 real = lvsafe.crashed
-lvsafe.crashed = lambda why, trial, up: noted.append((why, trial, up))
+lvsafe.crashed = lambda why, trial, up, live=False: noted.append((why, trial, up)) or lives.append(live)
+lives = []
 try:
     g["crashed"](ValueError("boom"), 0)
+    try:                          # 0.3.0 review R2 M3: a crash in Hail's own code says so
+        import lvlive
+        lvlive.parse(None)
+    except Exception as e:
+        g["crashed"](e, 0)
+    noted.pop()
     trial[0] = True
     g["crashed"](ValueError("x" * 99), 0)
     trial[0] = False
 
-    def oom(*a):
+    def oom(*a, **k):        # (takes live= too, so the fault is the MemoryError meant, not a TypeError)
         raise MemoryError()
     lvsafe.crashed = oom
     g["crashed"](MemoryError(), 0)
@@ -920,11 +1056,14 @@ except BaseException as e:
     check("crashed never raises", False, repr(e))
 lvsafe.crashed = real
 check("crashed: noted", noted[0] == ("ValueError: boom", False, 1000), noted)
+check("R2 M3: a crash elsewhere: not Hail's", lives[0] is False, lives)
+if hasattr(sys, "print_exception"):     # (MicroPython: the traceback is read for it)
+    check("R2 M3: a crash in lvlive: Hail's", lives[1] is True, lives)
 check("m9: the trial read at the crash", noted[1][1] is True and len(noted[1][0]) < 64, noted)
 j = json.loads(get(FD))
 check("M3: no heap for lvsafe: noted the short way", j["n"] == 2 and j["why"] == "noted the short way", j)
 check("M3: not on a trial either", files() == ["fault.json"], files())
-check("crashed: restart every time", boots == [1] * 5, boots)
+check("crashed: restart every time", boots == [1] * 6, boots)
 put(FD, '{"n": 5, "why": "x"}')
 g["note"](False)
 check("M3: the short way stops at the cap too", json.loads(get(FD))["n"] == 5)
@@ -988,7 +1127,7 @@ if sys.implementation.name == "micropython":
             await asyncio.sleep(1)
         asyncio.run(run())
 
-    def measure(why, trial, up):
+    def measure(why, trial, up, live=False):
         gc.collect()
         seen.append((gc.mem_alloc() - base, why))
     lvsafe.crashed = measure
@@ -1212,5 +1351,68 @@ lvsafe.faults = lambda d=None: {}
 g["safe_mode"]({}, "off: ship.json can't be read just now")
 check("m3: off for a read error: no rest, restarts", rested == [1] and boots == [1, 1])
 lvsafe.faults, lvsafe.rest = real_f, real_r
-check("RESET clears fault.json (m11)", "fault.json" in g["RESET"])
+import lvcode  # noqa: E402  (Reset this ship: lvcode.reset since 0.3.0)
+check("RESET clears fault.json (m11)", "fault.json" in lvcode.RESET, lvcode.RESET)
+# 0.3.0 review 2 m1: safe mode can't depend on lvsetup loading. A damaged or missing
+# lvsetup.mpy (outside a trial) goes to safe mode with the boot window kept, not into a
+# crash loop with no hotspot; and lvsafe.check's own reason starts safe mode only after
+# lvsetup has been dropped (it isn't kept on the heap through safe mode).
+_sh = ROOT + "/shadow-setup"
+os.mkdir(_sh)
+_sm = g["safe_mode"]
+for _src, _e in (("raise ImportError('damaged')\n", "ImportError"), ("x = (\n", "SyntaxError"),
+                 ("raise ValueError('bad block')\n", "ValueError")):
+    put(_sh + "/lvsetup.py", _src)
+    sys.path.insert(0, _sh)
+    sys.modules.pop("lvsetup", None)
+    if sys.implementation.name == "cpython":
+        import importlib
+        importlib.invalidate_caches()
+    _got = []
+    g["safe_mode"] = lambda cfg, why: _got.append((cfg, why, "lvsetup" in sys.modules))
+    T.slept = []
+    try:
+        g["main"]()
+    finally:
+        sys.path.remove(_sh)
+        sys.modules.pop("lvsetup", None)
+    check("review2 m1: lvsetup %s: safe mode, not a crash" % _e,
+          _got == [("load_config", "boot code damaged (lvsetup: %s)" % _e, False)], _got)
+    check("review2 m1: ... after the boot window (%s)" % _e, T.slept == [g["BOOT_WINDOW_MS"]], T.slept)
+# review 3 nit-4: an lvsetup that imports but whose boot() raises (before lvsafe.check could
+# choose safe mode) goes to safe mode too, lvsetup dropped first, with no second boot window
+put(_sh + "/lvsetup.py", "def boot(ms, flag, safe_mode):\n    raise AttributeError('no such name')\n")
+sys.path.insert(0, _sh)
+sys.modules.pop("lvsetup", None)
+if sys.implementation.name == "cpython":
+    import importlib
+    importlib.invalidate_caches()
+_got = []
+g["safe_mode"] = lambda cfg, why: _got.append((cfg, why, "lvsetup" in sys.modules))
+T.slept = []
+try:
+    g["main"]()
+finally:
+    sys.path.remove(_sh)
+    sys.modules.pop("lvsetup", None)
+check("review3 nit-4: lvsetup.boot() raises: safe mode, not a crash",
+      _got == [("load_config", "boot code damaged (lvsetup: AttributeError)", False)], _got)
+check("review3 nit-4: ... no second boot window", T.slept == [], T.slept)
+put(_sh + "/lvsetup.py", "def boot(ms, flag, safe_mode):\n    return None, 'cfg', 'safe: 2 crashes in a row'\n")
+sys.path.insert(0, _sh)
+sys.modules.pop("lvsetup", None)
+if sys.implementation.name == "cpython":
+    import importlib
+    importlib.invalidate_caches()
+_got = []
+g["safe_mode"] = lambda cfg, why: _got.append((cfg, why, "lvsetup" in sys.modules))
+try:
+    g["main"]()
+finally:
+    sys.path.remove(_sh)
+    sys.modules.pop("lvsetup", None)
+g["safe_mode"] = _sm
+check("review2 m1: lvsafe.check's reason: safe mode with lvsetup dropped first",
+      _got == [("cfg", "safe: 2 crashes in a row", False)], _got)
+rm(_sh)
 print("test_safe: %d checks ok (%s)" % (ok[0], sys.implementation.name))

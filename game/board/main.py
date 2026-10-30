@@ -19,9 +19,14 @@
 # checks its hotspot is up and its web server is still listening, then hands its own server
 # raw requests the way a phone's arrive, through the request parser and Server.handle
 # (serves()): the page, /api/crew and /api/ota must answer 2xx, and an update write with
-# no sign-in must answer 401 (lvota's own refusal: the write side is there too). If that
+# no sign-in must answer 401 (lvotap's own refusal: the write side is there too; this one
+# is sent even after a phone's 2xx, a whole 1 KB piece, 0.3.0 FR1 m1). If that
 # keeps failing for SELF_MS, the ship restarts (a real reset, which lvboot counts), so a
 # trial that lvboot gave no deadline (a soft reset, on ota-hwfix's lvboot) still ends.
+# Whatever served the phone, the update path is then checked too (kept(), board/lvotak.py,
+# 0.3.0): lvotaq, lvotap, lvota, lvsig and lvsafe must import, lvota.KEYS must hold the
+# release key and lvsig must check a known signature, or the trial isn't kept (a set that
+# can't take the next update would need USB).
 # Crashes (board/lvsafe.py): whatever main() lets escape, and a failure of the web server's
 # own accept loop, is noted in /data/fault.json once asyncio has let go of the game's heap,
 # and the ship restarts; SAFE_AFTER in a row and the next boot is safe mode (hotspot +
@@ -75,10 +80,52 @@ def home_screen(lvweb):
 def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
     route = web.route
+    clock_gate(web)
+    # Admission for the heavy answers, decided before Phone.state_writer (or lvliveapi.live)
+    # allocates anything (0.3.0 review 1 R1, reworked in review 2 M2-M4). One streamed
+    # /api/state at a time; no /api/state or /api/live while an update piece is being taken;
+    # and no other /api/* dispatch while a state is half sent (its auth/dispatch modules must
+    # not sit on the heap next to it). Those get 503 + Retry-After: 1 at once, before their
+    # handler loads: web/app.html api() and web/ota.js (otaFetch, review 2 M4) replay it, so
+    # the phone just sees a slightly slower answer. Refusing, not parking: a parked request
+    # holds a connection (lvweb.MAX_CONN) and counts in web.busy, which an update piece
+    # (lvotaq.quiet), a hail's send and the notifier all wait on, so parking stalled the
+    # heap run (--ota --live --everyone) and put the board's peak over 78,000 B.
+    # A light playback (Test light, a hail's flicker) holds nothing off any more (review 2
+    # M2): its task keeps only lvlight's helpers and its own small play(), measured with a
+    # full state in the heap runs.
+    # A stalled phone (review 3 MAJOR-1): every stream write waits at most lvweb.DRAIN_MS
+    # (15 s), then the request fails, its socket is closed and the finally below clears
+    # state_busy. As a backstop, state_busy is the ticks_ms the stream began (0: none) and a
+    # mark older than BUSY_MS is ignored, so nothing can hold every phone off for longer.
+    web.state_busy = 0
+    web.ota_busy = 0
+
+    def held():
+        t = web.state_busy
+        return t and lvship.ticks_diff(lvship.ticks_ms(), t) < 20000
 
     async def ota_route(req, w):
+        if req.path.startswith("/api/"):
+            heavy = req.method == "GET" and req.path in ("/api/state", "/api/live")
+            if held() or (heavy and web.ota_busy):
+                return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
+            if heavy and req.path == "/api/state":
+                web.state_busy = lvship.ticks_ms() or 1
+                try:
+                    return await route(req, w)
+                finally:
+                    web.state_busy = 0
         if req.path == "/api/reset":
-            return await reset_ship(lvweb, web, req, w)
+            # "Reset this ship" (board/lvcode.py reset, web/settings.js). Loaded per request,
+            # like lvota (0.3.0: out of main.py's resident code).
+            import lvcode
+            try:
+                if await lvcode.reset(lvweb, web, req, w, reboot):
+                    print("reset: player progress clears in 1 s, then a restart")
+                return
+            finally:
+                lvship.drop("lvcode")
         if req.path.startswith("/ls/"):
             # iOS launch screens, www/ls/<W>x<H>.png (web/launch.py), as they are (a PNG
             # doesn't gzip). A prefix rather than seven STATIC entries: no RAM until asked.
@@ -99,14 +146,27 @@ def ota_hooks(lvweb, web):
             return await lvweb.send_json(w, s, j)
         if req.path == "/api/led/test":
             # "Test light" (board/lvledtest.py, web/settings.js): a signed-in crew member makes
-            # the light play ~4 s of blinks and a breath, on or off. Loaded per request.
+            # the light play 10 s of blinks and breaths, on or off. Loaded per request.
             if req.method != "POST":
                 return await lvweb.send_json(w, 404, {"err": "no such thing"})
+            # Don't load a second copy of the playback module while its task owns
+            # the pin (the first copy remains alive through that task's globals).
+            if web.get_phone().who(req) is None:
+                return await lvweb.send_json(w, 401, {"err": "signed out"})
+            t = getattr(web.ship, "ledtest", None)
+            if t is not None:
+                left = 10000 - lvship.ticks_diff(lvship.ticks_ms(), t)
+                if left > -5000:
+                    # a hail's flicker owns the light (review 3 m2): the page says so
+                    hail = t == getattr(web.ship, "ledhail", None)
+                    return await lvweb.send_json(w, 429, {"err": "The light is showing a hail." if hail else "The light is already testing.",
+                                                          "ms": max(0, left), "kind": "hail" if hail else "test"})
             import lvledtest
             try:
                 s, j = lvledtest.start(web, req)
             finally:
                 lvship.drop("lvledtest")
+                lvship.drop("lvlight")
             return await lvweb.send_json(w, s, j)
         if req.path == "/api/bat" and req.method == "GET":
             # The page's poll every 5 s while it's showing (web/app.html startPoll): the
@@ -118,7 +178,13 @@ def ota_hooks(lvweb, web):
             if sh.clock.learn_headers(req.header):
                 sh.day_check()
             b = sh.bat
-            return await lvweb.send_json(w, 200, {"v": sh.v, "bat": b[:3] if b else None})
+            j = {"v": sh.v, "bat": b[:3] if b else None}
+            L = getattr(sh, "live", None)
+            if L is not None:
+                # lv: the ship-to-ship state's version (a hail or its receipt came in: the
+                # page asks /api/live).
+                j["lv"] = L.v
+            return await lvweb.send_json(w, 200, j)
         if req.path == "/api/hello" and req.method == "GET":
             # The home-screen funnel (board/lvfunnel.py, web/funnel.js): has the ship seen
             # this phone open the game from its icon? Loaded per request, like lvota.
@@ -127,7 +193,50 @@ def ota_hooks(lvweb, web):
                 return await lvweb.send_json(w, 200, lvfunnel.api(web, req))
             finally:
                 lvship.drop("lvfunnel")
+        if req.path.startswith("/api/live") or req.path.startswith("/api/coex"):
+            # Ship-to-ship (board/lvliveapi.py, web/live.js): Hail, the Settings switches, the
+            # radio check and its test's probe (streamed). Loaded per request, like lvota.
+            import lvliveapi
+            try:
+                if req.path == "/api/coex/ping":
+                    return await lvliveapi.ping(lvweb, web, req, w)
+                if req.path == "/api/live" and req.method == "GET":
+                    web.state_busy = lvship.ticks_ms() or 1
+                    try:
+                        return await lvliveapi.live(lvweb, web, req, w)     # (in pieces)
+                    finally:
+                        web.state_busy = 0
+                s, j = lvliveapi.api(web, req)
+            finally:
+                lvship.drop("lvliveapi")
+                lvship.drop("lvlivein")
+            return await lvweb.send_json(w, s, j)
         if req.path.startswith("/api/ota"):
+            if req.method != "GET" and web.get_phone().who(req) is not None:
+                # An update coming in from a signed-in phone: Hail holds its dials and takes
+                # no items (lvlive.OTA_MS). Signed-out POSTs can't hold Hail off (0.3.0 R3 m2).
+                web.ship.ota_t = lvship.ticks_ms() or 1
+            if req.path == "/api/ota/put":
+                # The upload itself (board/lvotap.py, 0.3.0): ~3 KB of code, with lvota loaded
+                # only for the envelope and dropped through its signature check. It waits for
+                # a quiet moment first (lvotaq.py, ~0.5 KB) before lvotap is even loaded.
+                web.ota_busy += 1
+                try:
+                    if req.method == "POST" and web.get_phone().who(req) is not None:
+                        import lvotaq
+                        try:
+                            await lvotaq.quiet(web, req.q, req.body or b"")
+                        finally:
+                            lvotaq = None
+                            lvship.drop("lvotaq")
+                    import lvotap
+                    try:
+                        return await lvotap.api(web, req, w, True)
+                    finally:
+                        lvship.drop("lvotap")
+                        lvship.drop("lvota")
+                finally:
+                    web.ota_busy -= 1
             import lvota
             try:
                 return await lvota.api(web, req, w)
@@ -135,6 +244,35 @@ def ota_hooks(lvweb, web):
                 lvship.drop("lvota")
         return await route(req, w)
     web.route = ota_route
+
+
+class _Hdr:
+    # (a request's header getter, as lvphone.Phone.who wants a request)
+    def __init__(self, get):
+        self.header = get
+
+
+def clock_gate(web):
+    # Every phone request carries its clock (lvweb.route). Once the ship knows the time,
+    # only a signed-in phone may move it (FIXREVIEW3 f2: a stranger's phone on the hotspot
+    # set a day ahead can't turn the ship's day); the first one is anyone's.
+    c = getattr(getattr(web, "ship", None), "clock", None)
+    learn = getattr(c, "learn_headers", None)
+    if learn is None or not hasattr(c, "known"):
+        return
+
+    def learned(get):
+        if c.known():
+            # (the phone list made if need be: a crewmate signed in before a restart, whose
+            # token is kept, before any API request made it)
+            if not get("x-crew-token"):
+                return False
+            gp = getattr(web, "get_phone", None)
+            ph = gp() if gp is not None else getattr(web, "phone", None)
+            if ph is None or ph.who(_Hdr(get)) is None:
+                return False
+        return learn(get)
+    c.learn_headers = learned
 
 
 def net_hooks(lvweb, web):
@@ -163,168 +301,31 @@ def net_hooks(lvweb, web):
     lvweb.dns_answer = dns_answer
 
 
-# "Reset this ship" (the page's Settings): the players' progress goes, the ship's setup stays.
-# Deleted from /data: log.bin (every record this ship holds: taps, votes, gifts; other ships
-# in range sync theirs back), days.bin (the days told), clock.json (the saved flight day and
-# time; the launch date in ship.json brings the day back once a phone tells the time),
-# local.bin (what phones opened and saw), and funnel.bin (the phones the home-screen funnel
-# has seen, and which opened the game from the icon: board/lvfunnel.py). Sign-ins and
-# sessions live in RAM, so the restart forgets them.
-# fault.json (board/lvsafe.py: the crash count) goes too: a reset ship starts with a clean count.
-# Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
-# codes, including any changed in Settings: board/lvcode.py), their backups ship.json.bak and
-# crew.json.bak (lvsafe), the installed software and ota/ (the update state and rollback
-# copy), maint/safe.
-RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin", "fault.json")
-
-
-async def reset_ship(lvweb, web, req, w):
-    # POST /api/reset {confirm: this ship's number} with a signed-in X-Crew-Token, else
-    # 401/403 and nothing changes. 200, then the files go and the board restarts.
-    if req.method != "POST":
-        return await lvweb.send_json(w, 404, {"err": "no such thing"})
-    if web.get_phone().who(req) is None:
-        return await lvweb.send_json(w, 401, {"err": "signed out"})
-    sh = web.ship
-    try:
-        import json
-        ok = int(json.loads(req.body or b"{}")["confirm"]) == sh.cfg["ship_id"]
-    except Exception:
-        ok = False
-    if not ok:
-        return await lvweb.send_json(w, 403, {"err": "Type this ship's number to confirm."})
-    await lvweb.send_json(w, 200, {"ok": True, "restart_ms": 1500})
-
-    async def later():
-        await asyncio.sleep(1)
-        # No await from here on: nothing can write a file back before the restart.
-        import os
-        for f in RESET:
-            try:
-                os.remove(sh.data + "/" + f)
-            except OSError:
-                pass
-        print("reset: player progress cleared, restarting")
-        if reboot:
-            return reboot()
-        import machine
-        machine.reset()
-    asyncio.create_task(later())
-
-
-class Sink:
-    # serves()'s stand-in for a phone's connection, both ends: reads out the raw request
-    # it was given (as a socket's stream would), keeps the answer's status line, drops the rest.
-    def __init__(self, req):
-        self.b = req
-        self.st = None
-
-    async def readline(self):
-        i = self.b.find(b"\n") + 1 or len(self.b)
-        r, self.b = self.b[:i], self.b[i:]
-        return r
-
-    async def readexactly(self, n):
-        r, self.b = self.b[:n], self.b[n:]
-        return r
-
-    def write(self, d):
-        if self.st is None:
-            self.st = bytes(d[:12])
-
-    async def drain(self):
-        await lvship.sleep_ms(0)    # the page streams in CHUNKs: let the phones in between
-
-    def get_extra_info(self, k):
-        return ("127.0.0.1", 0)
-
-    def close(self):
-        pass
-
-    async def wait_closed(self):
-        pass
-
-
 # serves()'s requests and the status each must get: the page, the crew list and the update
-# status (2xx), and an update write with no sign-in (lvota's 401: its POST side answers;
-# put, not apply or cancel, so a sign-in check gone wrong still can't act on anything).
+# status (2xx), and an update write with no sign-in (lvotap's 401: put, not apply or cancel,
+# so a sign-in check gone wrong still can't act on anything). The put carries a whole piece
+# (lvota.CHUNK, 1024 B: lvweb.MAX_BODY must take it) and is the last probe, PUT: it is sent
+# even when a phone has had a 2xx already, so the upload's route, its body limit and lvotap
+# itself are shown to work before a trial is kept (0.3.0 fix review FR1 m1).
 PROBES = (("GET", "/", b"2"), ("GET", "/api/crew", b"2"), ("GET", "/api/ota", b"2"),
           ("POST", "/api/ota/put", b"401"))
+PUT = PROBES[3:]
 
 
-def essid_ok(ap, want):
-    """Is the hotspot up under this ship's own name? Up (active) is required. The name read
-    back (ap.config("essid"), str or bytes) must match when the firmware gives one; when it
-    gives nothing, or can't read it back at all, active is taken as enough (a readback that
-    doesn't work on this firmware must not fail every update's check)."""
-    if not ap.active():
-        return False
+def Sink(req):
+    import lvcheck
     try:
-        e = ap.config("essid")
-    except Exception:
-        return True
-    if isinstance(e, (bytes, bytearray)):
-        e = str(e, "utf-8")
-    return not e or str(e) == want
-
-
-async def serves(web):
-    """Does this set serve a phone? The hotspot is up as this ship's own SSID, the web
-    server's accept loop is still running, and PROBES, as raw bytes through Server.handle
-    (lvweb's request parser, the busy count, route, head), each get their status with no
-    error said on the way. The counts a phone's visit moves (the 2xx count, served, the
-    ship's hits) lose exactly what these requests added, so a phone's own request in the
-    meantime still counts (the page streams, and lets other requests in as it goes). (A
-    real socket round trip would be stronger; lwIP loopback on the Pico W is unconfirmed,
-    so the listening socket is shown by its accept task instead.)"""
-    sh = web.ship
-    ap = getattr(web, "ap", None)
-    if ap is not None:
-        try:
-            c = sh.cfg
-            if not essid_ok(ap, "%s%d" % (c["ssid_prefix"], c["ship_id"])):
-                print("ota: self-check: the hotspot isn't up")
-                return False
-        except Exception as e:
-            print("ota: self-check hotspot %r" % (e,))
-            return False
-    t = getattr(getattr(web, "srv", None), "task", None)
-    if t is not None and t.done():
-        print("ota: self-check: the web server stopped")
-        return False
-    hits = oks = done = 0
-    say = getattr(web, "say", print)
-    err = []
-
-    def heard(m):
-        err.append(m)
-        say(m)
-    try:
-        web.say = heard                 # Server.handle says what a request raised
-        for m, p, want in PROBES:
-            w = Sink(("%s %s HTTP/1.0\r\nHost: self\r\nContent-Length: 0\r\n\r\n" % (m, p)).encode())
-            del err[:]
-            n, d, h = web.ok2xx, web.served, sh.http_hits
-            try:
-                await web.handle(w, w)
-            finally:
-                # what this request added (at most 1 each: more is a phone's, and stays)
-                oks += min(1, max(0, web.ok2xx - n))
-                done += min(1, max(0, web.served - d))
-                hits += min(1, max(0, sh.http_hits - h))
-            st = w.st[9:9 + len(want)] if w.st else None
-            if st != want or err:
-                print("ota: %s %s answered %r" % (m, p, w.st))
-                return False
-        return True
-    except Exception as e:
-        print("ota: self-check %r" % (e,))
-        return False
+        return lvcheck.Sink(req)
     finally:
-        web.say = say
-        web.ok2xx -= oks
-        web.served -= done
-        sh.http_hits -= hits
+        lvship.drop("lvcheck")
+
+
+async def serves(web, probes=PROBES):
+    import lvcheck
+    try:
+        return await lvcheck.serves(web, probes)
+    finally:
+        lvship.drop("lvcheck")
 
 
 async def ota_ok(web=None, want=False):
@@ -338,19 +339,26 @@ async def ota_ok(web=None, want=False):
     # on ota-hwfix's lvboot has no deadline), a real reset that lvboot counts.
     await lvship.sleep_ms(OTA_OK_MS)
     t = lvship.ticks_ms()
-    while (web is None and want) or web is not None and not web.ok2xx and not await serves(web):
+    while (web is None and want) or web is not None and not await serves(web, PUT if web.ok2xx else PROBES) \
+            or not await kept(web):
         if lvship.ticks_diff(lvship.ticks_ms(), t) > SELF_MS:
             print("ota: the update can't show it serves a phone: restarting (a counted boot)")
             return restart()
         await lvship.sleep_ms(5000)
-    import lvota
-    if lvota.good():
-        print("ota: update kept")
-        try:
-            os.rename(FAULT, FAULT_LAST)        # the new set starts with a clean count
-        except OSError:
-            pass
-    lvship.drop("lvota")
+
+
+async def kept(web):
+    # Then, whatever served it, the update path itself (board/lvotak.py, 0.3.0 review R1
+    # M2: its modules import and lvsig checks a known signature) before lvota.good() keeps
+    # it: a set that can't take the next update is never kept. Failing: False, tried again.
+    try:
+        import lvotak
+        return await lvotak.keep(web, FAULT, FAULT_LAST)
+    except Exception as e:
+        print("ota: self-check %r" % (e,))
+        return False
+    finally:
+        lvship.drop("lvotak")
 
 
 def restart():
@@ -397,7 +405,8 @@ def crashed(e, t0):
     # (review #2 M2): MAIN (run()'s finished task, whose coroutine holds run's closure:
     # ship, web, days, ap, cfg), FATAL (the accept loop's task, holding web.handle), CRASH,
     # the modules that hold the server, and the event loop's queues (a new event loop).
-    # Only the exception's words are kept. Then say it, note it (not on an update's trial:
+    # Only the exception's words are kept, and whether its traceback ran through Hail's own
+    # modules (fault.json "live": 0.3.0 review R2 M3). Then say it, note it (not on an update's trial:
     # lvboot's boot count decides that one; read now, an update may have been kept since
     # boot), restart. Never raises.
     try:
@@ -413,8 +422,13 @@ def crashed(e, t0):
     except Exception:
         pass
     gc.collect()
+    tb = ""
     try:
-        sys.print_exception(e)
+        import io
+        tb = io.StringIO()
+        sys.print_exception(e, tb)
+        tb = tb.getvalue()
+        print(tb, end="")
     except Exception:
         print("crash: %s" % why)
     e = None
@@ -422,7 +436,10 @@ def crashed(e, t0):
     trial = flag("ota/state.json")
     try:
         import lvsafe
-        lvsafe.crashed(why, trial, time.ticks_diff(time.ticks_ms(), t0))
+        # live: Hail's own code was in it (lvlivex turns Hail off for that crash only),
+        # not the core's sync code going on through Hail's hooks (lvlive.CORE: FIXREVIEW2 J2)
+        lvsafe.crashed(why, trial, time.ticks_diff(time.ticks_ms(), t0),
+                       live=("lvlive" in tb or "lvflick" in tb) and not getattr(sys.modules.get("lvlive"), "CORE", 0))
     except Exception as e2:
         print("crash: noting %r" % (e2,))
         note(trial)
@@ -479,32 +496,19 @@ def safe_mode(cfg, why):
 
 
 def wanted(cfg):
-    # Should the phone game be running? phone_game true, or "auto" on a firmware that has a
-    # frozen core at all (shadowed or not: lvship.game_fw says no to a shadowed one).
-    v = cfg.get("phone_game", "auto")
-    if v != "auto":
-        return bool(v)
+    import lvsetup
     try:
-        import lv
-        return lv.firmware()[0] is not None
-    except Exception:
-        return False
+        return lvsetup.wanted(cfg)
+    finally:
+        lvship.drop("lvsetup")
 
 
 def config(got):
-    # cfg from the ship.json lvsafe.check() has just read and checked (got), not a second
-    # read (a one-off read error there would give DEFAULTS: a fake ship 1, review #2 m1).
-    # got None (lvsafe itself unusable): lvship.load_config() reads it, as 0.2.6 did.
-    if got is None:
-        return lvship.load_config()
-    c = dict(lvship.DEFAULTS)
-    if got:
-        c.update(got[0])
+    import lvsetup
     try:
-        c["ship_id"] = min(8, max(1, int(c["ship_id"])))
-    except (TypeError, ValueError):
-        c["ship_id"] = 1
-    return c
+        return lvsetup.config(got, lvship)
+    finally:
+        lvship.drop("lvsetup")
 
 
 # ---- the charger line, watched (docs/BATTERY.md "Charging shows at once"). lvbatt reads the
@@ -574,59 +578,49 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
             b[2] = v
             b[6], b[7] = lvship.ticks_ms(), CHG_GAUGE_MS
 
-def main():
-    print("boot: The Long Voyage starts in %d s (Ctrl-C or any mpremote command stops it)" % (
-        BOOT_WINDOW_MS // 1000))
-    time.sleep_ms(BOOT_WINDOW_MS)
+def no_setup(e, waited=False):
+    # lvsetup.mpy (0.3.0: the boot steps moved out of main.py) damaged or missing, outside an
+    # update's trial (a trial's lvboot count rolls back by itself): safe mode, the way a
+    # damaged game module gets there, rather than a crash loop with no hotspot that only
+    # USB could end (0.3.0 review 2 m1). Also when it imports but its boot() raises
+    # (review 3 nit-4: a missing name, say), before lvsafe.check could choose safe mode.
+    # Still the boot window first (waited: boot() began with it), and /data/safe.
+    print("safe: no boot code %r" % (e,))
+    lvship.drop("lvsetup")
+    if not waited:
+        time.sleep_ms(BOOT_WINDOW_MS)
     if flag("/data/safe"):
         print("safe: /data/safe found, not starting (remove it to play)")
         return
+    safe_mode(lvship.load_config(), "boot code damaged (lvsetup: %s)" % type(e).__name__)
+
+
+def main():
     try:
-        os.stat("/data/maint")
-        os.remove("/data/maint")
-        print("maint: /data/maint found, not starting (once)")
-        return
-    except OSError:
-        pass
-    try:
-        os.mkdir("/data")
-    except OSError:
-        pass
-    trial = flag("ota/state.json")
-    got = []
-    try:
-        import lvsafe
-        why = lvsafe.check(trial, got=got)
-    except Exception as e:  # lvsafe itself unusable (a damaged lvsafe.mpy): play as 0.2.6 did,
-        print("safe: no boot check %r" % (e,))    # rather than crash-loop with no hotspot
-        why, got = None, None
-    lvship.drop("lvsafe")
-    lvship.drop("lvledcfg")                    # (lvsafe asked it whether ship.json is whole)
-    cfg = config(got)
-    if why:
-        return safe_mode(cfg, why)
-    try:
-        import lv
-        print("firmware: " + lv.describe())
+        import lvsetup
     except Exception as e:
-        print("firmware: %r" % (e,))
-    print("lvship %s ship %d, free heap %d" % (lvship.VERSION, cfg["ship_id"], lvship.free()))
-    ip = "192.168.4.1"
-    if cfg["hotspot"]:
-        import lvwifi
-        ap = lvwifi.hotspot(cfg)
-        try:
-            a = ap.ifconfig()[0]
-            if a and a != "0.0.0.0":
-                ip = a
-        except Exception:
-            pass
-    game = cfg["hotspot"] and lvship.phone_game(cfg)
-    days = None
-    if game:
-        import lvdays
-        days = lvdays.Days("/data/days.bin")
-    ship = lvship.Ship(cfg, days=days)
+        return no_setup(e)
+    bad = None
+    try:
+        setup = lvsetup.boot(BOOT_WINDOW_MS, flag, safe_mode)
+    except Exception as e:          # imports, but its boot() fails: as a failed import
+        bad, setup = e, None
+    finally:
+        lvsetup = None
+        lvship.drop("lvsetup")
+    if bad is not None:
+        return no_setup(bad, True)
+    if setup is None:
+        return
+    if setup[0] is None:            # safe mode: lvsafe.check's reason, lvsetup dropped first
+        return safe_mode(setup[1], setup[2])
+    cfg, trial = setup
+    try:
+        import lvsetup
+        ship, ap, ip, game = lvsetup.prepare(cfg)
+    finally:
+        lvsetup = None
+        lvship.drop("lvsetup")
     web = None
 
     async def run():
@@ -650,6 +644,22 @@ def main():
             import lvstat
             await asyncio.start_server(lvstat.server(ship), "0.0.0.0", cfg["http_port"])
             print("web: status only on http://%s/ (the phone game needs the game firmware)" % ip)
+        if ship.ble is not None:
+            # Ship-to-ship items (Hail: board/lvlive.py) over the sync link: on unless
+            # switched off, off by itself after a fault or crash.
+            try:
+                import lvlive
+                ship.trial = trial          # (a crash from before an update: lvlivex.install)
+                lvlive.install(ship, getattr(ship, "data", "/data"))
+            except Exception as e:
+                # (the type only: the page shows live_why, never an exception's text)
+                ship.live, ship.live_why = None, "didn't start: " + type(e).__name__
+                print("live: " + ship.live_why)
+                try:                        # crewmates' pages: paused, not "needs the update"
+                    lvlive.pause(ship.node)
+                    ship.ble.adv = None
+                except Exception:
+                    pass
         if trial:
             asyncio.create_task(ota_ok(web, cfg["hotspot"] and wanted(cfg)))
         asyncio.create_task(healthy())

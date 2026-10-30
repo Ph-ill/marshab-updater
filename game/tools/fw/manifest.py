@@ -45,3 +45,21 @@ module("lvcode.py", base_path="../../board", opt=3)
 module("lvledtest.py", base_path="../../board", opt=3)
 # Safe mode and the fault notes (after 0.2.6; on older cores releases ship it as lvsafe.mpy).
 module("lvsafe.py", base_path="../../board", opt=3)
+# Ship-to-ship (after 0.2.7; on older cores releases ship them as .mpy).
+module("lvlive.py", base_path="../../board", opt=3)
+module("lvlivein.py", base_path="../../board", opt=3)
+module("lvlivex.py", base_path="../../board", opt=3)
+module("lvflick.py", base_path="../../board", opt=3)
+module("lvliveapi.py", base_path="../../board", opt=3)
+# The update's upload, split out of lvota (0.3.0; on older cores releases ship it as lvotap.mpy).
+module("lvotap.py", base_path="../../board", opt=3)
+module("lvotaq.py", base_path="../../board", opt=3)
+# The update path's check before a trial is kept (0.3.0; on older cores it ships as lvotak.mpy).
+module("lvotak.py", base_path="../../board", opt=3)
+# Review-1 heap helpers; still ordinary .mpy files on the existing 0.2.0 core.
+module("lvcheck.py", base_path="../../board", opt=3)
+module("lvstateapi.py", base_path="../../board", opt=3)
+module("lvphoneapi.py", base_path="../../board", opt=3)
+module("lvsetup.py", base_path="../../board", opt=3)
+module("lvphoneinit.py", base_path="../../board", opt=3)
+module("lvlight.py", base_path="../../board", opt=3)

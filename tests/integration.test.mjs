@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { gzipSync } from 'node:zlib';
 import { SimDevice } from './sim-device.mjs';
 import { readDeviceInfo, summarizeDeviceInfo, describeFirmware } from '../src/device-info.js';
 import { installRelease } from '../src/installer.js';
@@ -168,8 +169,13 @@ await t('a tampered release is rejected before touching the board', async () => 
 });
 
 await t('the test build installs by hand over a coex board, and the coex release brings it back', async () => {
-  const entry = index.releases.find(r => r.channel === 'test');
+  // A named release (LV_TEST_RELEASE=0.3.0-ota-phone), else the test channel's head, else the
+  // newest test entry: the suite checks the build it's meant to, not whatever is listed first.
+  const want = process.env.LV_TEST_RELEASE || index.channels?.test;
+  const entry = (want && index.releases.find(r => r.version === want)) || index.releases.find(r => r.channel === 'test');
   assert.ok(entry, 'a test release is listed');
+  if (process.env.LV_TEST_RELEASE) assert.equal(entry.version, process.env.LV_TEST_RELEASE, 'the named test release is listed');
+  assert.equal(entry.channel, 'test');
   assert.notEqual(index.latest, entry.version, 'the test build is not latest');
   const test = JSON.parse(readFileSync(join(repo, entry.path.slice(1)), 'utf8'));
   assert.equal(test.hotspot?.prefix, 'LV-');
@@ -210,6 +216,7 @@ writeFileSync(coreJson, JSON.stringify({ id: 'lv-core', version: '9.9.9', core: 
 const sb = join(tree, 'src-board');
 writeFileSync(join(sb, 'main.py'), 'print("game")\n');
 writeFileSync(join(sb, 'lvship.mpy'), Buffer.from([77, 6, 0, 31]));
+writeFileSync(join(sb, 'lvotap.mpy'), Buffer.from([77, 6, 0, 31, 2]));
 writeFileSync(join(sb, 'www/app.html.gz'), Buffer.from([31, 139, 8, 0]));
 writeFileSync(join(sb, 'lvx/engine.mpy'), Buffer.from([77, 6, 0, 31, 1]));
 const build = (version, extra = []) => spawnSync('python3', [join(repo, 'tools/build_release.py'), '--repo-root', tree, '--version', version,
@@ -224,6 +231,13 @@ await t('partial release: builder ships only lvx/ overrides of frozen modules, v
   assert.equal(rel.frozen.requires, 'abcdef012345');
   assert.deepEqual(rel.overrides, ['engine']);
   assert.ok(rel.delete.includes('lv') && rel.delete.includes('lvx'), 'clears lv/ and old overrides first');
+  // 0.3.0 R1: a --frozen build deletes the coex bench's config.py and index.html by default
+  assert.ok(rel.delete.includes('config.py') && rel.delete.includes('index.html'), 'clears the coex bench files by default');
+  // 0.3.0 R1 M2: the .py twin of each update-path .mpy goes first (MicroPython imports X.py
+  // ahead of X.mpy); only the update path's (each name costs the signature check's heap peak)
+  assert.ok(rel.delete.includes('lvotap.py'), 'deletes a stale lvotap.py next to the shipped lvotap.mpy');
+  assert.ok(!rel.delete.includes('lvship.py'), 'no twin outside the update path');
+  assert.ok(!rel.delete.includes('main.mpy') && !rel.delete.some(d => d.startsWith('lvboot.')), 'no twin for a .py it ships, never lvboot');
   assert.equal(JSON.parse(readFileSync(join(tree, 'firmware/index.json'), 'utf8')).releases[0].frozen, 'abcdef012345');
   r = validate();
   assert.equal(r.status, 0, r.stdout);
@@ -262,6 +276,55 @@ await t('validator catches a hand-edited partial release', async () => {
   assert.equal(validate().status, 0);
 });
 
+// 0.3.0 group G: what's new for players (game/tools/ota/whatsnew.py) in release.json's
+// whats_new and the index entry's notes, never in version.json (the ship reads that while it
+// updates); the shipped page must carry them (offline, the phone reads them from it).
+await t("what's new: --whats-new lines in release.json and index.json, not version.json; the page checked; bad ones refused", async () => {
+  const ip = join(tree, 'firmware/index.json'), before = readFileSync(ip, 'utf8');
+  const wn = join(tree, 'whatsnew.txt');
+  writeFileSync(wn, 'You can hail a crewmate.\n\nYour ship\'s light flickers when a hail lands.\n');
+  let r = build('9.9.9-w1', ['--frozen', coreJson, '--whats-new', wn]);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const want = ['You can hail a crewmate.', "Your ship's light flickers when a hail lands."];
+  const rel = JSON.parse(readFileSync(relOf('9.9.9-w1'), 'utf8'));
+  assert.deepEqual(rel.whats_new, want);
+  assert.equal(rel.notes, '', 'the operator notes field is left alone');
+  const vf = rel.files.find(f => f.path === 'version.json');
+  assert.ok(!('notes' in JSON.parse(Buffer.from(vf.data, 'base64').toString('utf8'))), 'version.json has no notes');
+  const ent = JSON.parse(readFileSync(join(tree, 'firmware/index.json'), 'utf8')).releases.find(e => e.version === '9.9.9-w1');
+  assert.deepEqual(ent.notes, want);
+  assert.equal(validate().status, 0);
+  // a real page that doesn't carry them: refused; one that does: built
+  const pg = join(sb, 'www/app.html.gz'), pg0 = readFileSync(pg);
+  writeFileSync(pg, gzipSync('<script>const OTA_WN={}</script>'));
+  r = build('9.9.9-w1', ['--frozen', coreJson, '--whats-new', wn]);
+  assert.notEqual(r.status, 0); assert.match(r.stderr, /doesn't carry 9\.9\.9-w1's what's new/);
+  writeFileSync(pg, gzipSync('<script>const OTA_WN=' + JSON.stringify({ '9.9.9-w1': want }) + '</script>'));
+  r = build('9.9.9-w1', ['--frozen', coreJson, '--whats-new', wn]);
+  assert.equal(r.status, 0, r.stderr);
+  writeFileSync(pg, pg0);
+  // no --whats-new and none in whatsnew.json: no notes anywhere
+  r = build('9.9.9-w2', ['--frozen', coreJson]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(!('whats_new' in JSON.parse(readFileSync(relOf('9.9.9-w2'), 'utf8'))));
+  // markup, too long, too many: refused
+  for(const [text, why] of [['Hail <b>now</b>', /< >/], ['x'.repeat(121), /over 120/], ['a\nb\nc\nd', /1 to 3/]]){
+    writeFileSync(wn, text);
+    r = build('9.9.9-w3', ['--frozen', coreJson, '--whats-new', wn]);
+    assert.notEqual(r.status, 0, text); assert.match(r.stderr, why);
+  }
+  // a hand-edited index entry's notes: the validator says so
+  const good = readFileSync(ip, 'utf8'), idx = JSON.parse(good);
+  idx.releases.find(e => e.version === '9.9.9-w1').notes = ['<script>'];
+  writeFileSync(ip, JSON.stringify(idx));
+  r = validate();
+  assert.notEqual(r.status, 0); assert.match(r.stdout, /9\.9\.9-w1: notes: a line has a control character or < >/);
+  writeFileSync(ip, before);   // as it was: the next tests use 9.9.9-p1
+  for(const v of ['9.9.9-w1', '9.9.9-w2']) rmSync(join(tree, 'firmware/releases', v), { recursive: true });
+  rmSync(wn);
+  assert.equal(validate().status, 0);
+});
+
 await t('partial release installs only on its own core: stale /lv and old overrides go, describe shows the overrides', async () => {
   const rel = JSON.parse(readFileSync(relOf('9.9.9-p1'), 'utf8'));
   const board = mkdtempSync(join(tmpdir(), 'fwboard-'));
@@ -282,6 +345,45 @@ await t('partial release installs only on its own core: stale /lv and old overri
   const info = await readDeviceInfo(fw);
   assert.equal(describeFirmware(info.runtime), 'frozen lv-core 9.9.9 (core abcdef012345), overrides: [engine]');
   assert.equal(JSON.parse(readFileSync(join(board, 'version.json'), 'utf8')).frozen, 'abcdef012345');
+});
+
+await t('builder refuses a release whose lvota would turn down every later update (0.3.0 FR1 M1)', async () => {
+  // The release key's id and public key, as the ship pins them (game/board/lvota.py KEYS).
+  const m = readFileSync(join(repo, 'game/board/lvota.py'), 'utf8').match(/KEYS = \{"([0-9a-f]{8})": unhexlify\("([0-9a-f]{64})"\)\}/);
+  assert.ok(m && m[1] === '2111b2e9', 'lvota.py pins 2111b2e9');
+  const kt = mkdtempSync(join(tmpdir(), 'okeys-'));
+  for(const d of ['firmware', 'src-board']) mkdirSync(join(kt, d), { recursive: true });
+  writeFileSync(join(kt, 'firmware/runtime.json'), readFileSync(join(repo, 'firmware/runtime.json')));
+  const ks = join(kt, 'src-board');
+  writeFileSync(join(ks, 'main.py'), 'print("game")\n');
+  const kb = (v, extra = []) => spawnSync('python3', [join(repo, 'tools/build_release.py'), '--repo-root', kt, '--version', v,
+    '--channel', 'test', '--label', 'keys', '--source', ks, '--build-time', '2026-10-29T00:00:00+00:00', ...extra], { encoding: 'utf8' });
+  const other = 'ab'.repeat(32);     // a 32-byte key that isn't the release key
+  const cases = [
+    ['lvota.py', `KEYS = {"2111b2e9": unhexlify("${m[2]}")}\n`, 0],
+    ['lvota.py', 'KEYS = {}\n', /no KEYS, or an empty one/],
+    ['lvota.py', `KEYS = {"2111b2e9": unhexlify("${other}")}\n`, /doesn't hold the release key/],
+    ['lvota.py', `KEYS = {"2111b2e9": unhexlify("${m[2].slice(0, 62)}")}\n`, /isn't a 32-byte key/],
+    ['lvota.mpy', Buffer.concat([Buffer.from([77, 6, 0, 31]), Buffer.from(`2111b2e9\0${m[2]}\0`)]), 0],
+    ['lvota.mpy', Buffer.concat([Buffer.from([77, 6, 0, 31]), Buffer.from(`deadbeef\0${other}\0`)]), /lvota.mpy: KEYS doesn't hold/],
+  ];
+  let i = 0;
+  for(const [name, body, want] of cases){
+    for(const f of ['lvota.py', 'lvota.mpy']) rmSync(join(ks, f), { force: true });
+    writeFileSync(join(ks, name), body);
+    const r = kb(`9.9.${++i}-k`);
+    if(want === 0) assert.equal(r.status, 0, name + ': ' + r.stderr);
+    else { assert.notEqual(r.status, 0, name + ' should be refused'); assert.match(r.stderr, want); assert.match(r.stderr, /never take another update/); }
+  }
+  // a test build signed with a throwaway key names that key's id instead
+  rmSync(join(ks, 'lvota.mpy'));
+  writeFileSync(join(ks, 'lvota.py'), `KEYS = {"${createHash('sha256').update(Buffer.from(other, 'hex')).digest('hex').slice(0, 8)}": unhexlify("${other}")}\n`);
+  assert.notEqual(kb('9.9.20-k').status, 0);
+  const kid = createHash('sha256').update(Buffer.from(other, 'hex')).digest('hex').slice(0, 8);
+  assert.equal(kb('9.9.20-k', ['--ota-kid', kid]).status, 0);
+  // no lvota at all (the coex bench firmware): not checked
+  rmSync(join(ks, 'lvota.py'));
+  assert.equal(kb('9.9.21-k').status, 0);
 });
 
 console.log(`\n${pass} integration checks passed (board dir ${root})`);

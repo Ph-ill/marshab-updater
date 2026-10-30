@@ -1,7 +1,7 @@
 # "Test light" on the ship (board/lvledtest.py, POST /api/led/test from board/main.py's
 # ota_route), in real time on a fake pin: refused without a signed-in session (401) or as a
-# GET (404); the pattern (three full blinks, a dark gap, one software-PWM breath that swells
-# and fades, about 4 s, dark at the end); one at a time (a tap while it plays is 429 with the
+# GET (404); the pattern (three full blinks, a dark gap, three software-PWM breaths that swell
+# and fade, 10 s in all, dark at the end); one at a time (a tap while it plays is 429 with the
 # ms left, and plays nothing more); it plays with the Ship light off (lv/led.py's dark
 # Notifier) and on (lvled.Led: held dark, off the pin, for the test, then back to what it
 # was doing, its gift still waiting); the breath as a plain blink while the radio or a
@@ -41,21 +41,28 @@ def check(name, cond, extra=""):
     ok[0] += 1
 
 
-now = lvship.ticks_ms
 diff = lvship.ticks_diff
+
+
+def now():                      # lvship's clock as it is now (busy_case swaps in a virtual one)
+    return lvship.ticks_ms()
 MS = lvledtest.TEST_MS
-check("about 4 s", 3000 <= MS <= 5000, MS)
+check("10 s (0.3.0: was 4 s)", MS == 10000, MS)
 
 # -- the pattern itself (level: 0-100 at t ms, -1 when over)
 L = lvledtest.level
 check("blink 1, 2, 3 full on", L(0) == 100 and L(249) == 100 and L(500) == 100 and L(1000) == 100 and L(1249) == 100)
 check("dark between blinks", L(250) == 0 and L(499) == 0 and L(750) == 0 and L(1499) == 0)
 check("dark gap before the breath", all(L(t) == 0 for t in range(1500, 1800, 10)))
-up = [L(t) for t in range(1800, 2800, 10)]
-dn = [L(t) for t in range(2800, 4000, 10)]
-check("breath swells 0 to ~100", up[0] == 0 and up == sorted(up) and up[-1] >= 98, (up[0], up[-1]))
-check("breath fades back to ~0", dn[0] == 100 and dn == sorted(dn, reverse=True) and dn[-1] <= 2, (dn[0], dn[-1]))
+for k in range(3):                # three breaths, 2.7 s each: 1.2 s up, 1.5 s down
+    b0 = 1800 + k * 2700
+    up = [L(t) for t in range(b0, b0 + 1200, 10)]
+    dn = [L(t) for t in range(b0 + 1200, b0 + 2700, 10)]
+    check("breath %d swells 0 to ~100" % (k + 1), up[0] == 0 and up == sorted(up) and up[-1] >= 98, (up[0], up[-1]))
+    check("breath %d fades back to ~0" % (k + 1), dn[0] == 100 and dn == sorted(dn, reverse=True) and dn[-1] <= 1, (dn[0], dn[-1]))
+check("dark after the third breath, to the end", all(L(t) == 0 for t in range(9900, MS, 5)))
 check("over at TEST_MS", L(MS - 1) >= 0 and L(MS) == -1 and L(MS + 500) == -1)
+check("never out of range", all(0 <= L(t) <= 100 for t in range(0, MS, 7)))
 del up, dn
 
 
@@ -218,7 +225,8 @@ async def off_case():
     check("started: running", sh.ledtest is not None)
     await lvship.sleep_ms(600)
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
-    check("second tap while playing: 429 with the ms left", s == 429 and 2500 <= j.get("ms", 0) <= MS - 400, (s, j))
+    check("second tap while playing: 429 with the ms left", s == 429 and MS - 2000 <= j.get("ms", 0) <= MS - 400, (s, j))
+    check("R3 m2: a Test light's own 429 is kind test", j.get("kind") == "test", j)
     flips[0] = True               # the charger plugged in mid-test
     t_plug = diff(now(), T0[0])
     while sh.ledtest is not None and diff(now(), T0[0]) < MS + 2000:
@@ -235,11 +243,14 @@ async def off_case():
         check("blink %d: ~250 ms fully on" % (i + 1), 200 <= on <= 300, on)
         check("blink %d: one on, one off" % (i + 1), writes(log, a, a + 500) <= 3, writes(log, a, a + 500))
     check("dark gap", lit_ms(log, 1540, 1780) == 0)
-    rise = [lit_ms(log, 1800 + k * 200, 2000 + k * 200) for k in range(5)]
-    fall = [lit_ms(log, 2800 + k * 240, 3040 + k * 240) for k in range(5)]
-    check("breath: dim, then brighter, then full near the top", rise[0] < 20 and rise[0] < rise[2] < rise[4] and rise[4] >= 120, rise)
-    check("breath: then fades", fall[0] > fall[2] > fall[4] and fall[4] < 20, fall)
-    check("breath: software PWM (many short pulses, not one long on)", writes(log, 2000, 3600) >= 100, writes(log, 2000, 3600))
+    for b in range(3):
+        b0 = 1800 + b * 2700
+        rise = [lit_ms(log, b0 + k * 240, b0 + 240 + k * 240) for k in range(5)]
+        fall = [lit_ms(log, b0 + 1200 + k * 300, b0 + 1500 + k * 300) for k in range(5)]
+        check("breath %d: dim, then brighter, then full near the top" % (b + 1), rise[0] < 20 and rise[0] < rise[2] < rise[4] and rise[4] >= 140, rise)
+        check("breath %d: then fades" % (b + 1), fall[0] > fall[2] > fall[4] and fall[4] < 20, fall)
+        check("breath %d: software PWM (many short pulses, not one long on)" % (b + 1), writes(log, b0 + 200, b0 + 1800) >= 100, writes(log, b0 + 200, b0 + 1800))
+    check("dark for the last 100 ms", lit_ms(log, 9920, MS) == 0, lit_ms(log, 9920, MS))
     check("one test only (the 429 played nothing)", lit_ms(log, MS + 100, end + 250) == 0)
     check("event loop free: the 100 ms ticker never late by more than 60 ms", gaps and max(gaps) < 160, max(gaps) if gaps else None)
     check("charger_watch saw the plug mid-test", bat[2] is True and t_plug < MS, (bat[2], t_plug))
@@ -279,20 +290,85 @@ async def on_case():
     led.set_enabled(False)
     await task
 
-# -- 3. busy radio: the breath as a plain blink
-async def busy_case():
+# -- 3. busy radio: the breath as a plain blink, on a virtual clock
+# The busy cases check the pattern's own timing (when each write lands, how long it plays),
+# not the event loop's health (off_case does that in real time). On real time they failed
+# now and then on the shared test box with the whole process frozen mid-pattern: the pin
+# log stopped at ~3.7 s, nothing ran at all (not even this test's 20 ms poll), and both
+# woke ~46 s later, when play() saw it was past TEST_MS and ended. Nothing in play()'s path
+# can block (fakes only: Busy, Server, a Pin that appends), and the VM logs "virtual machine
+# fork" snapshots that pause it. So here lvship's clock is VClock: time moves 1 ms per round
+# of the event loop, only while every task is waiting on it, and a host pause moves nothing.
+class VClock:
+    def __init__(self):
+        self.t = 1000
+        self.real = (lvship.ticks_ms, lvship.sleep_ms)
+        self.stop = False
+
+    def ticks_ms(self):
+        return self.t
+
+    async def sleep_ms(self, ms):
+        end = self.t + max(0, int(ms))
+        sleep0 = self.real[1]
+        while self.t < end:
+            await sleep0(0)             # (one round: every other ready task runs once)
+
+    async def tick(self):               # the only thing that moves time: 1 ms a round
+        sleep0 = self.real[1]
+        while not self.stop:
+            await sleep0(0)
+            self.t += 1
+
+    def __enter__(self):
+        lvship.ticks_ms, lvship.sleep_ms = self.ticks_ms, self.sleep_ms
+        return self
+
+    def __exit__(self, *a):
+        self.stop = True
+        lvship.ticks_ms, lvship.sleep_ms = self.real
+
+
+async def busy_case(http=False):
+    with VClock() as vc:
+        tk = asyncio.create_task(vc.tick())
+        try:
+            await busy_play(http)
+        finally:
+            vc.stop = True
+            await tk
+
+
+async def busy_play(http):
     pin = Pin()
     sh = Ship(Notifier(Clock(), False))
     sh.ble = Busy()
     sh.led_pin = lambda: pin
     srv = hook(sh)
+    said = len(SAID)
     T0[0] = now()
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
-    sh.ble.on = True
+    check("busy: started for the full duration (including after module reload)",
+          s == 200 and j.get("ms") == MS, (s, j))
+    if http:
+        srv.busy = 1
+    else:
+        sh.ble.on = True
     while sh.ledtest is not None:
         await lvship.sleep_ms(20)
-    check("busy: the breath plain (a couple of writes, not PWM)", writes(pin.log, 1800, MS) <= 4, writes(pin.log, 1800, MS))
-    check("busy: still lit through its middle", lit_ms(pin.log, 1800, MS) >= 500, lit_ms(pin.log, 1800, MS))
+    elapsed = diff(now(), T0[0])
+    check("busy: no playback exception", not any("test stopped" in s for s in SAID[said:]), SAID[said:])
+    check("busy: plays for TEST_MS, not just an advertised duration", MS <= elapsed <= MS + 40,
+          (elapsed, pin.log, SAID[said:]))
+    check("busy: the breaths plain (a couple of writes each, not PWM)", writes(pin.log, 1800, MS) <= 12, writes(pin.log, 1800, MS))
+    check("busy: still lit through each one's middle", all(lit_ms(pin.log, 1800 + k * 2700, 4500 + k * 2700) >= 500 for k in range(3)),
+          [lit_ms(pin.log, 1800 + k * 2700, 4500 + k * 2700) for k in range(3)])
+    for k in range(3):
+        b0 = 1800 + k * 2700
+        # Integrate writes, don't sample a software-PWM pin at one instant. The bright
+        # middle (level >= 50) must stay on even when BLE or HTTP suppresses PWM.
+        middle = lit_ms(pin.log, b0 + 800, b0 + 1600)
+        check("busy: breath %d has a solid bright middle" % (k + 1), middle >= 700, middle)
     check("busy: blinks unchanged", 200 <= lit_ms(pin.log, 0, 500) <= 300)
 
 # -- 4. no light to drive, and a pin that fails mid-pattern
@@ -331,5 +407,52 @@ async def fail_case():
 asyncio.run(off_case())
 asyncio.run(on_case())
 asyncio.run(busy_case())
+asyncio.run(busy_case(http=True))
 asyncio.run(fail_case())
+
+
+# -- 5. (0.3.0 review 2 M3) the busy mark only once a task exists, and a stale mark cleared
+class NoTask:
+    @staticmethod
+    def create_task(c):
+        c.close()                       # (no "never awaited" warning on CPython)
+        raise MemoryError("no heap for a task")
+
+
+def no_task_case():
+    import lvflick
+    import lvotaq
+    sh = Ship(Notifier(Clock(), True))
+    sh.led_pin = lambda: Pin()
+    srv = Server(sh)
+    real = lvledtest.asyncio
+    lvledtest.asyncio = NoTask
+    try:
+        lvledtest.start(srv, Req("POST", "/api/led/test", "tok"))
+        check("M3: Test light with no task raises", False)
+    except MemoryError:
+        pass
+    finally:
+        lvledtest.asyncio = real
+    check("M3: Test light with no task: not marked busy", sh.ledtest is None, sh.ledtest)
+    real = lvflick.asyncio
+    lvflick.asyncio = NoTask
+    del SAID[:]
+    try:
+        r = lvflick.start(sh)
+    finally:
+        lvflick.asyncio = real
+    check("M3: a hail's flicker with no task: False, not marked busy", r is False and sh.ledtest is None, (r, sh.ledtest))
+    check("M3: ... and said so", any("no task" in x for x in SAID), SAID)
+    sh.ledtest = lvship.ticks_ms()
+    check("M3: a running mark is busy (flick, update pieces)", lvflick.led_busy(sh) and lvotaq.lit(sh, lvship))
+    sh.ledtest = lvship.ticks_ms() - 16000
+    check("M3: a mark past its end + 5 s is stale: flick clears it", not lvflick.led_busy(sh) and sh.ledtest is None)
+    sh.ledtest = lvship.ticks_ms() - 16000
+    check("M3: ... and so do update pieces", not lvotaq.lit(sh, lvship) and sh.ledtest is None)
+    for m in ("lvflick", "lvotaq", "lvlight"):
+        sys.modules.pop(m, None)
+
+
+no_task_case()
 print("led test: %d checks ok" % ok[0])

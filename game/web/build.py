@@ -6,6 +6,7 @@ plus build/app.webmanifest.gz and build/icon.png.gz for the home screen.
   python3 web/build.py
 """
 import gzip
+import json
 import os
 import re
 import sys
@@ -43,6 +44,7 @@ def main():
                        ("safe.js", "/*SAFE_JS*/"), ("ota.js", "/*OTA_JS*/"), ("ota.css", "/*OTA_CSS*/"),
                        ("a2hs.js", "/*A2HS_JS*/"), ("a2hs.css", "/*A2HS_CSS*/"),
                        ("settings.js", "/*SET_JS*/"), ("settings.css", "/*SET_CSS*/"),
+                       ("live.js", "/*LIVE_JS*/"), ("live.css", "/*LIVE_CSS*/"),
                        ("fullscreen.js", "/*FS_JS*/"), ("fullscreen.css", "/*FS_CSS*/"),
                        ("funnel.js", "/*FUN_JS*/"), ("funnel.css", "/*FUN_CSS*/")):
         path = os.path.join(HERE, name)
@@ -50,6 +52,15 @@ def main():
         if name.endswith(".css"):
             src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
         html = html.replace(mark, src)
+    # What's new (game/tools/ota/whatsnew.json) into web/ota.js's OTA_WN: the page ships in
+    # every release, so a ship offline still has its own version's lines (0.3.0).
+    sys.path.insert(0, os.path.join(ROOT, "tools", "ota"))
+    import whatsnew
+    wn = {k: v for k, v in whatsnew.table().items() if not whatsnew.check(v)}
+    html = html.replace("OTA_WN=/*WHATSNEW*/{}", "OTA_WN=" + json.dumps(wn, separators=(",", ":")), 1)
+    # ...and its line length, so the page's cap (otaClean) is the checker's (review 3 nit-5)
+    assert "/*NOTE_LEN*/120)" in html, "web/ota.js: otaClean's /*NOTE_LEN*/ cap is missing"
+    html = html.replace("/*NOTE_LEN*/120)", "%d)" % whatsnew.NOTE_LEN, 1)
     html = squeeze(html)
     os.makedirs(BUILD, exist_ok=True)
     raw = html.encode("utf-8")

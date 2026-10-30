@@ -90,7 +90,9 @@ ok("crew page: no Ship light, Sign out, Ship software or Add to home screen", !(
 await p.click("#top .gear");
 await p.waitForSelector("#set-rst");
 const secs = await p.$$eval("#v section", (s) => s.map((e) => e.id));
-ok("Settings: Ship software, Home screen icon, Ship light, Battery, Sign out, Your code, Reset (last)", secs.join() === "set-sw,set-a2h,set-led,set-bat,set-out,set-code,set-rst");
+ok("Settings: Ship software, Home screen icon, Ship light, Battery, Sign out, Your code, Reset (last)", secs.filter((x) => x !== "set-live").join() === "set-sw,set-a2h,set-led,set-bat,set-out,set-code,set-rst"
+  && (!secs.includes("set-live") || secs.indexOf("set-live") === secs.indexOf("set-out") - 1), secs.join());
+// (Ship-to-ship, 0.3.0: its section sits before Sign out; empty here, no /api/live on this mock.)
 ok("Settings: the gear says where you are", await p.$eval("#top .gear", (e) => e.getAttribute("aria-current") === "page"));
 ok("Settings: the four tabs, none current", (await p.$$eval("#dock nav button", (b) => b.map((x) => x.dataset.go + (x.hasAttribute("aria-current") ? "*" : "")))).join() === "home,crew,log,file");
 ok("Ship software: installed, channel, available, checked, check button", await p.$eval("#set-sw", (e) => /Installed\s*0\.2\.0/.test(e.textContent) && /Channel/.test(e.textContent) && /Available/.test(e.textContent) && /Checked/.test(e.textContent) && !!e.querySelector("[data-ota=check]")));
@@ -99,6 +101,9 @@ ok("Battery: 72 %, 3.95 V, charging", await p.$eval("#set-bat", (e) => /Charge\s
 ok("Reset: a danger button", await p.$eval("#set-rst [data-rst=ask]", (e) => e.classList.contains("dgr") && getComputedStyle(e).color !== getComputedStyle(document.body).color));
 // The charging bolt follows the cable within seconds (web/batt.js's 5 s look at /api/bat),
 // redrawn in place: the rest of the page stays the same nodes.
+// Let the initial automatic OTA check finish its own repaint before testing that
+// battery polls preserve unrelated DOM nodes. Do not confuse that repaint with a poll.
+await p.waitForFunction(() => !OTA_CHECK && OB && OB.at, null, { timeout: 25000 });
 await p.evaluate(() => { window.__keep = document.querySelector("#set-sw"); return fetch("/api/bat?set=72,3950,0"); });
 const bolt = () => p.evaluate(() => !!document.querySelector("#top .bat .bati path"));
 ok("Battery: charging shows the bolt", await bolt());
@@ -148,12 +153,12 @@ await p.screenshot({ path: `${out}/set-l2-testing-dark-390x844.png` });
 console.log(`${out}/set-l2-testing-dark-390x844.png`);
 await p.emulateMedia({ colorScheme: "light" });
 [lst, jj0] = await ledReq(p);
-ok("Test light: a second tap while it plays is 429 with the ms left", lst === 429 && jj0.ms > 0 && jj0.ms <= 4000, [lst, jj0]);
+ok("Test light: a second tap while it plays is 429 with the ms left", lst === 429 && jj0.ms > 8000 && jj0.ms <= 10000, [lst, jj0]);
 await p.click("[data-ledt]", { force: true });
 ok("Test light: still testing after another tap", await p.$eval("[data-ledt]", (b) => b.disabled));
-await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && !b.disabled && /Test light/i.test(b.textContent); }, null, { timeout: 8000 });
+await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && !b.disabled && /Test light/i.test(b.textContent); }, null, { timeout: 14000 });
 const tl = Date.now() - t0l;
-ok("Test light: back after about 4 s (" + tl + " ms)", tl >= 3800 && tl <= 6500);
+ok("Test light: back after 10 s (" + tl + " ms)", tl >= 9800 && tl <= 12500);
 ok("Test light: says it's finished and what the light is back to", await p.$eval("#ledts", (e) => /Finished\. The light is back to off\./.test(e.textContent)));
 ok("Test light: repainted in place, not the whole page", await p.evaluate(() => window.__keep === document.querySelector("#set-sw")));
 await center(p, "#set-led");
@@ -165,7 +170,7 @@ await p.click("[data-ledt]");
 await p.waitForFunction(() => document.querySelector("[data-ledt]")?.disabled);
 await center(p, "#set-led");
 await shot(p, "set-l4-testing-light-on");
-await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && !b.disabled && /back to on/.test(document.querySelector("#ledts").textContent); }, null, { timeout: 8000 });
+await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && !b.disabled && /back to on/.test(document.querySelector("#ledts").textContent); }, null, { timeout: 14000 });
 ok("Test light: with the light on, finished and back to on", true);
 await p.click("#set-led [data-led]");
 await p.waitForFunction(() => S.led === false && document.querySelector("#set-led [data-led]")?.textContent.includes("Ship light: off"));
@@ -291,6 +296,21 @@ await shot(p, "set-07-settings-no-battery");
 await p.click("[data-rst=ask]");
 await center(p, "#set-rst");
 await shot(p, "set-08-reset-confirm");
+await p.context().close();
+// Test light playing on an Android phone (412 px), as on the iPhone above: three blinks, then
+// three slow breaths, 10 s; the bar runs for all of it.
+p = await page(8060 - 1, { width: 412, height: 915, android: true });
+await goto(p, "set");
+await p.waitForSelector("[data-ledt]");
+const t0a = Date.now();
+await p.click("[data-ledt]");
+await p.waitForFunction(() => document.querySelector("[data-ledt]")?.getAttribute("aria-busy") === "true");
+await p.waitForTimeout(900);
+await center(p, "#set-led");
+ok("412 Android: Testing, the bar's animation as long as the ship's 10 s", await p.$eval(".ledbar", (b) => { const d = parseFloat(b.style.animationDuration); return d > 8000 && d <= 10000; }), await p.$eval(".ledbar", (b) => b.style.animationDuration));
+await shot(p, "set-l2-testing");
+await p.waitForFunction(() => { const b = document.querySelector("[data-ledt]"); return b && !b.disabled; }, null, { timeout: 14000 });
+ok("412 Android: back after 10 s", Date.now() - t0a >= 9800);
 await p.context().close();
 // ...and with the battery at 320 px: the top bar still fits, gear included.
 p = await page(8060 - 1, { width: 320, height: 640 });

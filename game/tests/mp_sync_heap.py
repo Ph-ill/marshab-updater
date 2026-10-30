@@ -38,6 +38,40 @@ BAT = "--bat" in sys.argv
 # build/heap-ota-mod/ (tests/phone_heap.py writes it: board/lvota.py with a test key and its
 # staging under build/heap-ota/), so a phone can upload a signed update while the others play.
 OTA = "--ota" in sys.argv
+# --live (with --phone --ota): ship-to-ship (board/lvlive.py) on both ships, as main.py's
+# run() installs it; the peer queues a hail for this ship, and a sixth phone hails the peer
+# through main.py's ota_route (board/lvliveapi.py, loaded per request) while the others play.
+LIVE = "--live" in sys.argv
+# a full day's hail.json to start from (FIXREVIEW2 B1: lvliveapi.HOUT sent, HIN received),
+# as a busy ship's would be by evening; --no-seed: an empty one
+SEED = LIVE and "--no-seed" not in sys.argv
+
+
+def seed_hails(p):
+    # written a line at a time (the test's own garbage, gone before anything is measured);
+    # its day unset, so the ship takes it as today's whatever the phones' clock says
+    e = 1792989200000
+    with open(p, "w") as f:
+        f.write('{"d": null, "n": 12, "o": [')
+        for k in range(12):
+            f.write('%s["%06x", %d, %d, %d, 2]' % (", " if k else "", k, 2 + k % 6, k % 8, e - 3600000 - k * 60000))
+        f.write('], "i": [')
+        for k in range(16):
+            f.write('%s["%06x", %d, %d, %d, 1, 0, %d, %d]' % (
+                ", " if k else "", 0x100 + k, 2 + k % 6, k % 8, e - k * 60000, 2 + k % 6, e - k * 60000 - 60000))
+        f.write(']}')
+# --everyone: the season where all eight crew play every day (build/season_log_all.bin,
+# python3 sim/season.py --everyone: about 2.5 times the reference season's records): the
+# busiest log a season is likely to have, everything else as above. The cap applies again
+# (0.3.0): the board's own copy of a log that size (lv/chlog.py, the frozen lv-core 0.2.0's,
+# ~30 B a record on the Pico: ~20 KB for 673 records) took 0.2.7 to ~84.5 KB with Hail at an
+# update's upload pieces (lvota whole, the manifest parsed per piece); 0.3.0 puts a piece
+# through the small lvotap (an index line, not the manifest), waits in lvotaq before it
+# loads, and drops lvota through the signature check. Review-1 additionally bounds
+# expensive responses before allocation and loads phone/boot helpers only when used;
+# the acceptance target is <=78,000 B over three full and three normal combined runs.
+EVERYONE = "--everyone" in sys.argv
+LOG = "build/season_log_all.bin" if EVERYONE else "build/season_log.bin"
 if LED or BAT:
     sys.path.insert(0, "tests/fakeboard")
     import fakeboard
@@ -76,6 +110,25 @@ for n in ("log.bin", "local.bin", "days.bin", "done", "clock.json"):    # crew.j
 gc.collect()
 base = gc.mem_alloc() if hasattr(gc, "mem_alloc") else 0
 peak = [0]
+where = [""]
+kpeak = {}
+# 0.3.0 review R2 M2: with --live --ota, a hail comes in (a peer's trailer, taken as a session
+# would) at the signature check, the update's tightest moment: it must be held (not taken,
+# not acked, no lvlivein import), Hail stays on, and it's delivered later in the run.
+hail_sig = []
+HAIL_M = [None]
+
+
+class HailSes:
+    to = 1                           # (the peer: ship 2)
+
+    def __init__(self):
+        self.acks = []
+# the moment of the peak: which per-use board modules were loaded, the web server's open
+# requests and the radio (printed at the end, so a cap overrun says what it coincided with)
+PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
+           "lvcode", "lvledtest", "lvbatt", "lvsafe", "lvcheck", "lvstateapi",
+           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight")
 
 
 def mem():
@@ -85,8 +138,26 @@ def mem():
 
 def sample():
     m = mem()
+    k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
+    if m > kpeak.get(k, 0):
+        kpeak[k] = m
+    if k == "sig" and HAIL_M[0] is not None and not hail_sig and getattr(globals().get("ship"), "live", None):
+        L = globals()["ship"].live
+        h0, i0, se = L.n["held"], L.n["in"], HailSes()
+        L.take(se, HAIL_M[0], 0)
+        hail_sig.append((L.n["held"] - h0, L.n["in"] - i0, len(se.acks), "lvlivein" in sys.modules))
+        m2 = mem()
+        if m2 > kpeak[k]:
+            kpeak[k] = m2
     if m > peak[0]:
         peak[0] = m
+        try:
+            where[0] = "%s; web busy %s; radio %s" % (
+                "+".join(n for n in PER_USE if n in sys.modules) or "no per-use module",
+                getattr(globals().get("web"), "busy", "-"),
+                globals()["ship"].ble.state if "ship" in globals() else "-")
+        except Exception as e:
+            where[0] = "? %r" % (e,)
     return m
 
 
@@ -107,10 +178,12 @@ from lv import record as R          # noqa: E402
 from lv import sync as S            # noqa: E402
 from lv.chlog import ChoiceLog      # noqa: E402
 from lv.ble import BleSync          # noqa: E402
+if LIVE:
+    import lvlive                    # resident on a board (lvlivein, lvlivex, lvliveapi and lvflick load per use)
 m_code = sample()
 
 FK = b"test-fleet-key-not-secret"
-with open("build/season_log.bin", "rb") as f:
+with open(LOG, "rb") as f:
     RAW = f.read()
 NREC = len(RAW) // R.LEN
 FAST = {"scan_every_ms": 6000, "scan_ms": 3000}
@@ -122,6 +195,39 @@ for i in range(NREC):
     if R.ship(r) == 1:
         plog.merge(r)
 peer = BleSync(S.Node(plog, 1, FK, 42), w.new(), FAST)
+if LIVE:
+    class PeerClock:                 # the peer has no phones: no time, so no hail light
+        def minute(self):
+            return None
+
+        def date(self):
+            return None
+
+        def known(self):
+            return False
+
+    class PeerShip:
+        ble, node, fk, clock, led, live, ledtest = peer, peer.node, FK, PeerClock(), None, None, None
+        live_why = None
+
+        def say(self, s):
+            pass
+    try:
+        os.mkdir(DATA + "-peer")
+    except OSError:
+        pass
+    for n in ("live.json", "livebox.json", "fault.json"):
+        try:
+            os.remove(DATA + "-peer/" + n)
+        except OSError:
+            pass
+    peer_link = lvlive.install(PeerShip(), DATA + "-peer")
+    import lvlivein                  # (per use, as lvliveapi loads it for a phone's hail)
+    lvlivein.send(peer_link, 1, 0, bytes((1, 0, 1)))        # "Good morning" to ship 1 (this one) from crew 2
+    if OTA:
+        HAIL_M[0] = bytes((lvlive.MARK, 1)) + peer_link.out[0][1]
+    lvship.drop("lvlivein")
+    lvlivein = None
 m_peer = sample()
 cfg = lvship.load_config("/nonexistent")
 cfg["day"] = 42
@@ -214,6 +320,16 @@ if WEB:
     src = g = None
     gc.collect()
     handler = web.handle
+    if LIVE:
+        for n in ("live.json", "livebox.json", "fault.json", "hail.json"):
+            try:
+                os.remove(DATA + "/" + n)
+            except OSError:
+                pass
+        if SEED:
+            seed_hails(DATA + "/hail.json")
+            print("live: hail.json seeded with a full day (12 sent, 16 received)")
+        lvlive.install(ship, DATA)            # as main.py's run() does
 else:
     handler = lvstat.server(ship)
 during = [0]
@@ -244,13 +360,25 @@ async def heap_run():
         asyncio.create_task(chg_watch[0](ship))
     if srv:
         await client(port)
+    if PHONE and LIVE:
+        # Deterministic shared-pin precondition: a real Hail playback owns it
+        # before the Test-light client connects (independent of quiet hours).
+        import lvflick
+        assert lvflick.start(ship)
+        lvflick = None
+        lvship.drop("lvflick")
     if PHONE:
         print("PORT %d" % port)
         while web.served < 2:            # sync starts with the first phone's visit
             await lvship.sleep_ms(5)
     t = 0
     phones_done = not PHONE
-    while t < (600000 if PHONE else 120000):
+    started = lvship.ticks_ms()
+    # Light ownership/OTA admission can outlast ten accelerated radio minutes.
+    # Keep polling and sampling until every client finishes; never truncate the workload.
+    while t < (600000 if PHONE else 120000) or (PHONE and not phones_done):
+        if PHONE and lvship.ticks_diff(lvship.ticks_ms(), started) > 180000:
+            raise RuntimeError("phone workload did not finish within 180 s")
         w.step(10)
         t += 10
         ship.ble.poll(w.now)
@@ -269,16 +397,23 @@ async def heap_run():
                     during[0] = web.served
         # Done when the peer has everything (with phones: their taps too, once they've left).
         if phones_done and peer.node.digest() == ship.node.digest() and ship.ble.state == "idle" \
-                and peer.state == "idle":
+                and peer.state == "idle" and (not LIVE or (not ship.live.out and not peer_link.out)):
             break
     if PHONE:
-        # A few more scans, so the ship hears the peer's advert after the sync (in sync now).
-        for i in range(6000):
+        # Hail can leave the peer in a session/cooldown longer than one scan.
+        # Settle until a fresh, matching advert is actually observed, not merely
+        # until a fixed amount of fake radio time has passed. Keep the age assertion.
+        for i in range(30000):
             w.step(10)
             ship.ble.poll(w.now)
             peer.poll(w.now)
             if i % 5 == 0:
                 sample()
+                q = ship.ble.peers.get(1)
+                if i >= 6000 and q is not None and q.diff_since is None and 0 <= ship.ble._swept - q.seen <= 10000:
+                    break
+            if i % 50 == 0:
+                await lvship.sleep_ms(1)
         # (not sampled: the phones' own /api/state calls during the sync are, above)
         air[0] = web.phone.state_body(0, 39, ship.clock.minute())["air"]
         bat[0] = web.phone.state_body(0, 39, ship.clock.minute())["bat"]
@@ -325,6 +460,9 @@ m_peer_end = m_peer - m_code + grow
 board = peak[0] - m_peer_end - m_fake  # what a board holds: no second ship, no fake radio
 BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # The cap is the Pico's: a 32-bit build. The 64-bit port's figure is printed for comparison.
+# The notifier wrote its own pattern (6+ writes) in every mode, OTA+LIVE too: a hail's
+# flicker or Test light owns the pin only for its own seconds, not the run (0.3.0 review 2
+# n1: review 1 had let OTA+LIVE pass on Test light's writes alone).
 led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
 ok = (synced and http_ok[0] and led_ok and
@@ -356,13 +494,21 @@ print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio
       "board peak (peak - peer - fake radio) %d B%s; main.py's resident code %d B (in the peak)" % (
           peak[0], got, t, m_peer_end, board, " (cap 80,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 80,000 B cap",
           m_main))
+print("heap: the peak came with %s" % where[0])
+print("heap: board peak by moment: %s" % ", ".join("%s %d B" % (k, kpeak[k] - m_peer_end - m_fake) for k in sorted(kpeak)))
+if EVERYONE and BITS == 32:
+    print("heap: the everyone-plays season: %d B to spare under the 80,000 B cap" % (80000 - board))
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
     # Bluetooth contact for the phones (lvphone.air): ship 2 heard seconds ago and in sync,
     # nobody else heard; ship 1 is this one.
     A = air[0]
-    air_ok = A is not None and len(A) == 1 and A[0][0] == 1 and 0 <= A[0][1] <= 30 and A[0][2] is True
+    # "seconds ago" is lv/ble's _swept (moved on at most every 10 s, by a status look) less the
+    # last advert heard; with Hail on, the peer spends some of the after-sync minute in a
+    # session (not advertising) and the 0.3.0 upload's waits move the phones' last looks, so
+    # anything within that minute (60 s of scans) counts: 36 s was seen once, 0-26 s usually.
+    air_ok = A is not None and len(A) == 1 and A[0][0] == 1 and 0 <= A[0][1] <= 60 and A[0][2] is True
     ok = ok and air_ok
     print("air: %s (ship 2 heard seconds ago, in sync): %s" % (A, "ok" if air_ok else "FAIL"))
     ok = ok and ship.cal is not None and ship.day == 42
@@ -379,11 +525,43 @@ if BAT:
     print("battery: %s after %d readings while idle, lvbatt %s: %s" % (
         B, bat[1], "loaded" if "lvbatt" in sys.modules else "dropped", "ok" if bat_ok else "FAIL"))
 if OTA and WEB:
-    # Test light played its ~4 s pattern twice (blinks and a software-PWM breath), then went
-    lt_ok = TestPin.n >= 200 and "lvledtest" not in sys.modules
+    # Two patterns: each has 6 blink edges, 6 breath edges and the final off (26 writes).
+    # With the radio quiet the breaths are PWM steps (hundreds of writes): 200 required, as
+    # before review 1 (0.3.0 review 2 n1). With Hail's radio and phones busy (--live) the
+    # task gets fewer turns and a breath can collapse to its solid middles, so 26 there;
+    # tests/test_ledtest.py checks the PWM breaths themselves (>=100 writes each).
+    lt_min = 26 if LIVE else 200
+    lt_ok = TestPin.n >= lt_min and "lvledtest" not in sys.modules
     ok = ok and lt_ok
-    print("test light: pin writes %d, lvledtest %s: %s" % (
-        TestPin.n, "loaded" if "lvledtest" in sys.modules else "dropped", "ok" if lt_ok else "FAIL"))
+    print("test light: pin writes %d (at least %d), lvledtest %s: %s" % (
+        TestPin.n, lt_min, "loaded" if "lvledtest" in sys.modules else "dropped", "ok" if lt_ok else "FAIL"))
+if LIVE:
+    # Hail both ways over the same syncs: the phone's to the peer acked back to this ship, the
+    # peer's to this one taken (and acked); nothing refused as bad, lvliveapi dropped.
+    L = ship.live
+    PL = peer_link
+    lv_ok = (L is not None and PL is not None and L.n["in"] >= 1 and PL.n["in"] >= 1 and not L.out
+             and not PL.out and L.n["bad"] == 0 and PL.n["bad"] == 0 and "lvliveapi" not in sys.modules
+             and "lvlivein" not in sys.modules)
+    ok = ok and lv_ok
+    if OTA and WEB:
+        hs = hail_sig[0] if hail_sig else None
+        hs_ok = hs is not None and hs[0] == 1 and hs[1] == 0 and hs[2] == 0 and not hs[3] and L is not None
+        ok = ok and hs_ok
+        print("live: a hail at the signature check: %s (held, taken, acks, lvlivein loaded); Hail %s: %s" % (
+            hs, "on" if L is not None else "off", "ok" if hs_ok else "FAIL"))
+    try:
+        import json
+        with open(DATA + "/hail.json") as f:
+            hj = json.load(f)
+        print("live: hail.json at the end: %d sent (%d today), %d received" % (len(hj["o"]), hj.get("n", -1), len(hj["i"])))
+        hj = None
+    except (OSError, ValueError, KeyError):
+        pass
+    print("live: ship %s, peer %s, waiting %d/%d, lvliveapi and lvlivein %s: %s" % (
+        L and L.n, PL and PL.n, len(L.out) if L else -1, len(PL.out) if PL else -1,
+        "loaded" if "lvliveapi" in sys.modules or "lvlivein" in sys.modules else "dropped",
+        "ok" if lv_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:

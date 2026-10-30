@@ -81,8 +81,11 @@ else
 fi
 fwtotal=$(find "$FW" -type f -exec cat {} + | wc -c)
 total=$(find "$OUT" -type f -exec cat {} + | wc -c)
-cp build/season_log.bin "$OUT/season_log.bin"   # optional preload for the bulk test (not copied)
-python3 -c "
+# optional preload for the bulk test (not copied): only when the season sim has made one,
+# so a clean export (no build/season_log.bin yet) still builds (0.3.0 review R3 m6)
+if [ -f build/season_log.bin ]; then
+  cp build/season_log.bin "$OUT/season_log.bin"
+  python3 -c "
 import sys; sys.path.insert(0, '.')
 from lv.chlog import ChoiceLog
 from lv import record as R
@@ -92,6 +95,9 @@ for i in range(0, len(raw), R.LEN):
     log.merge(raw[i:i + R.LEN])
 print('bulk test preload: build/board/season_log.bin, %d records, digest %s' % (len(log), log.digest().hex()))
 "
+else
+  echo "bulk test preload: skipped (no build/season_log.bin: run sim/season.py first)"
+fi
 echo "built $OUT (stock MicroPython): $(ls "$OUT"/lv | wc -l) lv modules + $GLUE, main.py, pack, engage.bin, www/ = $total bytes of flash"
 echo "built $FW (game firmware): $(cd "$FW" && find . -type f | sed 's|^\./||' | sort | tr '\n' ' ')= $fwtotal bytes of flash"
 

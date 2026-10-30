@@ -72,6 +72,9 @@ HEALTHY_MS = 600000
 OFF_MS = 900000
 RETRY_MS = (1800000, 7200000, 21600000, 43200000)
 D = "/data"
+# = lvota.DAMAGED: safe mode's answer to an upload when the upload's own code won't run.
+DAMAGED = ("this ship's update code is damaged, so it can't take an update now. It goes "
+           "back to its last good version by itself; if it doesn't, it needs fixing over USB")
 MISSING, BROKEN, UNKNOWN = "missing", "broken", "unknown"
 fail = None             # tests: called at "write", "read", "rename", "open", "restore" to simulate a failure
 
@@ -321,9 +324,10 @@ def check(trial, d=D, say=print, got=None):
     return None
 
 
-def crashed(why, trial, up=0, d=D):
+def crashed(why, trial, up=0, d=D, live=False):
     """main.py caught a crash: count it (not on an update's trial) before the restart. Past
-    SAFE_CAP nothing more is written (a loop of them would only wear the flash)."""
+    SAFE_CAP nothing more is written (a loop of them would only wear the flash). live: the
+    traceback ran through Hail's code (lvlive*, lvflick), kept as "live" for lvlivex.crash."""
     if trial:
         return
     j = faults(d)
@@ -331,6 +335,10 @@ def crashed(why, trial, up=0, d=D):
     if n > SAFE_CAP:
         return
     j["n"], j["why"], j["up"] = n, str(why)[:64], up
+    if live:
+        j["live"] = 1
+    else:
+        j.pop("live", None)
     t = json.dumps(j)
     if not save(d + "/fault.json", t):
         save(d + "/fault.json", t)      # (save() has removed its .new: one more go)
@@ -511,6 +519,22 @@ class Phone:
         return 503, {"err": "Your ship is in safe mode.", "safe": sh.why}
 
 
+class Once:
+    """The phone's stream for one upload piece in safe mode, noting whether lvotap's answer
+    has started (0.3.0 review 2 m3: a failure after it never gets a second answer)."""
+
+    def __init__(self, w):
+        self.w = w
+        self.n = 0
+
+    def write(self, b):
+        self.n += 1
+        return self.w.write(b)
+
+    def drain(self):
+        return self.w.drain()
+
+
 def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
     """-> (lvweb.Server, the safe ship). main.py starts it on the hotspot."""
     sh = Ship(cfg, why, data)
@@ -526,6 +550,58 @@ def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
                 return await lvweb.send_file(w, web.root + s[0], s[1])
             if p == "/status":
                 return await lvweb.send(w, 200, "SAFE %s\n" % why, "text/plain")
+        if p == "/api/ota/put":
+            # 0.3.0 review 2 m3: only the code failing to load (or having no api to call) is
+            # "damaged, fix over USB". What goes wrong while a piece is taken (a bad body, a
+            # bug in one branch) is that piece's failure, and the person taps Install again.
+            # And one answer only: if lvotap's answer had started, nothing is sent after it.
+            import sys
+            code = obj = None
+            try:
+                import lvotap           # the upload (0.3.0): lvota only for the envelope
+                if not callable(getattr(lvotap, "api", None)):
+                    raise TypeError("no api")
+            except MemoryError:
+                code, obj = 503, {"err": "busy", "have": None}
+            except OSError as e:
+                # reading the .mpy: a flash fault there is damage too (it won't load)
+                lvotap = None
+                sys.modules.pop("lvotap", None)
+                sys.modules.pop("lvota", None)
+                sh.say("safe: upload code %s" % (type(e).__name__,))
+                code, obj = 500, {"err": DAMAGED, "have": None}
+            except Exception as e:
+                # Damaged (an .mpy for another firmware, a .py twin that won't compile, a
+                # missing name: anything, not just ImportError) -- an answer the page doesn't
+                # retry (0.3.0 fix review FR1 m3).
+                sh.say("safe: upload code %s" % (type(e).__name__,))
+                code, obj = 500, {"err": DAMAGED, "have": None}
+            if code is None:
+                o = Once(w)
+                try:
+                    return await lvotap.api(web, req, o)
+                except MemoryError:
+                    # no heap for it this time: the phone tries a 503 again
+                    code, obj = 503, {"err": "busy", "have": None}
+                except OSError:
+                    raise               # the connection or the flash: lvweb logs and closes
+                except Exception as e:
+                    sh.say("safe: upload piece %s" % (type(e).__name__,))
+                    code, obj = 500, {"err": "That piece didn't go through (%s). Tap Install "
+                                      "to try again." % (type(e).__name__,), "have": None}
+                finally:
+                    lvotap = None
+                    sys.modules.pop("lvotap", None)
+                    sys.modules.pop("lvota", None)
+                if o.n:
+                    return              # an answer had started: never a second one after it
+            else:
+                lvotap = None
+                sys.modules.pop("lvotap", None)
+                sys.modules.pop("lvota", None)
+            if web.phone.who(req) is None:
+                code, obj = 401, {"err": "signed out"}
+            return await lvweb.send_json(w, code, obj)
         if p.startswith("/api/ota"):
             import lvota
             try:

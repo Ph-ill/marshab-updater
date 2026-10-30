@@ -49,7 +49,7 @@ try {
     if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') problems.push('console: ' + m.params.args.map((a) => a.value ?? a.description).join(' '));
     if (m.method === 'Runtime.exceptionThrown') problems.push('exception: ' + (m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text));
     if (m.method === 'Network.webSocketCreated' && m.params.url.endsWith('/ws')) wsTried = true;
-    if (m.method === 'Network.responseReceived') http.push([m.params.response.status, new URL(m.params.response.url).pathname]);
+    if (m.method === 'Network.responseReceived') http.push([m.params.response.status, new URL(m.params.response.url).pathname, Object.entries(m.params.response.headers).find(([k])=>k.toLowerCase()==='retry-after')?.[1]]);
   };
   const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); sock.send(JSON.stringify({ id: i, method, params })); });
   const ev = async (expr) => { const r = (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result; if (r.exceptionDetails) throw new Error(expr.slice(0, 60) + ': ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text)); return r.result.value; };
@@ -198,8 +198,8 @@ try {
   check(await ev(`(b=>!!b&&b.getAttribute("aria-label")==="Settings"&&b.getBoundingClientRect().width>=44&&b.parentElement.textContent.includes("FD "))(document.querySelector('#top .gear'))`), 'gear in the top bar');
   await click('#top .gear');
   await until(`route==="set"&&!!document.querySelector('#set-rst')`, 4000, 'Settings open');
-  check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),"set-out","set-code","set-rst"].join()`)), 'Settings sections in order, Your code above Reset, Reset last');
-  // Reset this ship (main.py reset_ship on the board): refused without a session, without the
+  check(await ev(`[...document.querySelectorAll('#v section')].map((e)=>e.id).join()`) === (await ev(`["set-sw","set-a2h",...(S.led!=null?["set-led"]:[]),...(S.bat?["set-bat"]:[]),...(document.getElementById("set-live")?["set-live"]:[]),"set-out","set-code","set-rst"].join()`)), 'Settings sections in order, Your code above Reset, Reset last');
+  // Reset this ship (board/lvcode.py reset, from main.py): refused without a session, without the
   // ship's number and with another; still signed in after (the success is tests/test_reset.py).
   const rst = JSON.parse(await ev(`(async()=>{const f=(b,t)=>fetch("/api/reset",{method:"POST",headers:t?{"X-Crew-Token":tok}:{},body:b}).then((r)=>r.status);const n=S.here+1;return JSON.stringify([await f(JSON.stringify({confirm:n}),0),await f("{}",1),await f(JSON.stringify({confirm:n%8+1}),1),await fetch("/api/state",{headers:{"X-Crew-Token":tok}}).then((r)=>r.status)])})()`));
   check(rst.join() === '401,403,403,200', 'reset refused without a session / confirm / the right number: ' + rst.join());
@@ -242,15 +242,17 @@ try {
   await click('[data-out]');
   await until(`tok===""`, 4000, 'signed out again');
   step('pre-launch');
-  // The countdown the page shows before launch ({day: 0, launch, until} from /api/crew): no sign-in.
+  // The countdown the page shows before launch ({day: 0, launch, until} from /api/crew). Crew
+  // can sign in on it (for Settings: 0.3.0 review 2 M1; tests/app_clock_e2e.mjs signs in there).
   await ev(`(PRE={day:0,launch:"2026-11-12",until:125},hello(),1)`);
   const pre = JSON.parse(await ev(`JSON.stringify({h:document.querySelector('.pre h1').textContent,p:document.querySelector('.pre p').textContent,on:document.querySelectorAll('[data-who]:not([disabled])').length})`));
-  check(pre.h === 'Launch in 2 h 5 min' && /starts at 06:00/.test(pre.p) && pre.on === 0, 'pre-launch screen: ' + JSON.stringify(pre));
+  check(pre.h === 'Launch in 2 h 5 min' && /starts at 06:00/.test(pre.p) && /Crew can sign in now/.test(pre.p) && pre.on === 8, 'pre-launch screen: ' + JSON.stringify(pre));
   await ev('(PRE=null,hello(),1)');
   // HTTP: only the expected errors (the wrong code's 403, the WebSocket's 404, the reset and
   // code-change and Test light refusals asked for above)
-  // (and /api/me's 401 when the page opens signed out).
-  const bad = http.filter(([s, p], i) => s >= 400 && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)) && !(p === '/api/code' && (s === 400 || s === 401 || s === 403)) && !(p === '/api/led/test' && (s === 401 || s === 429)));
+  // (and /api/me's 401 when the page opens signed out). An explicit admission
+  // 503 is expected only if this same path subsequently succeeds through retry.
+  const bad = http.filter(([s, p, retry], i) => s >= 400 && !(s === 503 && retry === '1' && http.slice(i + 1).some(([ss, pp]) => ss === 200 && pp === p)) && !(s === 403 && p === '/api/login') && !(s === 401 && p === '/api/me') && !(p === '/api/reset' && (s === 401 || s === 403)) && !(p === '/api/code' && (s === 400 || s === 401 || s === 403)) && !(p === '/api/led/test' && (s === 401 || s === 429)));
   check(bad.length === 0, 'HTTP errors: ' + JSON.stringify(bad));
   check(http.some(([s, p]) => s === 200 && p === '/api/ota'), 'the page asked the ship about updates (web/ota.js)');
   check(wsTried, 'the page tried the WebSocket and fell back to polling');
@@ -315,7 +317,7 @@ try {
   await visit('/', UA.sheet);
   await until(`FN.scr==='LEAVE_KNOWN'`, 8000, 'captive sheet, phone with the icon');
   check(/from your icon/.test(await scr()) && !(await ev(`!!document.querySelector('[data-who],[data-fn=here]')`)), 'captive sheet, phone with the icon: ' + await scr());
-  // 4. Reset this ship forgets it (funnel.bin is in main.py RESET).
+  // 4. Reset this ship forgets it (funnel.bin is in lvcode.py RESET).
   const lr = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H, body: JSON.stringify({ crew: C, pin: '1234' }) })).json();
   const rr = await fetch(BASE + '/api/reset', { method: 'POST', headers: { ...H, 'X-Crew-Token': lr.token }, body: JSON.stringify({ confirm: st.here + 1 }) });
   check(rr.status === 200, 'reset: ' + rr.status);

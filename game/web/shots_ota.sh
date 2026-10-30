@@ -9,6 +9,7 @@ python3 tools/lve.py >/dev/null
 python3 web/build.py
 python3 sim/mockserver.py --port 8056 codes=1234,1234,1234,1234,1234,1234 ota=0.2.0 >/dev/null 2>&1 & A=$!
 python3 sim/mockserver.py --port 8057 codes=1234,1234,1234,1234,1234,1234 ota=0.2.0,back >/dev/null 2>&1 & B=$!
-trap 'kill $A $B 2>/dev/null' EXIT
+python3 sim/mockserver.py --port 8066 codes=1234,1234,1234,1234,1234,1234 ota=0.2.0 >/dev/null 2>&1 & C=$!
+trap 'kill $A $B $C 2>/dev/null' EXIT
 sleep 2
 node web/shots_ota.mjs "$OUT"
