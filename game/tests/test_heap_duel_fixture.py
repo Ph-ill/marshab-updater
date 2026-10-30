@@ -20,6 +20,65 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_poll_releases_item_module_before_core_receive(self):
+        import weakref
+        from types import ModuleType
+        import lvlive
+
+        def install():
+            module = ModuleType("lvlivein")
+            module.duels = lambda lk: None
+            module.dial = lambda *args: None
+            sys.modules["lvlivein"] = module
+            return weakref.ref(module)
+
+        previous = sys.modules.pop("lvlivein", None)
+        try:
+            for maintenance in (True, False):
+                with self.subTest(maintenance=maintenance):
+                    ref = install()
+                    checked = []
+
+                    def receive(now):
+                        self.assertNotIn("lvlivein", sys.modules)
+                        self.assertIsNone(ref(), "a dropped item module still roots its code during receive")
+                        checked.append(now)
+
+                    link = NS(ble=NS(state="idle"), duel_due=0 if maintenance else 200,
+                              web_busy=lambda: False, out=[] if maintenance else [1],
+                              due=0, want=lambda now: True, poll0=receive, hx=None)
+                    lvlive.Link.poll(link, 100)
+                    self.assertEqual(checked, [100])
+        finally:
+            sys.modules.pop("lvlivein", None)
+            if previous is not None:
+                sys.modules["lvlivein"] = previous
+
+    def test_live_snapshot_operations_are_released_before_streaming(self):
+        from unittest.mock import patch
+        import lvliveapi
+        import lvliveops
+        snapshot = ([], [], [], [], None, {"duel": [], "on": True})
+        writes = []
+        owner = self
+
+        class Writer:
+            def write(self, data):
+                owner.assertNotIn("lvliveops", sys.modules)
+                writes.append(data)
+
+            async def drain(self):
+                owner.assertNotIn("lvliveops", sys.modules)
+
+        web = NS(ship=NS(clock=NS(learn_headers=lambda h: False)),
+                 get_phone=lambda: NS(who=lambda req: 0))
+        wire = NS(head=lambda *args: b"header", probe=None)
+        req = NS(header=lambda name: None)
+        with patch.object(lvliveops, "_prep", lambda *args: snapshot):
+            asyncio.run(lvliveapi.live(wire, web, req, Writer(), True))
+        self.assertEqual(writes[0], b"header")
+        self.assertTrue(json.loads(b"".join(writes[1:]))["on"])
+
     def test_signature_injection_skips_settings_self_check(self):
         from unittest.mock import patch
         calls = []
@@ -123,13 +182,18 @@ class WorstDuelHeap(unittest.TestCase):
                 stages.append(path)
                 self.assertNotIn("lvduelrx", sys.modules)
                 self.assertNotIn("lvduelmaint", sys.modules)
+                self.assertNotIn("lvduelother", sys.modules)
                 self.assertIs(obj, box)
                 self.assertEqual(obj["g"][0]["n"], 69)
+
+            def score(*args):
+                self.assertNotIn("lvduelother", sys.modules)
+                return 0
 
             with patch.object(D, "box", lambda lk: box), \
                     patch.object(D, "save", save), \
                     patch.object(D, "flush", lambda *args: None), \
-                    patch.object(D, "result", lambda *args: 0), \
+                    patch.object(D, "result", score), \
                     patch.object(lvship, "free", lambda: 0):
                 self.assertTrue(D.take(link, 1, 5, bytes((0x48, 1, 69, 34)) + bytes(7)))
             self.assertEqual(len(stages), 1)

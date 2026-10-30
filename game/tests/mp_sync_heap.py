@@ -180,7 +180,7 @@ class HailSes:
 # requests and the radio (printed at the end, so a cap overrun says what it coincided with)
 PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
            "lvcode", "lvledtest", "lvbatt", "lvsafe", "lvcheck", "lvstateapi",
-           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel", "lvduelrx", "lvduelaction", "lvduelview", "lvduellayout", "lvlivecfg")
+           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel", "lvduelrx", "lvduelaction", "lvduelview", "lvduellayout", "lvlivecfg", "lvduelmaint", "lvliveops", "lvduelother")
 
 
 def mem():
@@ -228,6 +228,9 @@ def critical_duel(j):
         # The forced real-radio move still commits during the live stream, but
         # rule evaluation must finish before persistence holds its buffers.
         assert "lvduelrx" not in sys.modules
+        assert "lvduelmaint" not in sys.modules
+        assert "lvliveops" not in sys.modules
+        assert "lvduelother" not in sys.modules
         assert len(ship.live.out) == 24 and all(o[1][0] == 2 for o in ship.live.out)
         assert len(games) == 3 and all(g["s"] == "active" and g["n"] >= 68 and
                len(g["h"]) == 2 * g["n"] and g.get("q") for g in games)
@@ -541,6 +544,19 @@ async def heap_run():
         bat[0] = web.phone.state_body(0, 39, ship.clock.minute())["bat"]
         gc.collect()
     if LED:
+        # A faster phone/radio workload can finish while the initial Hail still
+        # owns the pin (up to its 30 s wait plus 10 s playback). Observe that
+        # real task releasing ownership before testing the notifier's pattern.
+        # Keep sampling throughout; neither the heap nor pin-write gate changes.
+        release_started = lvship.ticks_ms()
+        while getattr(ship, "ledtest", None) is not None:
+            if lvship.ticks_diff(lvship.ticks_ms(), release_started) > 45000:
+                raise RuntimeError("light playback did not release the notifier")
+            ship.led.poll(False)
+            await lvship.sleep_ms(50)
+            sample()
+        if ship.led.enabled:
+            ship._led("test")
         # the patterns in real time (the sync above runs on the fake radio's clock): the
         # test breaths, then the gift's double pulse, polled frame by frame as the light's
         # own task (lvled.Led.run) does
