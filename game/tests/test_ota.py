@@ -207,6 +207,13 @@ lvota.rmtree(lvota.NEW)
 ship_runs(OLD, "after refusals")
 data_same("after refusals")
 
+# The split duel payload has 43 files; retain an explicit bounded file count.
+for count, accepted in ((43, True), (48, True), (49, False)):
+    m = manifest("0.2.1-lv-test", dict(("lvpart%d.mpy" % i, b"x") for i in range(count)))
+    why = lvota.check_manifest(m)
+    check("split payload: %d files accepted %s" % (count, accepted),
+          why is None if accepted else why == "bad file list", why)
+
 # -- 0.2.1 in pieces: a wrong offset says where to carry on; a bad file is thrown away
 V1 = "0.2.1-lv-test"
 raw = json.dumps(FX["env"][V1]).encode()
