@@ -17,6 +17,16 @@ import bluetooth
 import lvlive
 import lvlivein as I
 import lvduel as D
+import lvship
+
+real_ticks = lvship.ticks_ms
+elapsed = [0]
+lvship.ticks_ms = lambda: (real_ticks() + elapsed[0]) & 0x3fffffff
+
+
+def idle(s, ms):
+    elapsed[0] += ms
+    s.clock.t += ms
 
 TMP = "/tmp/lvduel-test"
 FK = b"generic-test-fleet"
@@ -234,7 +244,7 @@ tick = old_tick()
 lvship.ticks_ms = lambda: (tick + 3600001) & 0x3fffffff
 check("old ship warning", D.view(a.live)[0]["update"])
 lvship.ticks_ms = old_tick
-a.clock.t += 3 * 86400000
+idle(a, 3 * 86400000)
 D.view(a.live)
 check("invite timeout", game(a)["s"] == "called")
 # Unknown versions are rejected, future kinds do not enter the Hail inbox.
@@ -482,7 +492,7 @@ check("bidirectional saturation drains via ACKs", not a.live.out and not b.live.
 w, a, b = fresh(33)
 start(w, a, b)
 act(b, "fire", cell=0)
-b.clock.t += 3 * 86400000 + 1
+idle(b, 3 * 86400000 + 1000)
 for k in range(23):
     I.send(b.live, 2, 2, bytes((k,)))
 check("call works with full outbox", act(b, "call") == 200)
@@ -535,7 +545,7 @@ def persistence_case(which):
     if which == "resign":
         return a, lambda: act(a, "resign")
     act(b, "fire", cell=0)
-    b.clock.t += 3 * 86400000 + 1
+    idle(b, 3 * 86400000 + 1000)
     return b, lambda: act(b, "call") if which == "end" else D.take(b.live, 0, 8, D.gid(game(b)) + bytes((3,)) + bytes(8))
 
 
@@ -734,7 +744,7 @@ for to in (1, 2, 3):
 check("discard draft", act(a, "discard") == 200)
 check("discard is silent", not a.live.out and len(D.box(a.live)["g"]) == 2)
 check("fourth after discard", D.action(a.live, {"action": "new", "to": 4})[0] == 200)
-a.clock.t += 4 * 86400000
+idle(a, 4 * 86400000)
 D.maintain(a.live)
 check("stale drafts removed silently", not D.box(a.live)["g"] and not a.live.out)
 check("fourth after expiry", D.action(a.live, {"action": "new", "to": 5})[0] == 200)
@@ -888,6 +898,82 @@ for receiver in (0, 1):
     operation()
     check("in-flight fleet result cannot reverse resignation", game(s)["win"] is False
           and game(s)["why"] == 2 and game(s)["h"] == before)
+
+# One idle policy for drafts, invitations and pending shots, even without epoch.
+for state in ("draft", "wait", "invited", "pending"):
+    for correction in (None, 10 * 86400000, -10 * 86400000):
+        w, a, b = fresh(46)
+        if state == "pending":
+            start(w, a, b)
+            s = b
+            s.clock.known = lambda: False
+            act(s, "fire", cell=0)
+        else:
+            s = a
+            a.clock.known = b.clock.known = lambda: False
+            act(a, "new")
+            if state != "draft":
+                act(a, "invite", layout=LAY)
+            if state == "invited":
+                settled(w, a, b)
+                s = b
+        idle(s, 86400000)
+        D.maintain(s.live)
+        check("unknown clock preserves one day idle", D.maint_call("age", s.live, game(s)) >= 86400)
+        if correction is not None:
+            s.clock.t += correction
+            s.clock.known = lambda: True
+            D.maintain(s.live)
+            g = game(s)
+            check("learned epoch preserves actual idle", abs(D.now(s.live) - g["t"] - 86400) <= 1)
+            # Another correction in the opposite direction cannot reset age.
+            s.clock.t -= 2 * correction
+            D.maintain(s.live)
+            check("corrected epoch preserves actual idle", abs(D.now(s.live) - game(s)["t"] - 86400) <= 1)
+        if state == "pending":
+            check("one day cannot Call it", act(s, "call") == 409)
+        else:
+            check("fresh corrected deadline not expired", game(s)["s"] == state)
+        # Restart with an unknown clock: checkpointed idle survives, raw ticks do not.
+        s.clock.known = lambda: False
+        lvlivex.setup(s.live, s, s.data, s.live.cfg)
+        D.maintain(s.live)
+        check("reboot retains checkpointed idle", D.maint_call("age", s.live, game(s)) >= 86400)
+        idle(s, 2 * 86400000 + 1000)
+        D.maintain(s.live)
+        if state == "pending":
+            check("unknown clock Call it after three days", act(s, "call") == 200)
+        elif state == "draft":
+            check("unknown clock draft expires", not D.box(s.live)["g"])
+        else:
+            check("unknown clock invitation expires", game(s)["s"] == "called")
+
+# Known-clock downtime counts after reboot, and ticks wrap without changing age.
+w, a, b = fresh(47)
+act(a, "new")
+act(a, "invite", layout=LAY)
+a.clock.t += 2 * 86400000
+lvlivex.setup(a.live, a, a.data, a.live.cfg)
+D.maintain(a.live)
+check("known clock reboot counts downtime", D.maint_call("age", a.live, game(a)) >= 2 * 86400)
+idle(a, 86400000 + 1000)
+D.maintain(a.live)
+check("known reboot expires at total three days", game(a)["s"] == "called")
+old_tick = lvship.ticks_ms
+wrap = [0x3fffffff - 1000]
+lvship.ticks_ms = lambda: wrap[0] & 0x3fffffff
+try:
+    w, a, b = fresh(48)
+    a.clock.known = lambda: False
+    act(a, "new")
+    wrap[0] += 86400000
+    D.maintain(a.live)
+    check("wrapped tick preserves one day", D.maint_call("age", a.live, game(a)) == 86400)
+    wrap[0] += 2 * 86400000
+    D.maintain(a.live)
+    check("wrapped tick expires draft", not D.box(a.live)["g"])
+finally:
+    lvship.ticks_ms = old_tick
 
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

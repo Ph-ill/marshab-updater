@@ -142,24 +142,35 @@ class WorstDuelHeap(unittest.TestCase):
         import lvduel as D
         calls = []
         link = NS(sh=NS(web=NS(busy=1), clock=NS(known=lambda: True, epoch_ms=lambda: 123000)), duel_due=100)
-        with patch.object(D, "maint_call", lambda *args: calls.append(args[0]) or True):
+        def maintain(name, lk, value):
+            calls.append(name)
+            if name == "sweep":
+                return True
+            self.assertEqual(name, "reconcile_all")
+            value = value["g"][0]
+            t = 123 if lk.sh.clock.known() else None
+            changed = value.get("t") is None and t is not None
+            if changed:
+                value["t"] = t
+            return changed
+        with patch.object(D, "maint_call", maintain):
             self.assertFalse(D.sweep(link, {"g": [{"s": "active", "t": 123}]}))
-            self.assertEqual(calls, [])
+            self.assertEqual(calls, ["reconcile_all"])
             self.assertEqual(link.duel_due, 0)
             game = {"s": "active", "t": None}
             self.assertTrue(D.sweep(link, {"g": [game]}))
             self.assertEqual(game["t"], 123)
-            self.assertEqual(calls, [])
+            self.assertEqual(calls, ["reconcile_all"] * 2)
             link.sh.clock.known = lambda: False
             self.assertFalse(D.sweep(link, {"g": [{"s": "active", "t": None}]}))
             for state, stamp in (("draft", 123), ("wait", 123), ("invited", 123)):
                 self.assertTrue(D.sweep(link, {"g": [{"s": state, "t": stamp}]}))
-            self.assertEqual(calls, ["sweep"] * 3)
+            self.assertEqual(calls, ["reconcile_all"] * 3 + ["sweep"] * 3)
             link.sh.web.busy = 0
             self.assertFalse(D.sweep(link, {"g": [{"s": "active", "t": 123}]}, True))
-            self.assertEqual(calls, ["sweep"] * 3)
+            self.assertEqual(calls, ["reconcile_all"] * 3 + ["sweep"] * 3 + ["reconcile_all"])
             self.assertTrue(D.sweep(link, {"g": [{"s": "active", "t": 123}]}))
-            self.assertEqual(calls, ["sweep"] * 4)
+            self.assertEqual(calls, ["reconcile_all"] * 3 + ["sweep"] * 3 + ["reconcile_all", "sweep"])
 
     def test_ack_maintenance_retries_after_http_releases_snapshot(self):
         import tempfile
@@ -276,7 +287,7 @@ class WorstDuelHeap(unittest.TestCase):
                 clock = NS(known=lambda: True, epoch_ms=lambda: 1793000000000, date=lambda: 20261026)
                 return NS(sh=NS(data=data, clock=clock, fk=b"heap-fixture-key"),
                           node=NS(ship=ship), out=[], inb=[], v=0, seq=0, ep=1,
-                          nx={}, due=0, n={"out": 0}, hw={}, lc=[None, 0], f=data + "/livebox.json")
+                          nx={}, due=0, n={"out": 0}, hw={}, lc=[None, 0], duel_times={}, f=data + "/livebox.json")
             own, peer = link(0, tmp), link(1, tmp + "/peer")
             scope = functions(ROOT / "tests/mp_sync_heap.py", {"seed_duels"}, {})
             scope["seed_duels"](own, peer)

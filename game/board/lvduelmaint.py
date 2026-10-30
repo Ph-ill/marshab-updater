@@ -52,7 +52,12 @@ def timer(lk, g):
     timers = lk.duel_times
     z = timers.get(key)
     if z is None:
-        z = [t, 0, sig, -21600000 if g["s"] == "active" else 0, None]
+        epoch = now(lk)
+        age = g.get("age", 0)
+        if epoch is not None and g.get("t") is not None:
+            age = max(age, epoch - g["t"])
+        age = max(0, min(3 * DAY, age))
+        z = [t, 0, sig, -21600000 if g["s"] == "active" else 0, None, -age * 1000]
         timers[key] = z
     else:
         dt = lvship.ticks_diff(t, z[0])
@@ -63,31 +68,53 @@ def timer(lk, g):
             z[1] += dt
         if sig != z[2]:
             z[2], z[3] = sig, z[1]
+            z[5] = z[1]
     return z
 
 
-def sweep(lk, j):
+def age(lk, g):
+    z = timer(lk, g)
+    return (z[1] - z[5]) // 1000
+
+
+def reconcile(lk, g):
+    # Same-boot idle age is authoritative. Rebase persisted epoch deadlines
+    # after learning/correction; checkpoint unknown-clock uptime hourly too.
+    idle = min(3 * DAY, age(lk, g))
     t = now(lk)
+    stamp = t - idle if t is not None else None
+    changed = False
+    if stamp is not None and (g.get("t") is None or abs(g["t"] - stamp) > 2):
+        g["t"] = stamp
+        changed = True
+    if abs(g.get("age", 0) - idle) >= 3600 or (idle == 0 and g.get("age", 0)):
+        g["age"] = idle
+        changed = True
+    return changed
+
+
+def reconcile_all(lk, j):
+    changed = False
+    for g in j["g"]:
+        if g["s"] in ACTIVE:
+            changed = reconcile(lk, g) or changed
+    return changed
+
+
+def sweep(lk, j):
     web = getattr(lk.sh, "web", None)
     if web is not None and web.busy > 0 and all(
             g["s"] not in ("draft", "wait", "invited") for g in j["g"]):
         lk.duel_due = 0
-        changed = False
-        for g in j["g"]:
-            if g["s"] in ACTIVE and g.get("t") is None and t is not None:
-                g["t"] = t
-                changed = True
-        return changed
+        return reconcile_all(lk, j)
     changed = False
     for g in j["g"][:]:
         if g["s"] not in ACTIVE:
             continue
         z = timer(lk, g)
-        if g.get("t") is None:
-            g["t"] = t
-            changed = t is not None or changed
-        age = t - g["t"] if t is not None and g.get("t") is not None else 0
-        if g["s"] == "draft" and (age >= 3 * DAY or z[1] >= 3 * DAY * 1000):
+        changed = reconcile(lk, g) or changed
+        idle = (z[1] - z[5]) // 1000
+        if g["s"] == "draft" and idle >= 3 * DAY:
             j["g"].remove(g)
             changed = True
             continue
@@ -100,7 +127,7 @@ def sweep(lk, j):
         if g["s"] == "wait" and z[1] - z[3] >= 3600000 and not g.get("update") and not any(o[0] == g["to"] and o[1][0] == 3 and o[1][6:8] == gid(g) for o in lk.out):
             g["update"] = True
             changed = True
-        if g["s"] in ("wait", "invited") and age >= 3 * DAY:
+        if g["s"] in ("wait", "invited") and idle >= 3 * DAY:
             terminal(g, "called")
             end(lk, g, 3)
             changed = True

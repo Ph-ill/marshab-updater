@@ -119,8 +119,7 @@ def action(lk, b, rules):
             g["verified"] = 1
             finish(lk, j, g)
     elif a == "call":
-        t = now(lk)
-        if t is None or g.get("t") is None or t - g["t"] < 3 * DAY or (g["s"] == "active" and mine(lk, g, g["n"] + 1) and g.get("p") is None):
+        if rules["maint_call"]("age", lk, g) < 3 * DAY or (g["s"] == "active" and mine(lk, g, g["n"] + 1) and g.get("p") is None):
             return 409, {"err": "Wait three days for the next move."}
         terminal(g, "called")
         end(lk, g, 3)

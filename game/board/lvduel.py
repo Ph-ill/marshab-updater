@@ -88,6 +88,9 @@ def persist(name, *args):
 
 def store(lk, j):
     from lvlivein import duel_store
+    # Observe each new activity signature in the transaction that creates it,
+    # before a later clock correction could be mistaken for idle time.
+    maint_call("reconcile_all", lk, j)
     return duel_store(lk, j)
 
 
@@ -224,13 +227,7 @@ def sweep(lk, j, receiving=False):
         # Do not defer draft/invitation expiry or clock backfilling.
         # Actual SHOT/ANSWER mutation and durable publication still run now.
         lk.duel_due = 0
-        changed = False
-        t = now(lk)
-        for g in j["g"]:
-            if g["s"] in ACTIVE and g.get("t") is None and t is not None:
-                g["t"] = t
-                changed = True
-        return changed
+        return maint_call("reconcile_all", lk, j)
     return maint_call("sweep", lk, j)
 
 
