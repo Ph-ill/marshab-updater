@@ -171,8 +171,11 @@ class Link:
     def take(self, s, m, off):
         if len(m) < off + 2 or m[off] != MARK:
             return
-        if self.ota():
-            self.n["held"] += 1      # an update arriving: nothing taken, nothing acked
+        if self.ota() or getattr(getattr(self.sh, "web", None), "radio_hold", False):
+            # A full game-state answer owns the large working set. Leave the
+            # trailer unacknowledged: its durable sender retries after release.
+            # Compact /api/live streams do not hold radio receive off.
+            self.n["held"] += 1
             return
         z = None
         try:

@@ -153,6 +153,30 @@ for seed, loss in ((2, 0), (9, 60)):
     check("record", D.box(a.live)["r"]["1"] == [0, 1] and D.box(b.live)["r"]["0"] == [1, 0])
     check("both fields", D.view(a.live)[0]["their"] == D.fleet(D.encode(LAY)))
 
+# A full-state response defers a real radio SHOT without acknowledging or
+# mutating it. The same durable envelope is retried after the stream releases.
+w, a, b = fresh(161)
+start(w, a, b)
+
+
+class StateStream:
+    busy = 1
+    radio_hold = True
+
+
+a.web = StateStream()
+check("held shot queued", act(b, "fire", cell=0) == 200)
+held_shot = b.live.out[0][1]
+check("held shot core finishes", run(w, a, b, lambda: a.live.n["held"] > 0
+      and a.ble.state == b.ble.state == "idle"))
+check("held shot unchanged", game(a)["n"] == 0 and game(b)["p"] == 0
+      and len(b.live.out) == 1 and b.live.out[0][1] == held_shot)
+a.web.radio_hold = False
+a.web.busy = 0
+settled(w, a, b)
+check("held shot retried exactly once", game(a)["n"] == game(b)["n"] == 1
+      and game(b)["p"] is None and len(game(a)["h"]) == 2)
+
 # Lost answer repaired by SYNC, using a new envelope rather than replaying seq.
 w, a, b = fresh(3)
 start(w, a, b)

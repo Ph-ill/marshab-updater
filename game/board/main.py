@@ -83,6 +83,10 @@ def home_screen(lvweb):
 
 def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
+    # Bound request-parser/socket working sets as well as API dispatch. Extra
+    # phones receive the existing 503 + Retry-After before reading a request;
+    # two admitted phones can still stream while the radio commits a move.
+    lvweb.MAX_CONN = 2
     route = web.route
     clock_gate(web)
     # Admission for the heavy answers, decided before Phone.state_writer (or lvliveapi.live)
@@ -104,6 +108,7 @@ def ota_hooks(lvweb, web):
     # mark older than BUSY_MS is ignored, so nothing can hold every phone off for longer.
     web.state_busy = 0
     web.ota_busy = 0
+    web.radio_hold = False
 
     def held():
         t = web.state_busy
@@ -116,9 +121,11 @@ def ota_hooks(lvweb, web):
                 return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
             if heavy and req.path == "/api/state":
                 web.state_busy = lvship.ticks_ms() or 1
+                web.radio_hold = True
                 try:
                     return await route(req, w)
                 finally:
+                    web.radio_hold = False
                     web.state_busy = 0
         if req.path == "/api/reset":
             # "Reset this ship" (board/lvcode.py reset, web/settings.js). Loaded per request,

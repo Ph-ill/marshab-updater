@@ -25,7 +25,7 @@ def hooks(route):
         await asyncio.sleep(0)
 
     g = {"reboot": None, "lvship": NS(ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b,
-                                      sleep_ms=sleep_ms, drop=lambda n: None)}
+                                      sleep_ms=sleep_ms, drop=lambda n: None, free=lambda: 100000)}
     exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec"), g)
     g["_clock"] = clock
 
@@ -35,6 +35,7 @@ def hooks(route):
     wire = NS(send=send, dns_answer=lambda q, ip: None)
     web = NS(route=route, ship=NS(clock=None, ledtest=None))
     g["ota_hooks"](wire, web)
+    assert wire.MAX_CONN == 2
     web.clock = clock
     return web
 
@@ -44,6 +45,43 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
+    async def test_socket_admission_refuses_third_before_parsing(self):
+        from unittest.mock import patch
+        import lvweb
+        entered, release = asyncio.Event(), asyncio.Event()
+        parsed, answers = [], []
+        web = lvweb.Server(NS(http_hits=0), say=lambda s: None)
+
+        async def read_req(reader):
+            parsed.append(reader)
+            return request("/api/login")
+
+        async def route(req, writer):
+            if len(parsed) == 2:
+                entered.set()
+            await release.wait()
+
+        async def send(writer, status, body=b"", **kwargs):
+            answers.append((status, kwargs.get("extra")))
+
+        web.route = route
+        with patch.object(lvweb, "MAX_CONN", 2), \
+                patch.object(lvweb, "read_req", read_req), \
+                patch.object(lvweb, "send", send):
+            running = [asyncio.create_task(web.handle(n, NS())) for n in (1, 2)]
+            try:
+                await asyncio.wait_for(entered.wait(), 1)
+                await web.handle(3, NS())
+                self.assertEqual(parsed, [1, 2])
+                self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
+                self.assertEqual(web.busy, 2)
+                self.assertEqual(web.refused, 1)
+            finally:
+                release.set()
+                await asyncio.gather(*running)
+        self.assertEqual(web.busy, 0)
+        self.assertEqual(web.served, 2)
+
     async def test_overlap_is_refused_with_retry_after_before_loading(self):
         entered, release = asyncio.Event(), asyncio.Event()
         calls = []
@@ -57,6 +95,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         web = hooks(route)
         running = asyncio.create_task(web.route(request(), []))
         await entered.wait()
+        self.assertTrue(web.radio_hold)
         for path in ("/api/state", "/api/login", "/api/crew", "/api/ota", "/api/live"):
             answer = []
             await web.route(request(path), answer)
@@ -65,8 +104,42 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         release.set()
         await running
         self.assertFalse(web.state_busy)
+        self.assertFalse(web.radio_hold)
         await web.route(request("/api/login"), [])
         self.assertEqual(calls, ["/api/state", "/api/login"])
+
+    async def test_live_stream_keeps_radio_admitted(self):
+        from unittest.mock import patch
+        import lvliveapi
+
+        async def route(req, w):
+            self.fail("live should use its streaming handler")
+
+        async def live(*args):
+            self.assertFalse(web.radio_hold)
+
+        web = hooks(route)
+        web.get_phone = lambda: NS(who=lambda req: None)
+        with patch.object(lvliveapi, "live", live):
+            await web.route(request("/api/live"), [])
+        self.assertFalse(web.radio_hold)
+
+    async def test_cancelled_state_releases_radio(self):
+        entered = asyncio.Event()
+
+        async def route(req, w):
+            entered.set()
+            await asyncio.Event().wait()
+
+        web = hooks(route)
+        running = asyncio.create_task(web.route(request(), []))
+        await entered.wait()
+        self.assertTrue(web.radio_hold)
+        running.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await running
+        self.assertFalse(web.radio_hold)
+        self.assertFalse(web.state_busy)
 
     async def test_update_piece_holds_only_state_and_live(self):
         calls = []
@@ -112,6 +185,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(OSError):
             await web.route(request(), [])
         self.assertFalse(web.state_busy)
+        self.assertFalse(web.radio_hold)
 
     async def test_stalled_stream_frees_other_phones_after_the_write_deadline(self):
         # review 3 MAJOR-1: a phone that stops reading mid-/api/state (out of range, screen

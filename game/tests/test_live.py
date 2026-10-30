@@ -764,6 +764,24 @@ a.ota_t = lvship.ticks_ms() - lvlive.OTA_MS - 1
 t = run(w, [a, b], 10000, lambda: not a.live.out and a.ble.state == "idle")
 check("dials after the update", t is not None and a.live.n["dial"] >= 1, a.live.n)
 
+# Full game-state streaming defers trailers, not the core sync. The durable
+# sender keeps its item until a later real session receives and acknowledges it.
+w, (a, b) = fresh(160)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+b.web = Web(b)
+b.web.radio_hold = True
+st, j = api(a, "/api/live/hail", "POST", {"to": 1})
+check("state hold: hail queued", st == 200 and len(a.live.out) == 1, (st, j))
+held_item = a.live.out[0][1]
+t = run(w, [a, b], 30000, lambda: b.live.n["held"] > 0 and a.ble.state == b.ble.state == "idle")
+check("state hold: core session finishes", t is not None, (a.ble.state, b.ble.state))
+check("state hold: no receipt or acknowledgement", b.live.n["in"] == 0 and not b.live.inb
+      and len(a.live.out) == 1 and a.live.out[0][1] == held_item, (a.live.n, b.live.n))
+b.web.radio_hold = False
+t = run(w, [a, b], 300000, lambda: not a.live.out and a.ble.state == b.ble.state == "idle")
+check("state hold: durable retry delivered once", t is not None and b.live.n["in"] == 1
+      and len(b.live.inb) == 1, (a.live.n, b.live.n))
+
 # the radio test's probe
 import lvweb                     # noqa: E402
 
