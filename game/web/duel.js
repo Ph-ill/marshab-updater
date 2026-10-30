@@ -59,31 +59,35 @@ function duGrid(ships,shots,mode,selected=null,pending=null){
   }
   return o+`</div>`;
 }
+// Keep the action-only dock used by Hail, with an always-enabled way home.
+function duDock(action=""){
+  dock(`<div class=tnav><button class="btn sec" data-go=home><span>Home</span></button>${action}</div>`,"");
+}
 function duScreen(to){
   shipTop();
   const g=duGame(to);
   if(to!=null&&DU_TO!==to){DU_TO=to;DU_POS=[null,null,null];DU_SHIP=0;DU_CELL=null;DU_ERR=""}
   let o=`<div class=kick><div class=lab>Asteroid duel</div><h1>${to==null?"Pick a crewmate":g&&(g.s==="draft"||g.s==="invited")?"Hide your fleet":h(nm(to))}</h1></div>`;
-  if(!LV){o+=`<p class=dim role=status>Asking your ship.</p>`;$("v").innerHTML=o;dock("","");return}
+  if(!LV){o+=`<p class=dim role=status>Asking your ship.</p>`;$("v").innerHTML=o;duDock();return}
   if(to==null){
     o+=`<section><div class=lab>One duel with each crewmate</div>`;
     for(let c=0;c<N;c++)if(c!==S.here&&S.cond[c]!==2){
       const p=lvPeer(c),old=lvOld(p),off=lvOff(p),existing=duGame(c);
       o+=`<button class=row ${existing?`data-go=duel/${c}`:`data-dunew=${c}`} ${old||off||DU_BUSY?"disabled":""}><span class=pt>${portrait(c)}</span><span class=t>${h(nm(c))}<small>${old?"Needs the ship software update":off?"Ship-to-ship is off":existing?h(duStatus(existing)):lvNear(c)}</small></span></button>`;
     }
-    o+=`</section>`;dock(`<button class="btn sec" data-go=home><span>Home</span></button>`,"");
-  }else if(!g){o+=`<p class=dim>No duel is open with ${h(nm(to))}.</p>`;dock(`<button class="btn sec" data-go=duel><span>Pick a crewmate</span></button>`,"")}
+    o+=`</section>`;duDock();
+  }else if(!g){o+=`<p class=dim>No duel is open with ${h(nm(to))}.</p>`;duDock(`<button class="btn sec" data-go=duel><span>Pick a crewmate</span></button>`)}
   else if(g.s==="draft"||g.s==="invited"){
     o+=`<p class=dim>Place your 3-cell, 2-cell and 1-cell ships. Keep an empty cell between ship edges. Tap a ship, then a cell. Tap the same cell to turn.</p><section><div class=lab><span>Your field</span><span>${h(nm(to))}</span></div><div class=du-tools>${[3,2,1].map((n,i)=>`<button class="btn sec" data-duship=${i} aria-pressed="${DU_SHIP===i}">${n} cell${n===1?"":"s"}</button>`).join("")}</div>${duGrid(duCells(DU_POS),[],"place")}<div class=du-tools><button class="btn sec" data-duturn=1>Turn</button><button class="btn sec" data-dushuffle=1>Shuffle</button></div><p class=fine>${duLegal(DU_POS)?"Your field is ready. Locking keeps it fixed for this duel.":"Place all three ships without overlap or touching edges."}</p></section>`;
     if(g.s==="invited")o+=`<button class="btn sec" data-duact=decline><span>Decline invitation</span></button>`;
-    dock(`<button class="btn pri" data-duact=${g.s==="invited"?"accept":"invite"} ${duLegal(DU_POS)&&!DU_BUSY?"":"disabled"}><span>Lock in and ${g.s==="invited"?"join":"invite"}</span></button>`,"");
+    duDock(`<button class="btn pri" data-duact=${g.s==="invited"?"accept":"invite"} ${duLegal(DU_POS)&&!DU_BUSY?"":"disabled"}><span>Lock in and ${g.s==="invited"?"join":"invite"}</span></button>`);
   }else{
     const ended=!DU_OPEN.includes(g.s),can=g.turn&&!g.pending&&!DU_BUSY;
     o+=`<p class=dim role=status>${h(duStatus(g))}</p>${g.update?`<p class=fine>${h(nm(to))}'s ship may need 0.3.1.</p>`:""}${g.nl?`<p class=fine>${h(nm(to))}'s light is off. Your move waits on ${h(nm(to))}'s page.</p>`:""}<section><div class=lab><span>${h(nm(to))}'s field</span><span>${ended?"revealed":"your shots"}</span></div>${duGrid(g.their,g.shots,can?"fire":"view",DU_CELL,g.p)}<p class=fine>${g.pending||g.p!=null?"On its way":g.t?"Arrived "+lvAgo(g.t*1000):"Waiting for your ships to meet"}</p></section><section><div class=lab><span>Your field</span><span>${g.incoming.length} shots received</span></div>${duGrid(g.layout,g.incoming,"small")}</section>`;
-    if(ended){o+=`<p class=dim>${g.record[0]}-${g.record[1]} between you and ${h(nm(to))}.</p>`;dock(`<button class="btn sec" data-dunew=${to}><span>Rematch</span></button>`,"")}
+    if(ended){o+=`<p class=dim>${g.record[0]}-${g.record[1]} between you and ${h(nm(to))}.</p>`;duDock(`<button class="btn sec" data-dunew=${to}><span>Rematch</span></button>`)}
     else{
       o+=`<section><button class="btn sec" data-duact=resign><span>Resign</span></button><button class="btn sec" data-duact=call><span>Call it</span><i>after 3 days</i></button></section>`;
-      dock(`<button class="btn pri" data-duact=fire ${can&&DU_CELL!=null?"":"disabled"}><span>${DU_CELL!=null?"Fire at "+duCoord(DU_CELL):"Pick a cell"}</span></button>`,"");
+      duDock(`<button class="btn pri" data-duact=fire ${can&&DU_CELL!=null?"":"disabled"}><span>${DU_CELL!=null?"Fire at "+duCoord(DU_CELL):"Pick a cell"}</span></button>`);
     }
   }
   $("v").innerHTML=o+`<p class=err id=du-error role=alert>${h(DU_ERR)}</p>`;
