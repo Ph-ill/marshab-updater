@@ -393,7 +393,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(web.radio_hold)
         self.assertFalse(web.state_busy)
 
-    async def test_live_stream_can_defer_an_existing_radio_session(self):
+    async def test_live_stream_refuses_an_existing_radio_session_before_loading(self):
         from unittest.mock import patch
         import lvliveapi
 
@@ -401,7 +401,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
             self.fail("live must use its streaming handler")
 
         async def live(*args):
-            self.assertTrue(web.radio_hold)
+            self.fail("an active radio session must exclude the encoder")
 
         web = hooks(route)
         web.ship.ble = NS(state="sync")
@@ -409,7 +409,7 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         answers = []
         with patch.object(lvliveapi, "live", live):
             await web.route(request("/api/live"), answers)
-        self.assertEqual(answers, [])
+        self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
         self.assertFalse(web.radio_hold)
         self.assertFalse(web.state_busy)
 
@@ -534,13 +534,13 @@ class Admission(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(calls, ["live", "live", "/api/login", "live"])
         self.assertFalse(web.radio_hold)
 
-    async def test_unfinished_radio_turn_refuses_heavy_but_not_light_dispatch(self):
+    async def test_active_radio_refuses_heavy_but_not_light_without_pending_turn(self):
         calls = []
         async def route(req, writer):
             calls.append(req.path)
         web = hooks(route)
         web.ship.ble = NS(state="sync")
-        web.radio_pending = True
+        web.radio_pending = False
         for path in ("/api/state", "/api/live"):
             answers = []
             await web.route(request(path), answers)

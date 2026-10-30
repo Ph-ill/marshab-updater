@@ -189,9 +189,12 @@ def ota_hooks(lvweb, web):
             heavy = req.method == "GET" and req.path in ("/api/state", "/api/live")
             if held() or (heavy and web.ota_busy):
                 return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
-            if heavy and getattr(web, "radio_pending", False):
+            if heavy:
                 ble = getattr(web.ship, "ble", None)
                 if ble is not None and ble.state != "idle":
+                    # Never prepare a snapshot inside an existing radio turn.
+                    # Its proof/terminal maintenance can still need the full
+                    # three-game box, even without a previously deferred trailer.
                     return await lvweb.send(w, 503, '{"err":"busy, try again"}', extra="Retry-After: 1\r\n")
                 web.radio_pending = False
             if heavy:
