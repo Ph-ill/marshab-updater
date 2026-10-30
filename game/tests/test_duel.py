@@ -238,6 +238,21 @@ gb = [g for g in D.box(b.live)["g"] if g["s"] in D.ACTIVE]
 check("crossing invitation id", len(ga) == len(gb) == 1 and ga[0]["id"] == gb[0]["id"])
 check("crossing invitation roles", ga[0]["s"] == "wait" and gb[0]["s"] == "invited")
 
+# Equal wire IDs still represent opposing inviter roles, not duplicates.
+w, a, b = fresh(17)
+act(a, "new")
+act(b, "new")
+j = D.box(b.live)
+j["g"][0]["id"] = game(a)["id"]
+D.store(b.live, j)
+act(a, "invite", layout=LAY)
+act(b, "invite", layout=LAY)
+settled(w, a, b)
+check("equal ID roles", game(a)["s"] == "wait" and game(b)["s"] == "invited")
+counts = (a.live.n["out"], b.live.n["out"])
+run(w, a, b)
+check("equal ID no unsolicited traffic", counts == (a.live.n["out"], b.live.n["out"]))
+
 # Resign before either side has accepted, in both directions.
 for resigning in (0, 1):
     w, a, b = fresh(8)

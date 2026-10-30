@@ -342,16 +342,25 @@ def take(lk, frm, kind, b):
         return False
     light = False
     if kind == 3:
+        other = next((x for x in j["g"] if x["to"] == frm and x["s"] in ACTIVE), None)
+        # Opposing inviter roles must be arbitrated before an ID-only lookup.
+        # Equal IDs cannot carry an END: it would also cancel the winning invite.
+        if other and other["i"] == lk.node.ship and other["s"] in ("draft", "wait"):
+            if frm > lk.node.ship and gid(other) == ident:
+                return False
+            if frm < lk.node.ship:
+                if gid(other) == ident:
+                    lk.out[:] = [o for o in lk.out if not belongs(o, other)]
+                    keep(lk)
+                    j["g"].remove(other)
+                else:
+                    terminal(other, "called")
+                    end(lk, other, 3)
+                other = g = None
         if g is not None:
             repeat(lk, g)
             store(lk, j)
             return False
-        other = next((x for x in j["g"] if x["to"] == frm and x["s"] in ACTIVE), None)
-        # Crossing invites: the lower numbered inviter wins, consistently at both ends.
-        if other and other["s"] in ("draft", "wait") and frm < lk.node.ship:
-            terminal(other, "called")
-            end(lk, other, 3)
-            other = None
         if other or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
             rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 5)
             return False
