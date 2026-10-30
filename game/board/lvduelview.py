@@ -25,10 +25,11 @@ def fleet(layout):
     return out
 
 
-def view(lk):
+def view(lk, j=None):
     # maintain() has already applied expiry/recovery before this read-only snapshot.
-    lvship.free()
-    j = load(lk.sh.data + "/duel.json") or {"g": [], "r": {}}
+    if j is None:
+        lvship.free()
+        j = load(lk.sh.data + "/duel.json") or {"g": [], "r": {}}
     # Rejection intents are not phone state. Release them before building views,
     # and consume this private parsed copy so old games do not overlap new views.
     j.pop("e", None)

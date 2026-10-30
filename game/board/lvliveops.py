@@ -138,9 +138,13 @@ def _prep(sh, maintained=False):
     # Only the phone-visible slice survives while the duel box is parsed.
     j = c = None
     if L is not None:
+        # Parse the private box without the view builder's bytecode present.
+        # The visible Hail slice remains immutable throughout this phase.
+        j = _in().load(sh.data + "/duel.json") or {"g": [], "r": {}}
+        lvship.free()
         import lvduelview
         try:
-            top["duel"] = lvduelview.view(L)
+            top["duel"] = lvduelview.view(L, j)
         finally:
             lvship.drop("lvduelview")
     else:

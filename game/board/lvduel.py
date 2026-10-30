@@ -49,6 +49,11 @@ def now(lk):
 def maint_call(name, *args):
     import sys
     loaded = "lvduelmaint" in sys.modules
+    if not loaded:
+        # Cleanup/publication can precede scheduling in this transaction.
+        # Release its discarded helpers and parser scratch before importing
+        # the separate scheduler, not inside the maintenance heap probe.
+        lvship.free()
     import lvduelmaint
     try:
         value = getattr(lvduelmaint, name)(*args)
