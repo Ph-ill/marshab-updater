@@ -75,8 +75,81 @@ def box(lk):
 
 
 def store(lk, j):
+    # Write-ahead intents: no item may reach livebox before its game state does.
     save(lk.sh.data + F, j)
     lk.v += 1
+    cleanout(lk, j)
+    flush(lk, j)
+
+
+def belongs(o, g):
+    b = o[1]
+    return o[0] == g["to"] and 3 <= b[0] <= 9 and (b[6:8] if b[0] in (3, 4) else b[5:7]) == gid(g)
+
+
+def allowed(g, kind):
+    if g.get("unknown"):
+        return kind == 9
+    if g.get("why") == 2:
+        return kind in (7, 8)
+    if g["s"] in ACTIVE:
+        return True
+    # A completed game still owes its final ANSWER and mutual verification.
+    return kind in ((6, 7, 8) if g["s"] == "done" else (8,))
+
+
+def cleanout(lk, j, orphans=False):
+    games = j["g"] + j.get("e", [])
+    out = []
+    for o in lk.out:
+        if not 3 <= o[1][0] <= 9:
+            out.append(o)
+            continue
+        g = next((g for g in games if belongs(o, g)), None)
+        if g is None and not orphans:
+            out.append(o)
+            continue
+        if g is not None and allowed(g, o[1][0]):
+            if o[1][0] != 8 or not any(belongs(z, g) and z[1][0] == 8 for z in out):
+                out.append(o)
+    if len(out) != len(lk.out):
+        lk.out[:] = out
+        keep(lk)
+
+
+def flush(lk, j):
+    changed = False
+    for g in j["g"] + j.get("e", []):
+        q = g.get("q", [])
+        # Reserve the whole reply group, including the fleet-ending reveal.
+        needed = sum(not queued(lk, g, z[0], unhexlify(z[1])) for z in q)
+        if needed > 24 - len(lk.out):
+            continue
+        for kind, body in q:
+            body = unhexlify(body)
+            if not queued(lk, g, kind, body):
+                send(lk, kind, g["to"], body)
+            if kind == 7:
+                g["sent"] = 1
+        if q:
+            g["q"] = []
+            changed = True
+    if changed:
+        # A crash here replays identical bodies, never a new commitment/move.
+        save(lk.sh.data + F, j)
+
+
+def terminal(g, state):
+    g["s"] = state
+    g["q"] = [z for z in g.get("q", []) if allowed(g, z[0])]
+
+
+def rejected(lk, j, g, why):
+    # One bounded rejection per sender, persisted even when the shared box is full.
+    j["e"] = [x for x in j.get("e", []) if x["to"] != g["to"]]
+    j["e"].append(g)
+    end(lk, g, why)
+    store(lk, j)
 
 
 def gid(g):
@@ -93,15 +166,31 @@ def mine(lk, g, n):
 
 
 def pending(lk, g):
-    return any(o[0] == g["to"] and 3 <= o[1][0] <= 9 and o[1][5:7] == gid(g) for o in lk.out if o[1][0] not in (3, 4)) or any(o[0] == g["to"] and o[1][0] in (3, 4) and o[1][6:8] == gid(g) for o in lk.out)
+    return bool(g.get("q")) or any(belongs(o, g) for o in lk.out)
+
+
+def queued(lk, g, kind, body):
+    return any(o[0] == g["to"] and o[1][0] == kind and o[1][5:16] == body for o in lk.out)
 
 
 def emit(lk, g, kind, body, remember=True):
     body = body + bytes(11 - len(body))
+    if not allowed(g, kind):
+        return False
     if remember:
         g["last"] = [kind, hexlify(body).decode()]
-    if len(lk.out) < 24 and not any(o[0] == g["to"] and o[1][0] == kind and o[1][5:16] == body for o in lk.out):
-        send(lk, kind, g["to"], body)
+    if queued(lk, g, kind, body):
+        return True
+    z = [kind, hexlify(body).decode()]
+    q = g.setdefault("q", [])
+    if z not in q:
+        # Only the latest SYNC is useful; stop-and-wait bounds the other intents.
+        if kind in (5, 6, 9):
+            if kind == 6 and any(x[0] == 6 and unhexlify(x[1])[2] > body[2] for x in q):
+                return False
+            q[:] = [x for x in q if x[0] != kind]
+        q.append(z)
+    return False
 
 
 def end(lk, g, why):
@@ -129,8 +218,8 @@ def repeat(lk, g):
 
 def reveal(lk, g):
     if g.get("l"):
-        emit(lk, g, 7, gid(g) + unhexlify(g["l"]) + unhexlify(g["salt"]), False)
-        g["sent"] = 1
+        if emit(lk, g, 7, gid(g) + unhexlify(g["l"]) + unhexlify(g["salt"]), False):
+            g["sent"] = 1
 
 
 def finish(lk, j, g):
@@ -140,7 +229,7 @@ def finish(lk, j, g):
     r[0 if g["win"] else 1] += 1
     j["r"][str(g["to"])] = r
     g["counted"] = 1
-    g["s"] = "done"
+    terminal(g, "done")
 
 
 def sweep(lk, j):
@@ -163,7 +252,7 @@ def sweep(lk, j):
             g["update"] = True
             changed = True
         if g["s"] in ("wait", "invited") and age >= 3 * DAY:
-            g["s"] = "called"
+            terminal(g, "called")
             end(lk, g, 3)
             changed = True
         if age >= 21600 and g["s"] == "active" and (g.get("p") is not None or not mine(lk, g, g["n"] + 1)):
@@ -172,16 +261,17 @@ def sweep(lk, j):
                 before = g.get("sync")
                 sync(lk, g)
                 changed = changed or before != g.get("sync")
-        if g["s"] == "called":
-            lk.out[:] = [o for o in lk.out if not (o[0] == g["to"] and 3 <= o[1][0] <= 7 and (o[1][6:8] if o[1][0] in (3, 4) else o[1][5:7]) == gid(g))]
-            keep(lk)
+
     return changed
 
 
 def maintain(lk):
     j = box(lk)
+    cleanout(lk, j, True)
     if sweep(lk, j):
         store(lk, j)
+    else:
+        flush(lk, j)
 
 
 def lighting(lk):
@@ -217,21 +307,22 @@ def take(lk, frm, kind, b):
     g = next((x for x in j["g"] if x["to"] == frm and gid(x) == ident), None)
     if kind in (3, 4) and b[0] != 1:
         temp = fresh(lk, frm, ident, frm, "called")
-        end(lk, temp, 4)
+        rejected(lk, j, temp, 4)
         return False
     light = False
     if kind == 3:
         if g is not None:
             repeat(lk, g)
+            store(lk, j)
             return False
         other = next((x for x in j["g"] if x["to"] == frm and x["s"] in ACTIVE), None)
         # Crossing invites: the lower numbered inviter wins, consistently at both ends.
         if other and other["s"] in ("draft", "wait") and frm < lk.node.ship:
-            other["s"] = "called"
+            terminal(other, "called")
             end(lk, other, 3)
             other = None
         if other or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
-            end(lk, fresh(lk, frm, ident, frm, "called"), 5)
+            rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 5)
             return False
         # Keep one completed game per opponent, for the reveal screen and rematch.
         j["g"] = [x for x in j["g"] if x["to"] != frm or x["s"] in ACTIVE]
@@ -241,9 +332,12 @@ def take(lk, frm, kind, b):
         j["g"].append(g)
         light = True
     elif g is None:
-        if kind != 9 and len(lk.out) < 24 and (not getattr(lk, "duel_unknown", None) or (now(lk) is not None and now(lk) - lk.duel_unknown >= 3600)):
+        if kind not in (8, 9) and len(lk.out) < 24 and (not getattr(lk, "duel_unknown", None) or (now(lk) is not None and now(lk) - lk.duel_unknown >= 3600)):
             temp = fresh(lk, frm, ident, frm, "called")
+            temp["unknown"] = True
             sync(lk, temp)
+            j["e"] = [x for x in j.get("e", []) if x["to"] != frm] + [temp]
+            store(lk, j)
             lk.duel_unknown = now(lk) or 1
         return False
     elif kind == 4:
@@ -263,6 +357,7 @@ def take(lk, frm, kind, b):
             z = next((z for z in h if z[0] == n), None)
             if z and not mine(lk, g, n) and z[1] == cell:
                 emit(lk, g, 6, ident + bytes(z), False)
+                store(lk, j)
             return False
         if g["s"] != "active" or n != g["n"] + 1 or mine(lk, g, n) or g.get("p") is not None:
             sync(lk, g)
@@ -317,7 +412,7 @@ def take(lk, frm, kind, b):
                 if g.get("counted"):
                     j["r"][str(frm)][0 if g["win"] else 1] -= 1
                     g["counted"] = 0
-                g["s"] = "cheat"
+                terminal(g, "cheat")
                 end(lk, g, 6)
             else:
                 g["verified"] = 1
@@ -342,9 +437,9 @@ def take(lk, frm, kind, b):
             if g.get("counted"):
                 j["r"][str(frm)][0 if g["win"] else 1] -= 1
                 g["counted"] = 0
-            g["s"] = "cheat"
+            terminal(g, "cheat")
         elif g["s"] in ACTIVE:
-            g["s"] = {1: "declined", 3: "called", 4: "version", 5: "busy"}.get(why, "called")
+            terminal(g, {1: "declined", 3: "called", 4: "version", 5: "busy"}.get(why, "called"))
     elif kind == 9:
         n, cell, r, state = b[2:6]
         g["nl"] = bool(state & 128)
@@ -401,7 +496,7 @@ def action(lk, b):
     a, to = b.get("action"), b.get("to")
     if not integer(to, 0, 7) or to == lk.node.ship:
         return 400, {"err": "Pick a crewmate."}
-    if len(lk.out) >= 24:
+    if len(lk.out) >= 24 and a not in ("resign", "call", "new"):
         return 429, {"err": "Your previous moves are on their way."}
     peer = lk.ble.peers.get(to)
     if a == "new" and peer is not None and peer.info and not peer.info.get("cap"):
@@ -417,6 +512,9 @@ def action(lk, b):
     elif g is None:
         return 409, {"err": "No duel is open."}
     elif a in ("lock", "invite", "accept"):
+        if g.get("l") and g["s"] in ("wait", "active") and any(z[0] in (3, 4) for z in g.get("q", [])):
+            store(lk, j)
+            return 200, {"ok": True}
         if g["s"] not in ("draft", "invited") or g.get("l") or (a == "accept" and g["s"] != "invited") or (a == "invite" and g["s"] != "draft"):
             return 409, {"err": "Your fleet is locked."}
         try:
@@ -444,11 +542,12 @@ def action(lk, b):
     elif a == "decline":
         if g["s"] != "invited":
             return 409, {"err": "No invitation is waiting."}
-        g["s"] = "declined"
+        terminal(g, "declined")
         end(lk, g, 1)
     elif a == "resign":
         if g["s"] not in ("wait", "invited", "active"):
             return 409, {"err": "No duel is playing."}
+        terminal(g, "called")  # discard obsolete moves before the terminal exchange
         g["s"], g["win"] = "reveal", False
         g["why"] = 2
         end(lk, g, 2)
@@ -460,7 +559,7 @@ def action(lk, b):
         t = now(lk)
         if t is None or g.get("t") is None or t - g["t"] < 3 * DAY or (g["s"] == "active" and mine(lk, g, g["n"] + 1) and g.get("p") is None):
             return 409, {"err": "Wait three days for the next move."}
-        g["s"] = "called"
+        terminal(g, "called")
         end(lk, g, 3)
     else:
         return 400, {"err": "Bad duel action."}

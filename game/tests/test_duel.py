@@ -161,7 +161,9 @@ D.take(a.live, 1, 5, shot[5:16])
 b.live.out[:] = []
 a.live.out[:] = []             # simulate an acked-but-lost answer
 b.clock.t += 3600001           # SYNC is limited to once per hour per game
-D.sync(b.live, game(b))
+j = D.box(b.live)
+D.sync(b.live, j["g"][0])
+D.store(b.live, j)
 settled(w, a, b)
 check("sync repaired answer", game(b)["n"] == 1 and game(b)["p"] is None)
 # Day changes do not erase a duel move.
@@ -374,6 +376,187 @@ check("two-pulse on windows", all(t % 1000 < 600 for t in high))
 check("link stays dark", not any(1200 <= t < 2000 for t in high))
 check("eight second pattern", 8000 <= ticks[0] <= 8020)
 check("pin released dark", pin.writes[-1][1] == 0 and a.ledtest is None)
+
+# Review round 1: the fleet-ending answer and reveal are one durable reply group.
+w, a, b = fresh(31)
+start(w, a, b)
+for k, cell in enumerate((0, 1, 2, 12, 13)):
+    act(b, "fire", cell=cell)
+    settled(w, a, b)
+    act(a, "fire", cell=20 + k)
+    settled(w, a, b)
+for k in range(23):
+    I.send(a.live, 8, 2, bytes((90, k, 3)))
+ident = D.gid(game(a))
+D.take(a.live, 1, 5, ident + bytes((11, 35)) + bytes(7))
+check("23-slot reveal not falsely sent", not game(a).get("sent"))
+check("23-slot reply group durable", len(game(a).get("q", [])) == 2)
+# Peer verification must not make a still-unsent local reveal disappear.
+peer = game(b)
+D.take(a.live, 1, 7, ident + D.encode(LAY) + D.unhexlify(peer["salt"]))
+check("terminal keeps unsent reveal", game(a)["s"] == "done" and not game(a).get("sent") and len(game(a)["q"]) == 2)
+a.live.out[:] = []
+I.keep(a.live)
+D.maintain(a.live)
+check("final answer and reveal retried", [o[1][0] for o in a.live.out] == [6, 7])
+
+# Two saturated boxes must still acknowledge items, including later trailer ACKs.
+class Trailer:
+    def __init__(self, to):
+        self.to, self.acks = to, []
+w, a, b = fresh(32)
+for k in range(24):
+    I.send(a.live, 8, 1, bytes((70, k, 3)))
+    I.send(b.live, 8, 0, bytes((80, k, 3)))
+sa, sb = Trailer(1), Trailer(0)
+a.live.take(sa, b.live.trailer(sb, True), 0)
+check("saturated incoming END acknowledged", bool(sa.acks))
+first = a.live.out[0][1]
+incoming = I.item(b.live, 3, 0, bytes((1, 22, 33)) + bytes(8))
+ack = I.item(b.live, 0, 0, first[2:5], 0)
+a.live.take(sa, bytes((lvlive.MARK, 2)) + incoming + ack, 0)
+check("ACK after full-box item processed", not any(o[1] == first for o in a.live.out))
+# A known duplicate is acked even when no outgoing capacity is available.
+a.live.take(sa, bytes((lvlive.MARK, 1)) + incoming, 0)
+check("saturated duplicate acknowledged", a.live.n["dup"] > 0)
+w, a, b = fresh(36)
+for k in range(24):
+    I.send(a.live, 2, 1, bytes((k,)))
+    I.send(b.live, 2, 0, bytes((k,)))
+sa, sb = Trailer(1), Trailer(0)
+for k in range(80):
+    a.live.take(sa, b.live.trailer(sb, True), 0)
+    b.live.take(sb, a.live.trailer(sa, True), 0)
+check("bidirectional saturation drains via ACKs", not a.live.out and not b.live.out and a.live.n["acked"] == b.live.n["acked"] == 24)
+
+# Terminal cleanup must not depend on making the transition inside maintain().
+w, a, b = fresh(33)
+start(w, a, b)
+act(b, "fire", cell=0)
+b.clock.t += 3 * 86400000 + 1
+for k in range(23):
+    I.send(b.live, 2, 2, bytes((k,)))
+check("call works with full outbox", act(b, "call") == 200)
+check("called shot purged", not any(o[1][0] == 5 for o in b.live.out))
+D.maintain(b.live)
+check("call keeps bounded END", sum(o[1][0] == 8 for o in b.live.out) == 1)
+check("absent peer rematch", act(b, "new") == 200)
+D.maintain(b.live)
+check("orphan END swept", not any(3 <= o[1][0] <= 9 for o in b.live.out))
+w, a, b = fresh(34)
+start(w, a, b)
+act(b, "fire", cell=0)
+D.take(b.live, 0, 8, D.gid(game(b)) + bytes((3,)) + bytes(8))
+check("received END purges shot", not any(o[1][0] == 5 for o in b.live.out))
+
+# Fail before and after EVERY save in each publication path, then reload both
+# files as after power loss. Check the durable state at the instant of enqueue.
+import lvlivex
+def persistence_case(which):
+    w, a, b = fresh(35)
+    if which == "invite":
+        act(a, "new")
+        return a, lambda: act(a, "invite", layout=LAY)
+    if which == "accept":
+        act(a, "new")
+        act(a, "invite", layout=LAY)
+        settled(w, a, b)
+        return b, lambda: act(b, "accept", layout=LAY)
+    start(w, a, b)
+    if which in ("answer", "reveal"):
+        # Ten legal alternating shots, one remaining fleet cell on either side.
+        h = ""
+        fired = []
+        for k, cell in enumerate((0, 1, 2, 12, 13)):
+            r = D.result(D.encode(LAY), fired, cell)
+            fired.append(cell)
+            h += chr(65 + cell) + chr(97 + r) + chr(85 + k) + "a"
+        for s in (a, b):
+            j = D.box(s.live)
+            j["g"][0]["h"], j["g"][0]["n"] = h, 10
+            D.store(s.live, j)
+        if which == "answer":
+            return a, lambda: D.take(a.live, 1, 5, D.gid(game(a)) + bytes((11, 35)) + bytes(7))
+        j = D.box(b.live)
+        j["g"][0]["p"] = 35
+        D.store(b.live, j)
+        return b, lambda: D.take(b.live, 0, 6, D.gid(game(b)) + bytes((11, 35, 10)) + bytes(6))
+    if which == "shot":
+        return b, lambda: act(b, "fire", cell=0)
+    if which == "resign":
+        return a, lambda: act(a, "resign")
+    act(b, "fire", cell=0)
+    b.clock.t += 3 * 86400000 + 1
+    return b, lambda: act(b, "call") if which == "end" else D.take(b.live, 0, 8, D.gid(game(b)) + bytes((3,)) + bytes(8))
+
+
+def durable_items(s, obj):
+    from binascii import unhexlify
+    g = game(s)
+    for o in obj.get("o", []):
+        b = unhexlify(o[1])
+        if b[0] in (3, 4):
+            check("commitment saved before publication", b[8:16] == D.commit(D.gid(g), unhexlify(g["l"]), unhexlify(g["salt"])))
+        elif b[0] == 5:
+            check("shot saved before publication", g.get("p") == b[8])
+        elif b[0] == 6:
+            check("answer saved before publication", g["n"] >= b[7])
+        elif b[0] == 7:
+            check("reveal state saved before publication", g["s"] in ("reveal", "done"))
+        elif b[0] == 8:
+            check("END state saved before publication", g["s"] not in ("draft", "wait", "invited", "active"))
+
+
+for which in ("invite", "accept", "shot", "answer", "reveal", "end", "resign", "received_end"):
+    # Discover the actual save count instead of assuming a fixed implementation.
+    s, operation = persistence_case(which)
+    original_d, original_i = D.save, I.save
+    events = []
+    def record(path, obj):
+        events.append(path)
+        if path == s.live.f:
+            durable_items(s, obj)
+        original_d(path, obj)
+    D.save = I.save = record
+    try:
+        operation()
+    finally:
+        D.save, I.save = original_d, original_i
+    for boundary in range(len(events)):
+        for after in (False, True):
+            for restart in (False, True):
+                s, operation = persistence_case(which)
+                calls = [0]
+                def fail(path, obj):
+                    n = calls[0]
+                    calls[0] += 1
+                    if path == s.live.f:
+                        durable_items(s, obj)
+                    if n == boundary and not after:
+                        raise MemoryError("injected persistence failure")
+                    original_d(path, obj)
+                    if n == boundary and after:
+                        raise MemoryError("injected persistence failure")
+                D.save = I.save = fail
+                try:
+                    operation()
+                    check("injected boundary reached", False)
+                except MemoryError:
+                    pass
+                finally:
+                    D.save, I.save = original_d, original_i
+                lock = (game(s).get("l"), game(s).get("salt"))
+                if restart:
+                    lvlivex.setup(s.live, s, s.data, s.live.cfg)
+                D.maintain(s.live)
+                # Retrying a failed pre-intent action is allowed; later retries are
+                # idempotent or refused, but must never mint a second commitment.
+                operation()
+                D.maintain(s.live)
+                if lock[0]:
+                    check("recovered immutable lock", lock == (game(s).get("l"), game(s).get("salt")))
+                durable_items(s, I.load(s.live.f))
+                check("recovery obligations drained", not game(s).get("q"))
 
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

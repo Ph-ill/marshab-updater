@@ -189,6 +189,17 @@ class Link:
                 self.inb[:] = z[1]
                 self.out[:] = z[2]
                 self.n = z[3]
+                # Duel's write-ahead transaction may already have committed a
+                # reply before the trailer's final save failed. Recover that
+                # durable outbox, not a snapshot predating its publication.
+                try:
+                    from lvlivein import load
+                    from binascii import unhexlify
+                    b = load(self.f)
+                    if b is not None:
+                        self.out[:] = [[o[0], unhexlify(o[1]), o[2]] for o in b.get("o", [])]
+                except Exception:
+                    pass
             z = None
             if isinstance(e, MemoryError):
                 self.n["oom"] += 1   # passing, up to TRANSIENT in a row

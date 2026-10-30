@@ -92,7 +92,13 @@ def send(lk, kind, to, body):
         x[0] = x[1] = 0
     lk.due = 0
     lk.n["out"] += 1
-    keep(lk)
+    try:
+        keep(lk)
+    except Exception:
+        # An in-RAM item is not evidence of a durable enqueue on retry.
+        lk.out.pop()
+        lk.n["out"] -= 1
+        raise
     return it[2:5]
 
 
@@ -121,8 +127,7 @@ def take(lk, s, m, off):
                     break
             continue
         q = [b[2], b[3] << 8 | b[4]]
-        if 3 <= b[0] <= 9 and len(lk.out) >= 24:
-            break                       # no reply room; do not advance past this seq
+
         h = lk.hw.get(frm)
         if h and h[0] != q[0] and q[0] in h[2:]:
             # an epoch this sender has left behind (its box file was made again since): a
@@ -148,6 +153,7 @@ def take(lk, s, m, off):
             fl = 2
     if ch:
         keep(lk)                        # (raises: Link.take puts RAM back, nothing acked)
+    duels(lk)                           # ACKs may have freed room for durable replies
     if fl:                              # once it's kept: a failed save gets no light
         c = lk.lc[1]
         flick(lk, fl == 2)
