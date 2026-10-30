@@ -58,6 +58,45 @@ class Req:
         return self.peer + "|" + self.hdr.get("user-agent", "")
 
 
+class PhoneTransport(unittest.TestCase):
+    def test_complete_response_does_not_wait_for_a_reset(self):
+        import asyncio
+        from unittest.mock import patch
+        import phone_flow as F
+
+        class Reader:
+            def __init__(self, raw):
+                self.raw = raw
+
+            async def read(self, n):
+                if self.raw:
+                    raw, self.raw = self.raw, b""
+                    return raw
+                raise OSError("connection reset after response")
+
+        class Writer(F.FakeWriter):
+            async def drain(self):
+                pass
+
+        async def exercise():
+            for body, complete in ((b"{}", True), (b"{", False)):
+                writer = Writer()
+
+                async def connect(*args):
+                    return Reader(b"HTTP/1.0 503 Busy\r\nContent-Length: 2\r\n\r\n" + body), writer
+
+                with patch.object(F.asyncio, "open_connection", connect):
+                    if complete:
+                        answer = await F.tcp(None)("POST", "/api/test", b"{}")
+                        self.assertEqual((answer[0], answer[2]), (503, b"{}"))
+                    else:
+                        with self.assertRaises(OSError):
+                            await F.tcp(None)("POST", "/api/test", b"{}")
+                self.assertTrue(writer.closed)
+
+        asyncio.run(exercise())
+
+
 class Contract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

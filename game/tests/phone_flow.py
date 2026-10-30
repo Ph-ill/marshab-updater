@@ -39,20 +39,31 @@ def request_bytes(method, path, body, headers):
 def tcp(port, host="127.0.0.1"):
     async def req(method, path, body=None, headers=None):
         r, w = await asyncio.open_connection(host, port)
-        w.write(request_bytes(method, path, body, headers or {}))
-        await w.drain()
-        raw = b""
-        while True:
-            b = await r.read(1024)
-            if not b:
-                break
-            raw += b
-        w.close()
         try:
-            await w.wait_closed()
-        except Exception:
-            pass
-        return parse(raw)
+            w.write(request_bytes(method, path, body, headers or {}))
+            await w.drain()
+            raw, total = b"", None
+            while True:
+                b = await r.read(1024)
+                if not b:
+                    break
+                raw += b
+                if total is None and b"\r\n\r\n" in raw:
+                    _, h, _ = parse(raw)
+                    if "content-length" in h:
+                        total = raw.find(b"\r\n\r\n") + 4 + int(h["content-length"])
+                # A refused connection may reset after its complete 503 reply
+                # because the server did not read the request. Do not wait for
+                # EOF once HTTP framing proves the answer is complete.
+                if total is not None and len(raw) >= total:
+                    break
+            return parse(raw)
+        finally:
+            w.close()
+            try:
+                await w.wait_closed()
+            except Exception:
+                pass
     return req
 
 
