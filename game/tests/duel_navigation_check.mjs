@@ -39,3 +39,15 @@ c.LV.duel[0].s='done';
 vm.runInContext('duScreen(0)',c);
 assert.equal((firstGrid().match(/du-cell ship/g)||[]).length,5,'all previously unshot opponent ship cells revealed');
 console.log('duel reveal: pre-end masking and previously unshot cells PASS');
+for(const [state,turn,pending,p] of [['wait',false,false,null],['active',true,false,null],['active',false,false,null],['active',false,true,7],['reveal',false,false,null],['done',false,false,null]]){
+  c.LV={duel:[{id:'labels',to:0,s:state,turn,pending,p,shots:[],incoming:[],record:[0,0]}]};
+  vm.runInContext('duScreen(0)',c);
+  const labels=Array.from(elements.v.innerHTML.matchAll(/role=group aria-label="([^"]+)"/g),m=>m[1]);
+  assert.deepEqual(labels,['Opponent field','Your field'],`${state}, turn=${turn}, pending=${pending}: field ownership is independent of interaction`);
+}
+for(const state of ['draft','invited']){
+  c.LV={duel:[{id:'placement-label',to:0,s:state}]};
+  vm.runInContext('duScreen(0)',c);
+  assert.match(elements.v.innerHTML,/role=group aria-label="Your field"/,'placement field identifies your ownership');
+}
+console.log('duel labels: placement, waiting, both turns, pending, reveal and completion PASS');

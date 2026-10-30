@@ -72,6 +72,7 @@ python3 tests/test_safe.py
 python3 tests/test_live.py
 python3 tests/test_duel.py
 node tests/duel_navigation_check.mjs
+node tests/duel_terminal_check.mjs
 node tests/shots_story_check.mjs
 python3 tests/test_ota_release.py
 python3 tests/test_reset.py
@@ -182,6 +183,7 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
     CHROME="$CHROME" BOARD_PY="$MP -X heapsize=1m" node --experimental-websocket tests/app_clock_e2e.mjs
   fi
   if [ -n "$PW" ]; then
+    CHROME="$CHROME" PW="$PW" node tests/duel_focus_check.mjs
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_ota.sh "$O/ota"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_a2hs.sh "$O/a2hs"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_settings.sh "$O/settings"; rm -rf "$O"
