@@ -194,7 +194,10 @@ def sample():
     k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
     if m > kpeak.get(k, 0):
         kpeak[k] = m
-    if k == "sig" and HAIL_M[0] is not None and not hail_sig and getattr(globals().get("ship"), "live", None):
+    # Settings also imports lvsig for its self-check, outside OTA admission.
+    # Only the upload verifier installs our web probe on that module.
+    if (k == "sig" and getattr(sys.modules["lvsig"], "probe", None) is stream_sample
+            and HAIL_M[0] is not None and not hail_sig and getattr(globals().get("ship"), "live", None)):
         L = globals()["ship"].live
         h0, i0, se = L.n["held"], L.n["in"], HailSes()
         L.take(se, HAIL_M[0], 0)

@@ -20,6 +20,31 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_signature_injection_skips_settings_self_check(self):
+        from unittest.mock import patch
+        calls = []
+        link = NS(n={"held": 0, "in": 0})
+        def take(session, frame, offset):
+            calls.append(frame)
+            link.n["held"] += 1
+        link.take = take
+        probe = lambda: None
+        scope = dict(gc=NS(mem_alloc=lambda: 1), base=0, sys=sys,
+                     kpeak={}, peak=[2], HAIL_M=[b"frame"], hail_sig=[],
+                     ship=NS(live=link), stream_sample=probe,
+                     HailSes=lambda: NS(acks=[]))
+        functions(ROOT / "tests/mp_sync_heap.py", {"sample"}, scope)
+        with patch.dict(sys.modules, {"lvsig": NS(probe=None)}):
+            scope["sample"]()
+            self.assertEqual(calls, [])
+            self.assertEqual(scope["hail_sig"], [])
+            sys.modules["lvsig"].probe = probe
+            scope["sample"]()
+            self.assertEqual(calls, [b"frame"])
+            self.assertEqual(scope["hail_sig"], [(1, 0, 0, "lvlivein" in sys.modules)])
+            scope["sample"]()
+            self.assertEqual(calls, [b"frame"])
+
     def test_seed_is_three_long_legal_games_with_durable_obligations(self):
         import tempfile
         import lvduel as D
