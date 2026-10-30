@@ -72,14 +72,25 @@ def box(lk):
     return load(lk.sh.data + F) or {"g": [], "r": {}}
 
 
+def persist(name, *args):
+    import lvduelstore
+    try:
+        return getattr(lvduelstore, name)(*args)
+    finally:
+        lvship.drop("lvduelstore")
+        lvduelstore = None
+
+
 def store(lk, j):
-    # Write-ahead intents: no item may reach livebox before its game state does.
-    lvship.free()
-    save(lk.sh.data + F, j)
-    lk.v += 1
-    probe()
-    cleanout(lk, j)
-    flush(lk, j)
+    return persist("store", lk, j)
+
+
+def cleanout(lk, j, orphans=False):
+    return persist("cleanout", lk, j, orphans)
+
+
+def flush(lk, j):
+    return persist("flush", lk, j)
 
 
 def belongs(o, g):
@@ -94,58 +105,19 @@ def allowed(g, kind):
         return kind in (7, 8)
     if g["s"] in ACTIVE:
         return True
-    # A completed game still owes its final ANSWER and mutual verification.
     return kind in ((6, 7, 8) if g["s"] == "done" else (8,))
 
 
-def cleanout(lk, j, orphans=False):
-    games = j["g"] + j.get("e", [])
-    out = []
-    for o in lk.out:
-        if not 3 <= o[1][0] <= 9:
-            out.append(o)
-            continue
-        g = next((g for g in games if belongs(o, g)), None)
-        if g is None and not orphans:
-            out.append(o)
-            continue
-        if g is not None and allowed(g, o[1][0]):
-            if o[1][0] != 8 or not any(belongs(z, g) and z[1][0] == 8 for z in out):
-                out.append(o)
-    if len(out) != len(lk.out):
-        lk.out[:] = out
-        keep(lk)
+def gid(g):
+    return unhexlify(g["id"])
 
 
-def flush(lk, j):
-    changed = False
-    for g in j["g"] + j.get("e", []):
-        q = g.get("q", [])
-        # Reserve the whole reply group, including the fleet-ending reveal.
-        needed = sum(not queued(lk, g, z[0], unhexlify(z[1])) for z in q)
-        if needed > 24 - len(lk.out):
-            continue
-        for kind, body in q:
-            body = unhexlify(body)
-            if not queued(lk, g, kind, body):
-                # Each durable enqueue is a separate persistence phase. Do not
-                # carry the previous file's serialization garbage into it.
-                lvship.free()
-                send(lk, kind, g["to"], body)
-            if kind == 7:
-                g["sent"] = 1
-        if q:
-            g["q"] = []
-            changed = True
-    if j.get("e"):
-        retained = [g for g in j["e"] if pending(lk, g)]
-        if len(retained) != len(j["e"]):
-            j["e"] = retained
-            changed = True
-    if changed:
-        # A crash here replays identical bodies, never a new commitment/move.
-        lvship.free()
-        save(lk.sh.data + F, j)
+def pending(lk, g):
+    return bool(g.get("q")) or any(belongs(o, g) for o in lk.out)
+
+
+def queued(lk, g, kind, body):
+    return any(o[0] == g["to"] and o[1][0] == kind and o[1][5:16] == body for o in lk.out)
 
 
 def terminal(g, state):
@@ -161,10 +133,6 @@ def rejected(lk, j, g, why):
     end(lk, g, why)
 
 
-def gid(g):
-    return unhexlify(g["id"])
-
-
 def history(g):
     b = g["h"]
     for i in range(0, len(b), 2):
@@ -173,14 +141,6 @@ def history(g):
 
 def mine(lk, g, n):
     return (n % 2 == 0) == (g["i"] == lk.node.ship)
-
-
-def pending(lk, g):
-    return bool(g.get("q")) or any(belongs(o, g) for o in lk.out)
-
-
-def queued(lk, g, kind, body):
-    return any(o[0] == g["to"] and o[1][0] == kind and o[1][5:16] == body for o in lk.out)
 
 
 def emit(lk, g, kind, body, remember=True):
@@ -298,20 +258,26 @@ def fresh(lk, to, ident, inviter, state):
             "n": 0, "h": "", "p": None, "t": now(lk)}
 
 
+def receive(lk, frm, kind, b, j=None):
+    if j is None:
+        j = box(lk)
+    if sweep(lk, j, True):
+        store(lk, j)
+    import lvduelrx
+    try:
+        change = lvduelrx.take(lk, frm, kind, b, j)
+    finally:
+        lvship.drop("lvduelrx")
+        lvduelrx = None
+    return j, change
+
+
 def take(lk, frm, kind, b):
     if len(b) != 11 or not 3 <= kind <= 9:
         return False
     while True:
-        j = box(lk)
-        if sweep(lk, j, True):
-            store(lk, j)
         unknown = getattr(lk, "duel_unknown", None)
-        import lvduelrx
-        try:
-            change = lvduelrx.take(lk, frm, kind, b, j)
-        finally:
-            lvship.drop("lvduelrx")
-            lvduelrx = None
+        j, change = receive(lk, frm, kind, b)
         if change is None:
             return False
         # Rule evaluation and persistence are separate phases. Release the

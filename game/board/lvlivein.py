@@ -49,13 +49,17 @@ def save(path, obj, parts=None):
         expected = writer.h.digest()
     writer = None
     actual = sha256()
+    # Reuse readback storage instead of leaving one discarded bytes object
+    # per chunk alongside the full durable game and any HTTP snapshot.
+    chunk = bytearray(256)
+    view = memoryview(chunk)
     with open(path + ".new", "rb") as f:
         while True:
-            c = f.read(256)
+            n = f.readinto(chunk)
             probe()
-            if not c:
+            if not n:
                 break
-            actual.update(c)
+            actual.update(view if n == len(chunk) else view[:n])
     if actual.digest() != expected:
         raise OSError("read back")
     os.rename(path + ".new", path)
@@ -227,11 +231,7 @@ def take(lk, s, m, off):
 
 def _in(lk, frm, b):
     if 3 <= b[0] <= 9:
-        try:
-            import lvduel
-            return lvduel.take(lk, frm, b[0], b[5:16])
-        finally:
-            lvship.drop("lvduel")
+        return duel_take(lk, frm, b[0], b[5:16])
     if b[0] > 9:                        # a later release's kind: acked, not kept
         return
     q = lk.inb
@@ -239,6 +239,43 @@ def _in(lk, frm, b):
         q.pop(0)
     c = lk.sh.clock                     # when it came: the phone's clock if known, and the
     q.append([frm, b, int(c.epoch_ms()) if c.known() else None, lk.now])    # loop's ms
+
+
+def duel_take(lk, frm, kind, b):
+    if len(b) != 11 or not 3 <= kind <= 9:
+        return False
+    while True:
+        unknown = getattr(lk, "duel_unknown", None)
+        # Parse before loading receive rules. The HTTP stream can still own
+        # its compact snapshot here; do not add rule bytecode to the parser.
+        lvship.free()
+        j = load(lk.sh.data + "/duel.json") or {"g": [], "r": {}}
+        lvship.free()
+        import lvduel
+        try:
+            j, change = lvduel.receive(lk, frm, kind, b, j)
+        finally:
+            lvship.drop("lvduel")
+            lvduel = None
+        if change is None:
+            return False
+        try:
+            import lvduelstore
+            lvduelstore.store(lk, j)
+        except Exception:
+            lk.duel_unknown = unknown
+            raise
+        finally:
+            lvship.drop("lvduelstore")
+            lvduelstore = None
+        light, retry = change
+        if retry is None:
+            p = getattr(lk.sh, "duel_probe", None)
+            if p:
+                p(j)
+            return light
+        kind, b = retry
+        j = change = None
 
 
 def mins(c):
