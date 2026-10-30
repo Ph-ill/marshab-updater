@@ -63,3 +63,32 @@ def score(ships, fired, cell):
                 r += 8
             return r
     return 0
+
+
+def proof(lk, frm, b, j, g):
+    from lvduel import commit, hexlify, sync, terminal, end, reveal, finish, probe
+    if g["s"] not in ("reveal", "done", "cheat"):
+        sync(lk, g)
+    else:
+        layout, salt = b[2:5], b[5:11]
+        ok = False
+        try:
+            ok = hexlify(commit(b[:2], layout, salt)).decode() == g.get("c")
+            ok = replay(layout, g["h"], g["i"] == lk.node.ship) and ok
+            probe("layout")
+        except ValueError:
+            ok = False
+        if not ok:
+            # Undo a previously counted result after a contradictory reveal.
+            if g.get("counted"):
+                j["r"][str(frm)][0 if g["win"] else 1] -= 1
+                g["counted"] = 0
+            terminal(g, "cheat")
+            end(lk, g, 6)
+        else:
+            g["verified"] = 1
+            g["their"] = hexlify(layout).decode()
+            if not g.get("sent"):
+                reveal(lk, g)
+            finish(lk, j, g)
+    return False, None

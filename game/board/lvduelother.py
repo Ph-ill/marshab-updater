@@ -63,29 +63,7 @@ def take(lk, frm, kind, b, j):
             g["s"] = "active"
         g["t"] = now(lk)
     elif kind == 7:
-        if g["s"] not in ("reveal", "done", "cheat"):
-            sync(lk, g)
-        else:
-            layout, salt = b[2:5], b[5:11]
-            ok = False
-            try:
-                ok = hexlify(commit(ident, layout, salt)).decode() == g.get("c")
-                ok = layout_call("replay", layout, g["h"], g["i"] == lk.node.ship) and ok
-            except ValueError:
-                ok = False
-            if not ok:
-                # Undo a previously counted result if a contradictory reveal follows it.
-                if g.get("counted"):
-                    j["r"][str(frm)][0 if g["win"] else 1] -= 1
-                    g["counted"] = 0
-                terminal(g, "cheat")
-                end(lk, g, 6)
-            else:
-                g["verified"] = 1
-                g["their"] = hexlify(layout).decode()
-                if not g.get("sent"):
-                    reveal(lk, g)
-                finish(lk, j, g)
+        return layout_call("proof", lk, frm, b, j, g)
     elif kind == 8:
         why = b[2]
         if why not in (1, 2, 3, 4, 5, 6):

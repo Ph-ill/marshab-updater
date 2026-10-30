@@ -263,6 +263,12 @@ def receive(lk, frm, kind, b, j=None):
         j = box(lk)
     if sweep(lk, j, True):
         store(lk, j)
+    if kind == 7:
+        g = next((x for x in j["g"] if x["to"] == frm and gid(x) == b[:2]), None)
+        if g is not None:
+            # Proof needs layout/replay, not the shot receiver or the larger
+            # invitation/recovery rules beside that same private game box.
+            return j, layout_call("proof", lk, frm, b, j, g)
     import lvduelrx
     try:
         change = lvduelrx.take(lk, frm, kind, b, j)

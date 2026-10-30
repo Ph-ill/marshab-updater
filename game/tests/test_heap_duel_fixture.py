@@ -21,6 +21,21 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_known_proof_bypasses_shot_and_recovery_modules(self):
+        from unittest.mock import patch
+        game = {"to": 1, "id": b"ab"}
+        box = {"g": [game]}
+        link = NS()
+        body = b"ab" + bytes(9)
+        calls = []
+        scope = dict(box=lambda lk: box, sweep=lambda *a: False,
+                     gid=lambda g: g["id"],
+                     layout_call=lambda *a: calls.append(a) or (False, None))
+        functions(ROOT / "board/lvduel.py", {"receive"}, scope)
+        with patch.dict(sys.modules, {"lvduelrx": None, "lvduelother": None}):
+            self.assertEqual(scope["receive"](link, 1, 7, body), (box, (False, None)))
+        self.assertEqual(calls, [("proof", link, 1, body, box, game)])
+
     def test_socket_client_rejects_a_short_content_length_body(self):
         import phone_flow
 
