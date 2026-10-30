@@ -194,7 +194,7 @@ async def code_change(req, fail, log):
     log("code: wrong current code refused, changed, signed in with the new one, changed back")
 
 
-async def led_test(req, fail, log, hail=False):
+async def led_test(req, fail, log, hail=False, uploaded=None):
     """Test light (board/lvledtest.py, loaded per request; its pattern a task for 10 s) while
     the others play: crew 4 taps it, taps again while it plays (429), waits it out, and
     taps once more; a tap with no session is 401. The board counts the pin's writes."""
@@ -236,7 +236,13 @@ async def led_test(req, fail, log, hail=False):
             break
     else:
         return fail("led test: Hail never released the light")
-    for i in range(2):
+    count = 3 if uploaded is not None and not hail else 2
+    for i in range(count):
+        if i == 2:
+            # Preserve both concurrent patterns, then add a genuinely quiet
+            # playback. A continuous upload correctly uses the busy blink,
+            # which cannot demonstrate the separate >=200-write PWM check.
+            await uploaded.wait()
         if i:
             for _ in range(120):
                 s, b = await call("/api/led/test", {}, tok)
@@ -251,7 +257,7 @@ async def led_test(req, fail, log, hail=False):
         if s != 429:
             return fail("led test: a tap while it plays %d %s, want 429" % (s, b))
         await asyncio.sleep(10.2)
-    log("led test: played twice, a tap meanwhile refused each time, none without a session")
+    log("led test: played %d times, a tap meanwhile refused each time, none without a session" % count)
 
 
 async def bat_look(req, fail, log):
@@ -506,10 +512,18 @@ def main(argv):
             jobs.append(duel_phone(req, 2, True, fails.append, print))
             jobs.append(duel_phone(req, 4, False, fails.append, print))
         if ota:
-            jobs.append(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print))
+            uploaded = asyncio.Event()
+
+            async def upload():
+                try:
+                    return await ota_upload(req, ota[0], ota[1], ota[2], fails.append, print)
+                finally:
+                    uploaded.set()
+
+            jobs.append(upload())
             jobs.append(funnel_hello(req, fails.append, print))
             jobs.append(code_change(req, fails.append, print))
-            jobs.append(led_test(req, fails.append, print, "--live" in mode))
+            jobs.append(led_test(req, fails.append, print, "--live" in mode, uploaded))
             if "--live" in mode:
                 jobs.append(live_hail(req, fails.append, print))
             if "--bat" in mode:
