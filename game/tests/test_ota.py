@@ -209,7 +209,8 @@ data_same("after refusals")
 
 # The split duel payload has 43 files; retain an explicit bounded file count.
 for count, accepted in ((43, True), (48, True), (49, False)):
-    m = manifest("0.2.1-lv-test", dict(("lvpart%d.mpy" % i, b"x") for i in range(count)))
+    m = json.loads(FX["env"]["0.2.1-lv-test"]["m"])
+    m["files"] = [["lvpart%d.mpy" % i, 1, "0" * 64] for i in range(count)]
     why = lvota.check_manifest(m)
     check("split payload: %d files accepted %s" % (count, accepted),
           why is None if accepted else why == "bad file list", why)
