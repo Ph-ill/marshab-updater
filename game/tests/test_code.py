@@ -114,6 +114,7 @@ class Server:
 
     def __init__(self):
         self.phone = Phone()
+        self.ship = FakeShip()   # the real Server always owns its Ship
 
     def get_phone(self):
         return self.phone
