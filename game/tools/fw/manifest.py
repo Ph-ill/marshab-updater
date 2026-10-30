@@ -65,3 +65,8 @@ module("lvphoneinit.py", base_path="../../board", opt=3)
 module("lvlight.py", base_path="../../board", opt=3)
 # Asteroid duel (0.3.1): an ordinary per-use .mpy override on existing cores.
 module("lvduel.py", base_path="../../board", opt=3)
+module("lvduelview.py", base_path="../../board", opt=3)
+module("lvduelaction.py", base_path="../../board", opt=3)
+module("lvduelrx.py", base_path="../../board", opt=3)
+module("lvduellayout.py", base_path="../../board", opt=3)
+module("lvlivecfg.py", base_path="../../board", opt=3)

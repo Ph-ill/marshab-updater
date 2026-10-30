@@ -7,36 +7,83 @@
 import lvship
 import lvlive as L
 from binascii import hexlify
+from io import IOBase
 try:
     from hashlib import sha256
 except ImportError:  # pragma: no cover
     from uhashlib import sha256
 
 
-def save(path, obj):
+def probe(stage="save"):
+    p = getattr(lvship, "heap_probe", None)
+    if p:
+        lvship.heap_stage = stage
+        p()
+
+
+class SaveWriter(IOBase):
+    def __init__(self, f):
+        self.f = f
+        self.h = sha256()
+
+    def write(self, b):
+        if isinstance(b, str):
+            b = b.encode()
+        self.h.update(b)
+        n = self.f.write(b)
+        probe("serialize")
+        return n
+
+
+def save(path, obj, parts=None):
     import json
     import os
-    t = json.dumps(obj)
-    with open(path + ".new", "w") as f:
-        f.write(t)
-    with open(path + ".new") as f:        # read back 256 at a time: not a second copy
-        k = 0
+    with open(path + ".new", "wb") as f:
+        writer = SaveWriter(f)
+        if parts is None:
+            json.dump(obj, writer)
+        else:
+            for part in parts:
+                writer.write(part)
+        probe()
+        expected = writer.h.digest()
+    writer = None
+    actual = sha256()
+    with open(path + ".new", "rb") as f:
         while True:
             c = f.read(256)
-            if c != t[k:k + 256]:
-                raise OSError("read back")
+            probe()
             if not c:
                 break
-            k += len(c)
-    t = None
+            actual.update(c)
+    if actual.digest() != expected:
+        raise OSError("read back")
     os.rename(path + ".new", path)
+
+
+class LoadReader(IOBase):
+    # Observe the parser while its partly built object and input coexist.
+    # MicroPython's JSON parser reads through readinto; CPython uses read.
+    def __init__(self, f):
+        self.f = f
+
+    def readinto(self, b):
+        n = self.f.readinto(b)
+        probe("parse")
+        return n
+
+    def read(self, n=-1):
+        b = self.f.read(n)
+        probe("parse")
+        return b
 
 
 def load(path):
     import json
     try:
         with open(path) as f:
-            j = json.load(f)
+            j = json.load(LoadReader(f) if getattr(lvship, "heap_probe", None) else f)
+            probe("parse " + path.rsplit("/", 1)[-1])
         return j if isinstance(j, dict) else None
     except (OSError, ValueError):
         return None
@@ -65,9 +112,20 @@ def forget(sh):
 def keep(lk):
     """The Link's queues and counters to /data/livebox.json (lk.v: the page's version)."""
     lk.v += 1
-    save(lk.f, {"e": lk.ep, "s": lk.seq, "o": [[o[0], hexlify(o[1]).decode(), o[2]] for o in lk.out],
-                "i": [[o[0], hexlify(o[1]).decode(), o[2]] for o in lk.inb],
-                "h": dict((str(k), v) for k, v in lk.hw.items()), "l": lk.lc})
+    save(lk.f, None, boxparts(lk))
+
+
+def boxparts(lk):
+    # Encode one queue entry at a time, never a second expanded livebox.
+    import json
+    yield '{"e": %d, "s": %d' % (lk.ep, lk.seq)
+    for key, queue in (("o", lk.out), ("i", lk.inb)):
+        yield ', "' + key + '": ['
+        for i, o in enumerate(queue):
+            yield (", " if i else "") + json.dumps((o[0], hexlify(o[1]).decode(), o[2]))
+        yield "]"
+    yield ', "h": ' + json.dumps(dict((str(k), v) for k, v in lk.hw.items()))
+    yield ', "l": ' + json.dumps(lk.lc) + "}"
 
 
 def mac(lk, frm, b):

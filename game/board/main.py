@@ -37,6 +37,10 @@
 # lvsafe.HEALTHY_MS of play the crash count is set aside (healthy(): fault.json renamed to
 # fault.last.json, no import, no heap), so its notes stay readable over USB.
 import gc
+if hasattr(gc, "threshold"):
+    # Bound uncollected churn between radio and HTTP operations. Allocation-triggered
+    # collection, not probe-triggered collection, also applies on the board.
+    gc.threshold(1024)
 import os
 import time
 
@@ -193,9 +197,33 @@ def ota_hooks(lvweb, web):
                 return await lvweb.send_json(w, 200, lvfunnel.api(web, req))
             finally:
                 lvship.drop("lvfunnel")
+        if req.path == "/api/live/duel":
+            # A duel POST needs neither the Hail API nor its response encoder.
+            import lvduelaction
+            try:
+                s, j = lvduelaction.api(web, req)
+            finally:
+                lvship.drop("lvduelaction")
+                lvship.drop("lvlivein")
+            return await lvweb.send_json(w, s, j)
         if req.path.startswith("/api/live") or req.path.startswith("/api/coex"):
             # Ship-to-ship (board/lvliveapi.py, web/live.js): Hail, the Settings switches, the
             # radio check and its test's probe (streamed). Loaded per request, like lvota.
+            maintained = False
+            if req.path == "/api/live" and req.method == "GET" and web.get_phone().who(req) is not None:
+                # Apply recovery before loading the HTTP encoder: its code need not
+                # coexist with the rules and the parsed three-game durable box.
+                sh = web.ship
+                if sh.clock.learn_headers(req.header):
+                    sh.day_check()
+                if sh.live is not None:
+                    import lvduel
+                    try:
+                        lvduel.maintain(sh.live)
+                    finally:
+                        lvship.drop("lvduel")
+                        lvduel = None
+                maintained = True
             import lvliveapi
             try:
                 if req.path == "/api/coex/ping":
@@ -203,7 +231,7 @@ def ota_hooks(lvweb, web):
                 if req.path == "/api/live" and req.method == "GET":
                     web.state_busy = lvship.ticks_ms() or 1
                     try:
-                        return await lvliveapi.live(lvweb, web, req, w)     # (in pieces)
+                        return await lvliveapi.live(lvweb, web, req, w, maintained)     # (in pieces)
                     finally:
                         web.state_busy = 0
                 s, j = lvliveapi.api(web, req)

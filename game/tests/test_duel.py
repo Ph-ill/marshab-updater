@@ -2,6 +2,7 @@
 # Two ships, real sync/ble, fake radio. Also runs on MicroPython unix ports.
 import os
 import sys
+import json
 try:
     HERE = os.path.dirname(os.path.abspath(__file__))
 except AttributeError:
@@ -536,11 +537,12 @@ for which in ("invite", "accept", "shot", "answer", "reveal", "end", "resign", "
     s, operation = persistence_case(which)
     original_d, original_i = D.save, I.save
     events = []
-    def record(path, obj):
+    def record(path, obj, parts=None):
         events.append(path)
         if path == s.live.f:
-            durable_items(s, obj)
-        original_d(path, obj)
+            durable_items(s, json.loads("".join(parts)) if parts is not None else obj)
+            parts = I.boxparts(s.live)
+        original_d(path, obj, parts)
     D.save = I.save = record
     try:
         operation()
@@ -551,14 +553,15 @@ for which in ("invite", "accept", "shot", "answer", "reveal", "end", "resign", "
             for restart in (False, True):
                 s, operation = persistence_case(which)
                 calls = [0]
-                def fail(path, obj):
+                def fail(path, obj, parts=None):
                     n = calls[0]
                     calls[0] += 1
                     if path == s.live.f:
-                        durable_items(s, obj)
+                        durable_items(s, json.loads("".join(parts)) if parts is not None else obj)
+                        parts = I.boxparts(s.live)
                     if n == boundary and not after:
                         raise MemoryError("injected persistence failure")
-                    original_d(path, obj)
+                    original_d(path, obj, parts)
                     if n == boundary and after:
                         raise MemoryError("injected persistence failure")
                 D.save = I.save = fail
@@ -592,12 +595,12 @@ for boundary in range(5):
         session = Trailer(1)
         calls = [0]
         original_d, original_i = D.save, I.save
-        def fail_trailer(path, obj):
+        def fail_trailer(path, obj, parts=None):
             n = calls[0]
             calls[0] += 1
             if n == boundary and not after:
                 raise MemoryError("injected trailer persistence failure")
-            original_d(path, obj)
+            original_d(path, obj, parts)
             if n == boundary and after:
                 raise MemoryError("injected trailer persistence failure")
         D.save = I.save = fail_trailer

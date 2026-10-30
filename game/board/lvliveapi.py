@@ -149,10 +149,17 @@ def _pending(L, o):
     return 1 if x is None or x[0] >= 2 else 0
 
 
-def _prep(sh):
+def _prep(sh, maintained=False):
     # Everything GET /api/live says, read now (the pieces below are made from these alone,
     # twice, with awaits between: the same bytes both times)
     L = sh.live
+    if L is not None and not maintained:
+        import lvduel
+        try:
+            lvduel.maintain(L)
+        finally:
+            lvship.drop("lvduel")
+            lvduel = None
     j = _hl(sh)
     if drain(sh, j):
         _in().save(sh.data + F, j)
@@ -179,37 +186,70 @@ def _prep(sh):
            "me": sh.node.ship, "today": today(j), "no": len(j["o"]), "ni": len(j["i"]),
            "max": DAY_MAX, "lights": L.lc[1] if L and L.lc[0] == sh.clock.date() else 0,
            "cap": lvlive.LIGHTS, "quiet": _quiet(sh), "qw": list(getattr(sh.led, "q", None) or (1320, 420))}
+    incoming, epoch = j["i"][-SHOW:], _ep(sh)
+    # Only the phone-visible slice survives while the duel box is parsed.
+    j = c = None
     if L is not None:
-        import lvduel
+        import lvduelview
         try:
-            top["duel"] = lvduel.view(L)
+            top["duel"] = lvduelview.view(L)
         finally:
-            lvship.drop("lvduel")
+            lvship.drop("lvduelview")
     else:
         top["duel"] = []
-    return pe, o, st, j["i"][-SHOW:], _ep(sh), top
+    return pe, o, st, incoming, epoch, top
+
+
+def _probe():
+    p = getattr(lvship, "heap_probe", None)
+    if p:
+        lvship.heap_stage = "http"
+        p()
+
+
+def _json(obj):
+    import json
+    text = json.dumps(obj)
+    _probe()
+    return text
 
 
 def parts(pe, o, st, i, e, top):
     """GET /api/live's JSON, a few dozen bytes at a time."""
-    import json
     yield '{"peers": ['
     for n, x in enumerate(pe):
-        yield (", " if n else "") + json.dumps({"s": x[0], "ago": x[1], "cap": x[2], "off": x[3], "nl": x[4]})
+        yield (", " if n else "") + _json({"s": x[0], "ago": x[1], "cap": x[2], "off": x[3], "nl": x[4]})
     yield '], "out": ['
     for n, h in enumerate(o):
-        yield (", " if n else "") + json.dumps({"id": h[0], "to": h[1], "ph": h[2], "t": h[3], "st": st[n]})
+        yield (", " if n else "") + _json({"id": h[0], "to": h[1], "ph": h[2], "t": h[3], "st": st[n]})
     yield '], "in": ['
     for n, h in enumerate(i):
         t = h[3]
-        yield (", " if n else "") + json.dumps({
+        yield (", " if n else "") + _json({
             "id": h[0], "from": h[1], "by": h[6] if len(h) > 6 else h[1], "ph": h[2], "t": t, "seen": h[4],
             "back": 1 if h[5] else 0, "can": 1 if e and t and 0 <= e - t < BACK_MS else 0,
             "sent": h[7] if len(h) > 7 else None})
     yield '], "duel": ['
     for n, game in enumerate(top.get("duel", ())):
-        yield (", " if n else "") + json.dumps(game)
-    yield "], " + json.dumps(dict((k, v) for k, v in top.items() if k != "duel"))[1:]
+        yield ", " if n else ""
+        if "history" not in game:
+            yield _json(game)
+            continue
+        yield _json(dict((k, v) for k, v in game.items()
+                              if k not in ("history", "even", "shots", "incoming")))[:-1]
+        h = game["history"]
+        for key in ("shots", "incoming"):
+            yield ', "' + key + '": ['
+            first = True
+            for i in range(0, len(h), 2):
+                shot = i // 2 + 1
+                mine = (shot % 2 == 0) == game["even"]
+                if mine == (key == "shots"):
+                    yield ("" if first else ", ") + _json((shot, ord(h[i]) - 65, ord(h[i + 1]) - 97))
+                    first = False
+            yield "]"
+        yield "}"
+    yield "], " + _json(dict((k, v) for k, v in top.items() if k != "duel"))[1:]
 
 
 def state(sh, you):
@@ -218,42 +258,32 @@ def state(sh, you):
     return json.loads("".join(parts(*_prep(sh))))
 
 
-async def live(lvweb, web, req, w):
+async def live(lvweb, web, req, w, maintained=False):
     # GET /api/live (main.py): signed in, the clock learned as api() does, then the answer
     # with a Content-Length, PIECE bytes at a time with a drain after each. The answer is
-    # made first, all at once (body()), so what's held while it goes out is the one buffer
-    # of its bytes, not the hails it was made from (the heap test's tightest moment, with a
-    # full day listed and a sync on the radio: FIXREVIEW2 B1)
+    # counted from a compact immutable snapshot, then streamed without a response-sized
+    # buffer or expanded transcript lists. Both passes use the same snapshot even if
+    # a radio move is durably accepted between drains.
     sh = web.ship
     if web.get_phone().who(req) is None:
         return await lvweb.send_json(w, 401, {"err": "signed out"})
     if sh.clock.learn_headers(req.header):
         sh.day_check()
-    b = memoryview(body(_prep(sh)))
+    snapshot = _prep(sh, maintained)
+    n = sum(len(x.encode()) for x in parts(*snapshot))
     lvship.drop("lvlivein")         # (its code: not held while the answer goes out)
-    n = len(b)
     w.write(lvweb.head(200, "application/json", n))
     k = 0
-    while k < n:
-        w.write(b[k:k + PIECE])
-        k += PIECE
-        if k == 3 * PIECE and lvweb.probe:
-            lvweb.probe()
-        await wdrain(w)
-
-
-def body(g):
-    # parts() into one bytearray of exactly its length (counted first: no copies as it grows)
-    n = 0
-    for x in parts(*g):
-        n += len(x.encode())
-    b = bytearray(n)
-    k = 0
-    for x in parts(*g):
-        y = x.encode()
-        b[k:k + len(y)] = y
-        k += len(y)
-    return b
+    for x in parts(*snapshot):
+        b = x.encode()
+        _probe()
+        for offset in range(0, len(b), PIECE):
+            chunk = b[offset:offset + PIECE]
+            w.write(chunk)
+            before, k = k, k + len(chunk)
+            if before < 3 * PIECE <= k and lvweb.probe:
+                lvweb.probe()
+            await wdrain(w)
 
 
 def light(c):
@@ -353,96 +383,39 @@ def seen(sh, b):
 
 
 def setting(sh, b):
-    cf = sh.data + "/live.json"
-    c = _in().load(cf) or {}
-    for k in ("light", "dl"):
-        if k in b:
-            c[k] = bool(b[k])
-    L = sh.live
-    if L is not None and "light" in b and sh.ble is not None:
-        sh.ble.adv = None           # the advert again: its no-hail-light bit (lvlive.advert)
-    if "on" in b:
-        on = bool(b["on"])
-        c["on"] = on
-        if on:
-            c.pop("why", None)
-            import lvlivex
-            try:
-                fx = lvlivex.crash(sh.data)     # the crash it was off for: not again for it
-            finally:
-                lvship.drop("lvlivex")
-            if fx is not None:
-                c["fx"] = fx
-            else:
-                c.pop("fx", None)
-        else:
-            c["why"] = "turned off"
-    _in().save(cf, c)
-    if L is not None:
-        L.cfg = c
-        if "dl" in b:
-            import lvduel
-            try:
-                lvduel.lighting(L)
-            finally:
-                lvship.drop("lvduel")
-        if not c.get("on", True):
-            lvlive.unhook(L)
-            sh.live = None
-            sh.live_why = "turned off"
-            sh.say("live: turned off from a phone")
-    elif c.get("on", True) and sh.ble is not None:
-        lvlive.install(sh, sh.data)
-        sh.say("live: turned on from a phone" if sh.live else "live: still off (%s)" % getattr(sh, "live_why", None))
-    return 200, {"ok": True, "on": sh.live is not None, "why": getattr(sh, "live_why", None), "light": light(c), "dl": c.get("dl", True)}
+    import lvlivecfg
+    try:
+        return lvlivecfg.setting(sh, b)
+    finally:
+        lvship.drop("lvlivecfg")
 
 
 def coex(sh):
-    # The radio check (Settings > Ship-to-ship > Radio check): what the ship's one radio
-    # has done for Bluetooth and Wi-Fi since it started. No names, codes or keys.
-    b = sh.ble
-    L = sh.live
-    r = {"ble": None, "live": None, "web": None, "heap": lvship.free(), "up": sh.clock.uptime() // 1000}
-    if b is not None:
-        n = b.n
-        r["ble"] = {"state": b.state, "heard": len(b.peers), "ok": n["ok"], "fail": n["fail"],
-                    "out": n["out"], "in": n["in"], "refused": n["refused"], "last": b.last[:60]}
-    if L is not None:
-        r["live"] = dict(L.n)
-        r["live"]["waiting"] = len(L.out)
-    w = sh.web
-    if w is not None:
-        r["web"] = {"served": w.served, "refused": w.refused, "busy": w.busy}
-    return 200, r
+    import lvlivecfg
+    try:
+        return lvlivecfg.coex(sh)
+    finally:
+        lvship.drop("lvlivecfg")
 
 
 async def ping(lvweb, web, req, w):
-    # The radio test's probe (web/live.js coexTest): kb KB of spaces, written 512 B at a time
-    # with a drain after each, as an update's download to the phone would be, and what the
-    # Bluetooth side was doing as it started (X-Ble) so the page can tell which answers ran
-    # alongside a link. Signed-in phones only; nothing kept.
-    if web.get_phone().who(req) is None:
-        return await lvweb.send_json(w, 401, {"err": "signed out"})
+    import lvlivecfg
     try:
-        kb = min(PING_KB, max(0, int(req.q.get("kb", "0"))))
-    except ValueError:
-        kb = 0
-    b = web.ship.ble
-    st = b.state if b is not None else "off"
-    w.write(lvweb.head(200, "text/plain", kb * 1024, extra="X-Ble: %s\r\n" % st))
-    if kb:
-        z = b" " * 512
-        for _ in range(2 * kb):
-            w.write(z)
-            await wdrain(w)
-    else:
-        await wdrain(w)
+        return await lvlivecfg.ping(lvweb, web, req, w)
+    finally:
+        lvship.drop("lvlivecfg")
 
 
 def api(web, req):
     """main.py routes /api/live* and /api/coex here. -> (status, obj)"""
     sh = web.ship
     p = req.path
+    if p == "/api/live/duel":
+        import lvduelaction
+        try:
+            return lvduelaction.api(web, req)
+        finally:
+            lvship.drop("lvduelaction")
     you = web.get_phone().who(req)
     if you is None:
         return 401, {"err": "signed out"}
@@ -463,14 +436,6 @@ def api(web, req):
         return 400, {"err": "bad request"}
     if p == "/api/live/hail":
         return hail(sh, you, b)
-    if p == "/api/live/duel":
-        if sh.live is None:
-            return 409, {"err": "Ship-to-ship is off."}
-        import lvduel
-        try:
-            return lvduel.action(sh.live, b)
-        finally:
-            lvship.drop("lvduel")
     if p == "/api/live/seen":
         return seen(sh, b)
     if p == "/api/live/set":

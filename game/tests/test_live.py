@@ -1230,25 +1230,28 @@ lk.poll0 = real
 w, (a, b) = fresh(65)
 run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
 api(a, "/api/live/hail", "POST", {"to": 1, "ph": 2})
-jm = json
-real_dumps, hit = jm.dumps, [0]
+try:
+    import builtins as jm
+except ImportError:
+    import __builtin__ as jm
+real_open, hit = jm.open, [0]
 
 
-def dumps(o, *k):
-    if not hit[0] and isinstance(o, dict) and "h" in o and "e" in o and o.get("i"):
+def failing_open(path, *k):
+    if not hit[0] and path == b.live.f + ".new" and k and "w" in k[0]:
         hit[0] = 1
         raise MemoryError("memory allocation failed")
-    return real_dumps(o, *k)
+    return real_open(path, *k)
 
 
 try:
-    jm.dumps = dumps
-    patched = jm.dumps is dumps
+    jm.open = failing_open
+    patched = jm.open is failing_open
 except (AttributeError, TypeError):
-    patched = False                     # (MicroPython's json: read-only; CPython covers it)
+    patched = False                     # Some MicroPython builtins are read-only.
 if patched:
     t = run(w, [a, b], 300000, lambda: hit[0] and not a.live.out and a.ble.state == "idle")
-    jm.dumps = real_dumps
+    jm.open = real_open
     check("J3: the failed save hit", hit[0] == 1)
     check("J3: delivered on a later try", t is not None, (a.live.n, b.live.n))
     check("J3: taken once, never a repeat", b.live.n["in"] == 1 and b.live.n["dup"] == 0, b.live.n)

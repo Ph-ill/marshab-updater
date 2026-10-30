@@ -3,7 +3,7 @@
 import os
 import lvship
 from binascii import hexlify, unhexlify
-from lvlivein import load, save, send, sha256, keep
+from lvlivein import load, save, send, sha256, keep, probe
 
 DAY = 86400
 F = "/duel.json"
@@ -14,40 +14,22 @@ def integer(v, lo, hi):
     return isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi
 
 
+def layout_call(name, *args):
+    import lvduellayout
+    try:
+        value = getattr(lvduellayout, name)(*args)
+        probe("layout")
+        return value
+    finally:
+        lvship.drop("lvduellayout")
+
+
 def fleet(layout):
-    if not isinstance(layout, (bytes, bytearray)) or len(layout) != 3:
-        raise ValueError("bad layout")
-    x = layout[0] << 16 | layout[1] << 8 | layout[2]
-    if x & 15:
-        raise ValueError("bad layout")
-    # Wire packing: seven bits, seven bits, six bits, four zero bits.
-    slots = ((x >> 18, (x >> 17) & 1, 3), ((x >> 11) & 63, (x >> 10) & 1, 2), ((x >> 4) & 63, 0, 1))
-    out = []
-    used = []
-    for c, d, size in slots:
-        if c >= 36 or (c // 6 + size > 6 if d else c % 6 + size > 6):
-            raise ValueError("bad layout")
-        cells = [c + j * (6 if d else 1) for j in range(size)]
-        for a in cells:
-            for b in used:
-                if a == b or abs(a // 6 - b // 6) + abs(a % 6 - b % 6) == 1:
-                    raise ValueError("bad layout")
-        out.append(cells)
-        used.extend(cells)
-    return out
+    return layout_call("fleet", layout)
 
 
 def encode(slots):
-    if not isinstance(slots, (list, tuple)) or len(slots) != 3:
-        raise ValueError("bad layout")
-    for z in slots:
-        if not isinstance(z, (list, tuple)) or len(z) != 2 or not integer(z[0], 0, 35) or not integer(z[1], 0, 1):
-            raise ValueError("bad layout")
-    x = (slots[0][0] << 18 | slots[0][1] << 17 | slots[1][0] << 11 |
-         slots[1][1] << 10 | slots[2][0] << 4)
-    b = bytes((x >> 16, x >> 8 & 255, x & 255))
-    fleet(b)
-    return b
+    return layout_call("encode", slots)
 
 
 def commit(g, layout, salt):
@@ -55,15 +37,7 @@ def commit(g, layout, salt):
 
 
 def result(layout, fired, cell):
-    ships = fleet(layout)
-    for cells in ships:
-        if cell in cells:
-            hit = all(c == cell or c in fired for c in cells)
-            r = len(cells) + 1 if hit else 1
-            if all(c == cell or c in fired for ship in ships for c in ship):
-                r += 8
-            return r
-    return 0
+    return layout_call("result", layout, fired, cell)
 
 
 def now(lk):
@@ -102,6 +76,7 @@ def store(lk, j):
     # Write-ahead intents: no item may reach livebox before its game state does.
     save(lk.sh.data + F, j)
     lk.v += 1
+    probe()
     cleanout(lk, j)
     flush(lk, j)
 
@@ -175,6 +150,7 @@ def terminal(g, state):
 
 def rejected(lk, j, g, why):
     # At most seven pending replies, one per sender. Retire after acknowledgement.
+    g = {"to": g["to"], "id": g["id"], "s": "called"}
     j["e"] = [x for x in j.get("e", []) if x["to"] != g["to"]]
     j["e"].append(g)
     end(lk, g, why)
@@ -187,7 +163,8 @@ def gid(g):
 
 def history(g):
     b = g["h"]
-    return [[i // 2 + 1, ord(b[i]) - 65, ord(b[i + 1]) - 97] for i in range(0, len(b), 2)]
+    for i in range(0, len(b), 2):
+        yield (i // 2 + 1, ord(b[i]) - 65, ord(b[i + 1]) - 97)
 
 
 def mine(lk, g, n):
@@ -230,8 +207,8 @@ def sync(lk, g):
     z = timer(lk, g)
     if z[4] is not None and z[1] - z[4] < 3600000:
         return
-    h = history(g)
-    c, r = h[-1][1:] if h else (255, 255)
+    h = g["h"]
+    c, r = (ord(h[-2]) - 65, ord(h[-1]) - 97) if h else (255, 255)
     # State 0 waiting, 1 active, 2 awaiting answer, 3 revealing, 4 terminal.
     s = 2 if g.get("p") is not None else 1 if g["s"] == "active" else 3 if g["s"] == "reveal" else 0 if g["s"] in ("wait", "invited") else 4
     s |= 128 if not lk.cfg.get("dl", True) else 0
@@ -337,306 +314,25 @@ def fresh(lk, to, ident, inviter, state):
 
 
 def take(lk, frm, kind, b):
-    # Validate shape before looking at state: authenticated nonsense is still nonsense.
-    if len(b) != 11 or not 3 <= kind <= 9:
-        return False
-    ident = b[1:3] if kind in (3, 4) else b[:2]
-    j = box(lk)
-    if sweep(lk, j):
-        store(lk, j)
-    g = next((x for x in j["g"] if x["to"] == frm and gid(x) == ident), None)
-    if kind in (3, 4) and b[0] != 1:
-        temp = fresh(lk, frm, ident, frm, "called")
-        rejected(lk, j, temp, 4)
-        return False
-    light = False
-    if kind == 3:
-        other = next((x for x in j["g"] if x["to"] == frm and x["s"] in ACTIVE), None)
-        # Opposing inviter roles must be arbitrated before an ID-only lookup.
-        # Equal IDs cannot carry an END: it would also cancel the winning invite.
-        if other and other["i"] == lk.node.ship and other["s"] in ("draft", "wait"):
-            if frm > lk.node.ship and gid(other) == ident:
-                return False
-            if frm < lk.node.ship:
-                if gid(other) == ident:
-                    lk.out[:] = [o for o in lk.out if not belongs(o, other)]
-                    keep(lk)
-                    j["g"].remove(other)
-                else:
-                    terminal(other, "called")
-                    end(lk, other, 3)
-                other = g = None
-        if g is not None:
-            repeat(lk, g)
-            store(lk, j)
-            return False
-        if other or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
-            rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 5)
-            return False
-        # Keep one completed game per opponent, for the reveal screen and rematch.
-        j["g"] = [x for x in j["g"] if x["to"] != frm or x["s"] in ACTIVE]
-        room(j)
-        g = fresh(lk, frm, ident, frm, "invited")
-        g["c"] = hexlify(b[3:11]).decode()
-        j["g"].append(g)
-        light = True
-    elif g is None:
-        tick = lvship.ticks_ms()
-        previous = getattr(lk, "duel_unknown", None)
-        elapsed = lvship.ticks_diff(tick, previous) if previous is not None else 3600000
-        if kind not in (8, 9) and (elapsed >= 3600000 or elapsed < 0):
-            temp = fresh(lk, frm, ident, frm, "called")
-            temp["unknown"] = True
-            sync(lk, temp)
-            j["e"] = [x for x in j.get("e", []) if x["to"] != frm] + [temp]
-            store(lk, j)
-            lk.duel_unknown = tick
-        return False
-    elif kind == 4:
-        if g["s"] != "wait" and not (g.get("why") == 2 and not g.get("c")):
-            return False
-        g["c"] = hexlify(b[3:11]).decode()
-        if g["s"] == "wait":
-            g["s"] = "active"
-        g["t"] = now(lk)
-    elif kind == 5:
-        n, cell = b[2], b[3]
-        if not 1 <= n <= 71 or cell >= 36:
-            return False
-        if n <= g["n"]:
-            # Semantic duplicate with a fresh envelope: replay the saved answer only.
-            h = history(g)
-            z = next((z for z in h if z[0] == n), None)
-            if z and not mine(lk, g, n) and z[1] == cell:
-                emit(lk, g, 6, ident + bytes(z), False)
-                store(lk, j)
-            return False
-        if g["s"] != "active" or n != g["n"] + 1 or mine(lk, g, n) or g.get("p") is not None:
-            sync(lk, g)
-        else:
-            h = history(g)
-            cells = [z[1] for z in h if not mine(lk, g, z[0])]
-            if cell in cells:
-                sync(lk, g)
-            else:
-                r = result(unhexlify(g["l"]), cells, cell)
-                g["h"] += chr(65 + cell) + chr(97 + r)
-                g["n"] = n
-                g["t"] = now(lk)
-                emit(lk, g, 6, ident + bytes((n, cell, r)))
-                if r & 8:
-                    g["win"] = False
-                    g["s"] = "reveal"
-                    reveal(lk, g)
-                else:
-                    light = True
-    elif kind == 6:
-        n, cell, r = b[2:5]
-        if n <= g["n"]:
-            return False
-        if g["s"] != "active" or n != g["n"] + 1 or not mine(lk, g, n) or g.get("p") != cell or r not in (0, 1, 2, 3, 4, 10, 11, 12):
-            sync(lk, g)
-        else:
-            g["h"] += chr(65 + cell) + chr(97 + r)
-            g["n"], g["p"], g["t"] = n, None, now(lk)
-            if r & 8:
-                g["win"], g["s"] = True, "reveal"
-                reveal(lk, g)
-    elif kind == 7:
-        if g["s"] not in ("reveal", "done", "cheat"):
-            sync(lk, g)
-        else:
-            layout, salt = b[2:5], b[5:11]
-            ok = False
-            try:
-                fleet(layout)
-                ok = hexlify(commit(ident, layout, salt)).decode() == g.get("c")
-                fired = []
-                for n, cell, r in history(g):
-                    if mine(lk, g, n):
-                        if cell in fired or result(layout, fired, cell) != r:
-                            ok = False
-                        fired.append(cell)
-            except ValueError:
-                pass
-            if not ok:
-                # Undo a previously counted result if a contradictory reveal follows it.
-                if g.get("counted"):
-                    j["r"][str(frm)][0 if g["win"] else 1] -= 1
-                    g["counted"] = 0
-                terminal(g, "cheat")
-                end(lk, g, 6)
-            else:
-                g["verified"] = 1
-                g["their"] = hexlify(layout).decode()
-                if not g.get("sent"):
-                    reveal(lk, g)
-                finish(lk, j, g)
-    elif kind == 8:
-        why = b[2]
-        if why not in (1, 2, 3, 4, 5, 6):
-            return False
-        if why == 2 and g["s"] in ACTIVE:
-            g["why"] = 2
-            g["win"], g["s"] = True, "reveal"
-            reveal(lk, g)
-            if not g.get("c"):
-                # The opponent resigned before committing: there were no answers
-                # to verify. Our own committed field still goes to the opponent.
-                g["verified"] = 1
-                finish(lk, j, g)
-        elif why == 6:
-            if g.get("counted"):
-                j["r"][str(frm)][0 if g["win"] else 1] -= 1
-                g["counted"] = 0
-            terminal(g, "cheat")
-        elif g["s"] in ACTIVE:
-            terminal(g, {1: "declined", 3: "called", 4: "version", 5: "busy"}.get(why, "called"))
-    elif kind == 9:
-        n, cell, r, state = b[2:6]
-        g["nl"] = bool(state & 128)
-        state &= 127
-        if n > 71 or state > 4:
-            return False
-        # Stop-and-wait means normally at most one completed answer is missing.
-        # If both views say 'my turn', keep the lower ship's view. The higher
-        # ship can rewind its existing transcript, or recover its one lost answer.
-        conflict = (state == 1 and g["s"] == "active" and g.get("p") is None and
-                    mine(lk, g, g["n"] + 1) and not mine(lk, g, n + 1))
-        if conflict and lk.node.ship > frm:
-            if n <= g["n"]:
-                g["h"] = g["h"][:2 * n]
-                g["n"] = n
-                if n:
-                    last = history(g)[-1]
-                    if last[1:] != [cell, r]:
-                        g["h"] = g["h"][:-2] + chr(65 + cell) + chr(97 + r) if cell < 36 and r in (0, 1, 2, 3, 4) else g["h"]
-                    g["last"] = [5 if mine(lk, g, n) else 6,
-                                 hexlify(ident + bytes((n, cell)) + (b"" if mine(lk, g, n) else bytes((r,)))).decode()]
-                store(lk, j)
-                return False
-            if n == g["n"] + 1 and mine(lk, g, n) and cell < 36:
-                g["p"] = cell
-                g["last"] = [5, hexlify(ident + bytes((n, cell))).decode()]
-                store(lk, j)
-                return take(lk, frm, 6, ident + bytes((n, cell, r)) + bytes(6))
-        elif conflict:
-            sync(lk, g)
-            store(lk, j)
-            return False
-        # If the peer lacks our last shot/answer, replay it with a new envelope.
-        # Equal n + awaiting answer also repairs a pending shot lost before receipt.
-        if n < g["n"] or (n == g["n"] and g.get("p") is not None):
-            repeat(lk, g)
-        elif n > g["n"]:
-            if n == g["n"] + 1 and g.get("p") == cell and mine(lk, g, n):
-                return take(lk, frm, 6, ident + bytes((n, cell, r)) + bytes(6))
-            sync(lk, g)
-        elif g["s"] == "reveal":
-            reveal(lk, g)
-    store(lk, j)
-    probe = getattr(lk.sh, "duel_probe", None)
-    if probe:
-        probe()
-    return light
+    import lvduelrx
+    try:
+        return lvduelrx.take(lk, frm, kind, b)
+    finally:
+        lvship.drop("lvduelrx")
 
 
 def action(lk, b):
-    j = box(lk)
-    if sweep(lk, j):
-        store(lk, j)
-    a, to = b.get("action"), b.get("to")
-    if not integer(to, 0, 7) or to == lk.node.ship:
-        return 400, {"err": "Pick a crewmate."}
-    if len(lk.out) >= 24 and a not in ("resign", "call", "new", "discard"):
-        return 429, {"err": "Your previous moves are on their way."}
-    peer = lk.ble.peers.get(to)
-    if a == "new" and peer is not None and peer.info and not peer.info.get("cap"):
-        return 409, {"err": "This ship needs ship-to-ship enabled and the duel update."}
-    g = next((x for x in j["g"] if x["to"] == to and x["s"] in ACTIVE), None)
-    if a == "new":
-        if g or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
-            return 409, {"err": "A duel is already going, or three duels are open."}
-        j["g"] = [x for x in j["g"] if x["to"] != to]
-        room(j)
-        g = fresh(lk, to, os.urandom(2), lk.node.ship, "draft")
-        j["g"].append(g)
-    elif g is None:
-        return 409, {"err": "No duel is open."}
-    elif a == "discard":
-        if g["s"] != "draft":
-            return 409, {"err": "Your fleet is locked."}
-        j["g"].remove(g)
-    elif a in ("lock", "invite", "accept"):
-        if g.get("l") and g["s"] in ("wait", "active") and any(z[0] in (3, 4) for z in g.get("q", [])):
-            store(lk, j)
-            return 200, {"ok": True}
-        if g["s"] not in ("draft", "invited") or g.get("l") or (a == "accept" and g["s"] != "invited") or (a == "invite" and g["s"] != "draft"):
-            return 409, {"err": "Your fleet is locked."}
-        try:
-            layout = encode(b.get("layout"))
-        except (ValueError, TypeError):
-            return 400, {"err": "Bad layout. Ships cannot overlap or touch sides."}
-        salt = os.urandom(6)
-        g["l"], g["salt"] = hexlify(layout).decode(), hexlify(salt).decode()
-        kind = 4 if g["s"] == "invited" else 3
-        g["s"] = "active" if kind == 4 else "wait"
-        g["t"] = now(lk)
-        emit(lk, g, kind, bytes((1,)) + gid(g) + commit(gid(g), layout, salt))
-        sync(lk, g)
-    elif a == "fire":
-        cell = b.get("cell")
-        if not integer(cell, 0, 35) or cell in [z[1] for z in history(g) if mine(lk, g, z[0])] or cell == g.get("p"):
-            return 400, {"err": "Bad cell or already fired."}
-        if pending(lk, g):
-            return 429, {"err": "Your previous move is on its way."}
-        if g["s"] != "active" or g.get("p") is not None or not mine(lk, g, g["n"] + 1):
-            return 409, {"err": "It is not your turn."}
-        g["p"] = cell
-        g["t"] = now(lk)
-        emit(lk, g, 5, gid(g) + bytes((g["n"] + 1, cell)))
-    elif a == "decline":
-        if g["s"] != "invited":
-            return 409, {"err": "No invitation is waiting."}
-        terminal(g, "declined")
-        end(lk, g, 1)
-    elif a == "resign":
-        if g["s"] not in ("wait", "invited", "active"):
-            return 409, {"err": "No duel is playing."}
-        terminal(g, "called")  # discard obsolete moves before the terminal exchange
-        g["s"], g["win"] = "reveal", False
-        g["why"] = 2
-        end(lk, g, 2)
-        reveal(lk, g)
-        if not g.get("c"):
-            g["verified"] = 1
-            finish(lk, j, g)
-    elif a == "call":
-        t = now(lk)
-        if t is None or g.get("t") is None or t - g["t"] < 3 * DAY or (g["s"] == "active" and mine(lk, g, g["n"] + 1) and g.get("p") is None):
-            return 409, {"err": "Wait three days for the next move."}
-        terminal(g, "called")
-        end(lk, g, 3)
-    else:
-        return 400, {"err": "Bad duel action."}
-    store(lk, j)
-    return 200, {"ok": True}
+    import lvduelaction
+    try:
+        return lvduelaction.action(lk, b, globals())
+    finally:
+        lvship.drop("lvduelaction")
 
 
 def view(lk):
-    j = box(lk)
-    if sweep(lk, j):
-        store(lk, j)
-    out = []
-    for g in j["g"]:
-        x = dict((k, g.get(k)) for k in ("id", "to", "s", "n", "p", "t", "win", "why", "their", "update", "nl"))
-        x["layout"] = fleet(unhexlify(g["l"])) if g.get("l") else None
-        x["shots"] = [z for z in history(g) if mine(lk, g, z[0])]
-        x["incoming"] = [z for z in history(g) if not mine(lk, g, z[0])]
-        x["turn"] = g["s"] == "active" and g.get("p") is None and mine(lk, g, g["n"] + 1)
-        x["pending"] = pending(lk, g)
-        x["record"] = j["r"].get(str(g["to"]), [0, 0])
-        if g.get("their"):
-            x["their"] = fleet(unhexlify(g["their"]))
-        out.append(x)
-    return out
+    maintain(lk)
+    import lvduelview
+    try:
+        return lvduelview.expanded(lk)
+    finally:
+        lvship.drop("lvduelview")
