@@ -102,12 +102,7 @@ def _prep(sh, maintained=False):
     # twice, with awaits between: the same bytes both times)
     L = sh.live
     if L is not None and not maintained:
-        import lvduel
-        try:
-            lvduel.maintain(L)
-        finally:
-            lvship.drop("lvduel")
-            lvduel = None
+        _in().duel_maintain(L)
     j = _hl(sh)
     if drain(sh, j):
         _in().save(sh.data + F, j)

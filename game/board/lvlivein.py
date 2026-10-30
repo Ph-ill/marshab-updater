@@ -334,6 +334,45 @@ def expire(lk):
         keep(lk)
 
 
+def duel_maintain(lk):
+    # Ordinary maintenance needs no receive rules. Each helper is released
+    # before the next parsed/save phase, including the cleared-intent checkpoint.
+    lvship.free()
+    j = load(lk.sh.data + "/duel.json") or {"g": [], "r": {}}
+    active = ("draft", "wait", "invited", "active", "reveal")
+    keys = [(g["to"], g["id"]) for g in j["g"] if g["s"] in active]
+    for key in list(lk.duel_times):
+        if key not in keys:
+            del lk.duel_times[key]
+    import lvduelstore
+    try:
+        lvduelstore.cleanout(lk, j, True)
+    finally:
+        lvship.drop("lvduelstore")
+        lvduelstore = None
+    lvship.free()
+    import lvduelmaint
+    try:
+        changed = lvduelmaint.sweep(lk, j)
+        probe("maintenance")
+    finally:
+        lvship.drop("lvduelmaint")
+        lvduelmaint = None
+    if changed:
+        duel_store(lk, j)
+    else:
+        lvship.free()
+        import lvduelstore
+        try:
+            changed = lvduelstore.flush(lk, j)
+        finally:
+            lvship.drop("lvduelstore")
+            lvduelstore = None
+        if changed:
+            lvship.free()
+            save(lk.sh.data + "/duel.json", j)
+
+
 def duels(lk):
     web = getattr(lk.sh, "web", None)
     ble = getattr(lk, "ble", None)
@@ -348,11 +387,7 @@ def duels(lk):
         os.stat(lk.sh.data + "/duel.json")
     except OSError:
         return
-    try:
-        import lvduel
-        lvduel.maintain(lk)
-    finally:
-        lvship.drop("lvduel")
+    duel_maintain(lk)
 
 
 def flick(lk, duel=False):

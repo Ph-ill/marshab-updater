@@ -1,6 +1,46 @@
 # Expiry and recovery scheduling, released before radio rules and persistence.
 import lvship
-from lvduel import ACTIVE, DAY, end, gid, mine, now, sync, terminal
+from binascii import unhexlify
+
+ACTIVE = ("draft", "wait", "invited", "active", "reveal")
+DAY = 86400
+
+
+def now(lk):
+    c = lk.sh.clock
+    return int(c.epoch_ms()) // 1000 if c.known() else None
+
+
+def gid(g):
+    return unhexlify(g["id"])
+
+
+def mine(lk, g, n):
+    return (n % 2 == 0) == (g["i"] == lk.node.ship)
+
+
+def rule(name, *args):
+    # Timer checks need no action/receive rules unless a retry or expiry is due.
+    import sys
+    loaded = "lvduel" in sys.modules
+    import lvduel
+    try:
+        return getattr(lvduel, name)(*args)
+    finally:
+        if not loaded:
+            lvship.drop("lvduel")
+
+
+def sync(lk, g):
+    return rule("sync", lk, g)
+
+
+def terminal(g, state):
+    return rule("terminal", g, state)
+
+
+def end(lk, g, why):
+    return rule("end", lk, g, why)
 
 
 def timer(lk, g):
@@ -28,6 +68,16 @@ def timer(lk, g):
 
 def sweep(lk, j):
     t = now(lk)
+    web = getattr(lk.sh, "web", None)
+    if web is not None and web.busy > 0 and all(
+            g["s"] not in ("draft", "wait", "invited") for g in j["g"]):
+        lk.duel_due = 0
+        changed = False
+        for g in j["g"]:
+            if g["s"] in ACTIVE and g.get("t") is None and t is not None:
+                g["t"] = t
+                changed = True
+        return changed
     changed = False
     for g in j["g"][:]:
         if g["s"] not in ACTIVE:

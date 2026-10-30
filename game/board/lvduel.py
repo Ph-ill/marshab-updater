@@ -232,16 +232,8 @@ def sweep(lk, j, receiving=False):
 
 
 def maintain(lk):
-    j = box(lk)
-    keys = [(g["to"], g["id"]) for g in j["g"] if g["s"] in ACTIVE]
-    for key in list(lk.duel_times):
-        if key not in keys:
-            del lk.duel_times[key]
-    cleanout(lk, j, True)
-    if sweep(lk, j):
-        store(lk, j)
-    else:
-        flush(lk, j)
+    from lvlivein import duel_maintain
+    return duel_maintain(lk)
 
 
 def lighting(lk):

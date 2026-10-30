@@ -20,6 +20,29 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_idle_maintenance_does_not_import_receive_rules(self):
+        import builtins
+        from unittest.mock import patch
+        import lvlivein as I
+        box = {"g": [{"id": "abcd", "to": 1, "i": 0, "n": 1,
+                      "s": "active", "t": 1}], "r": {}}
+        clock = NS(known=lambda: True, epoch_ms=lambda: 1000)
+        link = NS(sh=NS(data="unused", clock=clock), duel_times={}, out=[], node=NS(ship=0))
+        original = builtins.__import__
+
+        def importing(name, *args, **kwargs):
+            self.assertNotEqual(name, "lvduel", "ordinary maintenance loaded receive rules")
+            return original(name, *args, **kwargs)
+
+        with patch.object(I, "load", return_value=box), \
+                patch.object(I, "save") as save, \
+                patch.object(builtins, "__import__", importing):
+            I.duel_maintain(link)
+        save.assert_not_called()
+        self.assertIn((1, "abcd"), link.duel_times)
+        self.assertNotIn("lvduelmaint", sys.modules)
+        self.assertNotIn("lvduelstore", sys.modules)
+
     def test_snapshot_operations_are_reclaimed_before_duel_view(self):
         import weakref
         from types import ModuleType
@@ -146,7 +169,7 @@ class WorstDuelHeap(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=ROOT / "build") as tmp:
             (Path(tmp) / "duel.json").touch()
             link = NS(sh=NS(web=NS(busy=1), data=tmp), duel_due=100)
-            with patch.object(D, "maintain") as maintain:
+            with patch.object(I, "duel_maintain") as maintain:
                 I.duels(link)
                 maintain.assert_not_called()
                 self.assertEqual(link.duel_due, 0)

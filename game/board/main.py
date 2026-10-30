@@ -271,12 +271,12 @@ def ota_hooks(lvweb, web):
                 if sh.clock.learn_headers(req.header):
                     sh.day_check()
                 if sh.live is not None:
-                    import lvduel
+                    import lvlivein
                     try:
-                        lvduel.maintain(sh.live)
+                        lvlivein.duel_maintain(sh.live)
                     finally:
-                        lvship.drop("lvduel")
-                        lvduel = None
+                        lvship.drop("lvlivein")
+                        lvlivein = None
                 maintained = True
             # Recovery's parsed box and released rules must be reclaimed before
             # admitting the HTTP encoder, not at some later allocation failure.
