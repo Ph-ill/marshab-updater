@@ -134,17 +134,19 @@ def take(lk, s, m, off):
         od = b[0] == 1 and old(lk, b)
         if od:                              # sent over a day ago (by its clock): kept and
             lk.n["old"] += 1                # listed, no light (clocks jump: FIXREVIEW3 f2)
-        _in(lk, frm, b)                     # (kept before it's marked taken: a MemoryError
+        dl = _in(lk, frm, b)                # answers queue before the reply HELLO
         lk.hw[frm] = q                      # between the two and the repeat still goes in)
         lk.n["in"] += 1
         ch = 1
         if b[0] == 1 and not od:        # a hail: the light (a "seen" is quiet)
             fl = 1
+        elif dl:
+            fl = 2
     if ch:
         keep(lk)                        # (raises: Link.take puts RAM back, nothing acked)
     if fl:                              # once it's kept: a failed save gets no light
         c = lk.lc[1]
-        flick(lk)
+        flick(lk, fl == 2)
         if lk.lc[1] != c:
             try:
                 keep(lk)                # (the light's day count: lk.lc)
@@ -153,7 +155,13 @@ def take(lk, s, m, off):
 
 
 def _in(lk, frm, b):
-    if b[0] > 2:                        # a later release's kind: acked, not kept
+    if 3 <= b[0] <= 9:
+        try:
+            import lvduel
+            return lvduel.take(lk, frm, b[0], b[5:16])
+        finally:
+            lvship.drop("lvduel")
+    if b[0] > 9:                        # a later release's kind: acked, not kept
         return
     q = lk.inb
     if len(q) >= L.MAXIN:               # full (nobody's opened the game): the oldest goes
@@ -184,6 +192,8 @@ def expire(lk):
     d = lk.sh.clock.date()
     k = []
     for o in lk.out:
+        if o[1][0] > 2:                # duels survive the day turning
+            continue
         if d and not isinstance(o[2], int):
             o[2] = d                    # queued before the clock was known: today's
         elif d and o[2] < d:            # (a clock set back expires nothing: FIXREVIEW3 f2)
@@ -195,10 +205,23 @@ def expire(lk):
         keep(lk)
 
 
-def flick(lk):
+def duels(lk):
+    import os
+    try:
+        os.stat(lk.sh.data + "/duel.json")
+    except OSError:
+        return
+    try:
+        import lvduel
+        lvduel.maintain(lk)
+    finally:
+        lvship.drop("lvduel")
+
+
+def flick(lk, duel=False):
     try:                         # the checks and the light: lvflick.py, per use
         import lvflick
-        return lvflick.maybe(lk)
+        return lvflick.maybe(lk, duel)
     except Exception as e:       # the light is a nicety: never the link's problem
         lk.sh.say("live: no hail light %r" % (e,))
     finally:

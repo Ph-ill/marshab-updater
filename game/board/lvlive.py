@@ -240,7 +240,7 @@ class Link:
         g = due(now, g)
         for o in self.out:
             p = self.ble.peers.get(o[0])
-            if d and not (isinstance(o[2], int) and o[2] >= d):
+            if o[1][0] <= 2 and d and not (isinstance(o[2], int) and o[2] >= d):
                 return True
             x = self.nx.get(o[0])
             h = x is not None and len(x) > 3 and (x[2] or x[3])    # (lvlivein.nx pads)
@@ -255,6 +255,13 @@ class Link:
         b = self.ble
         self.now = now
         try:
+            if due(now, self.duel_due) and b.state == "idle" and not self.web_busy():
+                self.duel_due = now + 3600000
+                import lvlivein
+                try:
+                    lvlivein.duels(self)
+                finally:
+                    lvship.drop("lvlivein")
             # dialling lives in lvlivein, loaded only when a dial could be due (`due`: the
             # earliest next dial, or a re-check in 1-5 s), so a waiting hail costs no heap
             if self.out and due(now, self.due) and b.state == "idle" and not self.web_busy():

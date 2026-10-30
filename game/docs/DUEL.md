@@ -47,11 +47,25 @@ Kinds (body is 11 bytes; g = game id, 2 bytes, random, chosen by the inviter):
 |------|---------|------|
 | 3    | INVITE  | v (1, protocol version, 1 for 0.3.1), g (2), commit (8) |
 | 4    | ACCEPT  | v (1), g (2), commit (8) |
-| 5    | SHOT    | g (2), n (1, shot number, 1-36, both players' shots counted together), cell (1, 0-35) |
+| 5    | SHOT    | g (2), n (1, shot number, 1-71, both players' shots counted together), cell (1, 0-35) |
 | 6    | ANSWER  | g (2), n (1, the shot answered), cell (1), result (1: 0 miss, 1 hit, 2/3/4 hit and sinks the 1/2/3-cell ship, +8 when that was the last ship) |
 | 7    | REVEAL  | g (2), layout (3), salt (6) |
 | 8    | END     | g (2), why (1: 1 decline, 2 resign, 3 called, 4 version not supported, 5 busy/too many games, 6 cheat found) |
 | 9    | SYNC    | g (2), n (1, the last shot this ship has), last cell (1), last result (1), state (1) |
+
+Implementation clarifications: n must reach 71, not 36: each player can need 36
+shots, and the invitee's 36th shot ends the game before the inviter's 36th.
+The byte and all other item sizes stay unchanged. Direction is 0 across, 1 down;
+the layout packs 7 + 7 + 6 bits followed by four zero bits. Touching means sharing
+an edge; diagonal placement is allowed, as the side/end rule above specifies.
+SYNC state uses 0 waiting, 1 playing, 2 awaiting an answer, 3 revealing, 4 ended;
+bit 7 reports that the duel light is off. This does not reuse the advert's Hail-only
+bit. No last shot uses cell/result 255. INVITE/ACCEPT also queue a SYNC to report
+the light setting. Crossing invitations keep the lower ship number's invitation.
+Lock, invite and accept atomically lock and send; there is no mutable locked draft.
+Resignation exchanges reveals before the record is credited, so false answers
+cannot be hidden by resigning. Unknown-game SYNC replies are globally limited to
+one per hour to keep authenticated junk from filling the shared out-box.
 
 * **Layout (3 bytes):** the 3-ship's first cell (6 bits) and direction (1), the 2-ship's
   first cell and direction, the 1-ship's cell: 20 bits, high bits first, 4 bits zero.

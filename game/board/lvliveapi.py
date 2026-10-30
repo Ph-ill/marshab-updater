@@ -175,10 +175,18 @@ def _prep(sh):
     # day it paused itself, if it did
     top = {"on": L is not None, "why": getattr(sh, "live_why", None) if L is None else None,
            "at": c.get("at") if L is None else None,
-           "light": light(c), "lv": L.v if L else 0,
+           "light": light(c), "dl": c.get("dl", True), "lv": L.v if L else 0,
            "me": sh.node.ship, "today": today(j), "no": len(j["o"]), "ni": len(j["i"]),
            "max": DAY_MAX, "lights": L.lc[1] if L and L.lc[0] == sh.clock.date() else 0,
            "cap": lvlive.LIGHTS, "quiet": _quiet(sh), "qw": list(getattr(sh.led, "q", None) or (1320, 420))}
+    if L is not None:
+        import lvduel
+        try:
+            top["duel"] = lvduel.view(L)
+        finally:
+            lvship.drop("lvduel")
+    else:
+        top["duel"] = []
     return pe, o, st, j["i"][-SHOW:], _ep(sh), top
 
 
@@ -198,7 +206,10 @@ def parts(pe, o, st, i, e, top):
             "id": h[0], "from": h[1], "by": h[6] if len(h) > 6 else h[1], "ph": h[2], "t": t, "seen": h[4],
             "back": 1 if h[5] else 0, "can": 1 if e and t and 0 <= e - t < BACK_MS else 0,
             "sent": h[7] if len(h) > 7 else None})
-    yield "], " + json.dumps(top)[1:]
+    yield '], "duel": ['
+    for n, game in enumerate(top.get("duel", ())):
+        yield (", " if n else "") + json.dumps(game)
+    yield "], " + json.dumps(dict((k, v) for k, v in top.items() if k != "duel"))[1:]
 
 
 def state(sh, you):
@@ -340,7 +351,7 @@ def seen(sh, b):
 def setting(sh, b):
     cf = sh.data + "/live.json"
     c = _in().load(cf) or {}
-    for k in ("light",):
+    for k in ("light", "dl"):
         if k in b:
             c[k] = bool(b[k])
     L = sh.live
@@ -442,6 +453,14 @@ def api(web, req):
         return 400, {"err": "bad request"}
     if p == "/api/live/hail":
         return hail(sh, you, b)
+    if p == "/api/live/duel":
+        if sh.live is None:
+            return 409, {"err": "Ship-to-ship is off."}
+        import lvduel
+        try:
+            return lvduel.action(sh.live, b)
+        finally:
+            lvship.drop("lvduel")
     if p == "/api/live/seen":
         return seen(sh, b)
     if p == "/api/live/set":

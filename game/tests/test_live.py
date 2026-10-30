@@ -348,7 +348,7 @@ for live in ((True, False), (True, True)):
     fill(b, (1, 4, 7))
     if live[1]:
         for k in range(8):                       # more than fit one HELLO
-            api(a, "/api/live/hail", "POST", {"to": 1}) if k == 0 else lvlivein.send(a.live, 3, 1, bytes((5, k)))
+            api(a, "/api/live/hail", "POST", {"to": 1}) if k == 0 else lvlivein.send(a.live, 10, 1, bytes((5, k)))
     t = run(w, [a, b], 400000, lambda: a.node.digest() == b.node.digest() and not a.live.out
             and a.ble.state == "idle" and b.ble.state == "idle")
     check("sync with %s ship" % ("a new" if live[1] else "an old"), t is not None, (a.ble.n, a.live.n))
@@ -580,7 +580,9 @@ check("signed junk: inbox bounded", len(L.inb) == 0 and len(j["in"]) <= lvliveap
 check("signed junk: flickers capped", L.lc[1] <= lvlive.LIGHTS, L.lc)
 
 # a later release's kind travels and is acked: it never sticks in the sender's queue
-lvlivein.send(a.live, 9, 1, b"\x01\x02")
+w, (a, b) = fresh(141)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+lvlivein.send(a.live, 10, 1, b"\x01\x02")
 t = run(w, [a, b], 10000, lambda: not a.live.out and a.ble.state == "idle")
 check("later kind acked", t is not None and not b.live.inb, (t, b.live.inb))
 

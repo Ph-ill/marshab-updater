@@ -27,7 +27,7 @@ HALF = 167              # ms on, then ms off: 3 Hz
 WAIT_MS = 30000
 
 
-async def play(sh, pin, T):
+async def play(sh, pin, T, duel=False):
     sleep_ms, ticks_ms, ticks_diff = lvship.sleep_ms, lvship.ticks_ms, lvship.ticks_diff
     t0 = ticks_ms()
     lit = 0
@@ -42,8 +42,22 @@ async def play(sh, pin, T):
         while True:
             T._hold(sh)
             t = ticks_diff(ticks_ms(), t0)
-            if t >= FLICK_MS:
+            if t >= (8000 if duel else FLICK_MS):
                 break
+            if duel:
+                # Two 600 ms triangular breaths separated by 400 ms dark,
+                # then a longer pause. 10 ms software PWM, no hardware PWM.
+                phase = t % 2400
+                p = phase % 1000
+                duty = min(p, 600 - p) * 10 // 300 if phase < 2000 and p < 600 else 0
+                if T._busy(sh):
+                    duty = 0
+                pin.value(1 if duty else 0)
+                if duty:
+                    await sleep_ms(duty)
+                pin.value(0)
+                await sleep_ms(max(1, 10 - duty))
+                continue
             k = t // HALF
             if T._busy(sh):
                 dark = k        # a link or a request: dark for the rest of this half too,
@@ -78,12 +92,12 @@ def led_busy(sh):
     return False
 
 
-def maybe(lk):
+def maybe(lk, duel=False):
     """lvlive's Link.flick: the light for a hail that just arrived, if it may play."""
     sh = lk.sh
     c = sh.clock
     m, d = c.minute(), c.date()
-    v = lk.cfg.get("light", True)       # its own switch, on unless set off (FIXREVIEW2 J5)
+    v = lk.cfg.get("dl" if duel else "light", True)
     if not v or m is None or not c.known():
         return False
     q = getattr(sh.led, "q", None) or (1320, 420)
@@ -95,10 +109,10 @@ def maybe(lk):
     if lk.lc[1] >= lvlive.LIGHTS or led_busy(sh):
         return False
     lk.lc[1] += 1
-    return start(sh)
+    return start(sh, duel)
 
 
-def start(sh):
+def start(sh, duel=False):
     import lvlight as T
     try:
         pin = T._pin(sh)
@@ -116,7 +130,7 @@ def start(sh):
     # marked busy. The mark is set before the task first runs (create_task only schedules
     # it); play() clears it in its finally.
     try:
-        c = play(sh, pin, T)
+        c = play(sh, pin, T, duel)
         asyncio.create_task(c)
     except Exception as e:
         c = None
