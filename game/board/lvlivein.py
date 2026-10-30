@@ -6,6 +6,7 @@
 # helpers. The format is described at the top of lvlive.py.
 import lvship
 import lvlive as L
+import sys
 from binascii import hexlify
 from io import IOBase
 try:
@@ -27,7 +28,10 @@ class SaveWriter(IOBase):
         self.h = sha256()
 
     def write(self, b):
-        if isinstance(b, str):
+        # MicroPython exposes strings through its buffer protocol: both SHA256
+        # and a binary file consume the UTF-8 storage directly. Do not allocate
+        # one discarded bytes copy for every tiny token emitted by json.dump.
+        if isinstance(b, str) and sys.implementation.name != "micropython":
             b = b.encode()
         self.h.update(b)
         n = self.f.write(b)

@@ -93,7 +93,18 @@ def _hl(sh):
 
 
 def _prep(sh, maintained=False):
-    return _call("_prep", sh, maintained)
+    snapshot = _call("_prep", sh, maintained)
+    if isinstance(snapshot[-1].get("duel"), dict):
+        # Hail preparation has returned and dropped its operation module. Reclaim
+        # it before the view builder allocates beside the private parsed duel box.
+        lvship.free()
+        import lvduelview
+        try:
+            top = snapshot[-1]
+            top["duel"] = lvduelview.view(sh.live, top["duel"])
+        finally:
+            lvship.drop("lvduelview")
+    return snapshot
 
 
 def _probe():

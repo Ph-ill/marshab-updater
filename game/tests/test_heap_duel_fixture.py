@@ -20,6 +20,33 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_snapshot_operations_are_reclaimed_before_duel_view(self):
+        import weakref
+        from types import ModuleType
+        from unittest.mock import patch
+        import lvliveapi as A
+        ops = ModuleType("lvliveops")
+        box = {"g": [], "r": {}}
+        snapshot = ([], [], [], [], None, {"duel": box})
+        ops._prep = lambda *args: snapshot
+        ref = weakref.ref(ops)
+        calls = []
+
+        def view(link, state):
+            self.assertIs(state, box)
+            self.assertNotIn("lvliveops", sys.modules)
+            self.assertIsNone(ref(), "operation globals overlap view construction")
+            calls.append(link)
+            return []
+
+        with patch.dict(sys.modules):
+            sys.modules["lvliveops"] = ops
+            sys.modules["lvduelview"] = NS(view=view)
+            ops = None
+            self.assertIs(A._prep(NS(live="link"), True), snapshot)
+            self.assertEqual(calls, ["link"])
+            self.assertEqual(snapshot[-1]["duel"], [])
+
     def test_replay_helper_is_released_before_intent_checkpoint(self):
         import weakref
         from types import ModuleType
