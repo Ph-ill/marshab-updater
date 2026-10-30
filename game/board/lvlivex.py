@@ -26,6 +26,8 @@ def setup(lk, ship, data, cfg):
     lk.et = 0             # the last MemoryError's time (Link.calm)
     lk.hx = None          # an error in Hail's parts of a hooked call, for Link.poll's fault()
     lk.duel_due = 0
+    lk.duel_times = {}    # monotonic retry/activity stamps, invalid across boots
+    lk.duel_unknown = None
     lk.n = {"dial": 0, "dial_ok": 0, "dial_fail": 0, "in": 0, "acked": 0, "dup": 0, "bad": 0, "out": 0,
             "held": 0, "oom": 0, "old": 0, "gone": 0}
     b = load(lk.f) or {}

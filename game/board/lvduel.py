@@ -1,6 +1,7 @@
 # Asteroid duel: loaded per item/request, never kept on the Link.
 # History uses two ASCII characters per shot (cell and answer); n is its index.
 import os
+import lvship
 from binascii import hexlify, unhexlify
 from lvlivein import load, save, send, sha256, keep
 
@@ -68,6 +69,29 @@ def result(layout, fired, cell):
 def now(lk):
     c = lk.sh.clock
     return int(c.epoch_ms()) // 1000 if c.known() else None
+
+
+def timer(lk, g):
+    # These stamps belong to this Link's boot, never duel.json. Accumulate
+    # ticks_diff regularly so wrapping ticks do not become epoch deadlines.
+    t = lvship.ticks_ms()
+    key = (g["to"], g["id"])
+    sig = (g["s"], g["n"], g.get("p"))
+    timers = lk.duel_times
+    z = timers.get(key)
+    if z is None:
+        z = [t, 0, sig, -21600000 if g["s"] == "active" else 0, None]
+        timers[key] = z
+    else:
+        dt = lvship.ticks_diff(t, z[0])
+        z[0] = t
+        if dt < 0:
+            z[4] = None
+        else:
+            z[1] += dt
+        if sig != z[2]:
+            z[2], z[3] = sig, z[1]
+    return z
 
 
 def box(lk):
@@ -198,8 +222,8 @@ def end(lk, g, why):
 
 
 def sync(lk, g):
-    t = now(lk)
-    if g.get("sync") is not None and (t is None or t - g["sync"] < 3600):
+    z = timer(lk, g)
+    if z[4] is not None and z[1] - z[4] < 3600000:
         return
     h = history(g)
     c, r = h[-1][1:] if h else (255, 255)
@@ -207,7 +231,9 @@ def sync(lk, g):
     s = 2 if g.get("p") is not None else 1 if g["s"] == "active" else 3 if g["s"] == "reveal" else 0 if g["s"] in ("wait", "invited") else 4
     s |= 128 if not lk.cfg.get("dl", True) else 0
     emit(lk, g, 9, gid(g) + bytes((g["n"], c, r, s)), False)
-    g["sync"] = t if t is not None else 0
+    z[4] = z[1]
+    # A revision, not a clock stamp: callers use it to notice a new intent.
+    g["sync"] = g.get("sync", 0) + 1
 
 
 def repeat(lk, g):
@@ -238,6 +264,7 @@ def sweep(lk, j):
     for g in j["g"]:
         if g["s"] not in ACTIVE:
             continue
+        z = timer(lk, g)
         if g.get("t") is None:
             g["t"] = t
             changed = t is not None or changed
@@ -248,14 +275,14 @@ def sweep(lk, j):
             if before != g.get("sync"):
                 g.pop("light_dirty", None)
                 changed = True
-        if g["s"] == "wait" and age >= 3600 and not g.get("update") and not any(o[0] == g["to"] and o[1][0] == 3 and o[1][6:8] == gid(g) for o in lk.out):
+        if g["s"] == "wait" and z[1] - z[3] >= 3600000 and not g.get("update") and not any(o[0] == g["to"] and o[1][0] == 3 and o[1][6:8] == gid(g) for o in lk.out):
             g["update"] = True
             changed = True
         if g["s"] in ("wait", "invited") and age >= 3 * DAY:
             terminal(g, "called")
             end(lk, g, 3)
             changed = True
-        if age >= 21600 and g["s"] == "active" and (g.get("p") is not None or not mine(lk, g, g["n"] + 1)):
+        if z[1] - z[3] >= 21600000 and g["s"] == "active" and (g.get("p") is not None or not mine(lk, g, g["n"] + 1)):
             p = lk.ble.peers.get(g["to"])
             if p is not None and p.seen:
                 before = g.get("sync")
@@ -267,6 +294,10 @@ def sweep(lk, j):
 
 def maintain(lk):
     j = box(lk)
+    keys = [(g["to"], g["id"]) for g in j["g"] if g["s"] in ACTIVE]
+    for key in list(lk.duel_times):
+        if key not in keys:
+            del lk.duel_times[key]
     cleanout(lk, j, True)
     if sweep(lk, j):
         store(lk, j)
@@ -332,13 +363,16 @@ def take(lk, frm, kind, b):
         j["g"].append(g)
         light = True
     elif g is None:
-        if kind not in (8, 9) and len(lk.out) < 24 and (not getattr(lk, "duel_unknown", None) or (now(lk) is not None and now(lk) - lk.duel_unknown >= 3600)):
+        tick = lvship.ticks_ms()
+        previous = getattr(lk, "duel_unknown", None)
+        elapsed = lvship.ticks_diff(tick, previous) if previous is not None else 3600000
+        if kind not in (8, 9) and (elapsed >= 3600000 or elapsed < 0):
             temp = fresh(lk, frm, ident, frm, "called")
             temp["unknown"] = True
             sync(lk, temp)
             j["e"] = [x for x in j.get("e", []) if x["to"] != frm] + [temp]
             store(lk, j)
-            lk.duel_unknown = now(lk) or 1
+            lk.duel_unknown = tick
         return False
     elif kind == 4:
         if g["s"] != "wait" and not (g.get("why") == 2 and not g.get("c")):

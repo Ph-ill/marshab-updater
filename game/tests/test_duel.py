@@ -160,10 +160,15 @@ shot = b.live.out[0][1]
 D.take(a.live, 1, 5, shot[5:16])
 b.live.out[:] = []
 a.live.out[:] = []             # simulate an acked-but-lost answer
-b.clock.t += 3600001           # SYNC is limited to once per hour per game
+# Simulate an hour of uptime, independently of the phone's epoch.
+import lvship
+old_tick = lvship.ticks_ms
+tick = old_tick()
+lvship.ticks_ms = lambda: (tick + 3600001) & 0x3fffffff
 j = D.box(b.live)
 D.sync(b.live, j["g"][0])
 D.store(b.live, j)
+lvship.ticks_ms = old_tick
 settled(w, a, b)
 check("sync repaired answer", game(b)["n"] == 1 and game(b)["p"] is None)
 # Day changes do not erase a duel move.
@@ -199,7 +204,11 @@ act(a, "new")
 act(a, "invite", layout=LAY)
 settled(w, a, b)
 a.clock.t += 3600001
+old_tick = lvship.ticks_ms
+tick = old_tick()
+lvship.ticks_ms = lambda: (tick + 3600001) & 0x3fffffff
 check("old ship warning", D.view(a.live)[0]["update"])
+lvship.ticks_ms = old_tick
 a.clock.t += 3 * 86400000
 D.view(a.live)
 check("invite timeout", game(a)["s"] == "called")
@@ -557,6 +566,70 @@ for which in ("invite", "accept", "shot", "answer", "reveal", "end", "resign", "
                     check("recovered immutable lock", lock == (game(s).get("l"), game(s).get("salt")))
                 durable_items(s, I.load(s.live.f))
                 check("recovery obligations drained", not game(s).get("q"))
+
+# Recovery uses uptime, never a learned epoch or a saved pre-reboot tick value.
+import lvship
+saved_ticks, saved_diff = lvship.ticks_ms, lvship.ticks_diff
+uptime = [1000]
+lvship.ticks_ms = lambda: uptime[0] & 0x3fffffff
+lvship.ticks_diff = lvlive.dt
+try:
+    w, a, b = fresh(37)
+    start(w, a, b)
+    a.clock.known = lambda: False
+    a.live.out[:] = []
+    I.keep(a.live)
+    j = D.box(a.live)
+    j["g"][0].pop("sync", None)
+    D.sync(a.live, j["g"][0])
+    D.store(a.live, j)
+    a.live.out[:] = []
+    I.keep(a.live)
+    uptime[0] += 3600001
+    j = D.box(a.live)
+    D.sync(a.live, j["g"][0])
+    D.store(a.live, j)
+    check("unknown-clock SYNC retries on uptime", any(o[1][0] == 9 for o in a.live.out))
+    a.live.out[:] = []
+    I.keep(a.live)
+    a.clock.known = lambda: True
+    a.clock.t += 20 * 86400000
+    j = D.box(a.live)
+    D.sync(a.live, j["g"][0])
+    D.store(a.live, j)
+    check("learning epoch cannot bypass throttle", not a.live.out)
+    a.clock.t -= 40 * 86400000
+    uptime[0] += 3600001
+    j = D.box(a.live)
+    D.sync(a.live, j["g"][0])
+    D.store(a.live, j)
+    check("backward epoch cannot suppress retry", bool(a.live.out))
+    a.clock.known = lambda: False
+    a.live.out[:] = []
+    I.keep(a.live)
+    uptime[0] += 21600001
+    D.maintain(a.live)
+    check("six-hour recovery without phone", any(o[1][0] == 9 for o in a.live.out))
+    # A reboot discards throttle stamps, even if the persisted stamp is ahead.
+    a.live.out[:] = []
+    I.keep(a.live)
+    lvlivex.setup(a.live, a, a.data, a.live.cfg)
+    uptime[0] = 10
+    D.maintain(a.live)
+    check("restart can recover without epoch", any(o[1][0] == 9 for o in a.live.out))
+    a.live.out[:] = []
+    I.keep(a.live)
+    # Accumulate across the MicroPython tick wrap, without a wall clock.
+    for delta in (400000000, 400000000, 300000000):
+        uptime[0] += delta
+        D.maintain(a.live)
+        a.live.out[:] = []
+        I.keep(a.live)
+    uptime[0] += 3600001
+    D.maintain(a.live)
+    check("wrapped uptime recovery", any(o[1][0] == 9 for o in a.live.out))
+finally:
+    lvship.ticks_ms, lvship.ticks_diff = saved_ticks, saved_diff
 
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)
