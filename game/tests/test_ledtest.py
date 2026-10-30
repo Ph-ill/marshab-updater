@@ -41,8 +41,11 @@ def check(name, cond, extra=""):
     ok[0] += 1
 
 
-now = lvship.ticks_ms
 diff = lvship.ticks_diff
+
+
+def now():                      # lvship's clock as it is now (busy_case swaps in a virtual one)
+    return lvship.ticks_ms()
 MS = lvledtest.TEST_MS
 check("10 s (0.3.0: was 4 s)", MS == 10000, MS)
 
@@ -287,8 +290,56 @@ async def on_case():
     led.set_enabled(False)
     await task
 
-# -- 3. busy radio: the breath as a plain blink
+# -- 3. busy radio: the breath as a plain blink, on a virtual clock
+# The busy cases check the pattern's own timing (when each write lands, how long it plays),
+# not the event loop's health (off_case does that in real time). On real time they failed
+# now and then on the shared test box with the whole process frozen mid-pattern: the pin
+# log stopped at ~3.7 s, nothing ran at all (not even this test's 20 ms poll), and both
+# woke ~46 s later, when play() saw it was past TEST_MS and ended. Nothing in play()'s path
+# can block (fakes only: Busy, Server, a Pin that appends), and the VM logs "virtual machine
+# fork" snapshots that pause it. So here lvship's clock is VClock: time moves 1 ms per round
+# of the event loop, only while every task is waiting on it, and a host pause moves nothing.
+class VClock:
+    def __init__(self):
+        self.t = 1000
+        self.real = (lvship.ticks_ms, lvship.sleep_ms)
+        self.stop = False
+
+    def ticks_ms(self):
+        return self.t
+
+    async def sleep_ms(self, ms):
+        end = self.t + max(0, int(ms))
+        sleep0 = self.real[1]
+        while self.t < end:
+            await sleep0(0)             # (one round: every other ready task runs once)
+
+    async def tick(self):               # the only thing that moves time: 1 ms a round
+        sleep0 = self.real[1]
+        while not self.stop:
+            await sleep0(0)
+            self.t += 1
+
+    def __enter__(self):
+        lvship.ticks_ms, lvship.sleep_ms = self.ticks_ms, self.sleep_ms
+        return self
+
+    def __exit__(self, *a):
+        self.stop = True
+        lvship.ticks_ms, lvship.sleep_ms = self.real
+
+
 async def busy_case(http=False):
+    with VClock() as vc:
+        tk = asyncio.create_task(vc.tick())
+        try:
+            await busy_play(http)
+        finally:
+            vc.stop = True
+            await tk
+
+
+async def busy_play(http):
     pin = Pin()
     sh = Ship(Notifier(Clock(), False))
     sh.ble = Busy()
@@ -307,7 +358,7 @@ async def busy_case(http=False):
         await lvship.sleep_ms(20)
     elapsed = diff(now(), T0[0])
     check("busy: no playback exception", not any("test stopped" in s for s in SAID[said:]), SAID[said:])
-    check("busy: plays for TEST_MS, not just an advertised duration", MS - 50 <= elapsed <= MS + 400,
+    check("busy: plays for TEST_MS, not just an advertised duration", MS <= elapsed <= MS + 40,
           (elapsed, pin.log, SAID[said:]))
     check("busy: the breaths plain (a couple of writes each, not PWM)", writes(pin.log, 1800, MS) <= 12, writes(pin.log, 1800, MS))
     check("busy: still lit through each one's middle", all(lit_ms(pin.log, 1800 + k * 2700, 4500 + k * 2700) >= 500 for k in range(3)),
