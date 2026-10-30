@@ -739,5 +739,48 @@ D.maintain(a.live)
 check("stale drafts removed silently", not D.box(a.live)["g"] and not a.live.out)
 check("fourth after expiry", D.action(a.live, {"action": "new", "to": 5})[0] == 200)
 
+# Terminal recovery uses the same acknowledged-but-lost model as above.
+for early in (False, True):
+    w, a, b = fresh(43)
+    start(w, a, b)
+    for k, cell in enumerate((0, 1, 2, 12, 13)):
+        act(b, "fire", cell=cell)
+        settled(w, a, b)
+        act(a, "fire", cell=20 + k)
+        settled(w, a, b)
+    act(b, "fire", cell=35)
+    D.take(a.live, 1, 5, b.live.out[0][1][5:16])
+    answer = next(o[1][5:16] for o in a.live.out if o[1][0] == 6)
+    proof = next(o[1][5:16] for o in a.live.out if o[1][0] == 7)
+    a.live.out[:] = []
+    b.live.out[:] = []
+    I.keep(a.live)
+    I.keep(b.live)
+    if early:
+        D.take(b.live, 0, 7, proof)
+        D.take(b.live, 0, 6, answer)
+        settled(w, a, b)
+        check("early reveal strands only until recovery", game(a)["s"] == "done" and game(b)["s"] == "reveal")
+        D.maintain(b.live)
+        saved_tick = lvship.ticks_ms
+        tick = saved_tick()
+        lvship.ticks_ms = lambda: (tick + 21600001) & 0x3fffffff
+        try:
+            D.maintain(b.live)
+        finally:
+            lvship.ticks_ms = saved_tick
+        check("reveal periodically requests recovery", any(o[1][0] == 9 for o in b.live.out))
+        b.live.out[:] = []
+        I.keep(b.live)
+    g = game(b)
+    state = 3 if early else 2
+    D.take(a.live, 1, 9, D.gid(g) + bytes((g["n"], 35, 10, state)) + bytes(5))
+    check("terminal recovery bounded group", [o[1][0] for o in a.live.out] == [6, 7])
+    settled(w, a, b)
+    check("terminal recovery verifies both", game(a)["s"] == game(b)["s"] == "done")
+    check("terminal recovery counts once", D.box(a.live)["r"]["1"] == [0, 1] and D.box(b.live)["r"]["0"] == [1, 0])
+    D.take(a.live, 1, 7, D.gid(g) + D.unhexlify(g["l"]) + D.unhexlify(g["salt"]))
+    check("verified reveal has no echo loop", not a.live.out)
+
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

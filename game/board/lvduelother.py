@@ -144,10 +144,14 @@ def take(lk, frm, kind, b, j):
         # Equal n + awaiting answer also repairs a pending shot lost before receipt.
         if n < g["n"] or (n == g["n"] and g.get("p") is not None):
             repeat(lk, g)
+            if g["s"] in ("reveal", "done"):
+                reveal(lk, g)
         elif n > g["n"]:
             if n == g["n"] + 1 and g.get("p") == cell and mine(lk, g, n):
                 return False, (6, ident + bytes((n, cell, r)) + bytes(6))
             sync(lk, g)
-        elif g["s"] == "reveal":
+        elif g["s"] in ("reveal", "done") and state == 3:
+            # Replay one bounded terminal group, never echo every REVEAL.
+            repeat(lk, g)
             reveal(lk, g)
     return light, None

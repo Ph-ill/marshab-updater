@@ -104,7 +104,7 @@ def sweep(lk, j):
             terminal(g, "called")
             end(lk, g, 3)
             changed = True
-        if z[1] - z[3] >= 21600000 and g["s"] == "active" and (g.get("p") is not None or not mine(lk, g, g["n"] + 1)):
+        if z[1] - z[3] >= 21600000 and (g["s"] == "reveal" or (g["s"] == "active" and (g.get("p") is not None or not mine(lk, g, g["n"] + 1)))):
             p = lk.ble.peers.get(g["to"])
             if p is not None and p.seen:
                 before = g.get("sync")
