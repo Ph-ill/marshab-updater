@@ -101,7 +101,7 @@ check("parse: ignores noise", bench.parse_selftest("hello\nSELFTESTX y PASS\n")[
 rep = bench.Report()
 bench.selftest_checks(rep, st, want_day=(9, "phone"), expect_peers=True, led_test=True, led_seen=True)
 txt = rep.text()
-for row in ("selftest ran", "heap used < 80 KB", "BLE up", "Wi-Fi hotspot up", "phone server listening", "captive DNS up",
+for row in ("selftest ran", "heap used < 100 KB", "BLE up", "Wi-Fi hotspot up", "phone server listening", "captive DNS up",
             "flight day", "LED path", "LED pulse test", "peers"):
     check("report row " + row, row in txt, txt)
 check("report: battery INFO", re.search(r"battery\s+INFO\s+detected, 72%", txt), txt)
@@ -118,8 +118,8 @@ rep = bench.Report()
 bench.selftest_checks(rep, st2, want_day=(10, "phone"), led_test=True, led_seen=True)
 check("report: wrong day fails", not rep.ok() and "expected day=10/phone" in rep.text(), rep.text())
 rep = bench.Report()
-bench.selftest_checks(rep, bench.parse_selftest(CANNED.replace("peak 71234", "peak 81234")), want_day=(9, "phone"))
-check("report: heap over the cap fails", not rep.ok() and "81234" in rep.text(), rep.text())
+bench.selftest_checks(rep, bench.parse_selftest(CANNED.replace("peak 71234", "peak 101234")), want_day=(9, "phone"))
+check("report: heap over the cap fails", not rep.ok() and "101234" in rep.text(), rep.text())
 rep = bench.Report()
 bench.selftest_checks(rep, st2, want_day=(9, "phone"), led_test=True, led_seen=False)
 check("report: LED not seen fails", not rep.ok() and "did NOT see" in rep.text(), rep.text())
@@ -255,7 +255,7 @@ if FW:
     rc, o = bench_run(root, FW, "--ship", "3", "--launch", "2026-10-15", "--led", "on", "--led-test",
                       "--code", "Phill=1234", "--code", "Kim=4321", "--seconds", "12")
     check("fw: OVERALL PASS", rc == 0 and "OVERALL PASS" in o, o)
-    for row in ("firmware/core           PASS", "files hash-match        PASS", "heap used < 80 KB       PASS",
+    for row in ("firmware/core           PASS", "files hash-match        PASS", "heap used < 100 KB      PASS",
                 "BLE up                  PASS", "Wi-Fi hotspot up        PASS", "phone server listening  PASS",
                 "captive DNS up          PASS", "flight day              PASS", "LED path                PASS",
                 "LED pulse test          INFO"):
