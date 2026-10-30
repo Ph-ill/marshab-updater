@@ -25,7 +25,9 @@ NAME = "duel" if "duel" in STAGE or STAGE == "direct" else "step"
 FOLDER = ROOT + "/" + NAME
 MANIFEST = json.load(open(FOLDER + "/manifest.json"))
 VERSION = MANIFEST["version"]
-EXPECTED = 40 if STAGE in ("direct", "install-step", "boot-step") else 64
+# The duel ships its own lvota; after it swaps in, its own limit applies.
+DUEL_LIMIT = META["duel_max_files"]
+EXPECTED = 40 if STAGE in ("direct", "install-step", "boot-step") else DUEL_LIMIT if STAGE == "final" else 64
 COUNT = 0
 
 
@@ -149,7 +151,7 @@ elif STAGE.startswith("boot-"):
     lvota = None
     gc.collect()
     import lvota
-    check(lvota.MAX_FILES == 64, "swapped bytecode raises limit to 64")
+    check(lvota.MAX_FILES == (64 if NAME == "step" else DUEL_LIMIT), "swapped bytecode carries the shipped limit")
     check(lvota.__file__ == FLASH + "/lvota.mpy", "reload executes swapped .mpy")
     for path, size, digest in MANIFEST["files"]:
         check(os.stat(path)[6] == size, "installed size: " + path)

@@ -13,6 +13,7 @@ import base64
 import hashlib
 import importlib.util
 import io
+import re
 import json
 import os
 from pathlib import Path
@@ -114,7 +115,8 @@ def main():
                                "channel": "test", "frozen": CORE}, separators=(",", ":")).encode() + b"\n"
         (flash / "version.json").write_bytes(version("0.3.0"))
         shutil.copyfile(support / "lvota.mpy", flash / "lvota.mpy")
-        meta = {"kid": kid, "pub": pub.hex(), "duel_ref": subprocess.check_output(
+        duel_limit = int(re.search(r"^MAX_FILES = (\d+)", (game / "board/lvota.py").read_text(), re.M).group(1))
+        meta = {"kid": kid, "pub": pub.hex(), "duel_max_files": duel_limit, "duel_ref": subprocess.check_output(
             ["git", "rev-parse", a.duel_ref], cwd=REPO, text=True).strip()}
         def fixture(name, files, manifest):
             folder = root / name
