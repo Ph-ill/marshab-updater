@@ -87,7 +87,8 @@ def persist(name, *args):
 
 
 def store(lk, j):
-    return persist("store", lk, j)
+    from lvlivein import duel_store
+    return duel_store(lk, j)
 
 
 def cleanout(lk, j, orphans=False):

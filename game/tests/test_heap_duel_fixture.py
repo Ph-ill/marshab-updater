@@ -50,12 +50,13 @@ class WorstDuelHeap(unittest.TestCase):
                 events.append("rules")
             return original_import(name, *args, **kwargs)
 
-        link = NS(sh=NS(data="unused", duel_probe=lambda state: events.append("probe")))
+        link = NS(v=0, sh=NS(data="unused", duel_probe=lambda state: events.append("probe")))
         with patch.dict(sys.modules), patch.object(I, "load", load), \
+                patch.object(I, "save", store), \
                 patch.object(builtins, "__import__", importing):
             sys.modules["lvduel"] = rules
             rules = None
-            sys.modules["lvduelstore"] = NS(store=store)
+            sys.modules["lvduelstore"] = NS(cleanout=lambda *args: None, flush=lambda *args: None)
             self.assertTrue(I.duel_take(link, 1, 5, bytes(11)))
             self.assertNotIn("lvduelstore", sys.modules)
         self.assertEqual(events, ["parse", "rules", "save", "probe"])

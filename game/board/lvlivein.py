@@ -260,14 +260,10 @@ def duel_take(lk, frm, kind, b):
         if change is None:
             return False
         try:
-            import lvduelstore
-            lvduelstore.store(lk, j)
+            duel_store(lk, j)
         except Exception:
             lk.duel_unknown = unknown
             raise
-        finally:
-            lvship.drop("lvduelstore")
-            lvduelstore = None
         light, retry = change
         if retry is None:
             p = getattr(lk.sh, "duel_probe", None)
@@ -276,6 +272,22 @@ def duel_take(lk, frm, kind, b):
             return light
         kind, b = retry
         j = change = None
+
+
+def duel_store(lk, j):
+    # Publish the game before loading outbox cleanup and replay helpers.
+    # Neither receive rules nor outbox bytecode need overlap this first save.
+    lvship.free()
+    save(lk.sh.data + "/duel.json", j)
+    lk.v += 1
+    probe()
+    import lvduelstore
+    try:
+        lvduelstore.cleanout(lk, j)
+        lvduelstore.flush(lk, j)
+    finally:
+        lvship.drop("lvduelstore")
+        lvduelstore = None
 
 
 def mins(c):

@@ -7,16 +7,6 @@ F = "/duel.json"
 ACTIVE = ("draft", "wait", "invited", "active", "reveal")
 
 
-def store(lk, j):
-    # Write-ahead intents: no item may reach livebox before its game state does.
-    lvship.free()
-    I.save(lk.sh.data + F, j)
-    lk.v += 1
-    I.probe()
-    cleanout(lk, j)
-    flush(lk, j)
-
-
 def belongs(o, g):
     b = o[1]
     return o[0] == g["to"] and 3 <= b[0] <= 9 and (b[6:8] if b[0] in (3, 4) else b[5:7]) == gid(g)
