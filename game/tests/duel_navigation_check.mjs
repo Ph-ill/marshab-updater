@@ -21,3 +21,12 @@ for(const state of states)for(const busy of [false,true]){
   assert.doesNotMatch(dockHtml,/<button\b[^>]*data-go=["']?home\b[^>]*disabled/,state+' Home stays enabled');
 }
 console.log('duel navigation: all 14 states, idle and busy PASS');
+for(const state of ['draft','invited']){
+  c.LV={duel:[{id:'aa01',to:0,s:state},{id:'bb02',to:2,s:'draft'}]};
+  vm.runInContext('DU_BUSY=false;DU_TO=null;duScreen(0);DU_POS=[[0,0],[12,0],[35,0]];duScreen(2);duScreen(0)',c);
+  assert.equal(vm.runInContext('JSON.stringify(DU_POS)',c),'[[0,0],[12,0],[35,0]]',state+' A -> B -> A preserves placement');
+  c.LV.duel[0].id='cc03';
+  vm.runInContext('duScreen(0)',c);
+  assert.equal(vm.runInContext('JSON.stringify(DU_POS)',c),'[null,null,null]','replacement ID has independent placement');
+}
+console.log('duel placement: draft and invitation cross-duel navigation PASS');

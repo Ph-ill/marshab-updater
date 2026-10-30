@@ -1,5 +1,7 @@
 // Asteroid duel. Existing page primitives, portraits and live-state polling only.
 let DU_TO=null,DU_POS=null,DU_SHIP=0,DU_CELL=null,DU_ERR="",DU_BUSY=false;
+let DU_KEY=null;
+const DU_PLACEMENTS=new Map();
 const DU_OPEN=["draft","wait","invited","active","reveal"];
 function duGames(){return LV?.duel||[]}
 function duGame(to){return duGames().find(g=>g.to===to)}
@@ -66,7 +68,11 @@ function duDock(action=""){
 function duScreen(to){
   shipTop();
   const g=duGame(to);
-  if(to!=null&&DU_TO!==to){DU_TO=to;DU_POS=[null,null,null];DU_SHIP=0;DU_CELL=null;DU_ERR=""}
+  const key=g?to+":"+g.id:null;
+  if(to!=null&&(DU_TO!==to||DU_KEY!==key)){
+    if(DU_KEY)DU_PLACEMENTS.set(DU_KEY,DU_POS);
+    DU_TO=to;DU_KEY=key;DU_POS=DU_PLACEMENTS.get(key)||[null,null,null];DU_SHIP=0;DU_CELL=null;DU_ERR="";
+  }
   let o=`<div class=kick><div class=lab>Asteroid duel</div><h1>${to==null?"Pick a crewmate":g&&(g.s==="draft"||g.s==="invited")?"Hide your fleet":h(nm(to))}</h1></div>`;
   if(!LV){o+=`<p class=dim role=status>Asking your ship.</p>`;$("v").innerHTML=o;duDock();return}
   if(to==null){
@@ -107,7 +113,7 @@ document.addEventListener("click",async ev=>{
   const action=d.dunew!=null?"new":d.duact,to=d.dunew!=null?+d.dunew:DU_TO;
   if((action==="resign"||action==="call")&&!confirm(action==="resign"?"Resign this duel? This counts as a loss.":"Put this duel away without a result?"))return;
   DU_BUSY=true;DU_ERR="";view();
-  try{await api("/api/live/duel",{action,to,layout:DU_POS,cell:DU_CELL});DU_CELL=null;await lvLoad();if(action==="new"){DU_TO=null;go("duel/"+to)}if(action==="discard")go("duel")}
+  try{await api("/api/live/duel",{action,to,layout:DU_POS,cell:DU_CELL});DU_CELL=null;if(["lock","invite","accept","discard"].includes(action)){DU_PLACEMENTS.delete(DU_KEY);DU_KEY=null;DU_POS=null}await lvLoad();if(action==="new"){DU_TO=null;go("duel/"+to)}if(action==="discard")go("duel")}
   catch(e){DU_ERR=e.message||"Your move did not go. Try again."}
   finally{DU_BUSY=false;view()}
 });
