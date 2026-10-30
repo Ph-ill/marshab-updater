@@ -8,9 +8,23 @@
 // Hooked onto app.html's home/crew/setScreen/view/pollV from here, loaded after settings.js.
 const LV_PH=["Hello from my ship","Good morning","Coffee?","Lunch?","Come take a look","Nice work","Need a hand?","Heading out"];
 let LV=null,LVV=-1,LVK=0,LVT=null,LVP=null,LVB=0,LVE="",LVS=0;   // state, its version, fast-poll timer; the hail form: to, phrase, back, error, sending
-async function lvLoad(){
+let LVREAD=null,LVSTOP="";
+function lvLoad(){
+  if(!tok||tok===LVSTOP)return Promise.resolve();
+  if(LVREAD)return LVREAD;
+  const session=tok;
+  LVREAD=lvRead(session).finally(()=>{LVREAD=null});
+  return LVREAD;
+}
+async function lvStop(){
+  LVSTOP=tok;clearTimeout(LVK);LVK=0;
+  await LVREAD;
+  LV=null;LVV=-1;
+}
+async function lvRead(session){
   let j;
   try{j=await api("/api/live")}catch(e){if(e.status===404||e.status===401)LV=null;return}
+  if(tok!==session||session===LVSTOP)return;
   // A ship (or a mock) without ship-to-ship answers something else: no hail card at all.
   LV=j&&Array.isArray(j.out)&&Array.isArray(j.in)&&Array.isArray(j.peers)?j:null;
   if(!LV)return;

@@ -159,6 +159,10 @@ def ota_hooks(lvweb, web):
     http_admission(lvweb, web)
     route = web.route
     clock_gate(web)
+    # No radio (stock interpreter / story-only boot) never calls lvlive.install.
+    # Keep the optional link explicit for the same authenticated snapshot path.
+    if not hasattr(web.ship, "live"):
+        web.ship.live = None
     # Admission for the heavy answers, decided before Phone.state_writer (or lvliveapi.live)
     # allocates anything (0.3.0 review 1 R1, reworked in review 2 M2-M4). One streamed
     # /api/state at a time; no /api/state or /api/live while an update piece is being taken;

@@ -45,6 +45,12 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
+    async def test_hooks_initialize_optional_link_without_radio(self):
+        async def route(req, writer):
+            pass
+        web = hooks(route)
+        self.assertIsNone(web.ship.live)
+
     async def test_browser_startup_burst_queues_unread_with_one_owner(self):
         source = ROOT / "board/main.py"
         node = next(n for n in ast.parse(source.read_text()).body

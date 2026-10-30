@@ -861,6 +861,8 @@ document.addEventListener("click",async(ev)=>{
   if(D.tut)return tutKey(D.tut);
   if(D.who){me=+D.who;pin="";if(lockLeft())lockTick();return go("pin")}
   if(D.out){
+    // Stop queued Hail reads before the ship revokes their session token.
+    if(typeof lvStop==="function")await lvStop();
     try{await api("/api/logout",{})}catch(e){}
     if(ws){ws.onclose=ws.onerror=null;ws.close();ws=null}
     clearInterval(poll);poll=0;net="live";tok="";me=-1;S=null;return go("hello");
