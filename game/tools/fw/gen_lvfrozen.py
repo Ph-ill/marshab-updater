@@ -50,7 +50,7 @@ MICROPYTHON = "v1.29.0"
 BOARD = ("lvship", "lvreport", "lvcal", "lvled", "lvledcfg", "lvbatt", "lvdays", "lvweb",
          "lvphone", "lvstat", "lvwifi", "selftest", "lvota", "lvsig", "lvboot",
          "lvfunnel", "lvcode", "lvledtest", "lvsafe", "lvlive", "lvlivein", "lvlivex",
-         "lvflick", "lvliveapi", "lvotap", "lvotaq", "lvotak", "lvcheck", "lvstateapi", "lvphoneapi", "lvsetup", "lvphoneinit", "lvlight")
+         "lvflick", "lvliveapi", "lvotap", "lvotaq", "lvotak", "lvcheck", "lvstateapi", "lvphoneapi", "lvsetup", "lvphoneinit", "lvlight", "lvduel")
 PACK = os.path.join(ROOT, "build", "pack.bin")
 
 

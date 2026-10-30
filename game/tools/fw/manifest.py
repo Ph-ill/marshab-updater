@@ -63,3 +63,5 @@ module("lvphoneapi.py", base_path="../../board", opt=3)
 module("lvsetup.py", base_path="../../board", opt=3)
 module("lvphoneinit.py", base_path="../../board", opt=3)
 module("lvlight.py", base_path="../../board", opt=3)
+# Asteroid duel (0.3.1): an ordinary per-use .mpy override on existing cores.
+module("lvduel.py", base_path="../../board", opt=3)

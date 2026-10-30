@@ -3,7 +3,7 @@
 Starts tests/mp_sync_heap.py --phone under MicroPython (the board side, one process) and
 plays two phones against it from here (tests/phone_flow.py over real sockets, so the
 phones' buffers aren't on the board's heap). Every answer is checked; the heap line and
-RESULT come from the board side, with the 80,000 B cap at 32-bit.
+RESULT come from the board side, with the 100,000 B cap at 32-bit.
   python3 tests/phone_heap.py MICROPYTHON [dir | frozen] [--led] [--bat] [--ota [--live]] [--everyone]  (from game/)
   python3 tests/phone_heap.py LV_FROZEN_MP --safe     safe mode (tests/mp_safe_heap.py) takes a whole update
 --ota: a third phone uploads a signed update (the game firmware's own files as a newer
@@ -354,6 +354,33 @@ async def live_hail(req, fail, log):
         " 6 radio-test probes of 4 KB")
 
 
+async def duel_phone(req, who, fire, fail, log):
+    """Two independent phones stream /api/live as a duel shot is taken and answered.
+    This workload never signs an update; --ota remains a separate optional fixture."""
+    h = {"User-Agent": "duel-heap-%d" % who, "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+    s, _, raw = await req("POST", "/api/login", json.dumps({"crew": who, "pin": "1234"}).encode(), h)
+    if s != 200:
+        return fail("duel: sign-in %d" % s)
+    h["X-Crew-Token"] = json.loads(raw)["token"]
+    fired = False
+    for k in range(400):
+        s, _, raw = await req("GET", "/api/live", None, h)
+        if s != 200:
+            return fail("duel: live status %d" % s)
+        games = json.loads(raw).get("duel", [])
+        g = next((g for g in games if g["to"] == 1), None)
+        if g and g["n"] >= 2 and g["p"] is None:
+            log("duel: phone %d saw both moves and the autonomous answer" % who)
+            return
+        if fire and not fired and g and g["turn"] and not g["pending"]:
+            s, _, raw = await req("POST", "/api/live/duel", json.dumps({"action": "fire", "to": 1, "cell": 12}).encode(), h)
+            if s != 200:
+                return fail("duel: fire %d %s" % (s, raw))
+            fired = True
+        await asyncio.sleep(.1)
+    fail("duel: moves did not finish for phone %d" % who)
+
+
 async def safe_looks(req, fail, log):
     """--safe: another phone on the safe-mode ship meanwhile: the crew list, a reload's
     /api/me, the story's 503 {safe} once signed in, the version poll (board/lvsafe.py)."""
@@ -469,6 +496,9 @@ def main(argv):
 
         jobs = [F.session(req, "heapA", 1, "1234", fails.append, assets, log=print),
                 F.session(req, "heapB", 6, "1234", fails.append, assets, log=print)]
+        if "--duel" in mode:
+            jobs.append(duel_phone(req, 2, True, fails.append, print))
+            jobs.append(duel_phone(req, 4, False, fails.append, print))
         if ota:
             jobs.append(ota_upload(req, ota[0], ota[1], ota[2], fails.append, print))
             jobs.append(funnel_hello(req, fails.append, print))

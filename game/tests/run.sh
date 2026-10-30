@@ -69,6 +69,7 @@ python3 tests/test_batt.py
 python3 tests/test_ota.py
 python3 tests/test_safe.py
 python3 tests/test_live.py
+python3 tests/test_duel.py
 python3 tests/test_ota_release.py
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
@@ -91,6 +92,8 @@ if [ -n "$MP" ]; then
   "$MP" tests/test_safe.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_safe.py; fi
   "$MP" tests/test_live.py
+  "$MP" tests/test_duel.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_duel.py; fi
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_live.py; fi
   "$MP" tests/test_reset.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_reset.py; fi
@@ -142,6 +145,7 @@ if [ -n "$MP" ]; then
       # through board/lvotap.py, ~1 KB to spare; 0.2.7 was ~84.5 KB here).
       python3 sim/season.py --everyone
       MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --ota --live --everyone
+      MPY_CROSS="$MPY_CROSS" python3 tests/phone_heap.py "$LV_FROZEN_MP" frozen --led --bat --duel --everyone
       # Safe mode (board/lvsafe.py: a ship that keeps crashing) takes a whole signed update
       # while another phone looks around (tests/mp_safe_heap.py): where an update that ran
       # out of heap with the game loaded is tried again, so it must fit with room to spare.
@@ -180,6 +184,7 @@ if [ -n "$CHROME" ] && command -v node > /dev/null; then
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_settings.sh "$O/settings"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_funnel.sh "$O/funnel"; rm -rf "$O"
     O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_v03.sh "$O/v03" safe live live-off; rm -rf "$O"
+    O="$(mktemp -d)"; PW="$PW" CHROME="$CHROME" sh web/shots_duel.sh "$O/duel"; rm -rf "$O"
   else
     echo "playwright-core not given: skipped web/shots_ota.sh (set PW=...)"
   fi

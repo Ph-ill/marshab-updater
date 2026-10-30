@@ -45,11 +45,11 @@ async def play(sh, pin, T, duel=False):
             if t >= (8000 if duel else FLICK_MS):
                 break
             if duel:
-                # Two 600 ms triangular breaths separated by 400 ms dark,
-                # then a longer pause. 10 ms software PWM, no hardware PWM.
-                phase = t % 2400
+                # Two 600 ms triangular breaths, each followed by 400 ms dark.
+                # Repeat for eight seconds; 10 ms software PWM, no hardware PWM.
+                phase = t % 2000
                 p = phase % 1000
-                duty = min(p, 600 - p) * 10 // 300 if phase < 2000 and p < 600 else 0
+                duty = min(p, 600 - p) * 10 // 300 if p < 600 else 0
                 if T._busy(sh):
                     duty = 0
                 pin.value(1 if duty else 0)

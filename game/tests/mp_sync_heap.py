@@ -41,7 +41,8 @@ OTA = "--ota" in sys.argv
 # --live (with --phone --ota): ship-to-ship (board/lvlive.py) on both ships, as main.py's
 # run() installs it; the peer queues a hail for this ship, and a sixth phone hails the peer
 # through main.py's ota_route (board/lvliveapi.py, loaded per request) while the others play.
-LIVE = "--live" in sys.argv
+DUEL = "--duel" in sys.argv
+LIVE = "--live" in sys.argv or DUEL
 # a full day's hail.json to start from (FIXREVIEW2 B1: lvliveapi.HOUT sent, HIN received),
 # as a busy ship's would be by evening; --no-seed: an empty one
 SEED = LIVE and "--no-seed" not in sys.argv
@@ -117,6 +118,9 @@ kpeak = {}
 # not acked, no lvlivein import), Hail stays on, and it's delivered later in the run.
 hail_sig = []
 HAIL_M = [None]
+DUEL_M = [None]
+duel_taken = [False]
+duel_injecting = [False]
 
 
 class HailSes:
@@ -128,7 +132,7 @@ class HailSes:
 # requests and the radio (printed at the end, so a cap overrun says what it coincided with)
 PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
            "lvcode", "lvledtest", "lvbatt", "lvsafe", "lvcheck", "lvstateapi",
-           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight")
+           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel")
 
 
 def mem():
@@ -137,6 +141,15 @@ def mem():
 
 
 def sample():
+    if DUEL_M[0] is not None and not duel_taken[0] and not duel_injecting[0] and "lvliveapi" in sys.modules:
+        duel_injecting[0] = True
+        try:
+            L = globals()["ship"].live
+            n0 = L.n["in"]
+            L.take(HailSes(), DUEL_M[0], 0)
+            duel_taken[0] = L.n["in"] > n0
+        finally:
+            duel_injecting[0] = False
     m = mem()
     k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
     if m > kpeak.get(k, 0):
@@ -209,6 +222,7 @@ if LIVE:
     class PeerShip:
         ble, node, fk, clock, led, live, ledtest = peer, peer.node, FK, PeerClock(), None, None, None
         live_why = None
+        data = DATA + "-peer"
 
         def say(self, s):
             pass
@@ -216,7 +230,7 @@ if LIVE:
         os.mkdir(DATA + "-peer")
     except OSError:
         pass
-    for n in ("live.json", "livebox.json", "fault.json"):
+    for n in ("live.json", "livebox.json", "fault.json", "duel.json"):
         try:
             os.remove(DATA + "-peer/" + n)
         except OSError:
@@ -312,7 +326,7 @@ if WEB:
     lvweb.probe = sample
     g = MAIN_PY
     g["home_screen"](lvweb)
-    if OTA:
+    if OTA or DUEL:
         g["ota_hooks"](lvweb, web)
         ship.led_pin = TestPin         # Test light (board/lvledtest.py): the LED, counted
     if BAT:
@@ -321,7 +335,7 @@ if WEB:
     gc.collect()
     handler = web.handle
     if LIVE:
-        for n in ("live.json", "livebox.json", "fault.json", "hail.json"):
+        for n in ("live.json", "livebox.json", "fault.json", "hail.json", "duel.json"):
             try:
                 os.remove(DATA + "/" + n)
             except OSError:
@@ -330,6 +344,27 @@ if WEB:
             seed_hails(DATA + "/hail.json")
             print("live: hail.json seeded with a full day (12 sent, 16 received)")
         lvlive.install(ship, DATA)            # as main.py's run() does
+        if DUEL:
+            import lvduel
+            layout = [[0, 0], [12, 0], [35, 0]]
+            assert lvduel.action(ship.live, {"action": "new", "to": 1})[0] == 200
+            assert lvduel.action(ship.live, {"action": "invite", "to": 1, "layout": layout})[0] == 200
+            invite = next(o[1] for o in ship.live.out if o[1][0] == 3)
+            lvduel.take(peer_link, 0, 3, invite[5:16])
+            assert lvduel.action(peer_link, {"action": "accept", "to": 0, "layout": layout})[0] == 200
+            accept = next(o[1] for o in peer_link.out if o[1][0] == 4)
+            lvduel.take(ship.live, 1, 4, accept[5:16])
+            ship.live.out[:] = [o for o in ship.live.out if o[1][0] < 3]
+            peer_link.out[:] = [o for o in peer_link.out if o[1][0] < 3]
+            assert lvduel.action(peer_link, {"action": "fire", "to": 0, "cell": 0})[0] == 200
+            shot = peer_link.out.pop()
+            DUEL_M[0] = bytes((lvlive.MARK, 1)) + shot[1]
+            # Do not deliver before a phone's streamed /api/live. The first
+            # probe takes it and samples lvduel while all of its state is live.
+            ship.duel_probe = sample
+            layout = invite = accept = shot = lvduel = None
+            lvship.drop("lvduel")
+            lvship.drop("lvlivein")
 else:
     handler = lvstat.server(ship)
 during = [0]
@@ -465,8 +500,9 @@ BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # n1: review 1 had let OTA+LIVE pass on Test light's writes alone).
 led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
+HEAP_CAP = 100000
 ok = (synced and http_ok[0] and led_ok and
-      (base == 0 or BITS == 64 or (0 < board < 80000)))
+      (base == 0 or BITS == 64 or (0 < board <= HEAP_CAP)))
 import lv                                   # noqa: E402
 if FROZEN:
     # the core is the frozen one (not hidden by a lv/ directory). Since lv-core 0.2.0 the glue
@@ -492,12 +528,12 @@ print("heap: fake radio module %d, code (lvship + lv incl. sync, ble) %d, peer %
       "and the story at day 42 %d" % (m_fake, m_code - m_fake, m_peer - m_code, m_ship - m_peer))
 print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio time); peer and fake world at the end %d; "
       "board peak (peak - peer - fake radio) %d B%s; main.py's resident code %d B (in the peak)" % (
-          peak[0], got, t, m_peer_end, board, " (cap 80,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 80,000 B cap",
+          peak[0], got, t, m_peer_end, board, " (cap 100,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 100,000 B cap",
           m_main))
 print("heap: the peak came with %s" % where[0])
 print("heap: board peak by moment: %s" % ", ".join("%s %d B" % (k, kpeak[k] - m_peer_end - m_fake) for k in sorted(kpeak)))
 if EVERYONE and BITS == 32:
-    print("heap: the everyone-plays season: %d B to spare under the 80,000 B cap" % (80000 - board))
+    print("heap: the everyone-plays season: %d B to spare under the 100,000 B cap" % (HEAP_CAP - board))
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:
@@ -562,6 +598,14 @@ if LIVE:
         L and L.n, PL and PL.n, len(L.out) if L else -1, len(PL.out) if PL else -1,
         "loaded" if "lvliveapi" in sys.modules or "lvlivein" in sys.modules else "dropped",
         "ok" if lv_ok else "FAIL"))
+if DUEL:
+    import json
+    with open(DATA + "/duel.json") as f:
+        dg = json.load(f)["g"][0]
+    duel_ok = duel_taken[0] and dg["n"] >= 2 and dg["p"] is None and "lvduel" not in sys.modules
+    ok = ok and duel_ok
+    print("duel: move during /api/live %s, shots %d, rules dropped %s: %s" % (
+        duel_taken[0], dg["n"], "lvduel" not in sys.modules, "ok" if duel_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:

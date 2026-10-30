@@ -10,7 +10,7 @@ function duStatus(g){
   if(g.s==="wait")return "Waiting for "+name+" to join";
   if(g.s==="reveal")return "Checking both fields";
   if(g.s==="cheat")return name+"'s answers didn't match the field";
-  if(g.s==="done")return g.win?"You sank "+name+"'s fleet in "+g.shots.length+" shots":name+" sank your fleet";
+  if(g.s==="done")return g.why===2?(g.win?name+" resigned":"You resigned"):g.win?"You sank "+name+"'s fleet in "+g.shots.length+" shots":name+" sank your fleet";
   if(g.s==="version")return name+"'s ship needs the duel update";
   if(g.s==="busy")return name+" already has three duels open";
   if(g.s==="declined")return "Invitation declined";

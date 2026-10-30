@@ -310,6 +310,8 @@ def hail(sh, you, b):
     e = _ep(sh)
     if today(j) >= DAY_MAX:
         return 429, {"err": "That's today's hails: more tomorrow."}
+    if len(L.out) >= 18:
+        return 429, {"err": "Your out-box is full. Waiting moves stay until delivered."}
     for h in j["o"]:
         if h[4] == 4:
             continue
@@ -336,6 +338,8 @@ def hail(sh, you, b):
 
 def seen(sh, b):
     L = sh.live
+    if L is not None and len(L.out) >= 18:
+        return 429, {"err": "Your out-box is full. Try again after delivery."}
     j = _hl(sh)
     drain(sh, j)
     from binascii import unhexlify

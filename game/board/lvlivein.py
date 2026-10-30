@@ -83,6 +83,8 @@ def item(lk, kind, to, body, seq=None):
 
 def send(lk, kind, to, body):
     """Queue an item for ship `to` (0-7); -> its (epoch, seq) reference, 3 bytes."""
+    if len(lk.out) >= 24:
+        raise ValueError("live out-box full")
     it = item(lk, kind, to, body)
     lk.out.append([to, it, lk.sh.clock.date()])     # (it goes when the day turns: expire)
     x = nx(lk, to)
@@ -119,6 +121,8 @@ def take(lk, s, m, off):
                     break
             continue
         q = [b[2], b[3] << 8 | b[4]]
+        if 3 <= b[0] <= 9 and len(lk.out) >= 24:
+            break                       # no reply room; do not advance past this seq
         h = lk.hw.get(frm)
         if h and h[0] != q[0] and q[0] in h[2:]:
             # an epoch this sender has left behind (its box file was made again since): a
