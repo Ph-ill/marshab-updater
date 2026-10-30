@@ -567,6 +567,37 @@ for which in ("invite", "accept", "shot", "answer", "reveal", "end", "resign", "
                 durable_items(s, I.load(s.live.f))
                 check("recovery obligations drained", not game(s).get("q"))
 
+# Include the trailer's final high-water save: a failure there must not roll
+# back an already-published final reveal to an older in-memory outbox.
+for boundary in range(5):
+    for after in (False, True):
+        s, unused = persistence_case("answer")
+        body = bytes((5, 0, 77, 0, 1)) + D.gid(game(s)) + bytes((11, 35)) + bytes(7)
+        frame = bytes((lvlive.MARK, 1)) + body + I.mac(s.live, 1, body)
+        session = Trailer(1)
+        calls = [0]
+        original_d, original_i = D.save, I.save
+        def fail_trailer(path, obj):
+            n = calls[0]
+            calls[0] += 1
+            if n == boundary and not after:
+                raise MemoryError("injected trailer persistence failure")
+            original_d(path, obj)
+            if n == boundary and after:
+                raise MemoryError("injected trailer persistence failure")
+        D.save = I.save = fail_trailer
+        sys.modules["lvlivein"], sys.modules["lvduel"] = I, D
+        try:
+            s.live.take(session, frame, 0)
+        finally:
+            D.save, I.save = original_d, original_i
+        check("trailer fault reached", calls[0] > boundary and not session.acks)
+        D.maintain(s.live)
+        sys.modules["lvlivein"], sys.modules["lvduel"] = I, D
+        s.live.take(Trailer(1), frame, 0)
+        D.maintain(s.live)
+        check("trailer rollback retains final reply group", all(any(o[1][0] == kind for o in s.live.out) for kind in (6, 7)))
+
 # Recovery uses uptime, never a learned epoch or a saved pre-reboot tick value.
 import lvship
 saved_ticks, saved_diff = lvship.ticks_ms, lvship.ticks_diff
