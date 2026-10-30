@@ -730,7 +730,7 @@ lvboot._mv, lvboot._save = real_mv, real_save
 # -- main.py's hooks: /api/ota* to lvota (dropped after), GitHub refused by the DNS, every
 # other name still the board
 main_src = open(HERE + "/board/main.py").read()
-main_src = main_src[main_src.index("def ota_hooks"):main_src.index("\nasync def ota_ok")]
+main_src = main_src[main_src.index("def http_admission"):main_src.index("\nasync def ota_ok")]
 
 
 class FakeLvweb:

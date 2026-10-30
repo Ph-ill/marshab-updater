@@ -205,7 +205,7 @@ del sys.modules["machine"]
 
 # -- GET /api/bat (main.py ota_route)
 import lvweb  # noqa: E402
-hooks = src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")]
+hooks = src[src.index("def http_admission"):src.index("\nasync def ota_ok")]
 h = {"lvship": None, "asyncio": asyncio}
 exec(hooks, h)
 

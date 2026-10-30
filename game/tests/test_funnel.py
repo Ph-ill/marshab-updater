@@ -186,7 +186,7 @@ check("peer '?': a key anyway", F.ip_key("?") == b"ip\0\0\0\0" and F.ip_key("1.2
 
 # 6. main.py's hook: GET /api/hello, loaded per request and dropped, clock headers learned.
 src = open(HERE + "/board/main.py").read()
-src = src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")]
+src = src[src.index("def http_admission"):src.index("\nasync def ota_ok")]
 dropped = []
 
 

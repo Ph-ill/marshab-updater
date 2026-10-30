@@ -99,7 +99,7 @@ def progress_there(name):
 
 # main.py's hooks as they are (main.py itself starts a board, so only that part)
 src = open(HERE + "/board/main.py").read()
-src = src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")]
+src = src[src.index("def http_admission"):src.index("\nasync def ota_ok")]
 rebooted = []
 
 

@@ -151,7 +151,7 @@ class Wr:
 
 src = open(HERE + "/board/main.py").read()
 g = {"lvship": lvship, "asyncio": asyncio}
-exec(src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")], g)
+exec(src[src.index("def http_admission"):src.index("\nasync def ota_ok")], g)
 exec(src[src.index("# ---- the charger line"):src.index("\ndef main():")], g)
 src = None
 

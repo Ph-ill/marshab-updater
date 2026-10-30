@@ -143,7 +143,7 @@ class Wr:
 
 
 src = open(HERE + "/board/main.py").read()
-src = src[src.index("def ota_hooks"):src.index("\nasync def ota_ok")]
+src = src[src.index("def http_admission"):src.index("\nasync def ota_ok")]
 g = {"lvship": FakeShip, "asyncio": asyncio}
 exec(src, g)
 fresh()
