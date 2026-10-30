@@ -122,6 +122,7 @@ class WorstDuelHeap(unittest.TestCase):
             def save(path, obj):
                 stages.append(path)
                 self.assertNotIn("lvduelrx", sys.modules)
+                self.assertNotIn("lvduelmaint", sys.modules)
                 self.assertIs(obj, box)
                 self.assertEqual(obj["g"][0]["n"], 69)
 
