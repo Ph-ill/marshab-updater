@@ -97,9 +97,9 @@ def main():
             return out
         compile_module(keyed(old, support / "lvota_old.py"), support / "lvota.mpy")
         fresh = (GAME / "board/lvota.py").read_bytes()
-        assert fresh == old.replace(b"MAX_FILES = 40", b"MAX_FILES = 48            # allow the next release after the updater stepping stone", 1)
+        assert fresh == old.replace(b"MAX_FILES = 40", b"MAX_FILES = 64            # allow the next release after the updater stepping stone", 1)
         newmod = module("step_new", GAME / "board/lvota.py")
-        assert newmod.MAX_FILES == 48, "stepping-stone source must ship MAX_FILES=48"
+        assert newmod.MAX_FILES == 64, "stepping-stone source must ship MAX_FILES=64"
         new_mpy = support / "lvota_new.mpy"
         compile_module(keyed(fresh, support / "lvota_new.py"), new_mpy)
         for name in ("lvotap", "lvsig", "lvboot"):

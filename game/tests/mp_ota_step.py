@@ -25,7 +25,7 @@ NAME = "duel" if "duel" in STAGE or STAGE == "direct" else "step"
 FOLDER = ROOT + "/" + NAME
 MANIFEST = json.load(open(FOLDER + "/manifest.json"))
 VERSION = MANIFEST["version"]
-EXPECTED = 40 if STAGE in ("direct", "install-step", "boot-step") else 48
+EXPECTED = 40 if STAGE in ("direct", "install-step", "boot-step") else 64
 COUNT = 0
 
 
@@ -149,7 +149,7 @@ elif STAGE.startswith("boot-"):
     lvota = None
     gc.collect()
     import lvota
-    check(lvota.MAX_FILES == 48, "swapped bytecode raises limit to 48")
+    check(lvota.MAX_FILES == 64, "swapped bytecode raises limit to 64")
     check(lvota.__file__ == FLASH + "/lvota.mpy", "reload executes swapped .mpy")
     for path, size, digest in MANIFEST["files"]:
         check(os.stat(path)[6] == size, "installed size: " + path)

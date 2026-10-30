@@ -53,7 +53,7 @@ TAG = b"LV-OTA-1\n"
 CHUNK = 1024              # main.py sets lvweb.MAX_BODY to this for the board's requests
 MAX_ENV = 8192
 MAX_FILE = 256 * 1024
-MAX_FILES = 48            # allow the next release after the updater stepping stone
+MAX_FILES = 64            # allow the next release after the updater stepping stone
 SPARE = 16 * 1024         # flash left free after staging (littlefs needs room to work)
 # While an update is on trial (ota/state.json "trial": main.py keeps it, lvotak.py, within a
 # minute or two of the restart, or lvboot rolls it back) nothing new is staged or applied.
