@@ -244,7 +244,22 @@ def finish(lk, j, g):
     terminal(g, "done")
 
 
-def sweep(lk, j):
+def sweep(lk, j, receiving=False):
+    web = getattr(lk.sh, "web", None)
+    if (receiving or (web is not None and web.busy > 0)) and all(
+            g["s"] not in ("draft", "wait", "invited") for g in j["g"]):
+        # Active-game retry/light scheduling can wait for HTTP to release its
+        # snapshot, or the radio to finish its current receive transaction.
+        # Do not defer draft/invitation expiry or clock backfilling.
+        # Actual SHOT/ANSWER mutation and durable publication still run now.
+        lk.duel_due = 0
+        changed = False
+        t = now(lk)
+        for g in j["g"]:
+            if g["s"] in ACTIVE and g.get("t") is None and t is not None:
+                g["t"] = t
+                changed = True
+        return changed
     return maint_call("sweep", lk, j)
 
 
@@ -288,7 +303,7 @@ def take(lk, frm, kind, b):
         return False
     while True:
         j = box(lk)
-        if sweep(lk, j):
+        if sweep(lk, j, True):
             store(lk, j)
         unknown = getattr(lk, "duel_unknown", None)
         import lvduelrx

@@ -20,6 +20,50 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_active_maintenance_defers_but_expiry_and_clock_backfill_do_not(self):
+        from unittest.mock import patch
+        import lvduel as D
+        calls = []
+        link = NS(sh=NS(web=NS(busy=1), clock=NS(known=lambda: True, epoch_ms=lambda: 123000)), duel_due=100)
+        with patch.object(D, "maint_call", lambda *args: calls.append(args[0]) or True):
+            self.assertFalse(D.sweep(link, {"g": [{"s": "active", "t": 123}]}))
+            self.assertEqual(calls, [])
+            self.assertEqual(link.duel_due, 0)
+            game = {"s": "active", "t": None}
+            self.assertTrue(D.sweep(link, {"g": [game]}))
+            self.assertEqual(game["t"], 123)
+            self.assertEqual(calls, [])
+            link.sh.clock.known = lambda: False
+            self.assertFalse(D.sweep(link, {"g": [{"s": "active", "t": None}]}))
+            for state, stamp in (("draft", 123), ("wait", 123), ("invited", 123)):
+                self.assertTrue(D.sweep(link, {"g": [{"s": state, "t": stamp}]}))
+            self.assertEqual(calls, ["sweep"] * 3)
+            link.sh.web.busy = 0
+            self.assertFalse(D.sweep(link, {"g": [{"s": "active", "t": 123}]}, True))
+            self.assertEqual(calls, ["sweep"] * 3)
+            self.assertTrue(D.sweep(link, {"g": [{"s": "active", "t": 123}]}))
+            self.assertEqual(calls, ["sweep"] * 4)
+
+    def test_ack_maintenance_retries_after_http_releases_snapshot(self):
+        import tempfile
+        from unittest.mock import patch
+        import lvduel as D
+        import lvlivein as I
+        with tempfile.TemporaryDirectory(dir=ROOT / "build") as tmp:
+            (Path(tmp) / "duel.json").touch()
+            link = NS(sh=NS(web=NS(busy=1), data=tmp), duel_due=100)
+            with patch.object(D, "maintain") as maintain:
+                I.duels(link)
+                maintain.assert_not_called()
+                self.assertEqual(link.duel_due, 0)
+                link.sh.web.busy = 0
+                link.ble = NS(state="sync")
+                I.duels(link)
+                maintain.assert_not_called()
+                link.ble.state = "idle"
+                I.duels(link)
+                maintain.assert_called_once_with(link)
+
     def test_poll_releases_item_module_before_core_receive(self):
         import weakref
         from types import ModuleType

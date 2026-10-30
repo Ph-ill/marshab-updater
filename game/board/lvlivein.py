@@ -277,6 +277,14 @@ def expire(lk):
 
 
 def duels(lk):
+    web = getattr(lk.sh, "web", None)
+    ble = getattr(lk, "ble", None)
+    if (web is not None and web.busy > 0) or (ble is not None and ble.state != "idle"):
+        # ACKs can make room during a streamed answer. Flush/recovery is a
+        # separate transaction: schedule it after HTTP and the radio session,
+        # not beside a snapshot or another receive frame.
+        lk.duel_due = 0
+        return
     import os
     try:
         os.stat(lk.sh.data + "/duel.json")
