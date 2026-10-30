@@ -1,22 +1,18 @@
 # Radio rules, loaded only while accepting a duel item.
-from lvduel import (ACTIVE, belongs, box, commit, emit, end, finish, fleet, fresh,
+from lvduel import (ACTIVE, belongs, commit, emit, end, finish, fleet, fresh,
                     gid, hexlify, history, keep, lvship, mine, now, rejected,
-                    repeat, result, reveal, room, store, sweep, sync, terminal, unhexlify)
+                    repeat, result, reveal, room, sync, terminal, unhexlify)
 
 
-def take(lk, frm, kind, b):
-    # Validate shape before looking at state: authenticated nonsense is still nonsense.
-    if len(b) != 11 or not 3 <= kind <= 9:
-        return False
+def take(lk, frm, kind, b, j):
+    # Mutate only: the caller releases this module before durable publication.
+    # None means no change; (light, retry) commits before optional recovery.
     ident = b[1:3] if kind in (3, 4) else b[:2]
-    j = box(lk)
-    if sweep(lk, j):
-        store(lk, j)
     g = next((x for x in j["g"] if x["to"] == frm and gid(x) == ident), None)
     if kind in (3, 4) and b[0] != 1:
         temp = fresh(lk, frm, ident, frm, "called")
         rejected(lk, j, temp, 4)
-        return False
+        return False, None
     light = False
     if kind == 3:
         other = next((x for x in j["g"] if x["to"] == frm and x["s"] in ACTIVE), None)
@@ -24,7 +20,7 @@ def take(lk, frm, kind, b):
         # Equal IDs cannot carry an END: it would also cancel the winning invite.
         if other and other["i"] == lk.node.ship and other["s"] in ("draft", "wait"):
             if frm > lk.node.ship and gid(other) == ident:
-                return False
+                return
             if frm < lk.node.ship:
                 if gid(other) == ident:
                     lk.out[:] = [o for o in lk.out if not belongs(o, other)]
@@ -36,11 +32,10 @@ def take(lk, frm, kind, b):
                 other = g = None
         if g is not None:
             repeat(lk, g)
-            store(lk, j)
-            return False
+            return False, None
         if other or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
             rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 5)
-            return False
+            return False, None
         # Keep one completed game per opponent, for the reveal screen and rematch.
         j["g"] = [x for x in j["g"] if x["to"] != frm or x["s"] in ACTIVE]
         room(j)
@@ -57,12 +52,12 @@ def take(lk, frm, kind, b):
             temp["unknown"] = True
             sync(lk, temp)
             j["e"] = [x for x in j.get("e", []) if x["to"] != frm] + [temp]
-            store(lk, j)
             lk.duel_unknown = tick
-        return False
+            return False, None
+        return
     elif kind == 4:
         if g["s"] != "wait" and not (g.get("why") == 2 and not g.get("c")):
-            return False
+            return
         g["c"] = hexlify(b[3:11]).decode()
         if g["s"] == "wait":
             g["s"] = "active"
@@ -70,15 +65,15 @@ def take(lk, frm, kind, b):
     elif kind == 5:
         n, cell = b[2], b[3]
         if not 1 <= n <= 71 or cell >= 36:
-            return False
+            return
         if n <= g["n"]:
             # Semantic duplicate with a fresh envelope: replay the saved answer only.
             h = g["h"]
             z = (n, ord(h[2 * n - 2]) - 65, ord(h[2 * n - 1]) - 97)
             if z and not mine(lk, g, n) and z[1] == cell:
                 emit(lk, g, 6, ident + bytes(z), False)
-                store(lk, j)
-            return False
+                return False, None
+            return
         if g["s"] != "active" or n != g["n"] + 1 or mine(lk, g, n) or g.get("p") is not None:
             sync(lk, g)
         else:
@@ -100,7 +95,7 @@ def take(lk, frm, kind, b):
     elif kind == 6:
         n, cell, r = b[2:5]
         if n <= g["n"]:
-            return False
+            return
         if g["s"] != "active" or n != g["n"] + 1 or not mine(lk, g, n) or g.get("p") != cell or r not in (0, 1, 2, 3, 4, 10, 11, 12):
             sync(lk, g)
         else:
@@ -142,7 +137,7 @@ def take(lk, frm, kind, b):
     elif kind == 8:
         why = b[2]
         if why not in (1, 2, 3, 4, 5, 6):
-            return False
+            return
         if why == 2 and g["s"] in ACTIVE:
             g["why"] = 2
             g["win"], g["s"] = True, "reveal"
@@ -164,7 +159,7 @@ def take(lk, frm, kind, b):
         g["nl"] = bool(state & 128)
         state &= 127
         if n > 71 or state > 4:
-            return False
+            return
         # Stop-and-wait means normally at most one completed answer is missing.
         # If both views say 'my turn', keep the lower ship's view. The higher
         # ship can rewind its existing transcript, or recover its one lost answer.
@@ -179,29 +174,22 @@ def take(lk, frm, kind, b):
                         g["h"] = g["h"][:-2] + chr(65 + cell) + chr(97 + r) if cell < 36 and r in (0, 1, 2, 3, 4) else g["h"]
                     g["last"] = [5 if mine(lk, g, n) else 6,
                                  hexlify(ident + bytes((n, cell)) + (b"" if mine(lk, g, n) else bytes((r,)))).decode()]
-                store(lk, j)
-                return False
+                return False, None
             if n == g["n"] + 1 and mine(lk, g, n) and cell < 36:
                 g["p"] = cell
                 g["last"] = [5, hexlify(ident + bytes((n, cell))).decode()]
-                store(lk, j)
-                return take(lk, frm, 6, ident + bytes((n, cell, r)) + bytes(6))
+                return False, (6, ident + bytes((n, cell, r)) + bytes(6))
         elif conflict:
             sync(lk, g)
-            store(lk, j)
-            return False
+            return False, None
         # If the peer lacks our last shot/answer, replay it with a new envelope.
         # Equal n + awaiting answer also repairs a pending shot lost before receipt.
         if n < g["n"] or (n == g["n"] and g.get("p") is not None):
             repeat(lk, g)
         elif n > g["n"]:
             if n == g["n"] + 1 and g.get("p") == cell and mine(lk, g, n):
-                return take(lk, frm, 6, ident + bytes((n, cell, r)) + bytes(6))
+                return False, (6, ident + bytes((n, cell, r)) + bytes(6))
             sync(lk, g)
         elif g["s"] == "reveal":
             reveal(lk, g)
-    store(lk, j)
-    probe = getattr(lk.sh, "duel_probe", None)
-    if probe:
-        probe(j)
-    return light
+    return light, None

@@ -69,6 +69,9 @@ def timer(lk, g):
 
 
 def box(lk):
+    # Start a transaction without garbage from an earlier phone/radio dispatch.
+    # This is admission, not a collecting heap probe: parsing is still sampled.
+    lvship.free()
     return load(lk.sh.data + F) or {"g": [], "r": {}}
 
 
@@ -154,7 +157,6 @@ def rejected(lk, j, g, why):
     j["e"] = [x for x in j.get("e", []) if x["to"] != g["to"]]
     j["e"].append(g)
     end(lk, g, why)
-    store(lk, j)
 
 
 def gid(g):
@@ -314,11 +316,40 @@ def fresh(lk, to, ident, inviter, state):
 
 
 def take(lk, frm, kind, b):
-    import lvduelrx
-    try:
-        return lvduelrx.take(lk, frm, kind, b)
-    finally:
-        lvship.drop("lvduelrx")
+    if len(b) != 11 or not 3 <= kind <= 9:
+        return False
+    while True:
+        j = box(lk)
+        if sweep(lk, j):
+            store(lk, j)
+        unknown = getattr(lk, "duel_unknown", None)
+        import lvduelrx
+        try:
+            change = lvduelrx.take(lk, frm, kind, b, j)
+        finally:
+            lvship.drop("lvduelrx")
+            lvduelrx = None
+        if change is None:
+            return False
+        # Rule evaluation and persistence are separate phases. Release the
+        # receiver's bytecode and scratch lists before allocating save buffers.
+        lvship.free()
+        try:
+            store(lk, j)
+        except Exception:
+            # An unknown-game reply is throttled only once it is durable.
+            lk.duel_unknown = unknown
+            raise
+        light, retry = change
+        if retry is None:
+            p = getattr(lk.sh, "duel_probe", None)
+            if p:
+                p(j)
+            return light
+        # Recovery commits its rewind/pending move before accepting the answer.
+        # Reload the durable box, as the former recursive receiver did.
+        kind, b = retry
+        j = change = None
 
 
 def action(lk, b):

@@ -105,6 +105,35 @@ class WorstDuelHeap(unittest.TestCase):
                 self.assertNotIn("history", g)
                 self.assertNotIn("even", g)
 
+    def test_receive_rules_are_released_before_durable_save(self):
+        import tempfile
+        from unittest.mock import patch
+        import lvduel as D
+        import lvship
+        with tempfile.TemporaryDirectory(dir=ROOT / "build") as tmp:
+            clock = NS(known=lambda: True, epoch_ms=lambda: 1793000000000)
+            link = NS(sh=NS(data=tmp, clock=clock), node=NS(ship=0),
+                      duel_times={}, v=0, out=[], ble=NS(peers={}))
+            game = dict(id="4801", to=1, i=0, s="active", n=68, h="Aa" * 68,
+                        p=None, t=1793000000, l="000c23", q=[])
+            box = dict(g=[game], r={})
+            stages = []
+
+            def save(path, obj):
+                stages.append(path)
+                self.assertNotIn("lvduelrx", sys.modules)
+                self.assertIs(obj, box)
+                self.assertEqual(obj["g"][0]["n"], 69)
+
+            with patch.object(D, "box", lambda lk: box), \
+                    patch.object(D, "save", save), \
+                    patch.object(D, "flush", lambda *args: None), \
+                    patch.object(D, "result", lambda *args: 0), \
+                    patch.object(lvship, "free", lambda: 0):
+                self.assertTrue(D.take(link, 1, 5, bytes((0x48, 1, 69, 34)) + bytes(7)))
+            self.assertEqual(len(stages), 1)
+            self.assertEqual(game["h"][-2:], "ca")
+
     def test_save_streams_probes_and_rejects_corrupt_readback(self):
         import gc
         import tempfile
@@ -176,6 +205,10 @@ class WorstDuelHeap(unittest.TestCase):
             scope["critical_duel"](box)
             self.assertEqual(scope["duel_worst"][0], ((69, 70, 70), 10, 24))
             self.assertEqual(sampled, [True])
+            scope["duel_worst"][0] = None
+            with patch.dict(sys.modules, {"lvduelrx": NS()}):
+                with self.assertRaises(AssertionError):
+                    scope["critical_duel"](box)
             for change, undo in (
                 (lambda: games[1].update(q=[]), lambda: games[1].update(q=[[9, "00" * 11]])),
                 (lambda: box["e"].pop(), lambda: box["e"].append(dict(q=[[8, "00" * 11]]))),

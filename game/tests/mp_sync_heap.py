@@ -225,6 +225,9 @@ def critical_duel(j):
         session = ship.ble.sess
         assert isinstance(session, lvlive.Session) and session.to == 1 and w.links
         assert web.busy > 0 and "lvliveapi" in sys.modules
+        # The forced real-radio move still commits during the live stream, but
+        # rule evaluation must finish before persistence holds its buffers.
+        assert "lvduelrx" not in sys.modules
         assert len(ship.live.out) == 24 and all(o[1][0] == 2 for o in ship.live.out)
         assert len(games) == 3 and all(g["s"] == "active" and g["n"] >= 68 and
                len(g["h"]) == 2 * g["n"] and g.get("q") for g in games)
