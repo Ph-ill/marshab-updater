@@ -1,12 +1,126 @@
 # The once-in-a-while parts of lvlive.py (Hail, 0.3.0): install (the checks and the hooks),
-# a Link's start (its box file read back), and the fault net. Loaded for each and dropped
+# a Link's start (its box file read back), dial/completion, expiry/reset and the fault net.
+# Loaded for each and dropped
 # straight after (lvship.drop), so none of it stays resident next to two phones and a sync.
-# The box-file helpers (load, save) are lvlivein's, loaded alongside and dropped too.
+# Common box-file and retry-state helpers are lvlivein's, loaded alongside and dropped too.
 import lvship
 from lv import sync as S
 from binascii import unhexlify
 import lvlive as L
-from lvlivein import load, save
+from lvlivein import load, save, keep, nx
+
+
+def forget(sh):
+    # Reset this ship (lvcode.reset, 0.3.0 review R2 m10): the hails that came in and
+    # no phone has read go, and so do this ship's own still waiting (FIXREVIEW2 minor 10:
+    # Reset says everyone's hails go). The rest of livebox.json stays: its epoch, sequence
+    # and each sender's highest taken (replay protection).
+    L = getattr(sh, "live", None)
+    if L is not None:
+        del L.inb[:]
+        del L.out[:]
+    p = sh.data + "/livebox.json"
+    b = load(p)
+    if b and (b.get("i") or b.get("o")):
+        b["i"] = []
+        b["o"] = []
+        save(p, b)
+
+
+def expire(lk):
+    """Waiting items from an earlier day go (hail.json shows an undelivered hail as "Didn't
+    go" for a day: lvliveapi._hl); a "seen" for a crewmate who never came back goes too."""
+    d = lk.sh.clock.date()
+    k = []
+    for o in lk.out:
+        if o[1][0] > 2:                # duels survive the day turning
+            continue
+        if d and not isinstance(o[2], int):
+            o[2] = d                    # queued before the clock was known: today's
+        elif d and o[2] < d:            # (a clock set back expires nothing: FIXREVIEW3 f2)
+            k.append(o)
+    if k:
+        for o in k:
+            lk.out.remove(o)
+        lk.n["gone"] += len(k)
+        keep(lk)
+
+
+def failed(lk, x, now):
+    # a dial that got nowhere: from the second in a row, back off 1, 2, 4... min, MAXB at most
+    x[3] += 1
+    if x[3] >= 2:
+        x[1] = now + min(L.MAXB, L.EVERY << min(x[3] - 2, 8))
+
+
+def dial(lk, b, now):
+    """Dial one ship with a hail waiting that can take one now (Link.poll, idle radio): heard
+    in the last L.NEAR, its own next dial due, and none to anyone for L.GAP. Of those, the
+    one whose last hail dial is oldest (never dialled first), so ships that keep failing
+    take turns with, and can't starve, one that just came back (FIXREVIEW2 J1). Sets
+    lk.due, the earliest time another look is worth an import."""
+    expire(lk)
+    wait = 5000                     # nobody in range: look again in 5 s
+    best = None
+    seen = []
+    for o in lk.out:
+        to = o[0]
+        if to in seen:
+            continue
+        seen.append(to)
+        p = b.peers.get(to)
+        x = nx(lk, to)
+        if (x[2] or x[3]) and not L.near(now, p, L.OUT):
+            x[0] = x[1] = x[2] = x[3] = 0   # out of range a while: back, it starts over (and first)
+        if not L.near(now, p) or p.addr is None or not p.info or not p.info.get("cap"):
+            continue
+        # GAP between hail dials; a crewmate not dialled yet (new, or back in range) waits
+        # only a quarter of it, so a run of dials to ships that won't answer can't hold up
+        # one that just came back (FIXREVIEW2 J1)
+        g = lk.gap if x[2] or not lk.gap else lk.gap - L.GAP + L.GAP // 4
+        if p.info["busy"] or not L.due(now, x[1]) or not L.due(now, g):
+            r = max(0 if L.due(now, x[1]) else L.dt(x[1], now), 0 if L.due(now, g) else L.dt(g, now))
+            wait = min(wait, max(1000, r))
+            continue
+        a = L.dt(now, x[2]) if x[2] else 0x3FFFFFFF        # how long since its last dial
+        if best is None or a > best[0]:
+            best = (a, to, p, x)
+    if best is None:
+        lk.due = now + wait
+        return
+    a, to, p, x = best
+    x[0] += 1
+    x[1] = now + (L.FAST if x[0] < 2 else L.EVERY)
+    x[2] = now or 1
+    lk.gap = now + L.GAP
+    lk.forced = (p, p.fails, p.next_try, lk._for(to))
+    lk.n["dial"] += 1
+    b._connect(p, now)
+    if b.state != "connecting":     # the stack said no: put the backoff back
+        f, lk.forced = lk.forced, None
+        p.fails, p.next_try = f[1], f[2]
+        lk.n["dial_fail"] += 1
+        failed(lk, x, now)
+    lk.due = 0                      # look again once the radio is idle
+
+
+def done(lk, f, p, s, now):
+    """After a session this Link dialled: count it, give the stack its backoff back."""
+    ok = s is not None and s.complete()
+    lk.n["dial_ok" if ok else "dial_fail"] += 1
+    p.fails, p.next_try = f[1], f[2]
+    x = nx(lk, p.ship)
+    # anything left: the next session, but only if this one moved something (an
+    # item the peer won't take, say a bad mac, keeps to the 2-then-1-a-minute dials)
+    if ok:
+        x[3] = 0
+        k = lk._for(p.ship)
+        if 0 < k < f[3]:                # moved some, more for them: straight on (the GAP
+            x[0], x[1] = 0, now + 1000  # is between crewmates, not within one)
+            lk.gap = 0
+    else:
+        failed(lk, x, now)
+    lk.due = 0
 
 
 def setup(lk, ship, data, cfg):

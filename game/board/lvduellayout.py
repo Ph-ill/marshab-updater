@@ -1,5 +1,4 @@
-# Fleet validation and scoring, released before durable saves.
-from lvduel import integer
+# Fleet validation, scoring and proof replay, released before durable saves.
 
 
 def fleet(layout):
@@ -23,19 +22,6 @@ def fleet(layout):
         out.append(cells)
         used.extend(cells)
     return out
-
-
-def encode(slots):
-    if not isinstance(slots, (list, tuple)) or len(slots) != 3:
-        raise ValueError("bad layout")
-    for z in slots:
-        if not isinstance(z, (list, tuple)) or len(z) != 2 or not integer(z[0], 0, 35) or not integer(z[1], 0, 1):
-            raise ValueError("bad layout")
-    x = (slots[0][0] << 18 | slots[0][1] << 17 | slots[1][0] << 11 |
-         slots[1][1] << 10 | slots[2][0] << 4)
-    b = bytes((x >> 16, x >> 8 & 255, x & 255))
-    fleet(b)
-    return b
 
 
 def result(layout, fired, cell):

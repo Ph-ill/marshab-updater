@@ -30,7 +30,12 @@ def fleet(layout):
 
 
 def encode(slots):
-    return layout_call("encode", slots)
+    import lvduelaction
+    try:
+        return lvduelaction.encode(slots)
+    finally:
+        lvship.drop("lvduelaction")
+        lvduelaction = None
 
 
 def commit(g, layout, salt):

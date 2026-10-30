@@ -21,6 +21,22 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    def test_outbound_helpers_are_not_retained_by_inbound_module(self):
+        import lvlivein as inbound
+        from unittest.mock import patch
+        events = []
+        def operation(*args):
+            events.append(args)
+            raise ValueError("failed operation")
+        # Every compatibility call must release the extra module on failure.
+        for name, args in (("dial", (1, 2, 3)), ("done", (1, 2, 3, 4, 5)),
+                           ("failed", (1, 2, 3)), ("expire", (1,)), ("forget", (1,))):
+            with patch.dict(sys.modules, {"lvlivex": NS(**{name: operation})}):
+                with self.assertRaisesRegex(ValueError, "failed operation"):
+                    getattr(inbound, name)(*args)
+                self.assertNotIn("lvlivex", sys.modules)
+            self.assertEqual(events[-1], args)
+
     def test_known_proof_bypasses_shot_and_recovery_modules(self):
         from unittest.mock import patch
         game = {"to": 1, "id": b"ab"}
@@ -660,7 +676,8 @@ class WorstDuelHeap(unittest.TestCase):
     def test_reveal_replay_decodes_once_and_checks_every_answer(self):
         from unittest.mock import patch
         import lvduellayout as layout
-        raw = layout.encode([[0, 0], [12, 0], [35, 0]])
+        from lvduelaction import encode
+        raw = encode([[0, 0], [12, 0], [35, 0]])
         h = ""
         for n in range(1, 72):
             cell = (n - 1) // 2

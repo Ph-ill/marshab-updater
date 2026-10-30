@@ -4,6 +4,44 @@ import lvlive
 from lvliveapi import _in, light, PING_KB, wdrain
 
 
+def api(web, req):
+    """Non-stream live requests, kept out of the response encoder's working set."""
+    from lvliveapi import state, hail, seen
+    sh = web.ship
+    p = req.path
+    if p == "/api/live/duel":
+        import lvduelaction
+        try:
+            return lvduelaction.api(web, req)
+        finally:
+            lvship.drop("lvduelaction")
+    you = web.get_phone().who(req)
+    if you is None:
+        return 401, {"err": "signed out"}
+    if p == "/api/coex" or p == "/api/live/coex":
+        return coex(sh) if req.method == "GET" else (404, {"err": "no such thing"})
+    if sh.clock.learn_headers(req.header):
+        sh.day_check()
+    if req.method == "GET" and p == "/api/live":
+        return 200, state(sh, you)
+    if req.method != "POST":
+        return 404, {"err": "no such thing"}
+    import json
+    try:
+        b = json.loads(req.body or b"{}")
+        if not isinstance(b, dict):
+            raise ValueError
+    except ValueError:
+        return 400, {"err": "bad request"}
+    if p == "/api/live/hail":
+        return hail(sh, you, b)
+    if p == "/api/live/seen":
+        return seen(sh, b)
+    if p == "/api/live/set":
+        return setting(sh, b)
+    return 404, {"err": "no such thing"}
+
+
 def setting(sh, b):
     cf = sh.data + "/live.json"
     c = _in().load(cf) or {}

@@ -1,4 +1,18 @@
 # Phone actions, loaded only for a POST, not while receiving radio moves.
+def encode(slots):
+    from lvduel import integer, fleet
+    if not isinstance(slots, (list, tuple)) or len(slots) != 3:
+        raise ValueError("bad layout")
+    for z in slots:
+        if not isinstance(z, (list, tuple)) or len(z) != 2 or not integer(z[0], 0, 35) or not integer(z[1], 0, 1):
+            raise ValueError("bad layout")
+    x = (slots[0][0] << 18 | slots[0][1] << 17 | slots[1][0] << 11 |
+         slots[1][1] << 10 | slots[2][0] << 4)
+    b = bytes((x >> 16, x >> 8 & 255, x & 255))
+    fleet(b)
+    return b
+
+
 def api(web, req):
     import json
     import lvship
@@ -33,7 +47,6 @@ def action(lk, b, rules):
     room = rules["room"]
     fresh = rules["fresh"]
     os = rules["os"]
-    encode = rules["encode"]
     hexlify = rules["hexlify"]
     now = rules["now"]
     emit = rules["emit"]

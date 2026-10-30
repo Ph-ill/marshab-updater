@@ -184,12 +184,17 @@ async def live(lvweb, web, req, w, maintained=False, snapshot=None):
     for x in parts(*snapshot):
         b = x.encode()
         _probe()
+        # Conversion is sampled above. Neither its source string nor the
+        # final output bytes need survive a drain while radio work resumes.
+        x = None
         for offset in range(0, len(b), PIECE):
-            chunk = b[offset:offset + PIECE]
-            w.write(chunk)
-            before, k = k, k + len(chunk)
+            size = min(PIECE, len(b) - offset)
+            w.write(b[offset:offset + PIECE])
+            before, k = k, k + size
             if before < 3 * PIECE <= k and lvweb.probe:
                 lvweb.probe()
+            if offset + PIECE >= len(b):
+                b = b""
             await wdrain(w)
 
 
@@ -226,37 +231,10 @@ async def ping(lvweb, web, req, w):
 
 
 def api(web, req):
-    """main.py routes /api/live* and /api/coex here. -> (status, obj)"""
-    sh = web.ship
-    p = req.path
-    if p == "/api/live/duel":
-        import lvduelaction
-        try:
-            return lvduelaction.api(web, req)
-        finally:
-            lvship.drop("lvduelaction")
-    you = web.get_phone().who(req)
-    if you is None:
-        return 401, {"err": "signed out"}
-    if p == "/api/coex" or p == "/api/live/coex":
-        return coex(sh) if req.method == "GET" else (404, {"err": "no such thing"})
-    if sh.clock.learn_headers(req.header):
-        sh.day_check()
-    if req.method == "GET" and p == "/api/live":
-        return 200, state(sh, you)      # (main.py streams it: live())
-    if req.method != "POST":
-        return 404, {"err": "no such thing"}
-    import json
+    # Non-stream dispatch need not stay beside the immutable live snapshot.
+    import lvlivecfg
     try:
-        b = json.loads(req.body or b"{}")
-        if not isinstance(b, dict):
-            raise ValueError
-    except ValueError:
-        return 400, {"err": "bad request"}
-    if p == "/api/live/hail":
-        return hail(sh, you, b)
-    if p == "/api/live/seen":
-        return seen(sh, b)
-    if p == "/api/live/set":
-        return setting(sh, b)
-    return 404, {"err": "no such thing"}
+        return lvlivecfg.api(web, req)
+    finally:
+        lvship.drop("lvlivecfg")
+        lvlivecfg = None
