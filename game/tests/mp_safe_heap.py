@@ -8,7 +8,7 @@
 # hotspot, the phone page, sign-in, Settings > Ship software and /api/ota*, no Bluetooth,
 # no story, no season log in RAM. It is also where an update that couldn't get through the
 # game's heap (a MemoryError while the game was loaded, twice) is tried again, so it has to
-# take a whole upload well inside the 80,000 B cap. Resident here, as on a board: all of
+# take a whole upload well inside the 100,000 B cap (CAP; 80,000 B before 2026-10-29). Resident here, as on a board: all of
 # main.py (it is __main__ there: every function it defines, cut at the line that starts a
 # board, as tests/mp_sync_heap.py does), lvsafe and lvweb; lvotaq, lvotap, lvota and lvsig
 # load and drop per request as they do on a board. lvota comes from build/heap-ota-mod
@@ -98,10 +98,11 @@ async def run():
 
 web = asyncio.run(run())
 board = peak[0]
-ok = 0 < board < 80000 and web.served > 0 and not any(n in sys.modules for n in PER_USE)
+CAP = 100000      # board heap cap, as tests/mp_sync_heap.py (80,000 B before 2026-10-29)
+ok = 0 < board < CAP and web.served > 0 and not any(n in sys.modules for n in PER_USE)
 print("impl %s; safe mode serving %d requests (%d refused busy)" % (sys.implementation.name, web.served, web.refused))
-print("heap: safe-mode board peak %d B of the 80,000 B cap (%d B to spare), at %s; per-use modules %s after" % (
-    board, 80000 - board, where[0], "dropped" if not any(n in sys.modules for n in PER_USE) else "STILL LOADED"))
+print("heap: safe-mode board peak %d B of the %d B cap (%d B to spare), at %s; per-use modules %s after" % (
+    board, CAP, CAP - board, where[0], "dropped" if not any(n in sys.modules for n in PER_USE) else "STILL LOADED"))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:
     sys.exit(1)
