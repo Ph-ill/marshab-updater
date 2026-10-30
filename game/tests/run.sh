@@ -71,6 +71,9 @@ python3 tests/test_ota.py
 python3 tests/test_safe.py
 python3 tests/test_live.py
 python3 tests/test_ota_release.py
+if [ -n "$LV_FROZEN_MP" ] && [ -n "$MPY_CROSS" ]; then
+  python3 tests/test_ota_step.py
+fi
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
 python3 tests/test_code.py
