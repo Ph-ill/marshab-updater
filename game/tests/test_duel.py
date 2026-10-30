@@ -677,5 +677,24 @@ try:
 finally:
     lvship.ticks_ms, lvship.ticks_diff = saved_ticks, saved_diff
 
+# Rejections exist only while their durable reply cannot enter the shared box.
+w, a, b = fresh(41)
+for k in range(24):
+    I.send(a.live, 2, 1, bytes((1, 0, k)))
+for sender in range(1, 8):
+    D.take(a.live, sender, 3, bytes((2, sender, 99)) + bytes(8))
+check("seven pending rejections", len(D.box(a.live).get("e", [])) == 7)
+a.live.out[:] = []
+I.keep(a.live)
+D.maintain(a.live)
+check("all rejection replies survive", len(a.live.out) == 7 and all(o[1][0] == 8 for o in a.live.out))
+for to, item, date in list(a.live.out):
+    ack = I.item(a.live, 0, 0, item[2:5], 0)
+    frame = bytes((lvlive.MARK, 1)) + ack[:16] + I.mac(a.live, to, ack[:16])
+    sys.modules["lvlivein"], sys.modules["lvduel"] = I, D
+    a.live.take(Trailer(to), frame, 0)
+D.maintain(a.live)
+check("rejections retire after durable delivery", not D.box(a.live).get("e") and not a.live.out)
+
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

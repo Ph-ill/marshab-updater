@@ -35,7 +35,11 @@ class WorstDuelHeap(unittest.TestCase):
             own, peer = link(0, tmp), link(1, tmp + "/peer")
             scope = functions(ROOT / "tests/mp_sync_heap.py", {"seed_duels"}, {})
             scope["seed_duels"](own, peer)
-            games = load(tmp + "/duel.json")["g"]
+            box = load(tmp + "/duel.json")
+            games = box["g"]
+            self.assertEqual(len(box.get("e", [])), 7)
+            self.assertEqual(len(box["r"]), 7)
+            self.assertTrue(all(g.get("q") and g["q"][0][0] == 8 for g in box["e"]))
             self.assertEqual([g["to"] for g in games], [1, 2, 3])
             self.assertEqual([g["n"] for g in games], [68, 70, 70])
             for g in games:

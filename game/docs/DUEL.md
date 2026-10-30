@@ -100,7 +100,11 @@ one per hour to keep authenticated junk from filling the shared out-box.
   n), the lower ship number's view wins and the other ship re-sends. A SYNC is never sent
   more than once an hour per game.
 * The box file is /data/duel.json (atomic save through lvlivein.save, read back), at
-  most 3 games plus the record per crewmate, about 1.5 KB at worst.
+  most 3 games plus the record per crewmate and at most 7 pending rejection
+  records (one per other ship). Rejection records retire as soon as their reply
+  has been delivered and acknowledged, never before its durable obligation ends.
+  The long-history heap fixture includes all seven pending replies and populated
+  pair records. Do not treat the former 1.5 KB estimate as a maximum file size.
 
 ### Cheating resistance
 

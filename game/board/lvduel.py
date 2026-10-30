@@ -158,6 +158,11 @@ def flush(lk, j):
         if q:
             g["q"] = []
             changed = True
+    if j.get("e"):
+        retained = [g for g in j["e"] if pending(lk, g)]
+        if len(retained) != len(j["e"]):
+            j["e"] = retained
+            changed = True
     if changed:
         # A crash here replays identical bodies, never a new commitment/move.
         save(lk.sh.data + F, j)
@@ -169,7 +174,7 @@ def terminal(g, state):
 
 
 def rejected(lk, j, g, why):
-    # One bounded rejection per sender, persisted even when the shared box is full.
+    # At most seven pending replies, one per sender. Retire after acknowledgement.
     j["e"] = [x for x in j.get("e", []) if x["to"] != g["to"]]
     j["e"].append(g)
     end(lk, g, why)

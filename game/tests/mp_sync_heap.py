@@ -90,7 +90,13 @@ def seed_duels(lk, peer_lk):
         games.append(g)
     # Seed the durable file without flushing: the first measured inbound call,
     # not fixture construction, must recover these obligations under pressure.
-    D.save(lk.sh.data + D.F, {"g": games, "r": {}})
+    rejections = []
+    for to in range(1, 8):
+        g = D.fresh(lk, to, bytes((0x52, to)), to, "called")
+        D.end(lk, g, 5)
+        rejections.append(g)
+    D.save(lk.sh.data + D.F, {"g": games, "r": dict((str(to), [123, 123]) for to in range(1, 8)),
+                             "e": rejections})
     remote = dict(games[0])
     remote["to"], remote["q"] = 0, []
     remote["last"] = [6, hexlify(bytes((0x48, 1, 68, 33, 0)) + bytes(6)).decode()]
