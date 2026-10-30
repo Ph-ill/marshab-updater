@@ -61,6 +61,45 @@ def seed_hails(p):
             f.write('%s["%06x", %d, %d, %d, 1, 0, %d, %d]' % (
                 ", " if k else "", 0x100 + k, 2 + k % 6, k % 8, e - k * 60000, 2 + k % 6, e - k * 60000 - 60000))
         f.write(']}')
+
+
+def seed_duels(lk, peer_lk):
+    # Three legal, near-71-shot games, not three copies of an early invitation.
+    # The last fleet cell (35) stays unshot, so every history is still active.
+    import lvduel as D
+    from binascii import hexlify
+    from lvlivein import send
+    layout = D.encode([[0, 0], [12, 0], [35, 0]])
+    games = []
+    for to in (1, 2, 3):
+        ident, salt = bytes((0x48, to)), bytes((to,)) * 6
+        g = D.fresh(lk, to, ident, 0, "active")
+        g["l"], g["salt"] = hexlify(layout).decode(), hexlify(salt).decode()
+        g["c"] = hexlify(D.commit(ident, layout, salt)).decode()
+        n = 68 if to == 1 else 70
+        h = ""
+        for shot in range(1, n + 1):
+            cell = (shot - 1) // 2
+            r = D.result(layout, list(range(cell)), cell)
+            h += chr(65 + cell) + chr(97 + r)
+        g["n"], g["h"] = n, h
+        # Durable recovery intents, all eleven bytes padded just like emit().
+        body = ident + bytes((n, cell, r, 1)) + bytes(5)
+        g["q"] = [[9, hexlify(body).decode()]]
+        g["last"] = [5, hexlify(ident + bytes((n, cell)) + bytes(7)).decode()]
+        games.append(g)
+    D.store(lk, {"g": games, "r": {}})
+    remote = dict(games[0])
+    remote["to"], remote["q"] = 0, []
+    remote["last"] = [6, hexlify(bytes((0x48, 1, 68, 33, 0)) + bytes(6)).decode()]
+    D.store(peer_lk, {"g": [remote], "r": {}})
+    # Real Seen receipts occupy the shared finite outbox until the radio ACKs
+    # them. This keeps q live during the first streamed /api/live + inbound shot;
+    # nothing is cleared/discarded to make the phones' next move succeed.
+    for k in range(24):
+        send(lk, 2, 1, bytes((0x48, 0, k)))
+
+
 # --everyone: the season where all eight crew play every day (build/season_log_all.bin,
 # python3 sim/season.py --everyone: about 2.5 times the reference season's records): the
 # busiest log a season is likely to have, everything else as above. The cap applies again
@@ -121,6 +160,7 @@ HAIL_M = [None]
 DUEL_M = [None]
 duel_taken = [False]
 duel_injecting = [False]
+duel_worst = [None]
 
 
 class HailSes:
@@ -148,8 +188,23 @@ def sample():
             n0 = L.n["in"]
             L.take(HailSes(), DUEL_M[0], 0)
             duel_taken[0] = L.n["in"] > n0
+            if not duel_taken[0]:
+                raise RuntimeError("duel: full-outbox inbound move was not durably accepted")
         finally:
             duel_injecting[0] = False
+    if DUEL and duel_injecting[0] and "lvduel" in sys.modules and duel_worst[0] is None:
+        # Inside the real inbound rules call, while its parsed box and the
+        # already-built three-game HTTP response coexist. Drop the audit copy
+        # before sampling: only the board's actual working set is measured.
+        import json
+        with open(DATA + "/duel.json") as f:
+            audit = json.load(f)["g"]
+        duel_worst[0] = (tuple(g["n"] for g in audit),
+                         sum(len(g.get("q", ())) for g in audit), len(ship.live.out))
+        assert len(audit) == 3 and all(g["s"] == "active" and g["n"] >= 68 and
+                                       len(g["h"]) == 2 * g["n"] and g.get("q") for g in audit)
+        assert duel_worst[0][2] == 24
+        audit = f = None
     m = mem()
     k = "sig" if "lvsig" in sys.modules else "ota" if ("lvota" in sys.modules or "lvotap" in sys.modules) else "game"
     if m > kpeak.get(k, 0):
@@ -346,23 +401,17 @@ if WEB:
         lvlive.install(ship, DATA)            # as main.py's run() does
         if DUEL:
             import lvduel
-            layout = [[0, 0], [12, 0], [35, 0]]
-            assert lvduel.action(ship.live, {"action": "new", "to": 1})[0] == 200
-            assert lvduel.action(ship.live, {"action": "invite", "to": 1, "layout": layout})[0] == 200
-            invite = next(o[1] for o in ship.live.out if o[1][0] == 3)
-            lvduel.take(peer_link, 0, 3, invite[5:16])
-            assert lvduel.action(peer_link, {"action": "accept", "to": 0, "layout": layout})[0] == 200
-            accept = next(o[1] for o in peer_link.out if o[1][0] == 4)
-            lvduel.take(ship.live, 1, 4, accept[5:16])
-            ship.live.out[:] = [o for o in ship.live.out if o[1][0] < 3]
-            peer_link.out[:] = [o for o in peer_link.out if o[1][0] < 3]
-            assert lvduel.action(peer_link, {"action": "fire", "to": 0, "cell": 0})[0] == 200
-            shot = peer_link.out.pop()
+            seed_duels(ship.live, peer_link)
+            # The peer's 69th shot is held until the first streamed live response.
+            assert lvduel.action(peer_link, {"action": "fire", "to": 0, "cell": 34})[0] == 200
+            shot = next(o for o in peer_link.out if o[1][0] == 5)
             DUEL_M[0] = bytes((lvlive.MARK, 1)) + shot[1]
             # Do not deliver before a phone's streamed /api/live. The first
             # probe takes it and samples lvduel while all of its state is live.
             ship.duel_probe = sample
-            layout = invite = accept = shot = lvduel = None
+            shot = lvduel = None
+            # seed_duels was defined before the gc baseline: retain its code so
+            # dropping test-only bytecode cannot artificially lower board peak.
             lvship.drop("lvduel")
             lvship.drop("lvlivein")
 else:
@@ -404,7 +453,13 @@ async def heap_run():
         lvship.drop("lvflick")
     if PHONE:
         print("PORT %d" % port)
-        while web.served < 2:            # sync starts with the first phone's visit
+        ready_started = lvship.ticks_ms()
+        while web.served < 2 or (DUEL and not duel_taken[0]):
+            if lvship.ticks_diff(lvship.ticks_ms(), ready_started) > 30000 or done_flag():
+                raise RuntimeError("duel: first measured live stream never accepted its move")
+            # Duel admission is exercised before the radio can free receipt
+            # slots: full outbox + three durable intent lists must coexist with
+            # the streamed response, not vanish during unrelated phone logins.
             await lvship.sleep_ms(5)
     t = 0
     phones_done = not PHONE
@@ -432,7 +487,8 @@ async def heap_run():
                     during[0] = web.served
         # Done when the peer has everything (with phones: their taps too, once they've left).
         if phones_done and peer.node.digest() == ship.node.digest() and ship.ble.state == "idle" \
-                and peer.state == "idle" and (not LIVE or (not ship.live.out and not peer_link.out)):
+                and peer.state == "idle" and (not LIVE or (not peer_link.out and
+                    (not ship.live.out or (DUEL and not any(o[0] == 1 for o in ship.live.out))))):
             break
     if PHONE:
         # Hail can leave the peer in a session/cooldown longer than one scan.
@@ -576,7 +632,11 @@ if LIVE:
     # peer's to this one taken (and acked); nothing refused as bad, lvliveapi dropped.
     L = ship.live
     PL = peer_link
-    lv_ok = (L is not None and PL is not None and L.n["in"] >= 1 and PL.n["in"] >= 1 and not L.out
+    # The two absent opponents retain exactly their bounded durable SYNCs.
+    # They are part of the measured workload, never silently discarded to pass.
+    absent_ok = (DUEL and len(L.out) == 2 and {o[0] for o in L.out} == {2, 3} and
+                 all(o[1][0] == 9 for o in L.out))
+    lv_ok = (L is not None and PL is not None and L.n["in"] >= 1 and PL.n["in"] >= 1 and (not L.out or absent_ok)
              and not PL.out and L.n["bad"] == 0 and PL.n["bad"] == 0 and "lvliveapi" not in sys.modules
              and "lvlivein" not in sys.modules)
     ok = ok and lv_ok
@@ -601,11 +661,16 @@ if LIVE:
 if DUEL:
     import json
     with open(DATA + "/duel.json") as f:
-        dg = json.load(f)["g"][0]
-    duel_ok = duel_taken[0] and dg["n"] >= 2 and dg["p"] is None and "lvduel" not in sys.modules
+        dg = json.load(f)["g"]
+    duel_ok = (duel_taken[0] and duel_worst[0] is not None and len(dg) == 3 and
+               all(g["n"] == 70 and len(g["h"]) == 140 and g["s"] == "active" and
+                   g["p"] is None and not g.get("q") for g in dg) and
+               "lvduel" not in sys.modules and absent_ok)
     ok = ok and duel_ok
-    print("duel: move during /api/live %s, shots %d, rules dropped %s: %s" % (
-        duel_taken[0], dg["n"], "lvduel" not in sys.modules, "ok" if duel_ok else "FAIL"))
+    print("duel: measured concurrent transcripts/obligations/outbox %s; final shots %s; "
+          "move during /api/live %s, rules dropped %s: %s" % (
+              duel_worst[0], [g["n"] for g in dg], duel_taken[0],
+              "lvduel" not in sys.modules, "ok" if duel_ok else "FAIL"))
 print("led: notifier %s, pin writes %d" % ("on" if ship.led.enabled else "off (default)", ship.led.writes))
 print("RESULT", "PASS" if ok else "FAIL")
 if not ok:

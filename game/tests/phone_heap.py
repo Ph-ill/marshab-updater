@@ -369,11 +369,17 @@ async def duel_phone(req, who, fire, fail, log):
             return fail("duel: live status %d" % s)
         games = json.loads(raw).get("duel", [])
         g = next((g for g in games if g["to"] == 1), None)
-        if g and g["n"] >= 2 and g["p"] is None:
-            log("duel: phone %d saw both moves and the autonomous answer" % who)
+        # Both phones must actually receive all three long histories. Seeded
+        # n=68 is not success: require the injected 69th + phone's 70th answer.
+        if len(games) != 3 or {x["to"] for x in games} != {1, 2, 3} or any(
+                x["n"] < 68 or len(x["shots"]) + len(x["incoming"]) != x["n"] or
+                x["s"] != "active" for x in games):
+            return fail("duel: missing or truncated worst-case histories")
+        if g and g["n"] == 70 and g["p"] is None and all(x["n"] == 70 for x in games):
+            log("duel: phone %d saw three 70-shot histories and the new autonomous answer" % who)
             return
         if fire and not fired and g and g["turn"] and not g["pending"]:
-            s, _, raw = await req("POST", "/api/live/duel", json.dumps({"action": "fire", "to": 1, "cell": 12}).encode(), h)
+            s, _, raw = await req("POST", "/api/live/duel", json.dumps({"action": "fire", "to": 1, "cell": 34}).encode(), h)
             if s != 200:
                 return fail("duel: fire %d %s" % (s, raw))
             fired = True
