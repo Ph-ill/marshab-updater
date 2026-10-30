@@ -276,6 +276,7 @@ class Link:
                     lvlivein.duels(self)
                 finally:
                     lvship.drop("lvlivein")
+                    lvlivein = None
             # dialling lives in lvlivein, loaded only when a dial could be due (`due`: the
             # earliest next dial, or a re-check in 1-5 s), so a waiting hail costs no heap
             if self.out and due(now, self.due) and b.state == "idle" and not self.web_busy():
@@ -285,6 +286,7 @@ class Link:
                         lvlivein.dial(self, b, now)
                     finally:
                         lvship.drop("lvlivein")
+                        lvlivein = None
                 else:
                     self.due = now + 5000
         except Exception as e:

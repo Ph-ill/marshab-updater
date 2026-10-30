@@ -35,7 +35,7 @@ def hooks(route):
     wire = NS(send=send, dns_answer=lambda q, ip: None)
     web = NS(route=route, ship=NS(clock=None, ledtest=None))
     g["ota_hooks"](wire, web)
-    assert wire.MAX_CONN == 2
+    assert wire.MAX_CONN == 1
     web.clock = clock
     return web
 
@@ -45,6 +45,42 @@ def request(path="/api/state"):
 
 
 class Admission(unittest.IsolatedAsyncioTestCase):
+    async def test_single_socket_refuses_second_before_parsing(self):
+        from unittest.mock import patch
+        import lvweb
+        entered, release = asyncio.Event(), asyncio.Event()
+        parsed, answers = [], []
+        web = lvweb.Server(NS(http_hits=0), say=lambda s: None)
+
+        async def read_req(reader):
+            parsed.append(reader)
+            return request("/api/login")
+
+        async def route(req, writer):
+            entered.set()
+            await release.wait()
+
+        async def send(writer, status, body=b"", **kwargs):
+            answers.append((status, kwargs.get("extra")))
+
+        web.route = route
+        with patch.object(lvweb, "MAX_CONN", 1), \
+                patch.object(lvweb, "read_req", read_req), \
+                patch.object(lvweb, "send", send):
+            running = asyncio.create_task(web.handle(1, NS()))
+            try:
+                await asyncio.wait_for(entered.wait(), 1)
+                await web.handle(2, NS())
+                self.assertEqual(parsed, [1])
+                self.assertEqual(answers, [(503, "Retry-After: 1\r\n")])
+                self.assertEqual(web.busy, 1)
+                self.assertEqual(web.refused, 1)
+            finally:
+                release.set()
+                await running
+        self.assertEqual(web.busy, 0)
+        self.assertEqual(web.served, 1)
+
     async def test_socket_admission_refuses_third_before_parsing(self):
         from unittest.mock import patch
         import lvweb

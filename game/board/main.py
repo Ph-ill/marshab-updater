@@ -84,9 +84,9 @@ def home_screen(lvweb):
 def ota_hooks(lvweb, web):
     net_hooks(lvweb, web)
     # Bound request-parser/socket working sets as well as API dispatch. Extra
-    # phones receive the existing 503 + Retry-After before reading a request;
-    # two admitted phones can still stream while the radio commits a move.
-    lvweb.MAX_CONN = 2
+    # phones receive the existing 503 + Retry-After before reading a request.
+    # The admitted phone can still stream while the radio commits a move.
+    lvweb.MAX_CONN = 1
     route = web.route
     clock_gate(web)
     # Admission for the heavy answers, decided before Phone.state_writer (or lvliveapi.live)
@@ -211,6 +211,7 @@ def ota_hooks(lvweb, web):
                 s, j = lvduelaction.api(web, req)
             finally:
                 lvship.drop("lvduelaction")
+                lvduelaction = None
                 lvship.drop("lvlivein")
             return await lvweb.send_json(w, s, j)
         if req.path.startswith("/api/live") or req.path.startswith("/api/coex"):
@@ -247,6 +248,7 @@ def ota_hooks(lvweb, web):
                 s, j = lvliveapi.api(web, req)
             finally:
                 lvship.drop("lvliveapi")
+                lvliveapi = None
                 lvship.drop("lvlivein")
             return await lvweb.send_json(w, s, j)
         if req.path.startswith("/api/ota"):
