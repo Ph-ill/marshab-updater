@@ -39,19 +39,33 @@ def request_bytes(method, path, body, headers):
 def tcp(port, host="127.0.0.1"):
     async def req(method, path, body=None, headers=None):
         r, w = await asyncio.open_connection(host, port)
-        w.write(request_bytes(method, path, body, headers or {}))
-        await w.drain()
         raw = b""
-        while True:
-            b = await r.read(1024)
-            if not b:
-                break
-            raw += b
-        w.close()
         try:
-            await w.wait_closed()
-        except Exception:
-            pass
+            w.write(request_bytes(method, path, body, headers or {}))
+            await w.drain()
+            while True:
+                try:
+                    b = await r.read(1024)
+                except OSError:
+                    # A busy board closes without reading our POST body. Linux can
+                    # deliver its complete 503, then reset instead of EOF. Preserve
+                    # that explicit refusal, not an ambiguous reset after a mutation.
+                    i = raw.find(b"\r\n\r\n")
+                    if i < 0:
+                        raise
+                    s, h, body = parse(raw)
+                    if s != 503 or h.get("content-length") != str(len(body)):
+                        raise
+                    break
+                if not b:
+                    break
+                raw += b
+        finally:
+            w.close()
+            try:
+                await w.wait_closed()
+            except Exception:
+                pass
         return parse(raw)
     return req
 

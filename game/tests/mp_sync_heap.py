@@ -422,9 +422,12 @@ async def heap_run():
         bat[0] = web.phone.state_body(0, 39, ship.clock.minute())["bat"]
         gc.collect()
     if LED:
-        # the patterns in real time (the sync above runs on the fake radio's clock): the
-        # test breaths, then the gift's double pulse, polled frame by frame as the light's
-        # own task (lvled.Led.run) does
+        # Hail/Test light deliberately drops an interrupted notifier pattern, and a
+        # signed-in phone clears gifts. The boot test can therefore have been consumed
+        # on its first (dark) frame. Exercise a fresh notifier test after those clients
+        # finish, rather than requiring an acknowledged/preempted notification to resume.
+        ship._led("test")
+        # Real-time frames, as the light's own task (lvled.Led.run) uses them.
         n = 0
         while n < 9000:
             d = min(100, max(1, ship.led.poll(False)))

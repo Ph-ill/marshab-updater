@@ -64,6 +64,7 @@ python3 tests/test_phone.py
 python3 tests/test_cal.py
 python3 tests/test_clock_auth.py
 python3 tests/test_heap_admission.py
+python3 tests/test_heap_timing.py
 python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py
