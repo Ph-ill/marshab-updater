@@ -66,14 +66,38 @@ def flush(lk, j):
         retained = [g for g in j["e"] if pending(lk, g)]
         due = False
         for g in j["e"]:
-            z = g.get("rj")
-            if z and g not in retained:
-                # A reply that waited on this stub (lvduel.defer): hand it to the
-                # crewmate's other owed stub, or queue it now as its own reply.
-                x = [x for x in retained if x["to"] == g["to"] and x.get("o")]
-                if x:
+            z, ri = g.get("rj"), g.get("ri")
+            if g in retained or not (z or ri):
+                continue
+            x = [x for x in retained if x["to"] == g["to"] and x.get("o")]
+            if x:
+                # Unreachable with one owed stub per crewmate (review 0.3.1-10 #1):
+                # hand the reply on, never a waiting END replaced by a SYNC (#4).
+                if z and (z[1] or not x[-1].get("rj")):
                     x[-1]["rj"] = z
+                if ri:
+                    x[-1]["ri"] = ri
+                continue
+            if ri:
+                # The invitation held on this stub (lvduelother) opens now, as an
+                # INVITE would have: room for it, or END 5 with three duels open.
+                # With no finished game free to drop, it stays held a little longer.
+                old = [x for x in j["g"] if x["s"] not in ACTIVE]
+                if len(j["g"]) - len(old) >= 3:
+                    z = [ri[0], 5]
+                elif len(j["g"]) >= 3 and all(pending(lk, x) for x in old):
+                    retained.append(g)
                     continue
+                else:
+                    if len(j["g"]) >= 3:
+                        j["g"].remove([x for x in old if not pending(lk, x)][0])
+                    c = lk.sh.clock
+                    j["g"].append({"id": ri[0], "to": g["to"], "i": g["to"], "s": "invited",
+                                   "n": 0, "h": "", "p": None, "c": ri[1],
+                                   "t": int(c.epoch_ms()) // 1000 if c.known() else None})
+                    changed = True
+            if z:
+                # A reply that waited on this stub (lvduel.defer), queued now.
                 b = unhexlify(z[0]) + (bytes((z[1],)) if z[1] else
                     bytes((0, 255, 255, 4 if lk.cfg.get("dl", True) else 132)))
                 x = {"to": g["to"], "id": z[0], "s": "called",

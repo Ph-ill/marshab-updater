@@ -1573,20 +1573,94 @@ q = [bytes(o[1][5:16]) for o in b.live.out if o[0] == 0]
 check("unknown-game SYNC goes after the stub", [x.get("unknown") for x in D.box(b.live)["e"]] == [True]
       and [o[1][0] for o in b.live.out if o[0] == 0] == [9] and q[0][:6] == bytes((0x77, 1, 0, 255, 255, 4 | 128)))
 
-# Review 0.3.1-9 #5: an INVITE from a crewmate this ship still owes is put away (END 3,
-# after the stub's items), never a second game that could replace the stub.
+# Review 0.3.1-9 #5, 0.3.1-10 #1/#2: an INVITE from a crewmate this ship still owes is
+# held on the stub (never a second game that could become a second stub) and opens once
+# the stub's items are acked. With three duels open it gets END 5, after the stub.
 w, a, b = owed_decline(318)
 for to in (2, 3, 4):
     D.action(b.live, {"action": "new", "to": to})
 D.take(b.live, 0, 3, bytes((1, 0x66, 0x02)) + bytes(8))
-check("three duels: busy waits", D.box(b.live)["e"][0]["rj"] == ["6602", 5])
+check("three duels: busy waits", D.box(b.live)["e"][0]["rj"] == ["6602", 5] and not D.box(b.live)["e"][0].get("ri"))
 D.action(b.live, {"action": "discard", "to": 4})
 D.take(b.live, 0, 3, bytes((1, 0x66, 0x03)) + bytes(8))
 jb = D.box(b.live)
-check("owed INVITE refused, reply waits", [g["to"] for g in jb["g"]] == [2, 3]
-      and [(x["to"], x.get("rj")) for x in jb["e"]] == [(0, ["6603", 3])])
+check("owed INVITE held on the stub", [g["to"] for g in jb["g"]] == [2, 3]
+      and [(x["to"], x.get("rj"), x.get("ri")) for x in jb["e"]] == [(0, ["6602", 5], ["6603", "00" * 8])])
+D.take(b.live, 0, 3, bytes((1, 0x66, 0x03)) + bytes(8))
+check("a repeated INVITE keeps one held", [x.get("ri") for x in D.box(b.live)["e"]] == [["6603", "00" * 8]])
 to_peer(b, a); D.maintain(b.live)
-check("put-away END after the stub", [(o[1][0], bytes(o[1][5:8]).hex()) for o in b.live.out if o[0] == 0] == [(8, "660303")])
+jb = D.box(b.live)
+check("held invitation opens after the stub", [(g["to"], g["id"], g["s"], g["i"], g.get("c")) for g in jb["g"]][-1:] == [(0, "6603", "invited", 0, "00" * 8)]
+      and [(o[1][0], bytes(o[1][5:8]).hex()) for o in b.live.out if o[0] == 0] == [(8, "660205")]
+      and [(x["to"], x["id"], x.get("o")) for x in jb["e"]] == [(0, "6602", None)])
+check("the opened invitation is on the page", [x["s"] for x in D.view(b.live) if x["to"] == 0] == ["invited"])
+
+# The held invitation's END (withdrawn or put away) cancels it; then the stub just retires.
+w, a, b = owed_decline(320)
+D.take(b.live, 0, 3, bytes((1, 0x67, 0x01)) + bytes(8))
+check("held", D.box(b.live)["e"][0].get("ri") == ["6701", "00" * 8])
+D.take(b.live, 0, 8, bytes((0x67, 0x01, 3)) + bytes(8))
+check("its END cancels it, no reply", not D.box(b.live)["e"][0].get("ri") and not D.box(b.live)["e"][0].get("rj"))
+to_peer(b, a); D.maintain(b.live)
+check("nothing opens", not [g for g in D.box(b.live)["g"] if g["to"] == 0] and not D.box(b.live).get("e"))
+
+# With three games, none active slots free but every finished one still owed, the
+# held invitation waits on its (acked) stub, then opens once a finished game is free.
+w, a, b = owed_decline(321)
+D.take(b.live, 0, 3, bytes((1, 0x68, 0x01)) + bytes(8))
+lk = b.live
+j = D.box(lk)
+j["g"] = [{"id": "7%03d" % to, "to": to, "i": 1, "s": s_, "n": 0, "h": "", "p": None, "t": None,
+           "q": [[8, "7%03d" % to + "03" + "00" * 8]] if s_ == "called" else []}
+          for to, s_ in ((2, "active"), (3, "active"), (4, "called"))]
+lk.out[:] = [o for o in lk.out if o[0] != 0]
+D.flush(lk, j)
+check("no room: held on the acked stub", [g["id"] for g in j["g"]] == ["7002", "7003", "7004"]
+      and [(x["to"], x.get("o"), x.get("ri")) for x in j["e"]] == [(0, 1, ["6801", "00" * 8])])
+lk.out[:] = [o for o in lk.out if o[0] != 4]
+D.flush(lk, j)
+check("then opens in the finished game's place", [(g["id"], g["s"]) for g in j["g"]] == [("7002", "active"), ("7003", "active"), ("6801", "invited")]
+      and not j.get("e"))
+
+# Review 0.3.1-10 #2 (rev10 reinvite.py): b declined and its END 1 is owed on a stub; a put
+# its invitation away at 3 days, invites again, and the ships meet normally. The fresh
+# invitation opens on b (no unexplained "Duel put away" on a), and can be played.
+w, a, b = owed_decline(322)
+check("a invites again", act(a, "new") == 200 and act(a, "invite", layout=LAY) == 200)
+second = next(g for g in D.box(a.live)["g"] if g["s"] == "wait")["id"]
+for k in range(3):
+    run(w, a, b, lambda: not a.live.out and not b.live.out and a.ble.state == b.ble.state == "idle")
+    idle(a, 3600000); idle(b, 3600000); D.maintain(a.live); D.maintain(b.live)
+ga = next(g for g in D.box(a.live)["g"] if g["id"] == second)
+gb = [(g["id"], g["s"]) for g in D.box(b.live)["g"] if g["to"] == 0]
+check("re-invitation opens after the stub's END", ga["s"] == "wait" and gb == [(second, "invited")] and not D.box(b.live).get("e"))
+check("and is accepted", act(b, "accept", layout=LAY) == 200)
+settled(w, a, b)
+check("active on both ships", next(g for g in D.box(a.live)["g"] if g["id"] == second)["s"] == "active"
+      and [g["s"] for g in D.box(b.live)["g"] if g["to"] == 0] == ["active"])
+
+# Review 0.3.1-10 #1 (rev10 twostubs.py): the next INVITE from a crewmate whose finished
+# game still has its REVEAL queued retires that game into a stub and is held there:
+# never a second game, so never a second stub, for one crewmate.
+w, a, b = owed_reveal(323)
+D.take(b.live, 0, 3, bytes((1, 0x44, 0x01)) + bytes(8))
+jb = D.box(b.live)
+check("finished owed game: INVITE held", not [g for g in jb["g"] if g["to"] == 0]
+      and [(x["to"], x["s"], x.get("o"), x.get("ri")) for x in jb["e"]] == [(0, "done", 1, ["4401", "00" * 8])])
+check("nothing to decline", act(b, "decline") == 409)
+for to in (2, 3, 4):
+    D.action(b.live, {"action": "new", "to": to})
+check("one owed stub for the crewmate", sum(1 for x in D.box(b.live)["e"] if x["to"] == 0 and x.get("o")) == 1)
+
+# Review 0.3.1-10 #3 (rev10 ownid.py): a late copy of the other ship's move in the stubbed
+# game is answered by the stub's own items, not with an unknown-game SYNC.
+w, a, b = owed_reveal(324)
+x = game(a)
+for to in (2, 3, 4):
+    D.action(b.live, {"action": "new", "to": to})
+D.take(b.live, 0, 7, D.gid(x) + bytes(9))
+D.take(b.live, 0, 5, D.gid(x) + bytes((9, 9)) + bytes(7))
+check("no unknown-game reply for the stub's own game", [(y["id"], y.get("rj")) for y in D.box(b.live)["e"]] == [(x["id"], None)])
 
 # A second stub for the same crewmate keeps the first while it has undelivered items,
 # and a waiting reply moves to the stub that still owes.
@@ -1612,6 +1686,83 @@ g3 = {"to": 0, "id": "6666", "s": "called", "q": [[8, "666603" + "00" * 8]]}
 j["g"].append(g3)
 D.retire(lk, j, g3)
 check("acked stub replaced", [x["id"] for x in j["e"]] == ["6666"])
+
+# Review 0.3.1-10 #4: a waiting reply is never lost or downgraded. (a) Handing on from one
+# stub to another keeps a waiting END over a SYNC. (b) retire() carries a reply record's
+# undelivered END, or an acked stub's waiting reply and held invitation, onto the new stub.
+w, a, b = fresh(325)
+lk = b.live
+j = {"g": [], "r": {}, "e": [{"to": 0, "id": "1111", "s": "declined", "o": 1, "rj": ["3333", 0]},
+                             {"to": 0, "id": "2222", "s": "done", "o": 1, "rj": ["4444", 5],
+                              "q": [[8, "222202" + "00" * 8]]}]}
+D.flush(lk, j)
+check("hand-off keeps the busy END", [(x["id"], x.get("rj")) for x in j["e"]] == [("2222", ["4444", 5])])
+j = {"g": [], "r": {}, "e": [{"to": 0, "id": "5555", "s": "called", "q": [[8, "555505" + "00" * 8]]}]}
+g4 = {"to": 0, "id": "6666", "s": "done", "q": [[7, "6666" + "00" * 9]]}
+j["g"].append(g4)
+D.retire(lk, j, g4)
+check("queued reply record moves onto the stub", [(x["id"], x.get("o"), x.get("rj")) for x in j["e"]] == [("6666", 1, ["5555", 5])])
+lk.out[:] = []
+I.send(lk, 8, 0, bytes.fromhex("777704" + "00" * 8) if hasattr(bytes, "fromhex") else bytes((0x77, 0x77, 4)) + bytes(8))
+j = {"g": [], "r": {}, "e": [{"to": 0, "id": "7777", "s": "called"}]}
+g5 = {"to": 0, "id": "8888", "s": "done", "q": [[7, "8888" + "00" * 9]]}
+j["g"].append(g5)
+D.retire(lk, j, g5)
+check("a sent but unacked END moves too", [(x["id"], x.get("rj")) for x in j["e"]] == [("8888", ["7777", 4])])
+lk.out[:] = []
+j = {"g": [], "r": {}, "e": [{"to": 0, "id": "9999", "s": "done", "o": 1, "rj": ["aaaa", 0], "ri": ["bbbb", "11" * 8]}]}
+g6 = {"to": 0, "id": "cccc", "s": "done", "q": [[7, "cccc" + "00" * 9]]}
+j["g"].append(g6)
+D.retire(lk, j, g6)
+check("an acked stub's reply and held invitation move", [(x["id"], x.get("rj"), x.get("ri")) for x in j["e"]]
+      == [("cccc", ["aaaa", 0], ["bbbb", "11" * 8])])
+lk.out[:] = []
+
+# Review 0.3.1-10 #1: whatever the two ships, three other crewmates and the radio do, the
+# stub list holds at most one owed stub per crewmate and at most seven entries, the bound
+# the heap fixture (tests/mp_sync_heap.py) seeds. A small seeded fuzz of every path.
+def bounded(s, where):
+    e = D.box(s.live).get("e", [])
+    per = {}
+    for x in e:
+        if x.get("o"):
+            per[x["to"]] = per.get(x["to"], 0) + 1
+    check("stub bound %s: %r" % (where, [(x["to"], x["id"], x.get("o")) for x in e]),
+          len(e) <= 7 and all(v == 1 for v in per.values())
+          and len(set(x["to"] for x in e)) == len(e))
+
+
+ACTS = ("new", "invite", "accept", "fire", "resign", "call", "decline", "discard", "withdraw")
+for seed in range(2):
+    w, a, b = fresh(600 + seed)
+    r = [seed * 7919 + 13]
+    def rnd(n):
+        r[0] = (r[0] * 1103515245 + 12345) & 0x7fffffff
+        return (r[0] >> 8) % n
+    for step in range(90):
+        s_ = (a, b)[rnd(2)]
+        k = rnd(100)
+        if k < 40:
+            act(s_, ACTS[rnd(len(ACTS))], layout=LAY, cell=rnd(36))
+        elif k < 52:
+            D.action(s_.live, {"action": ("new", "new", "discard", "decline", "accept")[rnd(5)],
+                               "to": 2 + rnd(3), "layout": LAY})
+        elif k < 64:
+            ident = bytes((rnd(256), rnd(256)))
+            if rnd(2):
+                D.take(s_.live, 2 + rnd(3), 3, bytes((1,)) + ident + bytes(8))
+            else:
+                D.take(s_.live, 2 + rnd(3), 8, ident + bytes((1 + 2 * rnd(3),)) + bytes(8))
+        elif k < 68:
+            s_.live.out[:] = [o for o in s_.live.out if o[0] not in (2, 3, 4)]
+            I.keep(s_.live); D.maintain(s_.live)
+        elif k < 80:
+            idle(s_, (60000, 3600000, 86400000)[rnd(3)]); D.maintain(s_.live)
+        else:
+            run(w, a, b, lambda: not a.live.out and not b.live.out, limit=(2000, 40000)[rnd(2)])
+        bounded(s_, (seed, step))
+    for s_ in (a, b):
+        bounded(s_, (seed, "end"))
 
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

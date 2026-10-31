@@ -283,14 +283,26 @@ def lighting(lk):
     store(lk, j)
 
 
+def waiting(lk, y):
+    # The reply an entry still has to send this crewmate, as [id, why] (why 0: the
+    # unknown-game SYNC): a stub's deferred one, or a reply record not yet acked.
+    if y.get("o") or not pending(lk, y):
+        return y.get("rj")
+    if y.get("unknown"):
+        return [y["id"], 0]
+    for b in [unhexlify(z[1]) for z in y.get("q", ()) if z[0] == 8] + [
+            bytes(o[1][5:16]) for o in lk.out if o[1][0] == 8 and belongs(o, y)]:
+        return [y["id"], b[2]]
+
+
 def retire(lk, j, g):
     # Drop a finished game. If its END/REVEAL hasn't been delivered, keep a small
     # stub in j["e"] (crewmate, id, state, reason, intents): flush and cleanout keep
-    # it, and its queued items, until they are acked (review 0.3.1-8 #1). Still one
-    # j["e"] entry per crewmate, except: a game opened by the INVITE that retired an
-    # owed game, itself finished before that stub's items were acked. The earlier
-    # stub is then kept beside it, never replaced (review 0.3.1-9 #5). An INVITE
-    # from a crewmate with a stub is refused (lvduelother), so never more than two.
+    # it, and its queued items, until they are acked (review 0.3.1-8 #1). One j["e"]
+    # entry per crewmate: no game opens with a crewmate while a stub is owed ("new"
+    # refuses, an INVITE is held on the stub, lvduelother), so an owed stub is never
+    # replaced here (review 0.3.1-10 #1). A dropped entry's waiting reply or held
+    # invitation moves onto the new stub, never lost (review 0.3.1-10 #4).
     j["g"].remove(g)
     if pending(lk, g):
         x = {"to": g["to"], "id": g["id"], "s": g["s"], "o": 1}
@@ -298,8 +310,18 @@ def retire(lk, j, g):
             x["why"] = g["why"]
         if g.get("q"):
             x["q"] = g["q"]
-        j["e"] = [y for y in j.get("e", []) if y["to"] != g["to"] or (y.get("o") and pending(lk, y))]
-        j["e"].append(x)
+        e = []
+        for y in j.get("e", []):
+            if y["to"] != g["to"] or (y.get("o") and pending(lk, y)):
+                e.append(y)
+                continue
+            z = waiting(lk, y)
+            if z and (z[1] or not x.get("rj")):
+                x["rj"] = z
+            if y.get("ri"):
+                x["ri"] = y["ri"]
+        e.append(x)
+        j["e"] = e
 
 
 def room(lk, j):

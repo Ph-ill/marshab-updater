@@ -38,18 +38,24 @@ def take(lk, frm, kind, b, j):
             repeat(lk, g)
             return False, None
         if other or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
+            # This invitation replaces any held one (below), which the inviter dropped.
+            for x in j.get("e", []):
+                if x["to"] == frm:
+                    x.pop("ri", None)
             rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 5)
-            return False, None
-        # Still owing this crewmate a retired game's END/REVEAL, as "new" checks: put
-        # the invitation away (END 3) once those items are acked, so at most two stubs
-        # (one retired below) are ever owed to one crewmate (review 0.3.1-9 #5).
-        # Their ship can invite again then.
-        if owed(j, frm):
-            rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 3)
             return False, None
         # Keep one completed game per opponent, for the reveal screen and rematch.
         for x in [x for x in j["g"] if x["to"] == frm and x["s"] not in ACTIVE]:
             retire(lk, j, x)
+        # Still owing this crewmate a finished game's END/REVEAL (an owed stub, maybe
+        # just retired above), as "new" checks: hold the invitation on that stub, and
+        # open it once those items are acked (lvduelstore.flush). No second game, so
+        # never a second stub, for one crewmate (review 0.3.1-10 #1, #2). A newer
+        # invitation replaces a held one: the inviter keeps one per crewmate.
+        if owed(j, frm):
+            x = [x for x in j["e"] if x["to"] == frm and x.get("o")][-1]
+            x["ri"] = [hexlify(ident).decode(), hexlify(b[3:11]).decode()]
+            return False, None
         room(lk, j)
         g = fresh(lk, frm, ident, frm, "invited")
         g["c"] = hexlify(b[3:11]).decode()
@@ -59,6 +65,19 @@ def take(lk, frm, kind, b, j):
         tick = lvship.ticks_ms()
         previous = getattr(lk, "duel_unknown", None)
         elapsed = lvship.ticks_diff(tick, previous) if previous is not None else 3600000
+        h = hexlify(ident).decode()
+        x = [x for x in j.get("e", []) if x["to"] == frm and x.get("o")]
+        if x and x[-1].get("ri") and x[-1]["ri"][0] == h:
+            # The held invitation: its END (withdrawn, put away) cancels it. Nothing
+            # else is answered until it opens.
+            if kind != 8:
+                return
+            del x[-1]["ri"]
+            return False, None
+        if any(y["id"] == h for y in x):
+            # A late copy of the other ship's move in the stubbed game: the stub's own
+            # items answer it, no unknown-game SYNC (review 0.3.1-10 #3).
+            return
         # A retired game's stub keeps this crewmate's j["e"] slot (review 0.3.1-8 #1);
         # the reply waits on it (review 0.3.1-9 #3).
         if kind not in (8, 9) and owed(j, frm):

@@ -162,20 +162,29 @@ one per hour to keep authenticated junk from filling the shared out-box.
   END/REVEAL is still queued. A stub keeps its crewmate's slot; a rejection or
   unknown-game reply to that crewmate is kept on the stub (one per crewmate; an END
   replaces a waiting SYNC, never the other way) and queued as soon as the stub's own
-  items are acknowledged, so it reaches the other ship right after them. While a stub
-  is owed, an INVITE from that crewmate is put away (END 3, sent after the stub's
-  items): the inviting page says "Duel put away" and can invite again. The one way a
-  second stub can appear for a crewmate is a game opened by the INVITE that retired
-  the first, finished before the first stub's items were acknowledged; then both are
-  kept (at most two), the earlier one is never replaced, and a waiting reply moves to
-  whichever still owes. The page shows an owed stub for a crewmate with no game here
-  as "Duel over. Your last move is still on its way", with the record between you,
-  and the picker opens that screen rather than a new duel: the board refuses a new
-  duel with that crewmate until the stub's items are acknowledged. Reply records
+  items are acknowledged, so it reaches the other ship right after them. No game opens
+  with a crewmate while a stub, or a finished game whose END/REVEAL is still queued, is
+  owed to them: "new" refuses, and an INVITE from them retires that finished game into
+  its stub and is held there ("ri": id and commitment, one per crewmate; a newer
+  invitation replaces it, its END cancels it). Once the stub's items are acknowledged
+  the held invitation opens as an ordinary invitation (no light), or gets END 5 if three
+  duels are open by then; if every finished game here is itself still owed, it waits on
+  the stub until one is free. So a crewmate never has more than one stub and j["e"]
+  never more than seven entries, one per other ship: the bound the heap fixture seeds.
+  In an ordinary meeting the inviting page just shows "Waiting for ... to join" until the
+  invitation opens. A late copy of the other ship's move in the stubbed game is
+  answered by the stub's own items (no unknown-game SYNC). When a stub replaces a
+  crewmate's reply record or acknowledged stub, their waiting reply (an END outranking
+  a SYNC) and held invitation move onto it. The page shows an owed stub for a crewmate
+  with no game here as "Duel over. Your last move is still on its way" ("Invitation
+  declined. Your reply is still on its way" or "Invitation put away. Your last message
+  is still on its way" if nothing was played), with the record between you and "You
+  can start a new duel with ... after your ships meet", and the picker opens that
+  screen rather than a new duel. Reply records
   retire as soon as their items have been delivered and acknowledged, never before
   their durable obligation ends.
   The long-history heap fixture includes seven stubs of the largest shape (owed, a
-  waiting reply, and ANSWER, REVEAL and END queued, which a full out-box can't
+  waiting reply, a held invitation, and ANSWER, REVEAL and END queued, which a full out-box can't
   reserve; four of them on the page beside the three long games) and populated pair
   records. Do not treat the former 1.5 KB estimate as a maximum file size.
 

@@ -114,9 +114,17 @@ assert.match(elements.v.innerHTML,/data-go=duel\/0[^>]*>.*Duel over\. Your last 
 vm.runInContext('duScreen(0)',c);
 assert.match(elements.v.innerHTML,/role=status>Duel over\. Your last move is still on its way\.</,'stub: screen status');
 assert.match(elements.v.innerHTML,/1-0 between you and Crew 0\./,'stub: record stays visible');
-assert.match(elements.v.innerHTML,/A new duel with Crew 0 opens after your ships meet\./,'stub: reason shown');
+assert.match(elements.v.innerHTML,/You can start a new duel with Crew 0 after your ships meet\./,'stub: reason shown');
 assert.doesNotMatch(dockHtml,/data-dunew/,'stub: no Rematch');
 assert.match(dockHtml,/data-go=home/,'stub: Home stays');
+// A declined or put-away invitation was never played: no "Duel over" (review 0.3.1-10 #5).
+for(const [s,text] of [['declined','Invitation declined\\. Your reply is still on its way'],['called','Invitation put away\\. Your last message is still on its way']]){
+  c.LV={duel:[{id:'stub',to:0,s,stub:1,pending:true,record:[0,0]}]};
+  vm.runInContext('DU_BUSY=false;duScreen(0)',c);
+  assert.match(elements.v.innerHTML,new RegExp('role=status>'+text+'\\.<'),`${s} stub: status`);
+  assert.doesNotMatch(elements.v.innerHTML,/Duel over/,`${s} stub: not "Duel over"`);
+  assert.match(elements.v.innerHTML,/You can start a new duel with Crew 0 after your ships meet\./,`${s} stub: reason shown`);
+}
 c.LV={duel:[]};
 vm.runInContext('duScreen(null)',c);
 assert.match(elements.v.innerHTML,/data-dunew=0/,'no stub: picker offers a new duel');
