@@ -49,7 +49,7 @@ no stale frozen copies  PASS  none of the 12 frozen board modules or pack.bin le
 settings saved          PASS  set launch_date, led_notify, ship_id; kept the rest
 crew codes              PASS  written; set for Phill
 selftest ran            PASS  CHECK (see docs/BENCH_TEST.md)
-heap used < 80 KB       PASS  peak … B of 80000
+heap used < 110 KB      PASS  peak … B of 110000
 BLE up                  PASS  advertising and scanning
 Wi-Fi hotspot up        PASS  hotspot LV-1 active True, ip 192.168.4.1
 phone server listening  PASS  phone game listening on port 80

@@ -179,8 +179,11 @@ pronouns in templated text; no story text, no ending names.
 
 ## 5. Memory
 
-The 32-bit install budget is 110,000 B (owner decision, 2026-10-30). The frozen
-firmware selftest retains its separate 80 KB check. The gate uses non-collecting operation
+The 32-bit install budget is 110,000 B (owner decision, 2026-10-30), a strict cap: every
+gate (tests/mp_sync_heap.py, tests/mp_safe_heap.py, tests/mp_ota_step.py, tools/bench.py)
+passes only a peak below 110,000 B, and fails at 110,000 B. The selftest's own 80 KB
+check is part of the 0.2.0 firmware (frozen, not shipped by OTA), so it can't change in
+this release; tools/bench.py reports the 110,000 B row from the selftest's peak. The gate uses non-collecting operation
 probes, not the former post-GC retained-heap figures.
 * Resident: the kind dispatch in lvlivein (already loaded per use) passes kinds 3-9 to
   lvduel; nothing new stays loaded between links. Target: under 0.5 KB resident.
@@ -196,8 +199,12 @@ probes, not the former post-GC retained-heap figures.
 * Probes run inside JSON input reads, serialization writes, save read-back,
   duel storage and view/HTTP construction, without calling gc.collect. The
   normal board allocation threshold bounds uncollected churn independently of
-  probes. The target is at most 105,000 B; the failing gate is 110,000 B.
-  This simulation does not establish real-Pico fragmentation or BLE heap margin.
+  probes. The gate fails at 110,000 B. The measured duel peak on the 32-bit unix port is
+  about 105,500 B (`mp_sync_heap.py --duel --everyone`; the latest figures are in the
+  0.3.1 fix reports), so the margin is under 5 KB.
+  This simulation does not establish real-Pico fragmentation or BLE heap margin, and no
+  real-Pico measurement could be made where these tests run: a Pico W bench run
+  (BENCH_TEST.md) is still needed before release.
 
 ## 6. Tests
 

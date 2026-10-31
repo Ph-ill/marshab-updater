@@ -158,6 +158,9 @@ verify loop calls `lvweb.probe` every 64 bits, so the heap gate sees its peak.
 | With a third phone uploading a signed update (`--ota`, 7 files, 72.6 KB in 1 KB pieces) | 64832 B | 80000 B |
 | With `--led --bat --ota` | 64192 B | 80000 B |
 
+These were measured when the cap was 80,000 B. The cap is 110,000 B now, and every gate
+(mp_sync_heap, mp_safe_heap, bench, the selftest) needs the peak strictly below it.
+
 The peak is during the verify: `lvota` itself (about 7.5 KB) plus `lvsig` at work (about
 6.5 KB). Both are dropped from memory as soon as the request is done.
 
@@ -681,7 +684,7 @@ Automated (all in `game/tests/run.sh`):
 - **`tests/phone_heap.py ... --ota`.** A third phone uploads a signed update over real
   HTTP to the frozen build during the heap test: sign-in, 401 signed out, a tampered
   envelope (403), a wrong offset (409), every file, then cancel. The peak has to stay
-  under 80000 B.
+  under the 110,000 B cap.
 - **`web/shots_ota.sh`.** Desktop Chrome against the mock ship (`sim/mockota.py`) and a
   stand-in GitHub, clicking through:
   - the notice and Later;
