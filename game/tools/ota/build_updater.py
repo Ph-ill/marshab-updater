@@ -8,6 +8,9 @@ cleanup deletes omitted overrides. Keep the full 38-file payload, below the
 old updater's 40-file limit, rather than accidentally restoring frozen code.
 Signing and publication are separate operator steps.
 
+Run it on the stepping stone's own commit (the ota-030-updater branch). On a later branch,
+such as the duel's, it would build that branch's files and stop at the 38-file check.
+
 --channel must be the channel the ships that need it are on (their version.json's): the
 phone only offers a release on the ship's own channel, and once it's installed its channel
 is the ship's. The ships on the 0.3.0 test build are on "test". docs/OTA.md section 8 has
@@ -42,7 +45,8 @@ def build(output, channel="stable"):
         ], cwd=ROOT, check=True)
         raw = (Path(scratch) / "firmware/releases" / VERSION / "release.json").read_bytes()
     release = json.loads(raw)
-    assert len(release["files"]) == 38 < 40, "inspect changed payload before publishing"
+    assert len(release["files"]) == 38 < 40, (
+        "%d files: inspect the payload before publishing (run this on the ota-030-updater branch)" % len(release["files"]))
     assert "ota" not in release, "this tool must never sign"
     assert release["channel"] == channel, release["channel"]
     version = next(f for f in release["files"] if f["path"] == "version.json")

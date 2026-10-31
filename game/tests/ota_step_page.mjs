@@ -19,7 +19,7 @@ import { createInterface } from 'node:readline';
 
 const [cfgPath, scenario] = process.argv.slice(2);
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
-const { STEP, DUEL } = cfg;
+const { STEP, DUEL, LATER } = cfg;
 const OLD = '0.3.0';
 const heap = { peak: 0, sig: 0, sig_samples: 0 };
 const notes = [];
@@ -235,13 +235,25 @@ function sentinel() {
   assert.ok(readFileSync(join(flash, 'data/sentinel.bin')).equals(Buffer.from([...Array(256).keys()])), 'data/ untouched');
 }
 
+// The newest release on the ship's channel in the index the phone is reading (heads, else
+// channels). A page that says "Up to date" on a ship running anything older is stranding it
+// (review 0.3.1-4 #1): every check below fails the test when that happens.
+function newest() {
+  const idx = JSON.parse(readFileSync(join(cfg.gh, gh.index, 'firmware/index.json'), 'utf8'));
+  return (idx.heads || {}).test || idx.channels.test;
+}
+function notStranded(p, what) {
+  if (/Up to date/.test(p.settings())) assert.equal(installed(), newest(), `${what}: "Up to date" on ${installed()} while ${newest()} is out`);
+}
 // The real chain: a 0.3.0 phone page installs the stepping stone; the page the ship then
-// serves finds the duel build and installs it.
+// serves finds the duel build and installs it; the duel's page then finds the release after
+// it (LATER, which needs the duel) and installs that.
 async function chain(p0) {
   let st = await aboard(p0);
   assert.equal(st.v, OLD); assert.equal(st.ch, 'test');
   let b = await check(p0);
   assert.equal(b.rel && b.rel.v, STEP, 'a 0.3.0 page (channels) is offered the stepping stone');
+  notStranded(p0, 'the 0.3.0 page');
   assert.deepEqual(gh.got, ['/firmware/index.json', `/firmware/releases/${STEP}/release.json`]);
   let r = await install(p0);
   assert.equal(r.oi.ok, true, 'stepping stone installed: ' + r.oi.msg);
@@ -253,8 +265,9 @@ async function chain(p0) {
   assert.equal(st.v, STEP); assert.equal(st.last.result, 'installed');
   // not forced: the check the 0.3.0 page made doesn't count for this one (b.hd)
   b = await check(p1, false);
-  assert.equal(b.rel && b.rel.v, DUEL, 'the stepping stone page finds the duel build (heads)');
-  assert.equal(b.rel.next, '', 'nothing after it');
+  assert.equal(b.rel && b.rel.v, DUEL, 'the stepping stone page finds the duel build (heads, then needs)');
+  assert.equal(b.rel.next, LATER, 'and says what comes after it');
+  notStranded(p1, 'the stepping stone page');
   assert.deepEqual(gh.got, ['/firmware/index.json', `/firmware/releases/${DUEL}/release.json`]);
   r = await install(p1);
   assert.equal(r.oi.ok, true, 'duel installed: ' + r.oi.msg);
@@ -265,12 +278,27 @@ async function chain(p0) {
 const scenarios = {
   async chain() {
     const p2 = await chain(page(cfg.pages[OLD]));
-    const st = await aboard(p2);
+    let st = await aboard(p2);
     assert.equal(st.v, DUEL);
-    const b = await check(p2);
-    assert.equal(p2.run('otaFor(OS_)'), null, 'nothing more offered');
-    assert.match(p2.settings(), /Up to date/);
-    note('0.3.0 page -> ' + STEP + ' -> ' + STEP + ' page -> ' + DUEL + '; then up to date (seen ' + b.seen + ')');
+    let b = await check(p2);
+    assert.notEqual(b.seen, STEP, 'the duel page looks past channels (seen ' + b.seen + ')');
+    assert.equal(b.seen, LATER, 'the duel page sees the newest release (heads)');
+    assert.equal(b.rel && b.rel.v, LATER, `a ship on ${DUEL} is offered ${LATER}`);
+    assert.equal(b.rel.next, '', 'nothing after it');
+    notStranded(p2, 'the duel page');
+    assert.deepEqual(gh.got, ['/firmware/index.json', `/firmware/releases/${LATER}/release.json`]);
+    const r = await install(p2);
+    assert.equal(r.oi.ok, true, `${LATER} installed: ` + r.oi.msg);
+    assert.equal(installed(), LATER);
+    sentinel();
+    const p3 = served();
+    st = await aboard(p3);
+    assert.equal(st.v, LATER);
+    b = await check(p3);
+    assert.equal(p3.run('otaFor(OS_)'), null, 'nothing more offered');
+    assert.match(p3.settings(), /Up to date/);
+    notStranded(p3, 'the last page');
+    note('0.3.0 page -> ' + STEP + ' -> ' + STEP + ' page -> ' + DUEL + ' -> ' + DUEL + ' page -> ' + LATER + '; then up to date (seen ' + b.seen + ')');
   },
   // This branch's page in a tab on a 0.3.0 ship (or any page from 0.3.1-updater on, there):
   // it's offered the stepping stone, says why, and finds the duel once it's in.
@@ -278,18 +306,19 @@ const scenarios = {
     const p = page(cfg.pages[STEP]);
     await aboard(p);
     let b = await check(p);
-    assert.equal(b.rel.v, STEP); assert.equal(b.rel.next, DUEL); assert.equal(b.seen, DUEL);
+    assert.equal(b.rel.v, STEP); assert.equal(b.rel.next, LATER); assert.equal(b.seen, LATER);
     assert.deepEqual(gh.got, ['/firmware/index.json', `/firmware/releases/${STEP}/release.json`], 'the duel release is never fetched for it');
     const s = p.settings();
-    assert.ok(s.includes(`Your ship needs this update before it can take ${DUEL}. Once it has restarted, check for updates again to get ${DUEL}.`), s);
+    assert.ok(s.includes(`Your ship needs this update before it can take ${LATER}. Once it has restarted, check for updates again to get ${LATER}.`), s);
     const r = await install(p);
     assert.equal(r.oi.ok, true, r.oi.msg);
-    assert.ok(r.screen.includes(`Your ship can take ${DUEL} now. Check for updates again while you have internet to get it.`), r.screen);
+    assert.ok(r.screen.includes(`Your ship can take ${LATER} now. Check for updates again while you have internet to get it.`), r.screen);
     assert.equal(p.b().at, 0, 'the next chance to check is taken');
     await aboard(p);
-    assert.match(p.settings(), new RegExp(`${DUEL.replaceAll('.', '\\.')} \\(check again to get it\\)`));
+    assert.match(p.settings(), new RegExp(`${LATER.replaceAll('.', '\\.')} \\(check again to get it\\)`));
     b = await check(p, false);
     assert.equal(b.rel.v, DUEL, 'online again: the duel, without waiting six hours');
+    assert.equal(b.rel.next, LATER);
     const r2 = await install(p);
     assert.equal(r2.oi.ok, true, r2.oi.msg);
     assert.equal(installed(), DUEL);

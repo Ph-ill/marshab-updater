@@ -77,7 +77,8 @@ try:
     check("the refusal writes nothing", index.read_text() == before
           and not (tmp / "firmware/releases/0.3.1").exists())
     for bad, why in (("0.3.2", "must be an older version"), ("0.3.1", "must be an older version"),
-                     ("0.2.9-none", "publish it first"), ("0.0.2-coex", "publish it first")):
+                     ("0.2.9-none", "publish it first"), ("0.0.2-coex", "publish it first"),
+                     ("0.3.0-needs", "takes at most 40")):     # an updater that can't take it (review 0.3.1-4 #1)
         code, out = build("0.3.1", 47, "--needs", bad)
         check("--needs %s is refused (%s)" % (bad, why),
               code != 0 and why in out and index.read_text() == before, out[-300:])

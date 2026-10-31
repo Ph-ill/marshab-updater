@@ -209,6 +209,7 @@ def frozen_stale(frozen: dict, rels: list[str]) -> list[str]:
 # MAX_FILES = 40 there; 64 from 0.3.1-updater). A frozen-core release with more over-the-air
 # files needs --needs, or those ships would be offered an update they can only turn down.
 LEGACY_MAX_FILES = 40
+LEGACY_LAST = "0.3.0"      # the newest release whose updater takes at most LEGACY_MAX_FILES
 
 
 def ota_count(paths) -> int:
@@ -401,6 +402,9 @@ def main() -> None:
     if frozen and n_ota > LEGACY_MAX_FILES and not a.needs:
         raise SystemExit(f"{a.version} has {n_ota} over-the-air files; ships on 0.3.0 or older take at most "
                          f"{LEGACY_MAX_FILES}. Add --needs <the release whose updater takes it>, e.g. 0.3.1-updater.")
+    if frozen and n_ota > LEGACY_MAX_FILES and a.needs and vkey(a.needs) <= vkey(LEGACY_LAST):
+        raise SystemExit(f"--needs {a.needs}: its updater takes at most {LEGACY_MAX_FILES} files and {a.version} has "
+                         f"{n_ota}. Name a release from 0.3.1-updater on.")
     if frozen and a.needs and (known[a.needs].get("frozen") != frozen["requires"]):
         raise SystemExit(f"--needs {a.needs} is built for core {known[a.needs].get('frozen')}, not {frozen['requires']}")
     rel_dir = Path("firmware") / "releases" / a.version

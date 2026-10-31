@@ -79,7 +79,8 @@ needs an earlier update first, rather than showing the raw error.
 `tools/build_release.py` keeps this straight: it refuses a frozen release with more than 40
 over-the-air files (everything but `data/`, `ota/`, `boot.py` and `lvboot`) unless it's
 given `--needs`, checks that the release named is already in the index on the same
-channel, and writes `channels` and `heads` itself. `tools/validate_firmware.py` refuses an
+channel, refuses a `--needs` of 0.3.0 or older for such a release (that updater can't take
+it either), and writes `channels` and `heads` itself. `tools/validate_firmware.py` refuses an
 index where `channels[ch]` has `needs`, `heads[ch]` isn't the channel's newest, a big
 release has no `needs`, or a `needs` doesn't resolve.
 
@@ -672,9 +673,11 @@ Automated (all in `game/tests/run.sh`):
   values, `channels` kept on the stepping stone while `heads` moves, and
   `validate_firmware.py` refusing each broken index (section 2).
 - **`tests/test_ota_step.py`** (with the frozen-core build). The real chain from a ship on
-  0.3.0 through the stepping stone to the duel build, driven by the real phone pages
-  (0.3.0's `ota.js`, then this one) in a JS VM against the real updater: see the file's
-  docstring for its stages, power cuts and rollbacks.
+  0.3.0 through the stepping stone (built from its own published commit) to the duel build
+  (this tree) and on to a stand-in 0.3.2 that needs 0.3.1, driven by the real phone pages
+  (0.3.0's `ota.js`, the stepping stone's, then this one) in a JS VM against the real
+  updater. Any page that says "Up to date" while a newer release it can reach is in the
+  index fails the test. See the file's docstring for its stages, power cuts and rollbacks.
 - **`tests/phone_heap.py ... --ota`.** A third phone uploads a signed update over real
   HTTP to the frozen build during the heap test: sign-in, 401 signed out, a tampered
   envelope (403), a wrong offset (409), every file, then cancel. The peak has to stay
@@ -770,10 +773,15 @@ on the channel the ships are on (`version.json`'s `channel`; the stepping stone'
 becomes theirs once it's in):
 
 1. Build, sign and publish the stepping stone (for 0.3.1, `0.3.1-updater` from
-   `game/tools/ota/build_updater.py --channel <ch>`: 0.3.0's files with the 64-file
-   updater). `channels[ch]` and `heads[ch]` both point at it. Check that a 0.3.0 ship
+   `game/tools/ota/build_updater.py --channel <ch>` run on the stepping stone's own commit,
+   the `ota-030-updater` branch: 0.3.0's files with the 64-file updater. On the duel branch
+   that tool would build the duel's files and stops at its 38-file check). `channels[ch]` and `heads[ch]` both point at it. Check that a 0.3.0 ship
    takes it before going on.
-2. Build the big release with `--needs <stepping stone>`, sign and publish it.
+2. Build the big release with `--needs <stepping stone>`, sign and publish it. For 0.3.1:
+   `python3 tools/build_release.py --version 0.3.1 --channel <ch> --frozen
+   game/tools/fw/cores/lv-core-0.2.0-2661c2144844.json --source game/build/board-fw
+   --exclude boot.py --exclude lvboot.mpy --needs 0.3.1-updater` (with the usual label and
+   date). Without `--needs` it refuses, since its 48 files are more than 0.3.0 takes.
    `build_release.py` moves `heads[ch]` to it and leaves `channels[ch]` on the stepping
    stone. Run `validate_firmware.py`.
 3. Never move `channels[ch]` to a release with `needs`, by hand or otherwise: a 0.3.0 page

@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""The 0.3.1 upgrade path, end to end (review 0.3.1-3 #3 and #6): a ship on 0.3.0, whose
-updater takes at most 40 files, gets the stepping stone (0.3.1-updater: 0.3.0 with the
-64-file updater), then the duel build (0.3.1, more than 40 files).
+"""The 0.3.1 upgrade path, end to end (review 0.3.1-3 #3 and #6, 0.3.1-4 #1): a ship on
+0.3.0, whose updater takes at most 40 files, gets the stepping stone (0.3.1-updater: 0.3.0
+with the 64-file updater), then the duel build (0.3.1, more than 40 files), then a later
+release that needs 0.3.1 (a stand-in 0.3.2), so a ship on 0.3.1 is shown to keep finding
+updates.
 
 From game/: MPY_CROSS=... LV_FROZEN_MP=... python3 tests/test_ota_step.py [--duel-ref REF]
 
 Builds, in a scratch folder (never in a source tree):
 - a 0.3.0 ship's flash: OLD_REF exported, tools/board_build.sh, a 0.3.0 release laid out
   as a USB install leaves it (boot.py and lvboot too);
-- the stepping stone from this tree (game/tools/ota/build_updater.py --channel test);
-- the duel build from --duel-ref (default DUEL_REF), exported and built with its own tools;
+- the stepping stone from STEP_REF, the commit it is published from, with that tree's
+  game/tools/ota/build_updater.py --channel test;
+- the duel build from this working tree (every tracked file as it is on disk), or from
+  --duel-ref REF, built with its own tools/build_release.py --needs 0.3.1-updater; and the
+  stand-in 0.3.2 from the same tree with --needs 0.3.1;
 - a stand-in GitHub: firmware/index.json and each release.json, signed. "good" is the
-  index a publisher should write (channels on the stepping stone, heads on the duel,
-  "needs"), checked with tools/validate_firmware.py's rules; "bad" points channels at the
-  duel with no "needs", as a hand-edited index might.
+  index a publisher should write (channels on the stepping stone, heads on the newest
+  release, "needs" on each one after it), checked with tools/validate_firmware.py's rules;
+  "bad" points channels at the duel with no "needs", as a hand-edited index might.
 Only the public fixture key (sim/mockota.TEST_SEED) signs, and only the test copies of the
 updaters trust it. No release key is read or used.
 
@@ -41,11 +46,12 @@ import tempfile
 GAME = Path(__file__).resolve().parents[1]
 REPO = GAME.parent
 OLD_REF = "7b4188289d73368cb2f578e62d50a98cd367f5ac"     # 0.3.0 as the ships run it
-DUEL_REF = "9a35371"                                      # the 0.3.1 duel build under test
-DUEL_FILES = 48                                           # its signed files at DUEL_REF (47 + version.json)
+STEP_REF = "d45a333eaf2f321f73d3ca75c1e872baf6718d3f"     # the stepping stone as published (ota-030-updater)
+WORKTREE = "worktree"                                     # --duel-ref default: this tree as it is on disk
+DUEL_FILES = 48                                           # the duel's signed files (47 + version.json)
 DUEL_MAX_FILES = 64                                       # the updater it ships
 CORE = "2661c2144844"
-OLD, STEP, DUEL = "0.3.0", "0.3.1-updater", "0.3.1"
+OLD, STEP, DUEL, LATER = "0.3.0", "0.3.1-updater", "0.3.1", "0.3.2"
 CAP = 110000
 SCENARIOS = ("chain", "newpage", "badold", "badnew", "faults")
 
@@ -68,9 +74,28 @@ def export(ref, dest):
     return subprocess.check_output(["git", "rev-parse", ref + "^{commit}"], cwd=REPO, text=True).strip()
 
 
-def build_release(tree, version, out, *more):
-    """tree's own tools/build_release.py on its own board build -> release.json (a dict)."""
+def snapshot(dest):
+    """This working tree's tracked files as they are on disk (uncommitted edits included)."""
+    dest.mkdir(parents=True)
+    for rel in subprocess.check_output(["git", "ls-files", "-z"], cwd=REPO).decode().split("\0"):
+        src = REPO / rel
+        if rel and src.is_file():
+            (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest / rel)
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+    dirty = subprocess.run(["git", "diff", "--quiet", "HEAD"], cwd=REPO).returncode != 0
+    return head + ("+edits" if dirty else "")
+
+
+def build_release(tree, version, out, *more, needs=None):
+    """tree's own tools/build_release.py on its own board build -> release.json (a dict).
+    needs: the release this one needs first, listed in out's index for --needs to find."""
     core = tree / "game/tools/fw/cores" / ("lv-core-0.2.0-%s.json" % CORE)
+    if needs:
+        (out / "firmware").mkdir(parents=True, exist_ok=True)
+        (out / "firmware/index.json").write_text(json.dumps({"schema": 1, "latest": None, "channels": {}, "releases": [
+            {"version": needs, "channel": "test", "frozen": CORE}]}))
+        more = more + ("--needs", needs)
     run([sys.executable, tree / "tools/build_release.py", "--version", version, "--channel", "test",
          "--label", "upgrade path test", "--source", tree / "game/build/board-fw", "--frozen", core,
          "--repo-root", out, "--no-latest", "--date", "2026-10-30", "--build-time", "2026-10-30T00:00:00Z",
@@ -82,7 +107,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mpy-cross", default=os.environ.get("MPY_CROSS", "mpy-cross"))
     ap.add_argument("--micropython", default=os.environ.get("LV_FROZEN_MP", "micropython-lv32"))
-    ap.add_argument("--duel-ref", default=os.environ.get("LV_DUEL_REF", DUEL_REF))
+    ap.add_argument("--duel-ref", default=os.environ.get("LV_DUEL_REF", WORKTREE),
+                    help="the duel build: a git ref, or %r (default) for this tree as it is on disk" % WORKTREE)
     ap.add_argument("--expected-duel-files", type=int, default=DUEL_FILES,
                     help="the duel payload's file count at --duel-ref: fail on any other, never pad or trim")
     ap.add_argument("--only", choices=SCENARIOS, action="append", help="run only these scenarios")
@@ -114,16 +140,18 @@ def main():
             f.update(size=len(data), sha256=hashlib.sha256(data).hexdigest(), data=base64.b64encode(data).decode())
 
         # ---- the updaters, as source: each limit checked on its own ----
+        step_tree = root / "step"
+        step_sha = export(STEP_REF, step_tree)
         old_src = subprocess.check_output(["git", "show", OLD_REF + ":game/board/lvota.py"], cwd=REPO)
         (sup / "old.py").write_bytes(old_src)
         oldmod = module("step_old", sup / "old.py")
         assert oldmod.MAX_FILES == 40, oldmod.MAX_FILES
         for x, y in ((OLD, STEP), (STEP, DUEL), (OLD, DUEL)):
             assert oldmod.vcmp(x, y) < 0 < oldmod.vcmp(y, x), (x, y)
-        new_src = (GAME / "board/lvota.py").read_bytes()
+        new_src = (step_tree / "game/board/lvota.py").read_bytes()
         assert new_src == old_src.replace(b"MAX_FILES = 40", b"MAX_FILES = 64            # allow the next release after the updater stepping stone", 1), \
             "the stepping stone's updater is 0.3.0's with only its file limit raised"
-        newmod = module("step_new", GAME / "board/lvota.py")
+        newmod = module("step_new", step_tree / "game/board/lvota.py")
         assert newmod.MAX_FILES == 64
 
         # ---- 0.3.0, as a ship has it after its USB install ----
@@ -142,8 +170,8 @@ def main():
         (pristine / "lvota.mpy").write_bytes(keyed(old_src, "lvota_old"))
         assert json.loads((pristine / "version.json").read_text())["channel"] == "test"
 
-        # ---- the stepping stone, from this tree ----
-        builder = module("step_builder", GAME / "tools/ota/build_updater.py")
+        # ---- the stepping stone, from STEP_REF with its own tools ----
+        builder = module("step_builder", step_tree / "game/tools/ota/build_updater.py")
         step_rel = builder.build(root / "unsigned-step", "test")
         assert step_rel["channel"] == "test"
         reship(step_rel, "lvota.mpy", keyed(new_src, "lvota_new"))     # test copy: trusts the fixture key
@@ -153,12 +181,34 @@ def main():
 
         # ---- the duel build, with its own tools; its updater as it ships ----
         duel_tree = root / "duel"
-        duel_sha = export(a.duel_ref, duel_tree)
+        duel_sha = snapshot(duel_tree) if a.duel_ref == WORKTREE else export(a.duel_ref, duel_tree)
         duel_py = (duel_tree / "game/board/lvota.py").read_text()
         duel_limit = int(re.search(r"^MAX_FILES = (\d+)", duel_py, re.M).group(1))
         assert duel_limit == DUEL_MAX_FILES, "the duel's own updater takes %d files" % duel_limit
         run(["sh", "tools/board_build.sh"], cwd=duel_tree / "game", env=env, stdout=subprocess.DEVNULL)
-        duel_rel = build_release(duel_tree, DUEL, root / "duel-root")
+        duel_rel = build_release(duel_tree, DUEL, root / "duel-root", needs=STEP)
+        # The duel tree's own tools refuse to publish it without "needs" (0.3.0 ships would
+        # be offered 48 files their updater turns down), and refuse a "needs" that is too old.
+        for needs, what in ((None, "Add --needs"), (OLD, "takes at most 40")):
+            listed = root / ("refused-%s" % needs) / "firmware"
+            listed.mkdir(parents=True)
+            (listed / "index.json").write_text(json.dumps({"schema": 1, "latest": None, "channels": {}, "releases": [
+                {"version": v, "channel": "test", "frozen": CORE} for v in (STEP, OLD)]}))
+            refused = subprocess.run(
+                [sys.executable, duel_tree / "tools/build_release.py", "--version", DUEL, "--channel", "test",
+                 "--label", "upgrade path test", "--source", duel_tree / "game/build/board-fw",
+                 "--frozen", duel_tree / "game/tools/fw/cores" / ("lv-core-0.2.0-%s.json" % CORE),
+                 "--repo-root", root / ("refused-%s" % needs), "--no-latest", "--date", "2026-10-30"]
+                + (["--needs", needs] if needs else []), cwd=duel_tree, capture_output=True, text=True)
+            assert refused.returncode != 0 and what in (refused.stderr + refused.stdout), refused
+        later_rel = build_release(duel_tree, LATER, root / "later-root", needs=DUEL)
+        # test copies of the duel's updater trust the fixture key too, so a ship on 0.3.1 can
+        # take the stand-in 0.3.2 (the shipped keys are kept, the source otherwise as it ships)
+        duel_keyed = keyed(duel_py.encode(), "lvota_duel")
+        for rel in (duel_rel, later_rel):
+            reship(rel, "lvota.mpy", duel_keyed)
+        duel_m = sign_release.manifest(duel_rel)
+        later_m = sign_release.manifest(later_rel)
         duel_m = sign_release.manifest(duel_rel)
         assert len(duel_m["files"]) == a.expected_duel_files, (
             "the duel payload at %s has %d files, expected %d: look at it, never pad or trim it"
@@ -170,7 +220,7 @@ def main():
         # ---- the stand-in GitHub ----
         gh = root / "gh"
         counts = {}
-        for name, rel, m in ((STEP, step_rel, step_m), (DUEL, duel_rel, duel_m)):
+        for name, rel, m in ((STEP, step_rel, step_m), (DUEL, duel_rel, duel_m), (LATER, later_rel, later_m)):
             rel = dict(rel, ota=sign_release.envelope(m, mockota.TEST_SEED))
             for idx in ("good", "bad"):
                 p = gh / idx / "firmware/releases" / name / "release.json"
@@ -181,11 +231,12 @@ def main():
         def entry(v, **more):
             return {"version": v, "channel": "test", "date": "2026-10-30", "label": "upgrade path test",
                     "frozen": CORE, "path": "/firmware/releases/%s/release.json" % v, "notes": [], **more}
-        good = {"schema": 1, "channels": {"test": STEP}, "heads": {"test": DUEL},
-                "releases": [entry(DUEL, ota=kid, needs=STEP), entry(STEP, ota=kid), entry(OLD)]}
+        good = {"schema": 1, "channels": {"test": STEP}, "heads": {"test": LATER},
+                "releases": [entry(LATER, ota=kid, needs=DUEL), entry(DUEL, ota=kid, needs=STEP),
+                             entry(STEP, ota=kid), entry(OLD)]}
         bad = {"schema": 1, "channels": {"test": DUEL},
                "releases": [entry(DUEL, ota=kid), entry(STEP, ota=kid), entry(OLD)]}
-        ota_files = {DUEL: counts[DUEL]["files"], STEP: counts[STEP]["files"], OLD: 0}
+        ota_files = {LATER: counts[LATER]["files"], DUEL: counts[DUEL]["files"], STEP: counts[STEP]["files"], OLD: 0}
         for idx, want in ((good, []), (bad, ["0.3.1: 48 over-the-air files, more than the 40"])):
             validate_firmware.errors[:] = []
             validate_firmware.check_needs(idx, {r["version"]: r for r in idx["releases"]}, ota_files)
@@ -199,14 +250,14 @@ def main():
         (pages / "old.js").write_bytes(subprocess.check_output(["git", "show", OLD_REF + ":game/web/ota.js"], cwd=REPO))
         cfg = {"micropython": a.micropython, "runner": str(GAME / "tests/mp_ota_step.py"),
                "flash": str(root / "flash"), "pristine": str(pristine), "gh": str(gh), "index": "good",
-               "STEP": STEP, "DUEL": DUEL, "cap": CAP,
-               "limits": {OLD: oldmod.MAX_FILES, STEP: newmod.MAX_FILES, DUEL: DUEL_MAX_FILES},
-               "pages": {OLD: str(pages / "old.js"), STEP: str(GAME / "web/ota.js"),
-                         DUEL: str(duel_tree / "game/web/ota.js")}}
+               "STEP": STEP, "DUEL": DUEL, "LATER": LATER, "cap": CAP,
+               "limits": {OLD: oldmod.MAX_FILES, STEP: newmod.MAX_FILES, DUEL: DUEL_MAX_FILES, LATER: DUEL_MAX_FILES},
+               "pages": {OLD: str(pages / "old.js"), STEP: str(step_tree / "game/web/ota.js"),
+                         DUEL: str(duel_tree / "game/web/ota.js"), LATER: str(duel_tree / "game/web/ota.js")}}
         (root / "config.json").write_text(json.dumps(cfg))
-        print("refs: 0.3.0 %s, duel %s; payloads: %s %d files %d B, %s %d files %d B; limits %s"
-              % (old_sha, duel_sha, STEP, counts[STEP]["files"], counts[STEP]["bytes"], DUEL,
-                 counts[DUEL]["files"], counts[DUEL]["bytes"], cfg["limits"]), flush=True)
+        print("refs: 0.3.0 %s, stepping stone %s, duel %s; payloads: %s %d files %d B, %s %d files %d B, %s %d files; limits %s"
+              % (old_sha, step_sha, duel_sha, STEP, counts[STEP]["files"], counts[STEP]["bytes"], DUEL,
+                 counts[DUEL]["files"], counts[DUEL]["bytes"], LATER, counts[LATER]["files"], cfg["limits"]), flush=True)
         peak = 0
         for sc in a.only or SCENARIOS:
             out = subprocess.run(["node", GAME / "tests/ota_step_page.mjs", root / "config.json", sc],
