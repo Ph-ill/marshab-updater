@@ -1,5 +1,8 @@
 # Heap-harness regressions (CPython): explicit busy refusals are not ambiguous POST
 # failures, and a preempted/acknowledged notifier needs a fresh test stimulus.
+# phone_flow.tcp stops reading once HTTP framing (Content-Length) proves the answer is
+# complete, so a reset after any complete answer is not an error; a reset before the
+# framed body is complete (or before any answer) still is.
 import asyncio
 import sys
 
@@ -58,7 +61,7 @@ def notifier():
         lvled._t = old
 
 
-async def reset_response(raw, accepted):
+async def reset_response(raw, status):
     class Reader:
         async def read(self, n):
             if self.raw:
@@ -93,9 +96,9 @@ async def reset_response(raw, accepted):
         try:
             answer = await F.tcp(1)("POST", "/api/login", b"{}")
         except ConnectionResetError:
-            assert not accepted
+            assert status is None
         else:
-            assert accepted and answer[0] == 503
+            assert status is not None and answer[0] == status
         assert w.closed
     finally:
         asyncio.open_connection = original
@@ -125,10 +128,11 @@ async def sockets():
 
 
 async def main():
-    await reset_response(b'HTTP/1.0 503 Busy\r\nContent-Length: 2\r\n\r\n{}', True)
-    await reset_response(b'HTTP/1.0 503 Busy\r\nContent-Length: 3\r\n\r\n{}', False)
-    await reset_response(b'HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\n{}', False)
-    await reset_response(b"", False)
+    await reset_response(b'HTTP/1.0 503 Busy\r\nContent-Length: 2\r\n\r\n{}', 503)
+    await reset_response(b'HTTP/1.0 503 Busy\r\nContent-Length: 3\r\n\r\n{}', None)
+    await reset_response(b'HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\n{}', 200)
+    await reset_response(b'HTTP/1.0 200 OK\r\nContent-Length: 3\r\n\r\n{}', None)
+    await reset_response(b"", None)
     await sockets()
 
 
