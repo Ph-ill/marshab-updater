@@ -54,16 +54,16 @@ def timer(lk, g):
     if z is None:
         epoch = now(lk)
         age = g.get("age", 0)
-        if epoch is not None and g.get("t") is not None:
+        # A "tu" stamp predates the move (lvduel.moved): never idle time.
+        if epoch is not None and g.get("t") is not None and not g.get("tu"):
             age = max(age, epoch - g["t"])
         age = max(0, min(3 * DAY, age))
         # z[6]: made with the clock unknown (after every boot: the Pico has no
         # RTC), the last activity's wall time as saved, until a phone sets the clock.
-        # z[7]: the same stamp, kept all boot: with z[1] it bounds a move's wall time
-        # from below while the clock is still unknown (lvduel.moved).
-        base = g.get("t") if epoch is None else None
+        # None for a "tu" stamp: that move's wall time is unknown, so no credit.
+        base = g.get("t") if epoch is None and not g.get("tu") else None
         z = [t, 0, sig, -21600000 if g["s"] == "active" else 0, None, -age * 1000,
-             base, base]
+             base]
         timers[key] = z
     else:
         dt = lvship.ticks_diff(t, z[0])
@@ -102,8 +102,9 @@ def reconcile(lk, g):
     t = now(lk)
     stamp = t - idle if t is not None else None
     changed = False
-    if stamp is not None and (g.get("t") is None or abs(g["t"] - stamp) > 2):
+    if stamp is not None and (g.get("tu") or g.get("t") is None or abs(g["t"] - stamp) > 2):
         g["t"] = stamp
+        g.pop("tu", None)
         changed = True
     if abs(g.get("age", 0) - idle) >= 3600 or (idle == 0 and g.get("age", 0)):
         g["age"] = idle

@@ -53,17 +53,16 @@ def now(lk):
 
 def moved(lk, g):
     # Stamp a move's wall time. With the clock unknown (every boot until a phone
-    # sets it) never erase the saved stamp (review 0.3.1-5 #3): keep a lower bound,
-    # the stamp this boot started from plus the uptime measured since, so time
-    # switched off still counts later and the gap isn't over-counted.
+    # sets it) keep the old stamp and mark it "tu": the move came at an unknown
+    # time after it (review 0.3.1-6 #1). No switched-off time is credited from such
+    # a stamp; reconcile writes an exact one, from same-boot idle, once the clock
+    # is known. Under-counting only delays Call it.
     t = now(lk)
     if t is None:
-        z = getattr(lk, "duel_times", {}).get((g["to"], g["id"]))
-        if z is not None and z[7] is not None:
-            t = max(g.get("t") or 0, z[7] + z[1] // 1000)
-        else:
-            t = g.get("t")
-    g["t"] = t
+        g["tu"] = 1
+    else:
+        g["t"] = t
+        g.pop("tu", None)
 
 
 def maint_call(name, *args):
