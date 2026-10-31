@@ -68,7 +68,7 @@ def action(lk, b, rules):
     a, to = b.get("action"), b.get("to")
     if not integer(to, 0, 7) or to == lk.node.ship:
         return 400, {"err": "Pick a crewmate."}
-    if len(lk.out) >= 24 and a not in ("resign", "call", "new", "discard"):
+    if len(lk.out) >= 24 and a not in ("resign", "withdraw", "call", "new", "discard"):
         return 429, {"err": "Your previous moves are on their way."}
     peer = lk.ble.peers.get(to)
     if a == "new" and peer is not None and peer.info and not peer.info.get("cap"):
@@ -120,16 +120,20 @@ def action(lk, b, rules):
             return 409, {"err": "No invitation is waiting."}
         terminal(g, "declined")
         end(lk, g, 1)
+    elif a == "withdraw":
+        # Only an unanswered invitation of yours (review 0.3.1-7 #1): no record on
+        # either ship. Once the ACCEPT has landed, a stale withdraw never turns into
+        # a resignation.
+        if g["s"] != "wait":
+            return 409, {"err": "Your crewmate already joined. Resign counts as a loss."}
+        why = 3  # the END reason is fixed before terminal() changes g["s"] (review 0.3.1-7 #5)
+        terminal(g, "called")
+        g["wd"] = 1
+        end(lk, g, why)
     elif a == "resign":
-        if g["s"] not in ("wait", "invited", "active"):
-            return 409, {"err": "No duel is playing."}
+        # Only a game both ships joined; before that, withdraw or decline.
         if g["s"] != "active":
-            # Nobody joined a game yet (review 0.3.1-6 #3): withdrawing an invitation
-            # or turning one down records nothing, on either ship.
-            terminal(g, "called" if g["s"] == "wait" else "declined")
-            end(lk, g, 3 if g["s"] == "called" else 1)
-            store(lk, j)
-            return 200, {"ok": True}
+            return 409, {"err": "Your crewmate hasn't joined yet. Withdraw the invitation instead." if g["s"] == "wait" else "No duel is playing."}
         terminal(g, "called")  # discard obsolete moves before the terminal exchange
         g["s"], g["win"] = "reveal", False
         g["why"] = 2

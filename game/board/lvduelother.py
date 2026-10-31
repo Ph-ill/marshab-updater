@@ -116,6 +116,8 @@ def take(lk, frm, kind, b, j):
                 if g["s"] in ACTIVE:
                     terminal(g, "cheat")
         elif g["s"] in ACTIVE:
+            if why == 3 and g["s"] == "invited":
+                g["wd"] = 2  # the inviter withdrew it (review 0.3.1-7 #3)
             terminal(g, {1: "declined", 3: "called", 4: "version", 5: "busy"}.get(why, "called"))
     elif kind == 9:
         n, cell, r, state = b[2:6]

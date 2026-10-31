@@ -36,7 +36,7 @@ def view(lk, j=None):
     out = []
     while j["g"]:
         g = j["g"].pop(0)
-        x = dict((k, g.get(k)) for k in ("id", "to", "s", "n", "p", "t", "win", "why", "update", "nl", "doubt"))
+        x = dict((k, g.get(k)) for k in ("id", "to", "s", "n", "p", "t", "win", "why", "update", "nl", "doubt", "wd"))
         if g.get("tu"):
             x["t"] = None  # a stamp from before the move (lvduel.moved), not its time
         if g.get("mutual") and g["s"] in ("reveal", "done"):
