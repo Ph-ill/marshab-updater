@@ -6,7 +6,7 @@
 # with mpy-cross when it is available, as on a board). The phone game's board server
 # (board/lvweb.py + lvphone.py) is driven through the app's whole flow on CPython and
 # MicroPython; with LV_FROZEN_MP (the game firmware as a unix port: tools/build_firmware.sh
-# unix32) the frozen split is checked too, and the 100 KB heap gate with BLE sync and two
+# unix32) the frozen split is checked too, and the 110 KB heap gate with BLE sync and two
 # phones playing at once. The LED notifier's schedule (tests/test_led.py) and the bench
 # script (tools/bench.py, tests/test_bench.py: fake boards on the unix ports). The battery
 # reader (board/lvbatt.py, tests/test_batt.py: a fake fuel gauge) on all of them, and its

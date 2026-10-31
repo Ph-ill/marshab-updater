@@ -3,7 +3,7 @@
 Starts tests/mp_sync_heap.py --phone under MicroPython (the board side, one process) and
 plays two phones against it from here (tests/phone_flow.py over real sockets, so the
 phones' buffers aren't on the board's heap). Every answer is checked; the heap line and
-RESULT come from the board side, with the 100,000 B cap at 32-bit (mp_sync_heap.CAP).
+RESULT come from the board side, with the 110,000 B cap at 32-bit (mp_sync_heap.CAP).
   python3 tests/phone_heap.py MICROPYTHON [dir | frozen] [--led] [--bat] [--ota [--live]] [--everyone]  (from game/)
   python3 tests/phone_heap.py LV_FROZEN_MP --safe     safe mode (tests/mp_safe_heap.py) takes a whole update
 --ota: a third phone uploads a signed update (the game firmware's own files as a newer

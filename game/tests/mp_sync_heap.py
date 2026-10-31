@@ -9,7 +9,7 @@
 # It syncs a peer that missed almost the whole season (221 records over the link). The
 # live heap (after gc) is sampled through all of it, including at the web server's
 # busiest points (lvweb.probe, lvphone.probe). The board's share must stay under
-# CAP (100,000 B since 2026-10-29; was 80,000): the peak, less the fake radio module and the peer at its largest
+# CAP (110,000 B since 2026-10-30; 100,000 B from 2026-10-29, 80,000 B before): the peak, less the fake radio module and the peer at its largest
 # (see below). The LED stays off, unless:
 #   --led    the LED notifier on (led_notify: board/lvled.py loaded, a fake pin from
 #            tests/fakeboard): it breathes through the sync (no quiet hours, a test pattern
@@ -70,9 +70,9 @@ def seed_hails(p):
 # loads, and drops lvota through the signature check. Review-1 additionally bounds
 # expensive responses before allocation and loads phone/boot helpers only when used;
 # the acceptance target is <=78,000 B over three full and three normal combined runs.
-# The board heap cap (32-bit): 100,000 B, Phill 2026-10-29 (was 80,000 B). A Pico W has about
+# The board heap cap (32-bit): 110,000 B, Phill 2026-10-30 (100,000 B from 2026-10-29; 80,000 B before). A Pico W has about
 # 193 KB free for the game; the cap leaves room for Wi-Fi buffers and fragmentation over days.
-CAP = 100000
+CAP = 110000
 EVERYONE = "--everyone" in sys.argv
 LOG = "build/season_log_all.bin" if EVERYONE else "build/season_log.bin"
 if LED or BAT:
