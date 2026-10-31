@@ -13,6 +13,20 @@ def encode(slots):
     return b
 
 
+def stale(s):
+    # Why a stale Withdraw or Resign tap was refused, from the game's actual state
+    # (review 0.3.1-8 #2). Each matches the one action the page now offers.
+    if s == "active":
+        return "Your crewmate already joined. Resign counts as a loss."
+    if s == "reveal":
+        return "That duel just ended. Checking both fields."
+    if s == "wait":
+        return "Your crewmate hasn't joined yet. Withdraw the invitation instead."
+    if s == "invited":
+        return "You haven't joined this duel. Decline the invitation instead."
+    return "Your invitation hasn't gone out. Discard your draft instead."
+
+
 def api(web, req):
     import json
     import lvship
@@ -80,14 +94,16 @@ def action(lk, b, rules):
         # The last duel's END or REVEAL still has to reach this crewmate. Dropping it
         # with the old game would leave their ship waiting on it, or with a result
         # this ship never sent (review 0.3.1-7 #2).
-        if any(x["to"] == to and pending(lk, x) for x in j["g"]):
+        if any(x["to"] == to and pending(lk, x) for x in j["g"]) or rules["owed"](j, to):
             return 409, {"err": "Your last move in that duel is still on its way. Try again after your ships meet."}
         j["g"] = [x for x in j["g"] if x["to"] != to]
-        room(j)
+        room(lk, j)
         g = fresh(lk, to, os.urandom(2), lk.node.ship, "draft")
         j["g"].append(g)
     elif g is None:
-        return 409, {"err": "No duel is open."}
+        # A stale Withdraw/Resign after the duel ended (review 0.3.1-8 #2).
+        ended = a in ("withdraw", "resign") and any(x["to"] == to for x in j["g"])
+        return 409, {"err": "That duel already ended." if ended else "No duel is open."}
     elif a == "discard":
         if g["s"] != "draft":
             return 409, {"err": "Your fleet is locked."}
@@ -130,7 +146,7 @@ def action(lk, b, rules):
         # either ship. Once the ACCEPT has landed, a stale withdraw never turns into
         # a resignation.
         if g["s"] != "wait":
-            return 409, {"err": "Your crewmate already joined. Resign counts as a loss."}
+            return 409, {"err": stale(g["s"])}
         why = 3  # the END reason is fixed before terminal() changes g["s"] (review 0.3.1-7 #5)
         terminal(g, "called")
         g["wd"] = 1
@@ -138,7 +154,7 @@ def action(lk, b, rules):
     elif a == "resign":
         # Only a game both ships joined; before that, withdraw or decline.
         if g["s"] != "active":
-            return 409, {"err": "Your crewmate hasn't joined yet. Withdraw the invitation instead." if g["s"] == "wait" else "No duel is playing."}
+            return 409, {"err": stale(g["s"])}
         terminal(g, "called")  # discard obsolete moves before the terminal exchange
         g["s"], g["win"] = "reveal", False
         g["why"] = 2

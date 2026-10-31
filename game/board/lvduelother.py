@@ -1,7 +1,11 @@
 # Invitation, reveal and recovery rules, not retained while scoring a shot.
 from lvduel import (ACTIVE, belongs, commit, emit, end, finish, fleet, fresh,
-                    gid, hexlify, history, keep, lvship, mine, moved, rejected,
-                    repeat, result, reveal, room, sync, terminal, unhexlify, layout_call)
+                    gid, hexlify, history, keep, lvship, owed, mine, moved, rejected,
+                    repeat, result, retire, reveal, room, sync, terminal, unhexlify, layout_call,
+                    maint_call, DAY)
+
+# Idle age under which an END 3 heard while invited reads as a withdrawal.
+WD = 3 * DAY - 12 * 3600
 
 
 def take(lk, frm, kind, b, j):
@@ -37,8 +41,9 @@ def take(lk, frm, kind, b, j):
             rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 5)
             return False, None
         # Keep one completed game per opponent, for the reveal screen and rematch.
-        j["g"] = [x for x in j["g"] if x["to"] != frm or x["s"] in ACTIVE]
-        room(j)
+        for x in [x for x in j["g"] if x["to"] == frm and x["s"] not in ACTIVE]:
+            retire(lk, j, x)
+        room(lk, j)
         g = fresh(lk, frm, ident, frm, "invited")
         g["c"] = hexlify(b[3:11]).decode()
         j["g"].append(g)
@@ -47,7 +52,8 @@ def take(lk, frm, kind, b, j):
         tick = lvship.ticks_ms()
         previous = getattr(lk, "duel_unknown", None)
         elapsed = lvship.ticks_diff(tick, previous) if previous is not None else 3600000
-        if kind not in (8, 9) and (elapsed >= 3600000 or elapsed < 0):
+        # A retired game's stub keeps this crewmate's j["e"] slot (review 0.3.1-8 #1).
+        if kind not in (8, 9) and not owed(j, frm) and (elapsed >= 3600000 or elapsed < 0):
             temp = fresh(lk, frm, ident, frm, "called")
             temp["unknown"] = True
             sync(lk, temp)
@@ -122,8 +128,11 @@ def take(lk, frm, kind, b, j):
                 if g["s"] in ACTIVE:
                     terminal(g, "cheat")
         elif g["s"] in ACTIVE:
-            if why == 3 and g["s"] == "invited":
-                g["wd"] = 2  # the inviter withdrew it (review 0.3.1-7 #3)
+            # The inviter withdrew it (review 0.3.1-7 #3), unless the invitation is
+            # near its 3-day put-away: then the inviter's own sweep may have sent
+            # this END, and the page says "Duel put away" (review 0.3.1-8 #3).
+            if why == 3 and g["s"] == "invited" and maint_call("age", lk, g) < WD:
+                g["wd"] = 2
             terminal(g, {1: "declined", 3: "called", 4: "version", 5: "busy"}.get(why, "called"))
     elif kind == 9:
         n, cell, r, state = b[2:6]

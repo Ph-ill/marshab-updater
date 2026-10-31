@@ -155,8 +155,17 @@ def terminal(g, state):
     g["q"] = [z for z in g.get("q", []) if allowed(g, z[0])]
 
 
+def owed(j, to):
+    # A retired game's END/REVEAL still on its way to this crewmate (see room).
+    return any(x["to"] == to and x.get("o") for x in j.get("e", []))
+
+
 def rejected(lk, j, g, why):
     # At most seven pending replies, one per sender. Retire after acknowledgement.
+    # A retired game's stub outranks a reply: its END/REVEAL decides a result on
+    # the other ship (review 0.3.1-8 #1). The unanswered invitation is put away there.
+    if owed(j, g["to"]):
+        return
     g = {"to": g["to"], "id": g["id"], "s": "called"}
     j["e"] = [x for x in j.get("e", []) if x["to"] != g["to"]]
     j["e"].append(g)
@@ -264,12 +273,28 @@ def lighting(lk):
     store(lk, j)
 
 
-def room(j):
+def retire(lk, j, g):
+    # Drop a finished game. If its END/REVEAL hasn't been delivered, keep a small
+    # stub in j["e"] (crewmate, id, state, reason, intents): flush and cleanout keep
+    # it, and its queued items, until they are acked (review 0.3.1-8 #1). Still one
+    # j["e"] entry per crewmate, so the box never holds more than seven.
+    j["g"].remove(g)
+    if pending(lk, g):
+        x = {"to": g["to"], "id": g["id"], "s": g["s"], "o": 1}
+        if g.get("why") is not None:
+            x["why"] = g["why"]
+        if g.get("q"):
+            x["q"] = g["q"]
+        j["e"] = [y for y in j.get("e", []) if y["to"] != g["to"]]
+        j["e"].append(x)
+
+
+def room(lk, j):
     while len(j["g"]) >= 3:
         old = next((g for g in j["g"] if g["s"] not in ACTIVE), None)
         if old is None:
             return
-        j["g"].remove(old)
+        retire(lk, j, old)
 
 
 def fresh(lk, to, ident, inviter, state):
