@@ -31,9 +31,18 @@ web/duel.js + web/duel.css (the screens).
 * **Ending early:** "Resign" (once both ships joined, counts as a loss), "Withdraw
   invitation" (before it's answered, no result), "Decline" an invitation, and "Call it"
   once the other side hasn't moved for 3 days (the game is put away, no result).
-  It's offered only while you're waiting on the other side: on your own turn the page
-  doesn't show it, and the board answers "It's your move." An invitation not answered in
-  3 days is put away too. The 3 days are wall-clock time: once a phone has set the clock,
+  Withdraw and resign are separate phone actions, and the board takes each only in its
+  own state: withdraw only while your invitation is unanswered ("wait"; END 3, nothing
+  recorded on either ship), resign only in a game both ships joined ("active"). A page
+  that still showed "wait" when the ACCEPT landed gets "Your crewmate already joined.
+  Resign counts as a loss." and nothing changes; a withdraw never turns into a
+  resignation. The withdrawing page says "Invitation withdrawn", the invited page
+  "Kim withdrew the invitation" (any END 3 heard while still invited, including the
+  inviter's 3-day put-away), and a game put away otherwise says "Duel put away".
+  Call it is offered only while you're waiting on the other side in a game both ships
+  joined (or its reveal): on your own turn the page doesn't show it, and the board
+  answers "It's your move." It isn't offered on an unanswered invitation, because an
+  invitation not answered in 3 days is put away anyway. The 3 days are wall-clock time: once a phone has set the clock,
   time a ship spent switched off counts (a gap of 0 to 30 days since the last saved move;
   a clock that jumps backwards never takes idle time away). A move or invitation heard
   while the clock is still unknown (after a boot, before a phone connects) has no known
@@ -45,6 +54,16 @@ web/duel.js + web/duel.css (the screens).
   time, the same way stalling for 3 days does (a ship that sends END, or simply stops).
   Only resigning a game both ships joined, or a checked reveal, records a result. An
   END 2 (resign) heard for an invitation not yet accepted is a withdrawal: no result.
+  A withdrawal or put-away (END 1 or 3) that crosses your accept-then-resign is a mutual
+  stand-down: the other ship gave up its own win and sends no REVEAL, so neither ship
+  records a result and your page says "Your game ended with both ships standing down.
+  No result." instead of waiting on "Checking both fields". Both ships are free for a
+  new invitation.
+* **Rematch:** "Rematch" (or a new duel with the same crewmate) waits until the last
+  duel's END and REVEAL have reached that crewmate's ship: the page says "Your last move
+  in that duel is still on its way. Try again after your ships meet." Starting over
+  replaces the old game, and dropping its unsent END or REVEAL would leave the other ship
+  waiting on it, or one ship counting a result the other never can.
 * **Limits:** one game at a time with each crewmate, at most 3 games going at once.
 
 ## 2. On the air
@@ -101,7 +120,8 @@ one per hour to keep authenticated junk from filling the shared out-box.
   with the shared 20 s gap and backoff), and carry along on any sync either side starts.
   A dropped link just means the item isn't acked yet; it goes again on the next one.
 * **Duel items don't expire at the end of the day** (hails do, lvlivein.expire). They
-  wait until acked or until their game is put away (3 days idle). The queue shares Hail's
+  wait until acked or until their game is put away (3 days idle); a put-away game's END
+  still waits to be acked, and a rematch with that crewmate waits for it. The queue shares Hail's
   out-box with its existing size cap; a duel item is never pushed out by hails.
 * Idempotent by (g, n): a SHOT or ANSWER with an n already taken is acked and ignored; a
   SHOT out of turn (not the other side's turn by this ship's count) is ignored and
@@ -171,7 +191,9 @@ no new fonts.
 4. **Game screen**: their field on top (your shots: hit, miss, sunk outline; tap a cell,
    then "Fire"), your field below, small (their shots on your ships). A line says whose
    turn it is and where the last move stands ("On its way", "Arrived 2 min ago").
-   "Resign" sits at the bottom behind a confirm.
+   "Resign" sits at the bottom behind a confirm; while your invitation is unanswered it's
+   "Withdraw invitation" instead ("Withdraw your invitation? Nothing is recorded."). The
+   arrival line shows only while the game is open.
 5. **End**: "You sank their fleet in 14 shots" / "Kim sank your fleet"; both fields
    revealed (a game that ended without a checked reveal labels the other field "not
    revealed"); the record; "Rematch".
@@ -234,7 +256,9 @@ probes, not the former post-GC retained-heap figures.
   every shot with a miss, or six hits without a sink; days switched off counting toward
   Call it (also after a move heard with the clock unknown, without counting the uptime
   before it), and Call it refused on your own turn;
-  decline, resign, call it (not before 3 days), crossing invitations, too many games, an
+  decline, resign, call it (not before 3 days), withdraw (refused once the ACCEPT landed,
+  resign refused before it), a withdrawal crossing an accept-then-resign (mutual
+  stand-down), a rematch waiting for the last REVEAL or END, crossing invitations, too many games, an
   old (0.3.0) ship never answering; v mismatch; the turn light (switch off, quiet hours,
   allowance); fuzz: random duel items never raise.
 * **Phone e2e** (web/shots_duel.mjs + shots_duel.sh, Playwright on the fake board): the

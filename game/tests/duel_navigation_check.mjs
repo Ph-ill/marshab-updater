@@ -5,7 +5,9 @@ import vm from 'node:vm';
 const source=process.env.DUEL_SOURCE?fs.readFileSync(process.env.DUEL_SOURCE,'utf8'):fs.readFileSync(new URL('../web/duel.js',import.meta.url),'utf8');
 const elements={v:{innerHTML:''}};
 let dockHtml='';
-const c=vm.createContext({console,document:{addEventListener(){},querySelector(){return null}},
+const listeners={},posts=[],prompts=[];
+const c=vm.createContext({console,document:{addEventListener(t,f){listeners[t]=f},querySelector(){return null}},
+  route:"duel/0",tok:1,api:async(path,body)=>{posts.push(body)},confirm:t=>{prompts.push(t);return true},lvLoad:async()=>{},go(){},
   home(){},lvPaint(){},view(){},shipTop(){},$:id=>elements[id],
   dock:(html,tabs)=>{dockHtml=html+(tabs?'navigation':'')},
   h:String,nm:i=>'Crew '+i,portrait:()=>'',N:2,S:{here:1,cond:[0,0]},
@@ -61,15 +63,34 @@ for(const turn of [true,false]){
 console.log('duel Call it: hidden on your own turn PASS');
 // Resign only where the board takes it (review 0.3.1-6 #2, #3): never on the reveal
 // screen; before anyone joined, the button withdraws the invitation instead.
-for(const [state,label] of [['active','Resign'],['wait','Withdraw invitation'],['reveal',null]]){
+// Withdraw is its own action, so a stale page can't turn it into a resignation, and an
+// unanswered invitation has no Call it: the board puts it away at 3 days (review 0.3.1-7 #1, #4).
+for(const [state,act,label,call] of [['active','resign','Resign',true],['wait','withdraw','Withdraw invitation',false],['reveal',null,null,true]]){
   c.LV={duel:[{id:'resign',to:0,s:state,turn:false,shots:[],incoming:[],record:[0,0]}]};
   vm.runInContext('duScreen(0)',c);
-  const m=elements.v.innerHTML.match(/data-duact=resign><span>([^<]*)</);
-  assert.equal(m?m[1]:null,label,`${state}: resign button ${label||'hidden'}`);
-  assert.match(elements.v.innerHTML,/data-duact=call/,`${state}: Call it still offered`);
+  const m=elements.v.innerHTML.match(/data-duact=(resign|withdraw)><span>([^<]*)</);
+  assert.deepEqual(m?[m[1],m[2]]:null,act?[act,label]:null,`${state}: ${label||'no resign or withdraw'}`);
+  (call?assert.match:assert.doesNotMatch)(elements.v.innerHTML,/data-duact=call/,`${state}: Call it ${call?'offered':'hidden'}`);
 }
+for(const [act,prompt] of [['withdraw','Withdraw your invitation? Nothing is recorded.'],['resign','Resign this duel? This counts as a loss.']]){
+  c.LV={duel:[{id:'post',to:0,s:act==='withdraw'?'wait':'active',turn:false,shots:[],incoming:[],record:[0,0]}]};
+  vm.runInContext('DU_BUSY=false;DU_TO=0;duScreen(0)',c);
+  posts.length=prompts.length=0;
+  await listeners.click({target:{closest:()=>({disabled:false,dataset:{duact:act}})}});
+  assert.deepEqual([prompts,posts.map(b=>b.action)],[[prompt],[act]],`${act}: confirms and posts its own action`);
+}
+// Ended invitations say what happened and never read as waiting to meet (review 0.3.1-7 #3).
+for(const [s,wd,text] of [['called',1,'Invitation withdrawn'],['called',2,'Crew 0 withdrew the invitation'],['called',undefined,'Duel put away'],['declined',undefined,'Invitation declined']]){
+  c.LV={duel:[{id:'ended',to:0,s,wd,n:0,t:null,shots:[],incoming:[],record:[0,0]}]};
+  vm.runInContext('duScreen(0)',c);
+  assert.match(elements.v.innerHTML,new RegExp('role=status>'+text+'<'),`${s}/${wd}: ${text}`);
+  assert.doesNotMatch(elements.v.innerHTML,/Waiting for your ships to meet|Arrived|On its way/,`${s}/${wd}: no arrival line`);
+}
+c.LV={duel:[{id:'open',to:0,s:'wait',n:0,t:null,shots:[],incoming:[],record:[0,0]}]};
+vm.runInContext('duScreen(0)',c);
+assert.match(elements.v.innerHTML,/Waiting for your ships to meet/,'open invitation still waits to meet');
 // A stamp the board can't vouch for (t null after a move) never reads as waiting to meet.
 c.LV={duel:[{id:'tu',to:0,s:'active',n:1,t:null,turn:false,shots:[],incoming:[[1,0,0]],record:[0,0]}]};
 vm.runInContext('duScreen(0)',c);
 assert.doesNotMatch(elements.v.innerHTML,/Waiting for your ships to meet|Arrived/,'move with an unknown time shows no age');
-console.log('duel Resign: hidden in reveal, withdraw before joining PASS');
+console.log('duel Resign: hidden in reveal, withdraw before joining, withdrawn and ended copy PASS');

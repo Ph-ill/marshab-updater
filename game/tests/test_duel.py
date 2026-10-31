@@ -302,14 +302,18 @@ counts = (a.live.n["out"], b.live.n["out"])
 run(w, a, b)
 check("equal ID no unsolicited traffic", counts == (a.live.n["out"], b.live.n["out"]))
 
-# Resign before either side has accepted, in both directions: nobody joined a game,
-# so the inviter withdraws and the invitee declines, with no record (review 0.3.1-6 #3).
+# Before either side has accepted, nobody joined a game: the inviter withdraws and the
+# invitee declines, with no record (review 0.3.1-6 #3). Resign is refused on both
+# ships until a game is joined (review 0.3.1-7 #1).
 for resigning in (0, 1):
     w, a, b = fresh(8)
     act(a, "new")
     act(a, "invite", layout=LAY)
     settled(w, a, b)
-    check("pre-accept resign", act(a if resigning == 0 else b, "resign") == 200)
+    check("pre-accept resign refused", act(a, "resign") == 409 and act(b, "resign") == 409
+          and game(a)["s"] == "wait" and game(b)["s"] == "invited")
+    check("withdraw refused on the invited ship", act(b, "withdraw") == 409)
+    check("pre-accept withdraw or decline", act(a, "withdraw") == 200 if resigning == 0 else act(b, "decline") == 200)
     settled(w, a, b)
     check("pre-accept both put away", game(a)["s"] == game(b)["s"] == ("called" if resigning == 0 else "declined"))
     check("pre-accept nothing recorded", D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
@@ -534,6 +538,12 @@ check("call works with full outbox", act(b, "call") == 200)
 check("called shot purged", not any(o[1][0] == 5 for o in b.live.out))
 D.maintain(b.live)
 check("call keeps bounded END", sum(o[1][0] == 8 for o in b.live.out) == 1)
+# The END still owed to the absent crewmate keeps the rematch until it is delivered
+# (review 0.3.1-7 #2): dropping it with the old game could strand the other ship.
+r = D.action(b.live, {"action": "new", "to": 0})
+check("absent peer rematch waits for the END", r[0] == 409 and "still on its way" in r[1]["err"]
+      and sum(o[1][0] == 8 for o in b.live.out) == 1 and game(b)["s"] == "called")
+b.live.out[:] = [o for o in b.live.out if o[1][0] != 8]
 check("absent peer rematch", act(b, "new") == 200)
 D.maintain(b.live)
 check("orphan END swept", not any(3 <= o[1][0] <= 9 for o in b.live.out))
@@ -875,9 +885,9 @@ w, a, b = fresh(45)
 act(a, "new")
 act(a, "invite", layout=LAY)
 settled(w, a, b)
-check("pre-accept crossing inviter withdraws", act(a, "resign") == 200)
+check("pre-accept crossing inviter withdraws", act(a, "withdraw") == 200)
 check("pre-accept withdrawal counts nothing", not game(a).get("counted") and game(a)["s"] == "called")
-check("pre-accept crossing invitee declines", act(b, "resign") == 200)
+check("pre-accept crossing invitee declines", act(b, "decline") == 200)
 settled(w, a, b)
 check("pre-accept crossing no records", not D.box(a.live)["r"] and not D.box(b.live)["r"]
       and game(a)["s"] in ("called", "declined") and game(b)["s"] == "declined")
@@ -1284,19 +1294,26 @@ D.maintain(b.live)
 check("switched-off days don't put away an invitation heard with the clock unknown",
       game(b)["s"] == "invited" and D.maint_call("age", b.live, game(b)) < 3600)
 
-# Before anyone joined (review 0.3.1-6 #3), resign withdraws or declines: no record.
+# Before anyone joined (review 0.3.1-6 #3), withdraw or decline: no record.
 w, a, b = fresh(90)
 check("new", act(a, "new") == 200)
 check("invite", act(a, "invite", layout=LAY) == 200)
 settled(w, a, b)
 check("waiting / invited", game(a)["s"] == "wait" and game(b)["s"] == "invited")
-check("withdraw while waiting", act(a, "resign") == 200 and a.live.out[-1][1][0] == 8)
+check("withdraw while waiting", act(a, "withdraw") == 200 and a.live.out[-1][1][0] == 8
+      and a.live.out[-1][1][7] == 3)
 settled(w, a, b)
 check("withdrawn invitation records nothing",
       game(a)["s"] == game(b)["s"] == "called" and D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
+# Both pages can tell a withdrawal from a 3-day put-away (review 0.3.1-7 #3).
+check("withdrawal marked on both ships", D.view(a.live)[0]["wd"] == 1 and D.view(b.live)[0]["wd"] == 2)
+check("withdrawal mark reaches the page", lvliveapi.state(a, 0)["duel"][0]["wd"] == 1
+      and lvliveapi.state(b, 0)["duel"][0]["wd"] == 2)
+check("withdrawing again refused", act(a, "withdraw") == 409)
 w, a, b = fresh(92)
 act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
-check("resign on an unanswered invitation declines it", act(b, "resign") == 200)
+check("resign on an unanswered invitation refused", act(b, "resign") == 409 and game(b)["s"] == "invited")
+check("decline an unanswered invitation", act(b, "decline") == 200)
 settled(w, a, b)
 check("declined invitation records nothing",
       game(a)["s"] == "declined" and game(b)["s"] == "declined" and D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
@@ -1313,6 +1330,80 @@ start(w, a, b)
 act(b, "fire", cell=20); settled(w, a, b)
 check("resign in a joined game", act(b, "resign") == 200 and game(b)["s"] == "reveal")
 check("resign in reveal still refused", act(b, "resign") == 409)
+check("withdraw in reveal refused", act(b, "withdraw") == 409 and act(a, "withdraw") == 409)
+
+# Review 0.3.1-7 #1: the page showed "wait", then the crewmate's ACCEPT landed before
+# the confirm was tapped. The stale withdraw is refused and records nothing; it never
+# turns into a resignation.
+w, a, b = fresh(301)
+act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
+check("stale page showed wait", D.view(a.live)[0]["s"] == "wait")
+check("accept lands", act(b, "accept", layout=LAY) == 200)
+settled(w, a, b)
+check("joined before the tap", game(a)["s"] == game(b)["s"] == "active")
+check("stale withdraw refused", act(a, "withdraw") == 409)
+settled(w, a, b)
+check("stale withdraw records nothing and keeps the game", game(a)["s"] == game(b)["s"] == "active"
+      and D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {} and not a.live.out)
+r = D.action(a.live, {"action": "withdraw", "to": 1})
+check("stale withdraw says why", r[0] == 409 and "already joined" in r[1]["err"])
+
+# Review 0.3.1-7 #2: a withdrawal crossing the invitee's accept-then-resign. Neither
+# ship records a result, the invitee never waits on "Checking both fields", and both
+# are free for a new invitation. The "fires" variant puts the game away on the invitee.
+for variant in ("resigns", "fires"):
+    w, a, b = fresh(300)
+    act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
+    check("cross accept", act(b, "accept", layout=LAY) == 200)
+    check("cross withdraw before ACCEPT heard", act(a, "withdraw") == 200 and game(a)["s"] == "called")
+    if variant == "resigns":
+        check("cross invitee resigns", act(b, "resign") == 200 and game(b)["s"] == "reveal")
+    else:
+        act(b, "fire", cell=0)
+    settled(w, a, b)
+    for k in range(4):
+        idle(a, 6 * 3600000 + 1000); idle(b, 6 * 3600000 + 1000); D.maintain(a.live); D.maintain(b.live)
+        run(w, a, b, lambda: not a.live.out and not b.live.out and a.ble.state == b.ble.state == "idle")
+    check("cross no records", D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
+    check("cross inviter put away", game(a)["s"] == "called")
+    if variant == "resigns":
+        check("cross invitee stands down", game(b)["s"] == "done" and game(b).get("mutual")
+              and not game(b).get("counted"))
+        check("cross invitee page", D.view(b.live)[0]["status"] == "Your game ended with both ships standing down. No result.")
+    else:
+        check("cross invitee put away", game(b)["s"] == "called")
+    check("cross new invitation", act(a, "new") == 200 and act(a, "invite", layout=LAY) == 200)
+    settled(w, a, b)
+    check("cross new invitation reaches the invitee", game(a)["s"] == "wait" and game(b)["s"] == "invited")
+# A rematch waits for the last duel's REVEAL to go out (review 0.3.1-7 #2, found by
+# fuzz2.py): the winner counted the resignation, and the resigner still needs the
+# winner's REVEAL to count it too.
+w, a, b = fresh(303)
+start(w, a, b)
+act(b, "fire", cell=20); settled(w, a, b)
+check("resign before the rematch", act(a, "resign") == 200)
+for o in [o for o in a.live.out if o[1][0] in (7, 8)]:
+    D.take(b.live, 0, o[1][0], o[1][5:16])
+a.live.out[:] = []
+check("winner counted, its REVEAL still queued", game(b)["s"] == "done" and D.box(b.live)["r"] == {"0": [1, 0]}
+      and any(o[1][0] == 7 for o in b.live.out) and game(a)["s"] == "reveal")
+check("rematch waits for the REVEAL", act(b, "new") == 409 and game(b)["s"] == "done")
+settled(w, a, b)
+check("both ships count the resignation", game(a)["s"] == "done" and D.box(a.live)["r"] == {"1": [0, 1]})
+check("rematch once the REVEAL went", act(b, "new") == 200 and act(b, "invite", layout=LAY) == 200)
+settled(w, a, b)
+check("rematch reaches the resigner", game(a)["s"] == "invited")
+
+# The same stand-down when the inviter's 3-day put-away crosses an accept-then-resign.
+w, a, b = fresh(302)
+act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
+act(b, "accept", layout=LAY); act(b, "resign")
+j = D.box(b.live)
+D.take(b.live, 0, 8, D.gid(j["g"][0]) + bytes((3,)) + bytes(8))
+check("put-away crossing a resignation stands down", game(b)["s"] == "done" and game(b).get("mutual")
+      and D.box(b.live)["r"] == {})
+D.take(b.live, 0, 8, D.gid(j["g"][0]) + bytes((3,)) + bytes(8))
+check("repeat END keeps the stand-down", game(b)["s"] == "done" and D.box(b.live)["r"] == {})
 
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)
