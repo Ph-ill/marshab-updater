@@ -104,3 +104,20 @@ for(const pending of [false,true]){
   assert.match(dockHtml,/data-go=home/,`pending=${pending}: Home stays`);
 }
 console.log('duel Rematch: waits for a queued END or REVEAL PASS');
+// A finished duel retired into a stub while its END or REVEAL is still queued: the board
+// refuses a new duel with that crewmate, so the picker opens the stub's screen, which says
+// why, never a new duel (review 0.3.1-9 #1).
+c.LV={duel:[{id:'stub',to:0,s:'done',stub:1,pending:true,record:[1,0]}]};
+vm.runInContext('DU_BUSY=false;duScreen(null)',c);
+assert.doesNotMatch(elements.v.innerHTML,/data-dunew=0/,'stub: picker offers no new duel');
+assert.match(elements.v.innerHTML,/data-go=duel\/0[^>]*>.*Duel over\. Your last move is still on its way</,'stub: picker row says why');
+vm.runInContext('duScreen(0)',c);
+assert.match(elements.v.innerHTML,/role=status>Duel over\. Your last move is still on its way\.</,'stub: screen status');
+assert.match(elements.v.innerHTML,/1-0 between you and Crew 0\./,'stub: record stays visible');
+assert.match(elements.v.innerHTML,/A new duel with Crew 0 opens after your ships meet\./,'stub: reason shown');
+assert.doesNotMatch(dockHtml,/data-dunew/,'stub: no Rematch');
+assert.match(dockHtml,/data-go=home/,'stub: Home stays');
+c.LV={duel:[]};
+vm.runInContext('duScreen(null)',c);
+assert.match(elements.v.innerHTML,/data-dunew=0/,'no stub: picker offers a new duel');
+console.log('duel stub: picker and screen wait for a queued END or REVEAL PASS');

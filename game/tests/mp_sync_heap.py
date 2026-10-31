@@ -91,10 +91,19 @@ def seed_duels(lk, peer_lk):
         games.append(g)
     # Seed the durable file without flushing: the first measured inbound call,
     # not fixture construction, must recover these obligations under pressure.
+    # Seven finished-game stubs (lvduel.retire), each of the largest shape a stub
+    # can take (review 0.3.1-9 #2): state, owed flag, a deferred reply (lvduel.defer)
+    # and three queued moves (ANSWER, REVEAL, END), none reservable while the out-box
+    # below is full. (A resignation's stub also keeps "why", but then allowed() keeps
+    # only REVEAL and END: one 11-byte move more outweighs that small int.)
     rejections = []
     for to in range(1, 8):
-        g = {"to": to, "id": hexlify(bytes((0x52, to))).decode(), "s": "called"}
-        D.end(lk, g, 5)
+        ident = bytes((0x52, to))
+        g = {"to": to, "id": hexlify(ident).decode(), "s": "done", "o": 1,
+             "rj": [hexlify(bytes((0x53, to))).decode(), 5],
+             "q": [[6, hexlify(ident + bytes((71, 35, 3)) + bytes(6)).decode()],
+                   [7, hexlify(ident + layout + bytes((to,)) * 6).decode()],
+                   [8, hexlify(ident + bytes((2,)) + bytes(8)).decode()]]}
         rejections.append(g)
     D.save(lk.sh.data + D.F, {"g": games, "r": dict((str(to), [123, 123]) for to in range(1, 8)),
                              "e": rejections})
@@ -247,7 +256,8 @@ def critical_duel(j):
         assert len(ship.live.out) == 24 and all(o[1][0] == 2 for o in ship.live.out)
         assert len(games) == 3 and all(g["s"] == "active" and g["n"] >= 68 and
                len(g["h"]) == 2 * g["n"] and g.get("q") for g in games)
-        assert len(rejects) == 7 and all(g.get("q") for g in rejects) and len(j["r"]) == 7
+        assert len(rejects) == 7 and len(j["r"]) == 7 and all(
+            g.get("o") and g.get("rj") and [z[0] for z in g.get("q", ())] == [6, 7, 8] for g in rejects)
         duel_worst[0] = (tuple(g["n"] for g in games),
                          sum(len(g.get("q", ())) for g in games + rejects), 24)
         sample()
@@ -768,9 +778,11 @@ if LIVE:
     PL = peer_link
     # The two absent opponents retain exactly their bounded durable SYNCs.
     # They are part of the measured workload, never silently discarded to pass.
-    absent_ok = (DUEL and len(L.out) == 8 and
+    # The six absent crewmates' stubs keep their ANSWER, REVEAL and END queued.
+    absent_ok = (DUEL and len(L.out) == 20 and
                  sum(o[1][0] == 9 and o[0] in (2, 3) for o in L.out) == 2 and
-                 sum(o[1][0] == 8 and o[0] in range(2, 8) for o in L.out) == 6)
+                 all(sorted(o[1][0] for o in L.out if o[0] == to and o[1][5] == 0x52) == [6, 7, 8]
+                     for to in range(2, 8)))
     lv_ok = (L is not None and PL is not None and L.n["in"] >= 1 and PL.n["in"] >= 1 and (not L.out or absent_ok)
              and not PL.out and L.n["bad"] == 0 and PL.n["bad"] == 0 and "lvliveapi" not in sys.modules
              and "lvlivein" not in sys.modules)

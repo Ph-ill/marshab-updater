@@ -1508,5 +1508,110 @@ for hours, wd in ((12, 2), (61, None)):
     check("END 3 after %d h idle: wd %s" % (hours, wd), game(b)["s"] == "called" and D.view(b.live)[0]["wd"] == wd
           and D.box(b.live)["r"] == {})
 
+# Review 0.3.1-9 #1: a game retired into a stub still shows on the page, so the picker
+# says why no new duel opens (rev9 picker.py) instead of offering one that 409s.
+w, a, b = owed_reveal(315)
+for to in (2, 3, 4):
+    D.action(b.live, {"action": "new", "to": to})
+D.maintain(b.live)
+D.action(b.live, {"action": "discard", "to": 4})
+v = [x for x in D.view(b.live) if x["to"] == 0]
+check("stub on the page", v == [{"to": 0, "id": D.box(b.live)["e"][0]["id"], "s": "done", "stub": 1,
+                                 "pending": True, "record": [1, 0]}])
+check("and the board still refuses a new duel", D.action(b.live, {"action": "new", "to": 0})[0] == 409)
+for k in range(2):
+    idle(a, 6 * 3600000 + 1000); idle(b, 6 * 3600000 + 1000); D.maintain(a.live); D.maintain(b.live)
+    run(w, a, b, lambda: not a.live.out and not b.live.out and a.ble.state == b.ble.state == "idle")
+D.maintain(b.live)
+check("stub leaves the page once acked", not [x for x in D.view(b.live) if x["to"] == 0]
+      and D.action(b.live, {"action": "new", "to": 0})[0] == 200)
+
+# Review 0.3.1-9 #3: a busy reply to a crewmate with an owed stub waits on the stub and
+# goes once the stub's items are acked (rev9 busy.py), rather than being dropped.
+def owed_decline(seed):
+    w, a, b = fresh(seed)
+    act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
+    check("decline", act(b, "decline") == 200 and any(o[0] == 0 and o[1][0] == 8 for o in b.live.out))
+    for to in (2, 3, 4):
+        D.action(b.live, {"action": "new", "to": to})
+    D.maintain(b.live)
+    check("declined game retired to a stub", [(x["to"], x["s"], x.get("o")) for x in D.box(b.live)["e"]] == [(0, "declined", 1)])
+    # a never hears the decline: its own sweep puts the invitation away at 3 days.
+    idle(a, 3 * 86400000 + 1000); D.maintain(a.live)
+    check("a put it away", game(a)["s"] == "called")
+    to_peer(a, b)
+    check("b still owes a", D.box(b.live)["e"][0].get("o"))
+    return w, a, b
+
+
+w, a, b = owed_decline(316)
+check("a invites again", act(a, "new") == 200 and act(a, "invite", layout=LAY) == 200)
+second = next(g for g in D.box(a.live)["g"] if g["s"] == "wait")["id"]
+# (b's drafts aged out with the 3 days: open three duels again.)
+for to in (2, 3, 4):
+    check("three duels open", D.action(b.live, {"action": "new", "to": to})[0] == 200)
+to_peer(a, b)
+e = D.box(b.live)["e"]
+check("busy reply waits on the stub", [(x["to"], x.get("rj")) for x in e] == [(0, [second, 5])]
+      and [o[1][0] for o in b.live.out if o[0] == 0] == [8])
+to_peer(b, a)
+D.maintain(b.live)
+check("reply queued once the stub's END is acked", [(x["to"], x["id"], x["s"]) for x in D.box(b.live)["e"]] == [(0, second, "called")]
+      and [(o[1][0], bytes(o[1][5:8]).hex()) for o in b.live.out if o[0] == 0] == [(8, second + "05")])
+to_peer(b, a)
+check("a hears busy", next(g for g in D.box(a.live)["g"] if g["id"] == second)["s"] == "busy")
+D.maintain(b.live)
+check("reply retires once acked", not D.box(b.live).get("e"))
+
+# The unknown-game SYNC waits the same way, and only an END outranks it.
+w, a, b = owed_decline(317)
+D.take(b.live, 0, 5, bytes((0x77, 0x01, 1, 0)) + bytes(7))
+check("unknown-game reply waits", D.box(b.live)["e"][0]["rj"] == ["7701", 0]
+      and [o[1][0] for o in b.live.out if o[0] == 0] == [8])
+to_peer(b, a); D.maintain(b.live)
+q = [bytes(o[1][5:16]) for o in b.live.out if o[0] == 0]
+check("unknown-game SYNC goes after the stub", [x.get("unknown") for x in D.box(b.live)["e"]] == [True]
+      and [o[1][0] for o in b.live.out if o[0] == 0] == [9] and q[0][:6] == bytes((0x77, 1, 0, 255, 255, 4 | 128)))
+
+# Review 0.3.1-9 #5: an INVITE from a crewmate this ship still owes is put away (END 3,
+# after the stub's items), never a second game that could replace the stub.
+w, a, b = owed_decline(318)
+for to in (2, 3, 4):
+    D.action(b.live, {"action": "new", "to": to})
+D.take(b.live, 0, 3, bytes((1, 0x66, 0x02)) + bytes(8))
+check("three duels: busy waits", D.box(b.live)["e"][0]["rj"] == ["6602", 5])
+D.action(b.live, {"action": "discard", "to": 4})
+D.take(b.live, 0, 3, bytes((1, 0x66, 0x03)) + bytes(8))
+jb = D.box(b.live)
+check("owed INVITE refused, reply waits", [g["to"] for g in jb["g"]] == [2, 3]
+      and [(x["to"], x.get("rj")) for x in jb["e"]] == [(0, ["6603", 3])])
+to_peer(b, a); D.maintain(b.live)
+check("put-away END after the stub", [(o[1][0], bytes(o[1][5:8]).hex()) for o in b.live.out if o[0] == 0] == [(8, "660303")])
+
+# A second stub for the same crewmate keeps the first while it has undelivered items,
+# and a waiting reply moves to the stub that still owes.
+w, a, b = fresh(319)
+lk = b.live
+j = {"g": [], "r": {}, "e": [{"to": 0, "id": "1111", "s": "declined", "o": 1, "q": [[8, "111101" + "00" * 8]],
+                             "rj": ["3333", 5]}]}
+g2 = {"to": 0, "id": "2222", "s": "done", "why": 2, "n": 0, "h": "", "q": [[7, "2222" + "00" * 9], [8, "222202" + "00" * 8]]}
+j["g"].append(g2)
+D.retire(lk, j, g2)
+check("both stubs kept", [(x["id"], x.get("o")) for x in j["e"]] == [("1111", 1), ("2222", 1)] and D.owed(j, 0))
+j["e"][0]["q"] = []
+D.flush(lk, j)
+check("first stub retires, its reply waits on the second",
+      [(x["id"], x.get("rj")) for x in j["e"]] == [("2222", ["3333", 5])] and len([o for o in lk.out if o[0] == 0]) == 2)
+lk.out[:] = []
+D.flush(lk, j)
+check("second stub retires, the reply goes", [(x["id"], x["s"]) for x in j["e"]] == [("3333", "called")]
+      and [(o[1][0], bytes(o[1][5:8]).hex()) for o in lk.out if o[0] == 0] == [(8, "333305")])
+# A finished stub with nothing undelivered is replaced as before.
+j = {"g": [], "r": {}, "e": [{"to": 0, "id": "5555", "s": "declined", "o": 1}]}
+g3 = {"to": 0, "id": "6666", "s": "called", "q": [[8, "666603" + "00" * 8]]}
+j["g"].append(g3)
+D.retire(lk, j, g3)
+check("acked stub replaced", [x["id"] for x in j["e"]] == ["6666"])
+
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

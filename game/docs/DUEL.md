@@ -45,7 +45,11 @@ web/duel.js + web/duel.css (the screens).
   invitation is clearly younger than its 3-day put-away (under 2.5 days idle on the
   invited ship); nearer to 3 days the END may be the inviter's own sweep, so it says
   "Duel put away", as a game put away otherwise does. (An invitation delivered late
-  can still read as withdrawn: the INVITE carries no send time.)
+  can still read as withdrawn: the INVITE carries no send time. So can one after the
+  invited ship rebooted and has no phone-set clock yet: its idle age then restarts
+  from the last hourly checkpoint and credits no switched-off time, so it can be
+  undercounted, and the inviter's own put-away at 3 days may show as "Kim withdrew the
+  invitation". Telling the two apart needs its own END reason, in a later release.)
   Call it is offered only while you're waiting on the other side in a game both ships
   joined (or its reveal): on your own turn the page doesn't show it, and the board
   answers "It's your move." It isn't offered on an unanswered invitation, because an
@@ -156,12 +160,24 @@ one per hour to keep authenticated junk from filling the shared out-box.
   most 3 games plus the record per crewmate and at most 7 pending reply records (one
   per other ship): rejection and unknown-game replies, and stubs of finished games whose
   END/REVEAL is still queued. A stub keeps its crewmate's slot; a rejection or
-  unknown-game reply to that crewmate waits until the stub retires (the unanswered
-  invitation is put away on the other ship at 3 days). Reply records retire as soon as
-  their items have been delivered and acknowledged, never before their durable
-  obligation ends.
-  The long-history heap fixture includes all seven pending replies and populated
-  pair records. Do not treat the former 1.5 KB estimate as a maximum file size.
+  unknown-game reply to that crewmate is kept on the stub (one per crewmate; an END
+  replaces a waiting SYNC, never the other way) and queued as soon as the stub's own
+  items are acknowledged, so it reaches the other ship right after them. While a stub
+  is owed, an INVITE from that crewmate is put away (END 3, sent after the stub's
+  items): the inviting page says "Duel put away" and can invite again. The one way a
+  second stub can appear for a crewmate is a game opened by the INVITE that retired
+  the first, finished before the first stub's items were acknowledged; then both are
+  kept (at most two), the earlier one is never replaced, and a waiting reply moves to
+  whichever still owes. The page shows an owed stub for a crewmate with no game here
+  as "Duel over. Your last move is still on its way", with the record between you,
+  and the picker opens that screen rather than a new duel: the board refuses a new
+  duel with that crewmate until the stub's items are acknowledged. Reply records
+  retire as soon as their items have been delivered and acknowledged, never before
+  their durable obligation ends.
+  The long-history heap fixture includes seven stubs of the largest shape (owed, a
+  waiting reply, and ANSWER, REVEAL and END queued, which a full out-box can't
+  reserve; four of them on the page beside the three long games) and populated pair
+  records. Do not treat the former 1.5 KB estimate as a maximum file size.
 
 ### Cheating resistance
 

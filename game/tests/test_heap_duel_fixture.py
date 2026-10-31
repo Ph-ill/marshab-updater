@@ -360,7 +360,12 @@ class WorstDuelHeap(unittest.TestCase):
             games = box["g"]
             self.assertEqual(len(box.get("e", [])), 7)
             self.assertEqual(len(box["r"]), 7)
-            self.assertTrue(all(g.get("q") and g["q"][0][0] == 8 for g in box["e"]))
+            # The largest stub shape (review 0.3.1-9 #2), not one-END rejections.
+            for g in box["e"]:
+                self.assertEqual((g["s"], g["o"], g["rj"][1]), ("done", 1, 5))
+                self.assertTrue(all(D.allowed(g, z[0]) for z in g["q"]))
+                self.assertEqual([z[0] for z in g["q"]], [6, 7, 8])
+                self.assertTrue(all(len(bytes.fromhex(z[1])) == 11 for z in g["q"]))
             self.assertEqual([g["to"] for g in games], [1, 2, 3])
             self.assertEqual([g["n"] for g in games], [68, 70, 70])
             for g in games:
@@ -386,7 +391,11 @@ class WorstDuelHeap(unittest.TestCase):
             import lvduelview
             import lvliveapi
             snapshot = lvduelview.view(own)
-            self.assertTrue(all("history" in g and "shots" not in g for g in snapshot))
+            # Three long games, then the four stubs of crewmates with no game here, which
+            # the page shows too (review 0.3.1-9 #1): the streamed snapshot carries them.
+            self.assertEqual([g["to"] for g in snapshot], [1, 2, 3, 4, 5, 6, 7])
+            self.assertTrue(all("history" in g and "shots" not in g for g in snapshot[:3]))
+            self.assertTrue(all(g["stub"] and g["pending"] and "history" not in g for g in snapshot[3:]))
             # A later durable radio update cannot change a response already counted.
             before = "".join(lvliveapi.parts([], [], [], [], None, {"duel": snapshot, "on": True}))
             games[0]["h"] += "Ia"
@@ -394,7 +403,8 @@ class WorstDuelHeap(unittest.TestCase):
             D.save(tmp + "/duel.json", box)
             after = "".join(lvliveapi.parts([], [], [], [], None, {"duel": snapshot, "on": True}))
             self.assertEqual(before, after)
-            for g, source in zip(json.loads(after)["duel"], snapshot):
+            self.assertEqual(json.loads(after)["duel"][3:], snapshot[3:])
+            for g, source in zip(json.loads(after)["duel"], snapshot[:3]):
                 shots = list(D.history({"h": source["history"]}))
                 self.assertEqual(g["shots"], [list(z) for z in shots if z[0] % 2 == 0])
                 self.assertEqual(g["incoming"], [list(z) for z in shots if z[0] % 2])
@@ -554,7 +564,8 @@ class WorstDuelHeap(unittest.TestCase):
             to = 1
         games = [dict(n=n, h="Aa" * n, s="active", q=[[9, "00" * 11]])
                  for n in (69, 70, 70)]
-        box = dict(g=games, e=[dict(q=[[8, "00" * 11]]) for _ in range(7)],
+        stub = lambda: dict(o=1, rj=["0000", 5], q=[[6, "00" * 11], [7, "00" * 11], [8, "00" * 11]])
+        box = dict(g=games, e=[stub() for _ in range(7)],
                    r={str(n): [123, 123] for n in range(1, 8)})
         sampled = []
         scope = dict(duel_injecting=[False], duel_held=[True], duel_worst=[None],
@@ -567,7 +578,7 @@ class WorstDuelHeap(unittest.TestCase):
             sys.modules.pop("lvliveapi", None)
             sys.modules.pop("lvduel", None)
             scope["critical_duel"](box)
-            self.assertEqual(scope["duel_worst"][0], ((69, 70, 70), 10, 24))
+            self.assertEqual(scope["duel_worst"][0], ((69, 70, 70), 24, 24))
             self.assertEqual(sampled, [True])
             scope["duel_worst"][0] = None
             with patch.dict(sys.modules, {"lvduel": NS()}):
@@ -578,7 +589,10 @@ class WorstDuelHeap(unittest.TestCase):
                     scope["critical_duel"](box)
             for change, undo in (
                 (lambda: games[1].update(q=[]), lambda: games[1].update(q=[[9, "00" * 11]])),
-                (lambda: box["e"].pop(), lambda: box["e"].append(dict(q=[[8, "00" * 11]]))),
+                (lambda: box["e"].pop(), lambda: box["e"].append(stub())),
+                # A one-END rejection no longer stands in for a stub (review 0.3.1-9 #2).
+                (lambda: box["e"][3].update(q=[[8, "00" * 11]]), lambda: box["e"][3].update(stub())),
+                (lambda: box["e"][3].pop("rj"), lambda: box["e"][3].update(stub())),
                 (lambda: setattr(scope["web"], "radio_hold", True), lambda: setattr(scope["web"], "radio_hold", False)),
                 (lambda: setattr(scope["ship"].ble, "sess", NS(to=1)),
                  lambda: setattr(scope["ship"].ble, "sess", Session())),
