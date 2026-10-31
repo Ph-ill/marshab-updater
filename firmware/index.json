@@ -3,10 +3,24 @@
   "project": "LongVoyage",
   "latest": "0.0.2-coex",
   "channels": {
-    "test": "0.3.0-ota-phone",
+    "test": "0.3.1-updater",
     "bench": "0.0.2-coex"
   },
   "releases": [
+    {
+      "version": "0.3.1-updater",
+      "channel": "test",
+      "date": "2026-10-30",
+      "label": "Updater preparation",
+      "path": "/firmware/releases/0.3.1-updater/release.json",
+      "bytes": 225770,
+      "files": 38,
+      "frozen": "2661c2144844",
+      "notes": [
+        "This update prepares your ship for the next one."
+      ],
+      "ota": "2111b2e9"
+    },
     {
       "version": "0.3.0-ota-phone",
       "channel": "test",
