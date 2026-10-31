@@ -18,6 +18,13 @@ gets every copy of those the release doesn't ship (<module>.py, <module>.mpy, pa
 added to "delete", and "replaces" lists the ones it does ship (hotfixes over the frozen
 ones: a file is found first on the board).
 
+Releases that an older updater can't take (--needs VERSION: a ship must already run VERSION
+or newer to install this one over the air; 0.3.0's updater takes at most 40 files) keep the
+index readable for every page in the field: "channels" names the newest release on each
+channel without "needs" (what the phone pages up to 0.3.0 read), "heads" the newest release
+on each channel (what pages from 0.3.1-updater read, following "needs" down to a release the
+ship can take first). See game/docs/OTA.md section 2.
+
 Example (coexistence bench test):
   python3 tools/build_release.py --version 0.0.1-coex --channel bench \
       --label "Wi-Fi + BLE coexistence bench test" --source game/bench/coex-test \
@@ -47,6 +54,17 @@ VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
 # they never become the index "latest" (what "Install latest" and the update notice use).
 CHANNELS = ("stable", "beta", "bench", "test")
 NOT_LATEST = ("test",)
+
+
+def pick_heads(releases: list[dict]):
+    """(channels, heads) for releases sorted newest first: heads is the newest release on each
+    channel; channels the newest one without "needs", which every phone page can install."""
+    channels, heads = {}, {}
+    for r in releases:
+        heads.setdefault(r["channel"], r["version"])
+        if not r.get("needs"):
+            channels.setdefault(r["channel"], r["version"])
+    return channels, heads
 
 
 def pick_latest(releases: list[dict], channels: dict):
@@ -86,6 +104,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--build-time", default=None, help="ISO timestamp stored in version.json (default: now); pin it for reproducible builds")
     ap.add_argument("--mpy-cross", default=None, help="path to mpy-cross for a syntax check of every .py")
     ap.add_argument("--no-latest", action="store_true", help="do not move the index 'latest' pointer")
+    ap.add_argument("--needs", default=None,
+                    help="oldest version a ship must already run to take this release over the air "
+                         "(the release that brings an updater that accepts it); must be in the index")
     ap.add_argument("--frozen", type=Path, default=None,
                     help="core manifest (game/tools/fw/cores/*.json): a partial release for the game firmware with that frozen core")
     ap.add_argument("--repo-root", type=Path, default=ROOT)
@@ -184,6 +205,19 @@ def frozen_stale(frozen: dict, rels: list[str]) -> list[str]:
     return out
 
 
+# The most files the updater in 0.3.0 and older takes in one update (game/board/lvota.py
+# MAX_FILES = 40 there; 64 from 0.3.1-updater). A frozen-core release with more over-the-air
+# files needs --needs, or those ships would be offered an update they can only turn down.
+LEGACY_MAX_FILES = 40
+
+
+def ota_count(paths) -> int:
+    """Files in the signed manifest (game/tools/ota/sign_release.py leaves out what the
+    updater never writes: data/, ota/, boot.py, lvboot.*)."""
+    return sum(1 for p in paths if not (p.split("/")[0] in ("data", "ota", "boot.py")
+                                        or p.split("/")[0].startswith("lvboot.")))
+
+
 def vkey(version: str):
     core, _, pre = version.partition("-")
     nums = tuple(int(x) for x in core.split("."))
@@ -251,6 +285,15 @@ def main() -> None:
     root = a.repo_root.resolve()
     if not VERSION_RE.match(a.version):
         raise SystemExit(f"bad version {a.version!r}; use semver like 0.0.1 or 0.0.1-coex")
+    if a.needs is not None:
+        index_path = root / "firmware" / "index.json"
+        known = {r.get("version"): r for r in (json.loads(index_path.read_text()).get("releases", [])
+                                               if index_path.exists() else [])}
+        need = known.get(a.needs)
+        if not VERSION_RE.match(a.needs) or vkey(a.needs) >= vkey(a.version):
+            raise SystemExit(f"--needs {a.needs!r} must be an older version than {a.version}")
+        if need is None or need.get("channel") != a.channel:
+            raise SystemExit(f"--needs {a.needs}: not a {a.channel} release in {index_path}; publish it first")
     source = a.source.resolve()
     rels = collect(source, a.include, a.exclude)
     bad = [r.as_posix() for r in rels if r.name in NEVER_SHIP]
@@ -354,6 +397,12 @@ def main() -> None:
         "payload_bytes": total,
         "files": files,
     }
+    n_ota = ota_count([f["path"] for f in files])
+    if frozen and n_ota > LEGACY_MAX_FILES and not a.needs:
+        raise SystemExit(f"{a.version} has {n_ota} over-the-air files; ships on 0.3.0 or older take at most "
+                         f"{LEGACY_MAX_FILES}. Add --needs <the release whose updater takes it>, e.g. 0.3.1-updater.")
+    if frozen and a.needs and (known[a.needs].get("frozen") != frozen["requires"]):
+        raise SystemExit(f"--needs {a.needs} is built for core {known[a.needs].get('frozen')}, not {frozen['requires']}")
     rel_dir = Path("firmware") / "releases" / a.version
     out_dir = root / rel_dir
     if out_dir.exists():
@@ -367,23 +416,25 @@ def main() -> None:
     entry = {"version": a.version, "channel": a.channel, "date": a.date, "label": a.label,
              "path": "/" + (rel_dir / "release.json").as_posix(), "bytes": total, "files": len(files),
              **({"frozen": frozen["requires"]} if frozen else {}),
-             **({"notes": news} if news else {})}
+             **({"notes": news} if news else {}),
+             **({"needs": a.needs} if a.needs else {})}
     releases = [r for r in index.get("releases", []) if r.get("version") != a.version] + [entry]
     releases.sort(key=lambda r: vkey(r["version"]), reverse=True)
     index["releases"] = releases
-    channels = {}
-    for r in releases:
-        channels.setdefault(r["channel"], r["version"])
+    channels, heads = pick_heads(releases)
     index["channels"] = channels
+    if heads != channels or "heads" in index:
+        index["heads"] = heads
     if not a.no_latest:
-        index["latest"] = pick_latest(releases, channels)
+        index["latest"] = pick_latest(releases, heads)
     index_path.write_text(json.dumps(index, indent=2) + "\n")
 
     print(f"wrote {out.relative_to(root)}: {len(files)} files, {total} bytes payload, {out.stat().st_size} bytes json")
     if frozen:
         print(f"partial release for {frozen['id']} {frozen['version']} core {frozen['requires']}: overrides [{', '.join(overrides)}]"
               + (f", replaces frozen [{', '.join(frozen_replaces(frozen, [p for p, _ in payload]))}]" if frozen.get("board") else ""))
-    print(f"index {index_path.relative_to(root)}: latest={index['latest']} channels={index['channels']}")
+    print(f"index {index_path.relative_to(root)}: latest={index['latest']} channels={index['channels']}"
+          + (f" heads={index['heads']}" if "heads" in index else ""))
 
 
 if __name__ == "__main__":

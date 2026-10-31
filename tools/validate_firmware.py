@@ -25,6 +25,9 @@ NOT_LATEST = ("test",)  # listed for hand-picked installs only, never "latest"
 SHA = re.compile(r"^[0-9a-f]{64}$")
 CORE = re.compile(r"^[0-9a-f]{12}$")
 LVX = re.compile(r"^lvx/([a-z_][a-z0-9_]*)\.(mpy|py)$")
+# 0.3.0's updater (and every older one) takes at most this many files in one update; a
+# release with more needs "needs" (tools/build_release.py LEGACY_MAX_FILES).
+LEGACY_MAX_FILES = 40
 errors, notes, warns = [], [], []
 
 
@@ -210,6 +213,58 @@ def check_ota(rel, name):
     return f", ota signed {env['kid']}"
 
 
+def vkey(v):
+    core, _, pre = v.partition("-")
+    return tuple(int(x) for x in core.split(".")) + ((1, "") if not pre else (0, pre))
+
+
+def check_needs(idx, by_version, ota_files):
+    """"needs" and "heads" (game/docs/OTA.md section 2): every phone page in the field must
+    be offered a release its ship can take. Pages up to 0.3.0 read only channels[ch]; pages
+    from 0.3.1-updater read heads[ch] and follow "needs" down."""
+    heads = idx.get("heads")
+    if heads is not None and not isinstance(heads, dict):
+        err("index.json: heads must be an object of channel -> version")
+        heads = None
+    newest = {}
+    for r in idx.get("releases", []):
+        v, ch = r.get("version"), r.get("channel")
+        if isinstance(v, str) and SEMVER.match(v) and (ch not in newest or vkey(v) > vkey(newest[ch])):
+            newest[ch] = v
+    for ch, v in (heads or {}).items():
+        if v not in by_version or by_version[v].get("channel") != ch:
+            err(f"index.json: heads {ch} -> {v} is not a {ch} release")
+        elif newest.get(ch) != v:
+            err(f"index.json: heads {ch} -> {v}, but the newest {ch} release is {newest.get(ch)}")
+        if ch in (idx.get("channels") or {}) and v in by_version and idx["channels"][ch] in by_version and \
+                vkey(idx["channels"][ch]) > vkey(v):
+            err(f"index.json: channel {ch} -> {idx['channels'][ch]} is newer than its head {v}")
+    for ch, v in (idx.get("channels") or {}).items():
+        if (by_version.get(v) or {}).get("needs"):
+            err(f"index.json: channel {ch} -> {v} needs {by_version[v]['needs']}: phone pages up to 0.3.0 "
+                f"read only channels and would be offered an update their ship turns down; point "
+                f"channels at the newest {ch} release without needs, and heads at {v}")
+    for r in idx.get("releases", []):
+        v, need = r.get("version"), r.get("needs")
+        n = ota_files.get(v)
+        if need is None:
+            if r.get("frozen") and n is not None and n > LEGACY_MAX_FILES:
+                err(f"index.json {v}: {n} over-the-air files, more than the {LEGACY_MAX_FILES} that ships "
+                    f"on 0.3.0 or older take; it must name the release that updates the updater (needs)")
+            continue
+        x = by_version.get(need) if isinstance(need, str) else None
+        if x is None:
+            err(f"index.json {v}: needs {need!r} is not a release in the index")
+            continue
+        if x.get("channel") != r.get("channel") or x.get("frozen") != r.get("frozen"):
+            err(f"index.json {v}: needs {need}, which is on another channel or core")
+        if not SEMVER.match(v or "") or vkey(need) >= vkey(v):
+            err(f"index.json {v}: needs {need}, which isn't older")
+        if not heads or heads.get(r.get("channel")) is None:
+            err(f"index.json {v}: needs {need} but heads has no {r.get('channel')} entry; "
+                f"pages from 0.3.1-updater would never see it")
+
+
 def check_index():
     idx = load(ROOT / "firmware/index.json")
     if idx is None:
@@ -227,6 +282,7 @@ def check_index():
         err(f"index.json: latest {idx['latest']} is a {by_version[idx['latest']].get('channel')} release")
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "game" / "tools" / "ota"))
     import whatsnew                     # (this checker's own copy, whatever --root says)
+    ota_files = {}
     for r in idx.get("releases", []):
         if "notes" in r and whatsnew.check(r["notes"]):
             err(f"index.json {r.get('version')}: notes: {whatsnew.check(r['notes'])}")
@@ -242,10 +298,14 @@ def check_index():
             want = ((rel or {}).get("frozen") or {}).get("requires")
             if rel is not None and r.get("frozen") != want:
                 err(f"index.json {r.get('version')}: frozen {r.get('frozen')} != release {want}")
+            if rel is not None and rel.get("frozen"):
+                ota_files[r["version"]] = sum(1 for f in rel.get("files", []) if not ota_protected(f.get("path", "")))
             kid = ((rel or {}).get("ota") or {}).get("kid")
             if rel is not None and r.get("ota") != kid:
                 err(f"index.json {r.get('version')}: ota {r.get('ota')} != release's key {kid}")
-    notes.append(f"index.json: {len(versions)} release(s), latest {idx.get('latest')}")
+    check_needs(idx, by_version, ota_files)
+    notes.append(f"index.json: {len(versions)} release(s), latest {idx.get('latest')}"
+                 + (f", heads {idx['heads']}" if isinstance(idx.get("heads"), dict) else ""))
 
 
 def check_runtime(online):
@@ -288,14 +348,20 @@ def check_served_tree():
                 err(f"served tree vendors {f.relative_to(ROOT)}; link micropython.org instead")
 
 
-check_index()
-check_runtime("--online" in sys.argv)
-check_served_tree()
-for n in notes:
-    print("ok ", n)
-for w in warns:
-    print("WARN", w)
-for e in errors:
-    print("ERR", e)
-print(f"{len(errors)} problem(s)")
-sys.exit(1 if errors else 0)
+
+def main():
+    check_index()
+    check_runtime("--online" in sys.argv)
+    check_served_tree()
+    for n in notes:
+        print("ok ", n)
+    for w in warns:
+        print("WARN", w)
+    for e in errors:
+        print("ERR", e)
+    print(f"{len(errors)} problem(s)")
+    sys.exit(1 if errors else 0)
+
+
+if __name__ == "__main__":      # (game/tests/test_ota_step.py imports check_needs)
+    main()

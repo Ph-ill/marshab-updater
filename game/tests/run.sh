@@ -74,6 +74,7 @@ python3 tests/test_cal.py
 python3 tests/test_clock_auth.py
 python3 tests/test_heap_admission.py
 python3 tests/test_heap_duel_fixture.py
+python3 tests/test_heap_timing.py
 python3 tests/test_led.py
 python3 tests/test_batt.py
 python3 tests/test_ota.py
@@ -84,6 +85,10 @@ node tests/duel_navigation_check.mjs
 node tests/duel_terminal_check.mjs
 node tests/shots_story_check.mjs
 python3 tests/test_ota_release.py
+python3 tests/test_ota_needs.py
+if [ -n "$LV_FROZEN_MP" ] && [ -n "$MPY_CROSS" ]; then
+  python3 tests/test_ota_step.py
+fi
 python3 tests/test_reset.py
 python3 tests/test_funnel.py
 python3 tests/test_code.py

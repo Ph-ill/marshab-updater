@@ -51,7 +51,7 @@ GAME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(GAME)
 RELEASE = os.path.join(REPO, "firmware", "releases", "0.2.0-lv-test", "release.json")
 CREW = ["Phill", "Jacques", "Kim", "Jai", "Michelle", "Diego", "Dorian", "Marco"]  # = content/roster.lv
-HEAP_CAP = 80000
+HEAP_CAP = 110000    # board heap cap, 110,000 B since 2026-10-30 (100,000 B from 2026-10-29, 80,000 B before)
 PICO_VID = "2e8a"
 MARK = "BENCHJSON"
 
@@ -518,7 +518,7 @@ def selftest_checks(rep, st, want_day=None, rollover=None, expect_peers=False, l
         return
     rep.add("selftest ran", "PASS", st["result"])
     peak = st.get("heap_peak")
-    rep.add("heap used < 80 KB", "PASS" if peak and peak < HEAP_CAP else "FAIL",
+    rep.add("heap used < 110 KB", "PASS" if peak and peak < HEAP_CAP else "FAIL",
             "peak %s B of %d" % (peak, HEAP_CAP))
     rep.add("BLE up", "PASS" if c.get("ble active") else "FAIL", "advertising and scanning")
     for name, key in (("Wi-Fi hotspot up", "wifi hotspot up"), ("phone server listening", "server listening"),

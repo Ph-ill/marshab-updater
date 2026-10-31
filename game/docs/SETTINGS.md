@@ -276,7 +276,7 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
   - nothing printed; `tools/bench.py --code` afterwards sets the named code, keeps the
     changed one and prints no codes.
 - **`tests/phone_heap.py --ota`** changes a code and back on the frozen build inside the
-  heap check (board peak under 80,000 B).
+  heap check (board peak under 110,000 B).
 - **`web/shots_ota.mjs`** section 5, at 390 (iPhone) and 412 (Android): What's new above
   Install; Version history online (order, marks, dates, Back) and offline (from the page,
   no request to the ship); markup in index.json's notes shown as text and never run; the
@@ -298,7 +298,7 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
     said so, and the next tap is taken; `lvledtest` dropped after each request; other
     paths (including `/api/led`) still reach the game.
 - **`tests/phone_heap.py --ota`** taps Test light twice (a tap meanwhile refused) on a
-  counted pin on the frozen build inside the heap check (board peak under 80,000 B).
+  counted pin on the frozen build inside the heap check (board peak under 110,000 B).
 
 - **`tests/test_reset.py`**, on CPython, MicroPython and the game firmware's unix build.
   The endpoint refuses, with no restart and every file byte-for-byte the same, when there's:

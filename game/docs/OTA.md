@@ -47,11 +47,41 @@ CORS, and the API is rate-limited per IP.
 A release is offered only when:
 
 - the index entry has `"ota": <key id>`, which `sign_release.py` sets;
-- the release is the one on the ship's own channel (`channels[ch]`);
+- the release is the one the index picks for the ship's own channel (below);
 - it's built for the core the ship runs (`frozen` equals the ship's core hash);
 - it's newer than the installed version, compared the way `src/releases.js` compares versions.
 
 `test` and `bench` builds follow their own channels, so a stable ship never sees them.
+
+**Releases an older updater can't take.** A ship's updater (`lvota`) turns down a release
+with more files than it accepts: 0.3.0's takes at most 40 (`MAX_FILES`), 0.3.1-updater's
+and 0.3.1's take 64. The ship answers 403 `bad file list`. So `index.json` has two
+pointers per channel, and an entry can say what it needs:
+
+- `channels[ch]`: the newest release on `ch` that every ship on it can install. Pages up
+  to 0.3.0 read only this, and can't be changed, so it never points at a release with
+  `needs`.
+- `heads[ch]` (optional): the newest release on `ch`. Pages from 0.3.1-updater on read it
+  first, and fall back to `channels[ch]` when it's missing or `null`. It's written only
+  when it differs from `channels`.
+- `"needs": "<version>"` on a release entry: the oldest version a ship must already run to
+  take it over the air. The release it names is on the same channel and core, and older.
+
+The page starts at `heads[ch]`. If the ship runs something older than that entry's `needs`,
+it takes the release `needs` names instead and repeats (at most 8 steps). It offers the
+release it lands on and remembers the head as "next": Settings says the ship needs this
+update before it can take the next one, and after the install the page checks again at
+the first chance instead of waiting 6 hours. A broken chain (a `needs` that isn't a string,
+names nothing, another channel, or a newer version) is a bad index, like any other. If a
+ship still says `bad file list` (an index published by hand, say), the page says the ship
+needs an earlier update first, rather than showing the raw error.
+
+`tools/build_release.py` keeps this straight: it refuses a frozen release with more than 40
+over-the-air files (everything but `data/`, `ota/`, `boot.py` and `lvboot`) unless it's
+given `--needs`, checks that the release named is already in the index on the same
+channel, and writes `channels` and `heads` itself. `tools/validate_firmware.py` refuses an
+index where `channels[ch]` has `needs`, `heads[ch]` isn't the channel's newest, a big
+release has no `needs`, or a `needs` doesn't resolve.
 
 **A test ship on a test branch.** The phone reads `main` unless the ship says otherwise:
 `"ota_src": "<branch>"` in that ship's `/data/ship.json` (by hand, or with mpremote) makes
@@ -637,6 +667,14 @@ Automated (all in `game/tests/run.sh`):
   - `validate_firmware.py` passing it and refusing a tampered manifest, a bad signature,
     an untrusted key, and a file changed after signing;
   - refusing to sign a release that ships `data/`, or with a key the ships don't trust.
+- **`tests/test_ota_needs.py`.** `build_release.py --needs` and the index's `channels` and
+  `heads`: a 47-file release refused without `--needs` (and nothing written), bad `--needs`
+  values, `channels` kept on the stepping stone while `heads` moves, and
+  `validate_firmware.py` refusing each broken index (section 2).
+- **`tests/test_ota_step.py`** (with the frozen-core build). The real chain from a ship on
+  0.3.0 through the stepping stone to the duel build, driven by the real phone pages
+  (0.3.0's `ota.js`, then this one) in a JS VM against the real updater: see the file's
+  docstring for its stages, power cuts and rollbacks.
 - **`tests/phone_heap.py ... --ota`.** A third phone uploads a signed update over real
   HTTP to the frozen build during the heap test: sign-in, 401 signed out, a tampered
   envelope (403), a wrong offset (409), every file, then cancel. The peak has to stay
@@ -726,3 +764,18 @@ python3 tools/validate_firmware.py                        # checks the signature
 `sign_release.py` reads the key from `--key`, `$LV_OTA_KEY` or
 `~/.secrets/lv_ota_signing_key`, and never prints it. A release that isn't signed simply
 isn't offered over the air, and USB installs work as before.
+
+**A release with more files than older updaters take** (section 2). Publish in this order,
+on the channel the ships are on (`version.json`'s `channel`; the stepping stone's channel
+becomes theirs once it's in):
+
+1. Build, sign and publish the stepping stone (for 0.3.1, `0.3.1-updater` from
+   `game/tools/ota/build_updater.py --channel <ch>`: 0.3.0's files with the 64-file
+   updater). `channels[ch]` and `heads[ch]` both point at it. Check that a 0.3.0 ship
+   takes it before going on.
+2. Build the big release with `--needs <stepping stone>`, sign and publish it.
+   `build_release.py` moves `heads[ch]` to it and leaves `channels[ch]` on the stepping
+   stone. Run `validate_firmware.py`.
+3. Never move `channels[ch]` to a release with `needs`, by hand or otherwise: a 0.3.0 page
+   would offer it, and the ship would refuse it. Later releases that need no bigger
+   updater still carry `--needs <stepping stone>` while 0.3.0 ships may be out there.

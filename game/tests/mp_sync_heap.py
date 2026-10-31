@@ -9,7 +9,8 @@
 # It syncs a peer that missed almost the whole season (221 records over the link). The
 # The in-operation heap is sampled without collection, including at the web server's
 # busiest points (lvweb.probe, lvphone.probe). The board's share must stay under
-# 110,000 B: the peak, less the fake radio module and the peer at its largest
+# CAP (110,000 B since 2026-10-30; 100,000 B from 2026-10-29, 80,000 B before): the peak,
+# less the fake radio module and the peer at its largest
 # (see below). The LED stays off, unless:
 #   --led    the LED notifier on (led_notify: board/lvled.py loaded, a fake pin from
 #            tests/fakeboard): it breathes through the sync (no quiet hours, a test pattern
@@ -118,6 +119,9 @@ def seed_duels(lk, peer_lk):
 # loads, and drops lvota through the signature check. Review-1 additionally bounds
 # expensive responses before allocation and loads phone/boot helpers only when used;
 # the acceptance target is <=78,000 B over three full and three normal combined runs.
+# The board heap cap (32-bit): 110,000 B, Phill 2026-10-30 (100,000 B from 2026-10-29; 80,000 B before). A Pico W has about
+# 193 KB free for the game; the cap leaves room for Wi-Fi buffers and fragmentation over days.
+CAP = 110000
 EVERYONE = "--everyone" in sys.argv
 LOG = "build/season_log_all.bin" if EVERYONE else "build/season_log.bin"
 if LED or BAT:
@@ -687,9 +691,8 @@ BITS = 64 if sys.maxsize > 2 ** 32 else 32
 # n1: review 1 had let OTA+LIVE pass on Test light's writes alone).
 led_ok = (ship.led.enabled and ship.led.writes >= 6 if lvship.game_fw() or "--force" in sys.argv else
           not ship.led.enabled and ship.led.writes == 0) if LED else (not ship.led.enabled and ship.led.writes == 0)
-HEAP_CAP = 110000
 ok = (synced and http_ok[0] and led_ok and
-      (base == 0 or BITS == 64 or (0 < board <= HEAP_CAP)))
+      (base == 0 or BITS == 64 or (0 < board < CAP)))
 import lv                                   # noqa: E402
 if FROZEN:
     # the core is the frozen one (not hidden by a lv/ directory). Since lv-core 0.2.0 the glue
@@ -715,12 +718,12 @@ print("heap: fake radio module %d, code (lvship + lv incl. sync, ble) %d, peer %
       "and the story at day 42 %d" % (m_fake, m_code - m_fake, m_peer - m_code, m_ship - m_peer))
 print("heap: peak live %d B while syncing (peer got %d records in %d ms of radio time); peer and fake world at the end %d; "
       "board peak (peak - peer - fake radio) %d B%s; main.py's resident code %d B (in the peak)" % (
-          peak[0], got, t, m_peer_end, board, " (cap 110,000 B applies to the 32-bit Pico)" if BITS == 64 else " of the 110,000 B cap",
+          peak[0], got, t, m_peer_end, board, " (cap %d B applies to the 32-bit Pico)" % CAP if BITS == 64 else " of the %d B cap" % CAP,
           m_main))
 print("heap: the peak came with %s" % where[0])
 print("heap: board peak by moment: %s" % ", ".join("%s %d B" % (k, kpeak[k] - m_peer_end - m_fake) for k in sorted(kpeak)))
 if EVERYONE and BITS == 32:
-    print("heap: the everyone-plays season: %d B to spare under the 110,000 B cap" % (HEAP_CAP - board))
+    print("heap: the everyone-plays season: %d B to spare under the %d B cap" % (CAP - board, CAP))
 print("http: status server %s, phone clock learned %s" % ("answered" if http_ok[0] else "NOT answered",
                                                            ship.clock.known()))
 if PHONE:

@@ -385,3 +385,93 @@ test('review3 m4: refresh never waits on /api/ota; it asks in the background and
   assert.equal(p.run('OS_.v'), '0.3.0');
   assert.doesNotMatch(p.run('otaSect()'), /hasn't said what it runs/);
 });
+
+// ---- review 0.3.1-3 #3: an updater too old for the channel's newest release --------------
+// index.json's channels[ch] stays on the newest release any ship can take (what pages up to
+// 0.3.0 read); heads[ch] is the newest one, and "needs" names what a ship must already run.
+const STEP = '0.3.1-updater', DUEL = '0.3.1';
+const relOf = (version) => ({ ota: { kid: 'test-key', sig: Buffer.alloc(64).toString('base64'), m: JSON.stringify({ schema: 1, project: 'LongVoyage', version, channel: 'test', core: 'core1', files: [['app.html.gz', 3, 'a'.repeat(64)]] }) }, files: [{ path: 'app.html.gz', data: 'YWJj' }] });
+const ent = (version, more = {}) => ({ version, channel: 'test', ota: 'test-key', frozen: 'core1', path: `/firmware/${version}/release.json`, notes: [`Notes for ${version}.`], ...more });
+const chain = (more = {}) => ({ channels: { test: STEP }, heads: { test: DUEL }, releases: [ent(DUEL, { needs: STEP }), ent(STEP), ent('0.3.0')], ...more });
+const serve = (idx) => (url) => response(url.endsWith('index.json') ? structuredClone(idx) : relOf(url.split('/').at(-2)));
+const fetched = (p) => p.calls.map(({ url }) => url.split('/firmware/')[1]);
+
+test('step: a 0.3.0 ship is offered the stepping stone first, and the page says why', async () => {
+  const p = phone(serve(chain())); await p.run('otaCheck(true)');
+  const r = JSON.parse(p.run('JSON.stringify(otaFor(OS_))'));
+  assert.equal(r.v, STEP); assert.equal(r.next, DUEL);
+  assert.deepEqual(fetched(p), ['index.json', `${STEP}/release.json`], 'never downloads the release it can\'t take');
+  assert.equal(p.state().seen, DUEL);
+  const html = p.run('otaSect()');
+  assert.match(html, /0\.3\.1-updater is ready on this phone/);
+  assert.match(html, /Your ship needs this update before it can take 0\.3\.1\. Once it has restarted, check for updates again to get 0\.3\.1\./);
+  assert.match(html, /Install 0\.3\.1-updater/);
+  assert.doesNotMatch(html, /bad file list|not signed/);
+});
+test('step: once the stepping stone runs, the same index offers the newest release', async () => {
+  const p = phone(serve(chain())); p.run(`OS_={...ship,v:'${STEP}'}`); await p.run('otaCheck(true)');
+  const r = JSON.parse(p.run('JSON.stringify(otaFor(OS_))'));
+  assert.equal(r.v, DUEL); assert.equal(r.next, '');
+  assert.deepEqual(fetched(p), ['index.json', `${DUEL}/release.json`]);
+  assert.doesNotMatch(p.run('otaSect()'), /needs this update before/);
+  const q = phone(serve(chain())); q.run(`OS_={...ship,v:'${DUEL}'}`); await q.run('otaCheck(true)');
+  assert.equal(q.run('otaFor(OS_)'), null); assert.match(q.run('otaSect()'), /Up to date/);
+  // a stepping stone already on this phone isn't fetched twice
+  const s = phone(serve(chain())); await s.run('otaCheck(true)'); await s.run('otaCheck(true)');
+  assert.deepEqual(fetched(s), ['index.json', `${STEP}/release.json`, 'index.json']);
+  assert.equal(JSON.parse(s.run('JSON.stringify(otaFor(OS_))')).next, DUEL);
+});
+test('step: without heads (an index that moved channels[ch] itself), "needs" still leads to the stepping stone', async () => {
+  const idx = chain({ channels: { test: DUEL } }); delete idx.heads;
+  const p = phone(serve(idx)); await p.run('otaCheck(true)');
+  assert.equal(p.run('otaFor(OS_).v'), STEP); assert.equal(p.run('otaFor(OS_).next'), DUEL);
+});
+test('step: a chain of needs is followed down, and each kind of broken needs is refused as invalid data', async () => {
+  const idx = chain({ heads: { test: '0.3.2' } }); idx.releases.unshift(ent('0.3.2', { needs: DUEL }));
+  const p = phone(serve(idx)); await p.run('otaCheck(true)');
+  assert.equal(p.run('otaFor(OS_).v'), STEP); assert.equal(p.run('otaFor(OS_).next'), '0.3.2');
+  const q = phone(serve(idx)); q.run(`OS_={...ship,v:'${STEP}'}`); await q.run('otaCheck(true)');
+  assert.equal(q.run('otaFor(OS_).v'), DUEL); assert.equal(q.run('otaFor(OS_).next'), '0.3.2');
+  const broken = [
+    { needs: '0.3.1-beta' }, { needs: DUEL }, { needs: '0.3.2' }, { needs: 7 }, { needs: '' },
+  ];
+  for (const more of broken) {
+    const b = chain(); b.releases[0] = ent(DUEL, more);
+    const r = phone(serve(b)); await r.run('otaCheck(true)');
+    assert.equal(r.state().err, 'bad', JSON.stringify(more)); assert.equal(r.run('otaFor(OS_)'), null);
+  }
+  const other = chain(); other.releases[1] = { ...ent(STEP), channel: 'stable' };
+  const o = phone(serve(other)); await o.run('otaCheck(true)'); assert.equal(o.state().err, 'bad');
+  const loop = chain(); loop.releases[1] = ent(STEP, { needs: DUEL });
+  const l = phone(serve(loop)); await l.run('otaCheck(true)'); assert.equal(l.state().err, 'bad');
+  for (const heads of [{ test: 5 }, { test: '0.9.9' }]) {
+    const h = phone(serve(chain({ heads }))); await h.run('otaCheck(true)');
+    assert.equal(h.state().err, 'bad', JSON.stringify(heads));
+  }
+  // heads that isn't an object is ignored (an older index): channels[ch] as before
+  const a = phone(serve(chain({ heads: ['x'] }))); await a.run('otaCheck(true)');
+  assert.equal(a.run('otaFor(OS_).v'), STEP); assert.equal(a.run('otaFor(OS_).next'), '');
+});
+test('step: an old updater\'s "bad file list" is explained, never shown raw', async () => {
+  const why = 'Your ship needs an earlier update before it can take this one. Check for updates again while you have internet, and install the update you\'re offered first.';
+  const p = phone(good);
+  assert.equal(p.run('otaWhy(403,{err:"bad file list"})'), why);
+  assert.equal(p.run('otaWhy(400,{err:"bad file list"})'), 'bad file list', 'only the ship\'s 403 refusal');
+  assert.equal(p.run('otaWhy(403,{err:"bad signature"})'), 'bad signature');
+});
+test('step: a check an older page made doesn\'t hold this page back; its own checks keep their backoff', async () => {
+  const old = { ch: 'test', core: 'core1', at: 999000, ok: true, seen: STEP, rel: { v: STEP, ch: 'test', core: 'core1', notes: [], bytes: 3 } };
+  const p = phone(serve(chain()), old); p.run(`OS_={...ship,v:'${STEP}'}`);
+  await p.run('otaCheck(false)');
+  assert.deepEqual(fetched(p), ['index.json', `${DUEL}/release.json`]);
+  assert.equal(p.state().hd, 1); assert.equal(p.run('otaFor(OS_).v'), DUEL);
+  await p.run('otaCheck(false)'); assert.equal(p.calls.length, 2, 'six hours before the next automatic check');
+});
+test('step: after the stepping stone, Settings says the newer release needs another check', async () => {
+  const p = phone(serve(chain())); await p.run('otaCheck(true)');
+  p.run(`OS_={...ship,v:'${STEP}'}`);
+  assert.equal(p.run('otaFor(OS_)'), null);
+  const html = p.run('otaSect()');
+  assert.match(html, /0\.3\.1 \(check again to get it\)/);
+  assert.doesNotMatch(html, /not signed for this ship|Up to date/);
+});

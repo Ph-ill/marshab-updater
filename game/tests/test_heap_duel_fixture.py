@@ -711,17 +711,17 @@ class WorstDuelHeap(unittest.TestCase):
         self.assertFalse(any(isinstance(n.func, ast.Attribute) and n.func.attr == "take" for n in calls))
         self.assertTrue(any(isinstance(n.func, ast.Attribute) and n.func.attr == "poll" for n in calls))
 
-    def test_32_bit_cap_remains_inclusive_and_fails_above_110000(self):
+    def test_32_bit_cap_is_strict_and_fails_at_110000(self):
         from contextlib import redirect_stdout
         from io import StringIO
         tree = ast.parse((ROOT / "tests/mp_sync_heap.py").read_text())
-        cap = next(n for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "HEAP_CAP" for t in n.targets))
+        cap = next(n for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "CAP" for t in n.targets))
         gate = next(n for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "ok" for t in n.targets))
         code = compile(ast.Module(body=[cap, gate], type_ignores=[]), "heap gate", "exec")
-        for board, expected in ((110000, True), (110001, False), (0, False)):
+        for board, expected in ((109999, True), (110000, False), (110001, False), (0, False)):
             scope = dict(synced=True, http_ok=[True], led_ok=True, base=1, BITS=32, board=board)
             exec(code, scope)
-            self.assertEqual(scope["HEAP_CAP"], 110000)
+            self.assertEqual(scope["CAP"], 110000)
             self.assertEqual(scope["ok"], expected)
             result = compile(ast.Module(body=tree.body[-2:],
                                         type_ignores=[]), "heap result", "exec")

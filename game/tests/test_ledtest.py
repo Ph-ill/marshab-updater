@@ -1,15 +1,15 @@
 # "Test light" on the ship (board/lvledtest.py, POST /api/led/test from board/main.py's
-# ota_route), in real time on a fake pin: refused without a signed-in session (401) or as a
-# GET (404); the pattern (three full blinks, a dark gap, three software-PWM breaths that swell
-# and fade, 10 s in all, dark at the end); one at a time (a tap while it plays is 429 with the
-# ms left, and plays nothing more); it plays with the Ship light off (lv/led.py's dark
-# Notifier) and on (lvled.Led: held dark, off the pin, for the test, then back to what it
-# was doing, its gift still waiting); the breath as a plain blink while the radio or a
-# request is busy; the event loop free throughout (a 100 ms ticker, and main.py's own
-# charger_watch catching the charger plugged in mid-test); no light to drive (no
-# machine.Pin) is a 500 that leaves nothing running; a pin that fails mid-pattern ends the
-# test cleanly; the module dropped after each request. Runs on CPython and MicroPython
-# (stock and the game firmware's unix build):
+# ota_route), on a fake pin and a virtual clock (VClock, below): refused without a signed-in
+# session (401) or as a GET (404); the pattern (three full blinks, a dark gap, three
+# software-PWM breaths that swell and fade, 10 s in all, dark at the end); one at a time (a
+# tap while it plays is 429 with the ms left, and plays nothing more); it plays with the
+# Ship light off (lv/led.py's dark Notifier) and on (lvled.Led: held dark, off the pin, for
+# the test, then back to what it was doing, its gift still waiting); the breath as a plain
+# blink while the radio or a request is busy; the event loop free throughout (a 100 ms
+# ticker, and main.py's own charger_watch catching the charger plugged in mid-test); no
+# light to drive (no machine.Pin) is a 500 that leaves nothing running; a pin that fails
+# mid-pattern ends the test cleanly; the module dropped after each request. Runs on CPython
+# and MicroPython (stock and the game firmware's unix build):
 #   python3 tests/test_ledtest.py && micropython tests/test_ledtest.py        (from game/)
 import sys
 import os
@@ -190,6 +190,78 @@ def writes(log, a, b):
     return len([1 for (t, _) in log if a <= t < b])
 
 
+# Every case below runs on VClock, a virtual clock. They check the pattern's own timing
+# (when each write lands, how long it plays, each breath's shape, the notifier held off),
+# and they used to do it in real time. On the shared test box that failed now and then,
+# on lv32 most often (it is the slowest): the VM gets paused or snapshotted mid-run
+# (dmesg: "random: crng reseeded due to virtual machine fork"; a monitor on the box saw
+# 6-9 s gaps in which nothing ran, one with the wall clock jumping 49 s), so the whole
+# process froze mid-pattern. One run's pin log stopped at ~3.7 s and nothing ran at all,
+# not even this test's 20 ms poll, until ~46 s later, when play() saw it was past TEST_MS
+# and ended ("busy: plays for TEST_MS ...", 49831 ms); others failed "breath 1: then
+# fades" or "light on: the test pattern played". Nothing in play()'s path here can block
+# (fakes only: Busy, Server, a Pin that appends). So for each case lvship.ticks_ms and
+# lvship.sleep_ms (read at call time by play(), lvledtest.start, main.py's hooks and
+# charger_watch, and this test) are VClock's, and the Ship light's Clock and its write
+# timer (VTime) read it too. A tick task moves time 1 ms per round of the event loop; a
+# sleeper yields with the real sleep_ms(0) until its time comes. Time moves only while
+# every task waits on it, in FIFO order, so a host pause moves nothing and each run
+# writes the same pin log. A play() that stopped yielding would stop the clock and hang
+# the run (it would hang the ship too); the ticker below still checks the gaps between
+# turns, now in loop time.
+class VClock:
+    def __init__(self):
+        self.t = 1000
+        self.real = (lvship.ticks_ms, lvship.sleep_ms)
+        self.stop = False
+
+    def ticks_ms(self):
+        return self.t
+
+    async def sleep_ms(self, ms):
+        end = self.t + max(0, int(ms))
+        sleep0 = self.real[1]
+        while self.t < end:
+            await sleep0(0)             # (one round: every other ready task runs once)
+
+    async def tick(self):               # the only thing that moves time: 1 ms a round
+        sleep0 = self.real[1]
+        while not self.stop:
+            await sleep0(0)
+            self.t += 1
+
+
+class VTime:
+    # lvled's time module (lvled._t) on the virtual clock: the Ship light times its own pin
+    # writes (wus) and turns its PWM into a plain blink when they look slow, so a host pause
+    # inside one write would change what it draws for a while after; here a write costs 0.
+    def __init__(self, vc):
+        self.vc = vc
+
+    def ticks_us(self):
+        return self.vc.t * 1000
+
+    def ticks_diff(self, a, b):
+        return a - b
+
+    def sleep_us(self, n):
+        pass
+
+
+async def on_vclock(case, *a):
+    vc = VClock()
+    lvship.ticks_ms, lvship.sleep_ms = vc.ticks_ms, vc.sleep_ms
+    t_was, lvled._t = lvled._t, VTime(vc)
+    tk = asyncio.create_task(vc.tick())
+    try:
+        await case(*a)
+    finally:
+        vc.stop = True
+        await tk
+        lvship.ticks_ms, lvship.sleep_ms = vc.real
+        lvled._t = t_was
+
+
 # -- 1. the light off (lv/led.py's dark Notifier): refusals, then the whole pattern
 async def off_case():
     pin = Pin()
@@ -265,7 +337,7 @@ async def off_case():
 # -- 2. the light on (lvled.Led, a gift waiting): held dark for the test, then back
 async def on_case():
     tp, lp = Pin("test"), Pin("led")
-    led = lvledcfg.make(Clock(), {"led_quiet": "", "led_unknown_time": True}, say=SAID.append, pin=lambda: lp)
+    led = lvledcfg.make(Clock(ticks=lvship.ticks_ms), {"led_quiet": "", "led_unknown_time": True}, say=SAID.append, pin=lambda: lp)
     led.set_enabled(True)
     led.note("gift")
     sh = Ship(led)
@@ -290,56 +362,8 @@ async def on_case():
     led.set_enabled(False)
     await task
 
-# -- 3. busy radio: the breath as a plain blink, on a virtual clock
-# The busy cases check the pattern's own timing (when each write lands, how long it plays),
-# not the event loop's health (off_case does that in real time). On real time they failed
-# now and then on the shared test box with the whole process frozen mid-pattern: the pin
-# log stopped at ~3.7 s, nothing ran at all (not even this test's 20 ms poll), and both
-# woke ~46 s later, when play() saw it was past TEST_MS and ended. Nothing in play()'s path
-# can block (fakes only: Busy, Server, a Pin that appends), and the VM logs "virtual machine
-# fork" snapshots that pause it. So here lvship's clock is VClock: time moves 1 ms per round
-# of the event loop, only while every task is waiting on it, and a host pause moves nothing.
-class VClock:
-    def __init__(self):
-        self.t = 1000
-        self.real = (lvship.ticks_ms, lvship.sleep_ms)
-        self.stop = False
-
-    def ticks_ms(self):
-        return self.t
-
-    async def sleep_ms(self, ms):
-        end = self.t + max(0, int(ms))
-        sleep0 = self.real[1]
-        while self.t < end:
-            await sleep0(0)             # (one round: every other ready task runs once)
-
-    async def tick(self):               # the only thing that moves time: 1 ms a round
-        sleep0 = self.real[1]
-        while not self.stop:
-            await sleep0(0)
-            self.t += 1
-
-    def __enter__(self):
-        lvship.ticks_ms, lvship.sleep_ms = self.ticks_ms, self.sleep_ms
-        return self
-
-    def __exit__(self, *a):
-        self.stop = True
-        lvship.ticks_ms, lvship.sleep_ms = self.real
-
-
+# -- 3. busy radio: the breath as a plain blink
 async def busy_case(http=False):
-    with VClock() as vc:
-        tk = asyncio.create_task(vc.tick())
-        try:
-            await busy_play(http)
-        finally:
-            vc.stop = True
-            await tk
-
-
-async def busy_play(http):
     pin = Pin()
     sh = Ship(Notifier(Clock(), False))
     sh.ble = Busy()
@@ -404,11 +428,11 @@ async def fail_case():
     check("other paths (incl. /api/led) go to the game", Server.routed == ["/api/led", "/api/state"], Server.routed)
 
 
-asyncio.run(off_case())
-asyncio.run(on_case())
-asyncio.run(busy_case())
-asyncio.run(busy_case(http=True))
-asyncio.run(fail_case())
+asyncio.run(on_vclock(off_case))
+asyncio.run(on_vclock(on_case))
+asyncio.run(on_vclock(busy_case))
+asyncio.run(on_vclock(busy_case, True))
+asyncio.run(on_vclock(fail_case))
 
 
 # -- 5. (0.3.0 review 2 M3) the busy mark only once a task exists, and a stale mark cleared

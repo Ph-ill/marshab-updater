@@ -150,7 +150,7 @@ server, no pairing. `lv/sync.py` is the protocol and knows nothing about radios;
   overridable from `/data/ship.json` (`"ble": {...}`). The IRQ handler only queues.
 * **Heap:** 78 KB peak for a stock-MicroPython board (32-bit, `.mpy`) holding the whole
   274-record season, replaying the story, serving the status page (`board/lvstat.py`) and
-  in the middle of a sync, under the 80 KB cap (`tests/mp_sync_heap.py`; the 64-bit port
+  in the middle of a sync, under the 110 KB cap (100 KB from 2026-10-29, 80 KB before) (`tests/mp_sync_heap.py`; the 64-bit port
   measures 118 KB). On the game firmware (`tools/build_firmware.sh`; lv-core 0.2.0 freezes
   the core, the board modules and the story pack into the `.uf2`) the same is 35 KB, and
   46–49 KB with two phones playing the game over the hotspot, the ship light and the
