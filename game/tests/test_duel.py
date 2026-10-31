@@ -302,7 +302,8 @@ counts = (a.live.n["out"], b.live.n["out"])
 run(w, a, b)
 check("equal ID no unsolicited traffic", counts == (a.live.n["out"], b.live.n["out"]))
 
-# Resign before either side has accepted, in both directions.
+# Resign before either side has accepted, in both directions: nobody joined a game,
+# so the inviter withdraws and the invitee declines, with no record (review 0.3.1-6 #3).
 for resigning in (0, 1):
     w, a, b = fresh(8)
     act(a, "new")
@@ -310,8 +311,8 @@ for resigning in (0, 1):
     settled(w, a, b)
     check("pre-accept resign", act(a if resigning == 0 else b, "resign") == 200)
     settled(w, a, b)
-    check("pre-accept both recorded", game(a)["s"] == game(b)["s"] == "done")
-    check("pre-accept loss counted", D.box((a if resigning == 0 else b).live)["r"][str(1 - resigning)] == [0, 1])
+    check("pre-accept both put away", game(a)["s"] == game(b)["s"] == ("called" if resigning == 0 else "declined"))
+    check("pre-accept nothing recorded", D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
 
 # Capacity and validation do not mutate locked games.
 w, a, b = fresh(11)
@@ -868,18 +869,18 @@ for first in (0, 1):
             check("mutual duplicates keep prior record", D.box(s.live)["r"][str(1 - s.node.ship)] == [2, 3]
                   and not game(s).get("counted") and game(s)["s"] == "done")
 
-# Without any earlier record, a counted loss is removed rather than leaving a
-# phantom duel. Before acceptance the inviter can already have counted locally.
+# Crossing withdrawal and decline before acceptance: nothing is counted on either
+# ship, and each keeps its own ending (review 0.3.1-6 #3).
 w, a, b = fresh(45)
 act(a, "new")
 act(a, "invite", layout=LAY)
 settled(w, a, b)
-check("pre-accept crossing inviter resign", act(a, "resign") == 200)
-check("pre-accept local loss counted", game(a).get("counted") == 1)
-check("pre-accept crossing invitee resign", act(b, "resign") == 200)
+check("pre-accept crossing inviter withdraws", act(a, "resign") == 200)
+check("pre-accept withdrawal counts nothing", not game(a).get("counted") and game(a)["s"] == "called")
+check("pre-accept crossing invitee declines", act(b, "resign") == 200)
 settled(w, a, b)
 check("pre-accept crossing no records", not D.box(a.live)["r"] and not D.box(b.live)["r"]
-      and game(a)["s"] == game(b)["s"] == "done")
+      and game(a)["s"] in ("called", "declined") and game(b)["s"] == "declined")
 
 # Real final-shot histories: END can arrive before or after the fleet-ending
 # SHOT/ANSWER. The first local terminal decision wins; later END cannot rewrite
@@ -1175,7 +1176,10 @@ for days, ok in ((4, True), (1, False)):
         check("backward jump after the gap keeps idle", 86400 <= D.maint_call("age", b.live, game(b)) < 86400 + 120)
 
 # A move received with the clock unknown (no phone since a boot) must not erase the
-# saved time (review 0.3.1-5 #3): switched-off days still count after the next boot.
+# saved stamp (review 0.3.1-5 #3), but its wall time is unknown, so time switched off
+# after it is never credited from that stamp (review 0.3.1-6 #1): the ship falls back
+# to uptime plus the hourly checkpoint, which only under-counts. A move heard with
+# the clock known keeps crediting switched-off days.
 for unknown in (False, True):
     w, a, b = fresh(70)
     start(w, a, b)
@@ -1186,7 +1190,10 @@ for unknown in (False, True):
         D.maintain(b.live)
     settled(w, a, b)
     check("answer with the clock %s keeps a stamp" % ("unknown" if unknown else "known"),
-          game(b)["n"] == 1 and game(b)["t"] is not None)
+          game(b)["n"] == 1 and game(b)["t"] is not None and bool(game(b).get("tu")) == unknown)
+    if unknown:
+        check("a stamp from before the move never reaches the page",
+              I.load(b.data + "/duel.json")["g"][0]["t"] is not None and D.view(b.live)[0]["t"] is None)
     idle(b, 2 * 3600 * 1000)
     D.maintain(b.live)
     b.clock.known = lambda: False
@@ -1197,11 +1204,17 @@ for unknown in (False, True):
     b.clock.t += 4 * 86400000
     b.clock.known = lambda: True
     D.maintain(b.live)
-    check("switched-off days count after a move heard with the clock %s" % ("unknown" if unknown else "known"),
-          D.maint_call("age", b.live, game(b)) >= 3 * 86400 and act(b, "call") == 200)
+    age = D.maint_call("age", b.live, game(b))
+    if unknown:
+        check("no switched-off credit after a move heard with the clock unknown",
+              3600 <= age < 3 * 3600 and act(b, "call") == 409)
+        check("an exact stamp from same-boot idle clears the unknown mark",
+              not game(b).get("tu") and abs(D.now(b.live) - game(b)["t"] - age) <= 2)
+    else:
+        check("switched-off days count after a move heard with the clock known",
+              age >= 3 * 86400 and act(b, "call") == 200)
 
-# ...and the stamp it keeps is a lower bound from this boot's uptime, so days of
-# play with no phone aren't counted as idle after the next boot.
+# ...and play before the move, with no phone, isn't counted as idle after the next boot.
 w, a, b = fresh(71)
 start(w, a, b)
 act(b, "fire", cell=0)
@@ -1221,7 +1234,85 @@ b.clock.t += 86400000
 b.clock.known = lambda: True
 D.maintain(b.live)
 age = D.maint_call("age", b.live, game(b))
-check("uptime before the move isn't idle", 86400 <= age < 86400 + 2 * 3600 and act(b, "call") == 409)
+check("uptime before the move isn't idle", age < 2 * 3600 and act(b, "call") == 409)
+
+# Review 0.3.1-6 #1 repro: time switched off *before* the boot that heard the move
+# is not idle time after it. Ship 1 fires, is off for D days, boots with no phone,
+# hears the ANSWER, runs an hour into the crewmate's turn, reboots, then a phone connects.
+for off_days in (0, 2.9, 3.0, 10):
+    w, a, b = fresh(72)
+    start(w, a, b)
+    act(b, "fire", cell=0)
+    b.clock.t += int(off_days * 86400000)
+    b.clock.known = lambda: False
+    lvlivex.setup(b.live, b, b.data, b.live.cfg)
+    D.maintain(b.live)
+    idle(b, 60000)
+    D.maintain(b.live)
+    settled(w, a, b)
+    check("answer heard with the clock unknown", game(b)["n"] == 1)
+    idle(b, 3600000)
+    D.maintain(b.live)
+    lvlivex.setup(b.live, b, b.data, b.live.cfg)
+    D.maintain(b.live)
+    idle(b, 60000)
+    D.maintain(b.live)
+    b.clock.known = lambda: True
+    D.maintain(b.live)
+    age = D.maint_call("age", b.live, game(b))
+    check("off %s days before the boot isn't idle after the move" % off_days,
+          age < 2 * 3600 and act(b, "call") == 409)
+    view = D.view(b.live)[0]
+    check("the page's arrival time is no earlier than the hour before",
+          view["t"] is not None and D.now(b.live) - view["t"] < 2 * 3600)
+
+# Same rule for an invitation heard with the clock unknown (review 0.3.1-6 #4): no
+# stamp, so no switched-off credit; the 3-day put-away runs on uptime alone.
+w, a, b = fresh(73)
+check("new", act(a, "new") == 200)
+check("invite", act(a, "invite", layout=LAY) == 200)
+b.clock.known = lambda: False
+lvlivex.setup(b.live, b, b.data, b.live.cfg)
+D.maintain(b.live)
+settled(w, a, b)
+check("invitation heard with the clock unknown", game(b)["s"] == "invited" and game(b)["t"] is None)
+lvlivex.setup(b.live, b, b.data, b.live.cfg)
+D.maintain(b.live)
+b.clock.t += 5 * 86400000
+b.clock.known = lambda: True
+D.maintain(b.live)
+check("switched-off days don't put away an invitation heard with the clock unknown",
+      game(b)["s"] == "invited" and D.maint_call("age", b.live, game(b)) < 3600)
+
+# Before anyone joined (review 0.3.1-6 #3), resign withdraws or declines: no record.
+w, a, b = fresh(90)
+check("new", act(a, "new") == 200)
+check("invite", act(a, "invite", layout=LAY) == 200)
+settled(w, a, b)
+check("waiting / invited", game(a)["s"] == "wait" and game(b)["s"] == "invited")
+check("withdraw while waiting", act(a, "resign") == 200 and a.live.out[-1][1][0] == 8)
+settled(w, a, b)
+check("withdrawn invitation records nothing",
+      game(a)["s"] == game(b)["s"] == "called" and D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
+w, a, b = fresh(92)
+act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
+check("resign on an unanswered invitation declines it", act(b, "resign") == 200)
+settled(w, a, b)
+check("declined invitation records nothing",
+      game(a)["s"] == "declined" and game(b)["s"] == "declined" and D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
+# An END 2 from an inviter that resigned before anyone joined (a 0.3.1 build) is a
+# withdrawal on the invited ship, never a win.
+w, a, b = fresh(93)
+act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
+j = D.box(b.live)
+D.take(b.live, 0, 8, D.gid(j["g"][0]) + bytes((2,)) + bytes(8))
+check("END 2 heard in invited is called off", game(b)["s"] == "called" and not game(b).get("win") and D.box(b.live)["r"] == {})
+# The reveal screen's Resign is gone; the board still refuses it there.
+w, a, b = fresh(91)
+start(w, a, b)
+act(b, "fire", cell=20); settled(w, a, b)
+check("resign in a joined game", act(b, "resign") == 200 and game(b)["s"] == "reveal")
+check("resign in reveal still refused", act(b, "resign") == 409)
 
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

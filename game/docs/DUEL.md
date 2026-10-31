@@ -28,19 +28,23 @@ web/duel.js + web/duel.css (the screens).
 * **Win:** sink all three ships (6 hits). Then both ships reveal their layouts and check
   each other's answers (section 3). The record between each pair of crewmates is kept
   ("3-2 between you").
-* **Ending early:** "Resign" (any time, counts as a loss), "Decline" an invitation, and
-  "Call it" once the other side hasn't moved for 3 days (the game is put away, no result).
+* **Ending early:** "Resign" (once both ships joined, counts as a loss), "Withdraw
+  invitation" (before it's answered, no result), "Decline" an invitation, and "Call it"
+  once the other side hasn't moved for 3 days (the game is put away, no result).
   It's offered only while you're waiting on the other side: on your own turn the page
   doesn't show it, and the board answers "It's your move." An invitation not answered in
   3 days is put away too. The 3 days are wall-clock time: once a phone has set the clock,
   time a ship spent switched off counts (a gap of 0 to 30 days since the last saved move;
-  a clock that jumps backwards never takes idle time away). A move heard while the clock
-  is still unknown (after a boot, before a phone connects) never erases the saved time: it
-  is stamped with a lower bound, the time saved before the boot plus the uptime since, so
-  the days switched off afterwards still count and the play before the move doesn't.
+  a clock that jumps backwards never takes idle time away). A move or invitation heard
+  while the clock is still unknown (after a boot, before a phone connects) has no known
+  wall time: the ship keeps the old saved time but marks it unknown, the page shows no
+  "Arrived" age for it, and time switched off after it never counts. Until a phone sets
+  the clock and the ship writes an exact time from its own uptime, it counts only uptime
+  (saved hourly), so Call it can come late, never early.
 * **No result:** either ship can end a game that's still going with no result at any
   time, the same way stalling for 3 days does (a ship that sends END, or simply stops).
-  Only resigning records a loss, and only a checked reveal records a win or a loss.
+  Only resigning a game both ships joined, or a checked reveal, records a result. An
+  END 2 (resign) heard for an invitation not yet accepted is a withdrawal: no result.
 * **Limits:** one game at a time with each crewmate, at most 3 games going at once.
 
 ## 2. On the air
