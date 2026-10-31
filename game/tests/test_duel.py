@@ -354,21 +354,41 @@ act(a, "resign")
 settled(w, a, b)
 check("full answer replay caught lie", game(b)["s"] == "cheat")
 
-# Equal-authority conflict: both think it is their turn. Lower ship wins.
+# Moves are append-only (review 0.3.1-4 #2). Reviewer's repro: ship 0 forges a SYNC
+# for shot 1 while it is ship 1's turn, after ship 1 has sunk the 3-ship.
 w, a, b = fresh(14)
 start(w, a, b)
-j = D.box(a.live)
-j["g"][0]["h"], j["g"][0]["n"] = "Ab", 1
-D.store(a.live, j)
+for k, cell in enumerate((0, 20, 1, 21, 2, 22)):
+    check("append-only fire", act(b if k % 2 == 0 else a, "fire", cell=cell) == 200)
+    settled(w, a, b)
+before = game(b)["h"]
+check("append-only setup", before == "AbUaBbVaCeWa" and D.view(b.live)[0]["turn"])
 ga = game(a)
 D.take(b.live, 0, 9, D.gid(ga) + bytes((1, 0, 1, 1)) + bytes(5))
-check("lower view wins", game(b)["n"] == 1 and not D.view(b.live)[0]["turn"])
-# A higher ship that has extra history rewinds to the authoritative prefix.
-j = D.box(b.live)
-j["g"][0]["h"], j["g"][0]["n"] = "AbUa", 2
-D.store(b.live, j)
-D.take(b.live, 0, 9, D.gid(ga) + bytes((1, 0, 1, 1)) + bytes(5))
-check("higher view rewinds", game(b)["n"] == 1 and game(b)["h"] == "Ab")
+check("forged deep SYNC keeps every move", game(b)["n"] == 6 and game(b)["h"] == before
+      and D.view(b.live)[0]["turn"] and game(b)["s"] == "active")
+D.take(b.live, 0, 5, D.gid(ga) + bytes((2, 25)) + bytes(7))
+check("answered shot can't be fired again", game(b)["h"] == before)
+# A SYNC whose move differs from the recorded one contradicts committed history.
+D.take(b.live, 0, 9, D.gid(ga) + bytes((2, 25, 0, 1)) + bytes(5))
+check("contradicting SYNC ends with no result", game(b)["s"] == "cheat" and not game(b).get("doubt"))
+settled(w, a, b)
+check("other ship is told neutrally", game(a)["s"] == "cheat" and game(a).get("doubt") == 1)
+check("no record either side", D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
+
+# The peer can't make up this ship's shot or its result (review 0.3.1-4 #3).
+w, a, b = fresh(16)
+start(w, a, b)
+act(b, "fire", cell=0)
+settled(w, a, b)
+act(a, "fire", cell=20)
+settled(w, a, b)
+D.take(b.live, 0, 9, D.gid(game(a)) + bytes((3, 30, 0, 1)) + bytes(5))
+check("forged own shot refused", game(b)["n"] == 2 and game(b)["h"] == "AbUa"
+      and game(b).get("p") is None and D.view(b.live)[0]["turn"])
+check("own turn kept", act(b, "fire", cell=30) == 200)
+settled(w, a, b)
+check("real shot answered", game(b)["h"] == "AbUa_a" and game(a)["h"] == "AbUa_a")
 
 # The board API is signed-in just like Hail, and the Settings switch persists.
 import lvliveapi
@@ -798,7 +818,9 @@ for early in (False, True):
         I.keep(b.live)
     g = game(b)
     state = 3 if early else 2
-    D.take(a.live, 1, 9, D.gid(g) + bytes((g["n"], 35, 10, state)) + bytes(5))
+    # As lvduel.sync sends it: the last recorded move, then the state.
+    last = (ord(g["h"][-2]) - 65, ord(g["h"][-1]) - 97)
+    D.take(a.live, 1, 9, D.gid(g) + bytes((g["n"],) + last + (state,)) + bytes(5))
     check("terminal recovery bounded group", [o[1][0] for o in a.live.out] == [6, 7])
     settled(w, a, b)
     check("terminal recovery verifies both", game(a)["s"] == game(b)["s"] == "done")

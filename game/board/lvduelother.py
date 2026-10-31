@@ -108,28 +108,20 @@ def take(lk, frm, kind, b, j):
         state &= 127
         if n > 71 or state > 4:
             return
-        # Stop-and-wait means normally at most one completed answer is missing.
-        # If both views say 'my turn', keep the lower ship's view. The higher
-        # ship can rewind its existing transcript, or recover its one lost answer.
-        conflict = (state == 1 and g["s"] == "active" and g.get("p") is None and
-                    mine(lk, g, g["n"] + 1) and not mine(lk, g, n + 1))
-        if conflict and lk.node.ship > frm:
-            if n <= g["n"]:
-                g["h"] = g["h"][:2 * n]
-                g["n"] = n
-                if n:
-                    if (ord(g["h"][-2]) - 65, ord(g["h"][-1]) - 97) != (cell, r):
-                        g["h"] = g["h"][:-2] + chr(65 + cell) + chr(97 + r) if cell < 36 and r in (0, 1, 2, 3, 4) else g["h"]
-                    g["last"] = [5 if mine(lk, g, n) else 6,
-                                 hexlify(ident + bytes((n, cell)) + (b"" if mine(lk, g, n) else bytes((r,)))).decode()]
-                return False, None
-            if n == g["n"] + 1 and mine(lk, g, n) and cell < 36:
-                g["p"] = cell
-                g["last"] = [5, hexlify(ident + bytes((n, cell))).decode()]
-                return False, (6, ident + bytes((n, cell, r)) + bytes(6))
-        elif conflict:
-            sync(lk, g)
-            return False, None
+        # Moves are append-only (review 0.3.1-4 #2, #3). A SYNC never rewinds this
+        # transcript, never rewrites a stored answer and never makes up one of our
+        # shots: only this ship fires its shots, and only the peer's ANSWER to a shot
+        # this ship is waiting on gives its result. The peer's last move has to be
+        # the one recorded at that number; a different one contradicts the game both
+        # ships committed to, so an active game ends there with no result.
+        if n and n <= g["n"]:
+            i = 2 * n - 2
+            if (ord(g["h"][i]) - 65, ord(g["h"][i + 1]) - 97) != (cell, r):
+                if g["s"] == "active":
+                    terminal(g, "cheat")
+                    end(lk, g, 6)
+                    return False, None
+                return
         # If the peer lacks our last shot/answer, replay it with a new envelope.
         # Equal n + awaiting answer also repairs a pending shot lost before receipt.
         if n < g["n"] or (n == g["n"] and g.get("p") is not None):
@@ -137,7 +129,8 @@ def take(lk, frm, kind, b, j):
             if g["s"] in ("reveal", "done"):
                 reveal(lk, g)
         elif n > g["n"]:
-            if n == g["n"] + 1 and g.get("p") == cell and mine(lk, g, n):
+            # Our own pending shot, answered but the ANSWER lost: the shot is ours.
+            if n == g["n"] + 1 and g["s"] == "active" and g.get("p") == cell and mine(lk, g, n):
                 return False, (6, ident + bytes((n, cell, r)) + bytes(6))
             sync(lk, g)
         elif g["s"] in ("reveal", "done") and state == 3:

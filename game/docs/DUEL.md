@@ -95,10 +95,15 @@ one per hour to keep authenticated junk from filling the shared out-box.
 * **Resync:** whenever a ship sees a move it can't place (unknown g, n skipped, wrong
   turn), or a game has had no move from the other side for 6 hours while it's their turn
   and their ship has been met, it sends SYNC with its own view. The side that is behind
-  re-sends its last SHOT/ANSWER (kept in duel.json for exactly this); if the views
-  disagree in a way neither can repair (both think it's their own turn with different
-  n), the lower ship number's view wins and the other ship re-sends. A SYNC is never sent
-  more than once an hour per game.
+  re-sends its last SHOT/ANSWER (kept in duel.json for exactly this). Moves are
+  append-only: a SYNC never rewinds a transcript, never rewrites a stored answer and never
+  supplies one of this ship's shots. Only a ship fires its own shots, and only the other
+  ship's ANSWER to the shot it's waiting on gives the result. The one repair a SYNC can
+  make is that lost ANSWER: the other ship is one move ahead with the cell this ship has
+  pending. A SYNC whose last move differs from the move recorded at that number
+  contradicts the game both ships committed to: an active game ends there with no result
+  (END why=6); a decided or finished game ignores it. A SYNC is never sent more than once
+  an hour per game.
 * The box file is /data/duel.json (atomic save through lvlivein.save, read back), at
   most 3 games plus the record per crewmate and at most 7 pending rejection
   records (one per other ship). Rejection records retire as soon as their reply
