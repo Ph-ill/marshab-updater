@@ -48,6 +48,31 @@ function otaRelease(rel,v,b,e){
   }
   return{v,ch:m.channel,core:m.core,label:typeof rel.label==="string"?rel.label:"",notes:otaClean(e.notes),bytes:m.files.reduce((s,f)=>s+f[1],0),env:JSON.stringify(env),files:m.files.map((f)=>by[f[0]])};
 }
+// Which release this ship should fetch (review 0.3.1-3 #3). index.json's channels[ch] is what
+// pages up to 0.3.0 read, and tools/build_release.py keeps it on the newest release a ship
+// of any age can install. heads[ch] (read from 0.3.1-updater on) is the channel's newest
+// release. An entry's "needs" names the oldest version a ship must already run to take it
+// over the air: older updaters turn it down ("bad file list": it has more files than they
+// accept). A ship that doesn't meet it is offered the release "needs" names (following
+// that release's own "needs" in turn), with the newest one kept as "next" so the screens can
+// say what comes after it. docs/OTA.md section 2 describes the fields.
+const OTA_HD=1;   // b.hd: this page's way of choosing made the last check (not an older page's)
+function otaPick(idx,ch,iv){
+  const H=idx.heads&&typeof idx.heads==="object"&&!Array.isArray(idx.heads)?idx.heads:{};
+  const top=H[ch]!=null?H[ch]:idx.channels[ch];
+  if(top==null)return{v:null,e:null,top:null};
+  const by=(v)=>idx.releases.find((r)=>r&&r.version===v);
+  let e=typeof top==="string"&&top?by(top):null;
+  if(!e)throw otaErr("bad");
+  for(let n=0;e.needs!=null;n++){
+    if(typeof e.needs!=="string"||!e.needs)throw otaErr("bad");
+    if(iv&&vcmp(iv,e.needs)>=0)break;
+    const x=by(e.needs);
+    if(!x||n>=8||x.channel!==e.channel||vcmp(x.version,e.version)>=0)throw otaErr("bad");
+    e=x;
+  }
+  return{v:e.version,e,top};
+}
 // The update this ship can take, if this phone has one: same channel, same frozen core, newer.
 function otaFor(st){
   const b=OB||otaLoad();if(!st||!b.rel)return null;
@@ -82,9 +107,11 @@ async function otaCheck(force){
   if(OTA_CHECK||OTA_BUSY)return;
   const b=otaLoad();OB=b;
   if(!b.ch)return;
-  if(!force&&b.at&&Date.now()-b.at<(b.ok?OTA_EVERY:OTA_RETRY))return;
+  // A check an older page made (before 0.3.1-updater) never looked past channels[ch], so it
+  // doesn't count: this page looks again at the first chance (b.hd).
+  if(!force&&b.hd===OTA_HD&&b.at&&Date.now()-b.at<(b.ok?OTA_EVERY:OTA_RETRY))return;
   const prev=b.rel;
-  OTA_CHECK=true;b.at=Date.now();b.ok=false;b.err="";delete b.http;otaSave(b);
+  OTA_CHECK=true;b.at=Date.now();b.ok=false;b.hd=OTA_HD;b.err="";delete b.http;otaSave(b);
   if(route==="set"||route==="home")view();
   try{
     const base=otaSrc(b);
@@ -92,14 +119,14 @@ async function otaCheck(force){
       try{
         const idx=await otaGet(base+"/firmware/index.json");
         if(!idx||!idx.channels||typeof idx.channels!=="object"||Array.isArray(idx.channels)||!Array.isArray(idx.releases))throw otaErr("bad");
-        const v=idx.channels[b.ch],e=idx.releases.find((r)=>r&&r.version===v);
-        if(v!=null&&(typeof v!=="string"||!v||!e))throw otaErr("bad");
+        const {v,e,top}=otaPick(idx,b.ch,OS_&&OS_.v),next=v!==top?top:"";
         if(e&&e.frozen===b.core&&vcmp(v,OS_&&OS_.v)>0&&!e.ota)throw otaErr("bad");
         if(e&&e.ota&&e.frozen===b.core&&(!b.rel||b.rel.v!==v)){
           if(typeof e.path!=="string"||!e.path.startsWith("/firmware/")||e.path.includes("..")||/[?#]/.test(e.path))throw otaErr("bad");
           b.rel=otaRelease(await otaGet(base+e.path,OTA_BODY_WAIT),v,b,e);
         }else if(e&&b.rel&&b.rel.v===v)b.rel={...b.rel,notes:otaClean(e.notes)};
-        b.ok=true;b.seen=v||null;break;
+        if(b.rel&&b.rel.v===v)b.rel={...b.rel,next};
+        b.ok=true;b.seen=top||null;break;
       }catch(e){
         if(attempt||!otaNet(e.kind))throw e;
         await new Promise((ok)=>setTimeout(ok,OTA_AGAIN));
@@ -142,6 +169,9 @@ async function otaSend(f,bytes,n,extra){
 function otaWhy(s,j){
   if(s===503)return"Your ship is busy right now. Ask everyone else to turn Wi-Fi off for a few minutes, then tap Install again.";
   if(/^busy,/.test(j.err||""))return"Your ship is still checking its last update. Try again in a couple of minutes.";
+  // An updater too old for this release (0.3.0 takes at most 40 files); the index's "needs"
+  // should have offered the update before it instead (otaPick).
+  if(s===403&&j.err==="bad file list")return"Your ship needs an earlier update before it can take this one. Check for updates again while you have internet, and install the update you're offered first.";
   return j.err||"The ship turned the update down.";
 }
 function otaProg(f,o){if(!OI)return;OI.f=f;OI.o=o;const el=$("otap");if(el)el.outerHTML=otaBar()}
@@ -205,7 +235,7 @@ async function otaInstall(){
       }
     }
     const a=await otaFetch("/api/ota/apply",{method:"POST",headers:{"X-Crew-Token":tok}}),j=await a.json().catch(()=>({}));
-    if(!a.ok)throw new Error(a.status===409&&/^busy,/.test(j.err||"")?otaWhy(409,j):j.err||"Your ship wouldn't start the update.");
+    if(!a.ok)throw new Error(a.status===409&&/^busy,/.test(j.err||"")||a.status===403&&j.err==="bad file list"?otaWhy(a.status,j):j.err||"Your ship wouldn't start the update.");
     OI.step="wait";view();
     await new Promise((ok)=>setTimeout(ok,(j.restart_ms||1500)+4000));
     const t0=Date.now();let back=null;
@@ -215,6 +245,9 @@ async function otaInstall(){
     }
     OS_=back;
     OI.step="done";OI.ok=back&&back.v===r.v;
+    // This update came first so the ship could take a newer one: look for that at the next
+    // chance (online again, back to this app) instead of waiting six hours.
+    if(OI.ok&&r.next){OI.next=r.next;const s=otaLoad();s.at=0;if(otaSave(s))OB=s}
     OI.msg=!back?"Your ship hasn't come back on this phone's Wi-Fi yet. Rejoin its network, then reload this page.":OI.ok?"":back.last&&back.last.result==="rolled back"?`It didn't start, so your ship went back to ${back.v}.`:`Your ship still runs ${back.v}.`;
   }catch(e){OI.step="done";OI.ok=false;OI.msg=e.message||"That didn't work. Try again."}
   OTA_BUSY=false;view();
@@ -292,7 +325,7 @@ function otaScreen(){
   const I=OI;
   let o=`<div class=kick><div class=lab>Settings</div><h1>Ship software</h1></div><section><div class=lab><span>${I.step==="done"?I.ok?"Installed":"Not installed":"Installing"}</span><span class=m>${h(I.v)}</span></div>`;
   if(I.step!=="done")o+=otaBar()+`<p class=dim>Keep this screen open and stay close to your ship. It restarts at the end, so the game drops for about half a minute.</p>`;
-  else o+=I.ok?`<p class=lead>Your ship runs ${h(I.v)} now.</p><p class=dim>It restarted, so sign in again to carry on. Your crew, log and votes are kept on the ship.</p>`:`<p class=lead>${h(I.msg)}</p><p class=dim>Your crew, log and votes are kept on the ship either way.</p>`;
+  else o+=I.ok?`<p class=lead>Your ship runs ${h(I.v)} now.</p>${I.next?`<p>Your ship can take ${h(I.next)} now. Check for updates again while you have internet to get it.</p>`:""}<p class=dim>It restarted, so sign in again to carry on. Your crew, log and votes are kept on the ship.</p>`:`<p class=lead>${h(I.msg)}</p><p class=dim>Your crew, log and votes are kept on the ship either way.</p>`;
   $("v").innerHTML=o+`</section>`;
   dock(I.step!=="done"?`<button class="btn sec" disabled><span>Installing</span><i>${I.step==="wait"?"restarting":"sending"}</i></button>`:I.ok||!OS_?`<button class="btn pri" data-ota=reload><span>Back aboard</span><i>reload</i></button>`:`<button class="btn sec" data-ota=clear><span>Back</span><i>←</i></button>`,"set");
 }
@@ -311,6 +344,8 @@ function otaAvail(st,b,r){
   if(r)return h(r.v);
   if(otaChecking())return "Checking…";
   if(b.at&&!b.ok)return "Couldn't check";
+  // the update that had to come first is in, so the newer one needs another look online
+  if(b.seen&&st&&vcmp(b.seen,st.v)>0&&b.rel&&b.rel.next===b.seen)return h(b.seen)+" (check again to get it)";
   return b.seen&&st&&vcmp(b.seen,st.v)<=0?"Up to date":b.seen?h(b.seen)+" (not signed for this ship)":"—";
 }
 // Settings' Ship software section: what runs, what's ready, Install and Check for updates.
@@ -321,7 +356,7 @@ function otaSect(){
   else if(last&&last.result==="installed"&&last.v===(st&&st.v))o+=`<p class=fine>${h(last.v)} installed over the air.</p>`;
   if(!st&&OTA_NONE)o+=`<p class=dim>Your ship can't take updates over the air yet. It needs one install over USB first.</p>`;
   else if(!st)o+=`<p class=dim>Your ship hasn't said what it runs yet. Stay on its Wi-Fi; this page asks again every 30 seconds.</p>`;
-  else if(r)o+=`<p>${h(r.v)} is ready on this phone for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p>${otaClean(r.notes).length?`<div class=otawn><div class=otawh>What's new</div>${otaNotes(r.notes)}</div>`:""}<p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
+  else if(r)o+=`<p>${h(r.v)} is ready on this phone for your ship. ${Math.round(r.bytes/1024)} KB, about a minute to send.</p>${r.next?`<p class=upd>Your ship needs this update before it can take ${h(r.next)}. Once it has restarted, check for updates again to get ${h(r.next)}.</p>`:""}${otaClean(r.notes).length?`<div class=otawn><div class=otawh>What's new</div>${otaNotes(r.notes)}</div>`:""}<p class=dim>Your ship checks the signature and every file before it switches over, and goes back by itself if the new version doesn't start. Your crew, log and votes stay as they are.</p>`;
   else o+=`<p class=dim>You need internet to check. Your ship's Wi-Fi usually can't reach it. Keep this app open; your download waits on this phone until you rejoin your ship.</p>`;
   if(st){
     o+=`<div class=otas>${r?`<button class="btn pri" data-ota=install${OTA_CHECK?" disabled":""}><span>${otaNag()?"Install":"Try again:"} ${h(r.v)}</span><i>${Math.round(r.bytes/1024)} KB</i></button>`:""}<button class="btn sec" data-ota=check${OTA_CHECK?" disabled aria-busy=true":""} aria-describedby=otacheck><span>${OTA_CHECK?"Checking…":"Check for updates"}</span><i>github</i></button><div id=otacheck role=status>`;

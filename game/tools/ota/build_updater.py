@@ -7,6 +7,11 @@ The normal frozen release is a complete set of overrides, not a delta: its
 cleanup deletes omitted overrides. Keep the full 38-file payload, below the
 old updater's 40-file limit, rather than accidentally restoring frozen code.
 Signing and publication are separate operator steps.
+
+--channel must be the channel the ships that need it are on (their version.json's): the
+phone only offers a release on the ship's own channel, and once it's installed its channel
+is the ship's. The ships on the 0.3.0 test build are on "test". docs/OTA.md section 8 has
+the publishing order (this first, then 0.3.1 with --needs 0.3.1-updater).
 """
 import argparse
 import base64
@@ -23,12 +28,12 @@ VERSION = "0.3.1-updater"
 CORE = "2661c2144844"
 
 
-def build(output):
+def build(output, channel="stable"):
     subprocess.run(["sh", "tools/board_build.sh"], cwd=GAME, check=True)
     with tempfile.TemporaryDirectory(prefix="updater-build-", dir=os.environ.get("TMPDIR")) as scratch:
         subprocess.run([
             sys.executable, ROOT / "tools/build_release.py", "--version", VERSION,
-            "--channel", "stable", "--label", "Updater preparation",
+            "--channel", channel, "--label", "Updater preparation",
             "--source", GAME / "build/board-fw", "--frozen",
             GAME / ("tools/fw/cores/lv-core-0.2.0-" + CORE + ".json"),
             "--exclude", "boot.py", "--exclude", "lvboot.mpy",
@@ -39,6 +44,7 @@ def build(output):
     release = json.loads(raw)
     assert len(release["files"]) == 38 < 40, "inspect changed payload before publishing"
     assert "ota" not in release, "this tool must never sign"
+    assert release["channel"] == channel, release["channel"]
     version = next(f for f in release["files"] if f["path"] == "version.json")
     output.mkdir(parents=True, exist_ok=True)
     (output / "release.json").write_bytes(raw)
@@ -51,4 +57,7 @@ def build(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=GAME / "build/updater")
-    build(parser.parse_args().output.resolve())
+    parser.add_argument("--channel", choices=("stable", "test"), default="stable",
+                        help="the channel of the ships that need it (default stable)")
+    args = parser.parse_args()
+    build(args.output.resolve(), args.channel)
