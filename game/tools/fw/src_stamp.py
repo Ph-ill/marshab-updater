@@ -40,6 +40,24 @@ def fresh(root=GAME):
         return False
 
 
+def ensure(root=GAME):
+    """Measure today's board code, never a build/board-fw left from older sources: rebuild
+    it (tools/board_build.sh) when it is stale, refuse if it still doesn't match. Shared by
+    every heap check (tests/phone_heap.py, mp_sync_heap.py, mp_safe_heap.py: review
+    0.3.1-10 #6); the MicroPython ones run it as `python3 tools/fw/src_stamp.py --ensure`."""
+    import subprocess
+    if fresh(root):
+        return
+    print("build/board-fw is older than the sources: rebuilding (tools/board_build.sh)")
+    sys.stdout.flush()
+    subprocess.run(["sh", "tools/board_build.sh"], check=True, stdout=subprocess.DEVNULL, cwd=root)
+    if not fresh(root):
+        sys.exit("build/board-fw still does not match the sources after tools/board_build.sh")
+
+
 if __name__ == "__main__":
-    print(stamp())
+    if sys.argv[1:] == ["--ensure"]:
+        ensure()
+    else:
+        print(stamp())
     sys.exit(0)

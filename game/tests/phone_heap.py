@@ -527,17 +527,11 @@ def safe_main(mp, mode):
 
 
 def board_current():
-    """Measure today's board code, never a build/board-fw left from older sources
-    (fix round 0.3.1-11): rebuild it when tools/fw/src_stamp.py says it is stale."""
+    """Measure today's board code (fix round 0.3.1-11): tools/fw/src_stamp.ensure rebuilds
+    a build/board-fw older than the sources, or refuses."""
     sys.path.insert(0, "tools/fw")
     import src_stamp
-    if src_stamp.fresh():
-        return
-    print("build/board-fw is older than the sources: rebuilding (tools/board_build.sh)")
-    sys.stdout.flush()
-    subprocess.run(["sh", "tools/board_build.sh"], check=True, stdout=subprocess.DEVNULL)
-    if not src_stamp.fresh():
-        sys.exit("build/board-fw still does not match the sources after tools/board_build.sh")
+    src_stamp.ensure()
 
 
 def main(argv):

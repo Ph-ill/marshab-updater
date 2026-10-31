@@ -17,6 +17,11 @@
 import sys
 import gc
 import os
+# Never measure a build/board-fw older than the sources (review 0.3.1-10 #6): the check
+# tests/phone_heap.py runs (tools/fw/src_stamp.py), which rebuilds a stale build or
+# refuses, also when this runs standalone.
+if os.system("python3 tools/fw/src_stamp.py --ensure"):
+    raise SystemExit("build/board-fw does not match the sources")
 
 for p in ("", "."):
     while p in sys.path:

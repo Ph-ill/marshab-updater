@@ -93,15 +93,19 @@ def seed_duels(lk, peer_lk):
     # Seed the durable file without flushing: the first measured inbound call,
     # not fixture construction, must recover these obligations under pressure.
     # Seven finished-game stubs (lvduel.retire), each of the largest shape a stub
-    # can take (review 0.3.1-9 #2): state, owed flag, a deferred reply (lvduel.defer)
-    # and three queued moves (ANSWER, REVEAL, END), none reservable while the out-box
-    # below is full. (A resignation's stub also keeps "why", but then allowed() keeps
-    # only REVEAL and END: one 11-byte move more outweighs that small int.)
+    # can take (review 0.3.1-9 #2): state, owed flag, a deferred reply (lvduel.defer),
+    # a held invitation (lvduelother, review 0.3.1-10 #2) and three queued moves
+    # (ANSWER, REVEAL, END), none reservable while the out-box below is full. (A
+    # resignation's stub also keeps "why", but then allowed() keeps only REVEAL and
+    # END: one 11-byte move more outweighs that small int.) Seven is the bound: one
+    # owed stub per crewmate, never a second (review 0.3.1-10 #1, asserted by
+    # tests/test_duel.py's stub-bound fuzz), and seven other ships.
     rejections = []
     for to in range(1, 8):
         ident = bytes((0x52, to))
         g = {"to": to, "id": hexlify(ident).decode(), "s": "done", "o": 1,
              "rj": [hexlify(bytes((0x53, to))).decode(), 5],
+             "ri": [hexlify(bytes((0x54, to))).decode(), hexlify(bytes((0xc5, to)) * 4).decode()],
              "q": [[6, hexlify(ident + bytes((71, 35, 3)) + bytes(6)).decode()],
                    [7, hexlify(ident + layout + bytes((to,)) * 6).decode()],
                    [8, hexlify(ident + bytes((2,)) + bytes(8)).decode()]]}
@@ -158,6 +162,14 @@ else:
     ROOT = ARGS[0].rstrip("/") + "/" if ARGS else "build/"
 if OTA:
     sys.path.insert(0, "build/heap-ota-mod")
+# Never measure a build/board-fw or build/board older than the sources (review 0.3.1-10
+# #6): the check tests/phone_heap.py runs (tools/fw/src_stamp.py), which rebuilds a stale
+# build or refuses, also when this runs standalone.
+if FROZEN or (ARGS and ARGS[0].rstrip("/") in ("build/board", "build/board-fw")):
+    import os as _os
+    if _os.system("python3 tools/fw/src_stamp.py --ensure"):
+        raise SystemExit("build/board-fw does not match the sources")
+    _os = None
 DATA = "build/heap-data"         # the board's /data: log.bin, days.bin (each day's story)
 import os                         # noqa: E402
 try:
@@ -258,7 +270,10 @@ def critical_duel(j):
         assert len(games) == 3 and all(g["s"] == "active" and g["n"] >= 68 and
                len(g["h"]) == 2 * g["n"] and g.get("q") for g in games)
         assert len(rejects) == 7 and len(j["r"]) == 7 and all(
-            g.get("o") and g.get("rj") and [z[0] for z in g.get("q", ())] == [6, 7, 8] for g in rejects)
+            g.get("o") and g.get("rj") and g.get("ri") and [z[0] for z in g.get("q", ())] == [6, 7, 8]
+            for g in rejects)
+        # The bound the board keeps (review 0.3.1-10 #1): one owed stub per crewmate.
+        assert sorted(g["to"] for g in rejects) == list(range(1, 8))
         duel_worst[0] = (tuple(g["n"] for g in games),
                          sum(len(g.get("q", ())) for g in games + rejects), 24)
         sample()

@@ -21,6 +21,13 @@ def functions(path, names, scope):
 
 
 class WorstDuelHeap(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Four tests keep their scratch files under game/build/ (beside the board's
+        # files, as on the heap runs). A fresh checkout has no build/ yet (review
+        # 0.3.1-10 #6): make the directory, nothing in it is needed.
+        (ROOT / "build").mkdir(exist_ok=True)
+
     def test_outbound_helpers_are_not_retained_by_inbound_module(self):
         import lvlivein as inbound
         from unittest.mock import patch
@@ -360,9 +367,13 @@ class WorstDuelHeap(unittest.TestCase):
             games = box["g"]
             self.assertEqual(len(box.get("e", [])), 7)
             self.assertEqual(len(box["r"]), 7)
-            # The largest stub shape (review 0.3.1-9 #2), not one-END rejections.
+            # The largest stub shape (review 0.3.1-9 #2), not one-END rejections, with a
+            # held invitation (review 0.3.1-10 #2). The bound: one owed stub for each of
+            # the seven other ships (review 0.3.1-10 #1), as docs/DUEL.md and the board say.
+            self.assertEqual(sorted(g["to"] for g in box["e"]), list(range(1, 8)))
             for g in box["e"]:
                 self.assertEqual((g["s"], g["o"], g["rj"][1]), ("done", 1, 5))
+                self.assertEqual([len(bytes.fromhex(z)) for z in g["ri"]], [2, 8])
                 self.assertTrue(all(D.allowed(g, z[0]) for z in g["q"]))
                 self.assertEqual([z[0] for z in g["q"]], [6, 7, 8])
                 self.assertTrue(all(len(bytes.fromhex(z[1])) == 11 for z in g["q"]))
@@ -635,8 +646,9 @@ class WorstDuelHeap(unittest.TestCase):
             to = 1
         games = [dict(n=n, h="Aa" * n, s="active", q=[[9, "00" * 11]])
                  for n in (69, 70, 70)]
-        stub = lambda: dict(o=1, rj=["0000", 5], q=[[6, "00" * 11], [7, "00" * 11], [8, "00" * 11]])
-        box = dict(g=games, e=[stub() for _ in range(7)],
+        stub = lambda to=None: dict(o=1, rj=["0000", 5], ri=["0000", "00" * 8],
+                                    q=[[6, "00" * 11], [7, "00" * 11], [8, "00" * 11]], **({} if to is None else {"to": to}))
+        box = dict(g=games, e=[stub(to) for to in range(1, 8)],
                    r={str(n): [123, 123] for n in range(1, 8)})
         sampled = []
         scope = dict(duel_injecting=[False], duel_held=[True], duel_worst=[None],
@@ -660,7 +672,10 @@ class WorstDuelHeap(unittest.TestCase):
                     scope["critical_duel"](box)
             for change, undo in (
                 (lambda: games[1].update(q=[]), lambda: games[1].update(q=[[9, "00" * 11]])),
-                (lambda: box["e"].pop(), lambda: box["e"].append(stub())),
+                (lambda: box["e"].pop(), lambda: box["e"].append(stub(7))),
+                # Seven stubs, but two for one crewmate: not the bound's shape.
+                (lambda: box["e"][6].update(to=1), lambda: box["e"][6].update(to=7)),
+                (lambda: box["e"][3].pop("ri"), lambda: box["e"][3].update(stub())),
                 # A one-END rejection no longer stands in for a stub (review 0.3.1-9 #2).
                 (lambda: box["e"][3].update(q=[[8, "00" * 11]]), lambda: box["e"][3].update(stub())),
                 (lambda: box["e"][3].pop("rj"), lambda: box["e"][3].update(stub())),
