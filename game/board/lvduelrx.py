@@ -1,5 +1,5 @@
 # Stop-and-wait shots and answers; other protocol phases load their own rules.
-from lvduel import end, gid, emit, history, lvship, mine, now, result, reveal, sync, terminal, unhexlify
+from lvduel import end, gid, emit, history, lvship, mine, moved, result, reveal, sync, terminal, unhexlify
 
 
 def other(lk, frm, kind, b, j):
@@ -42,7 +42,7 @@ def take(lk, frm, kind, b, j):
                 r = result(unhexlify(g["l"]), cells, cell)
                 g["h"] += chr(65 + cell) + chr(97 + r)
                 g["n"] = n
-                g["t"] = now(lk)
+                moved(lk, g)
                 emit(lk, g, 6, ident + bytes((n, cell, r)))
                 if r & 8:
                     g["win"] = False
@@ -58,7 +58,8 @@ def take(lk, frm, kind, b, j):
             sync(lk, g)
         else:
             g["h"] += chr(65 + cell) + chr(97 + r)
-            g["n"], g["p"], g["t"] = n, None, now(lk)
+            g["n"], g["p"] = n, None
+            moved(lk, g)
             if r & 8:
                 g["win"], g["s"] = True, "reveal"
                 reveal(lk, g)

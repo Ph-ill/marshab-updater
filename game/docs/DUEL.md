@@ -34,7 +34,13 @@ web/duel.js + web/duel.css (the screens).
   doesn't show it, and the board answers "It's your move." An invitation not answered in
   3 days is put away too. The 3 days are wall-clock time: once a phone has set the clock,
   time a ship spent switched off counts (a gap of 0 to 30 days since the last saved move;
-  a clock that jumps backwards never takes idle time away).
+  a clock that jumps backwards never takes idle time away). A move heard while the clock
+  is still unknown (after a boot, before a phone connects) never erases the saved time: it
+  is stamped with a lower bound, the time saved before the boot plus the uptime since, so
+  the days switched off afterwards still count and the play before the move doesn't.
+* **No result:** either ship can end a game that's still going with no result at any
+  time, the same way stalling for 3 days does (a ship that sends END, or simply stops).
+  Only resigning records a loss, and only a checked reveal records a win or a loss.
 * **Limits:** one game at a time with each crewmate, at most 3 games going at once.
 
 ## 2. On the air
@@ -132,9 +138,11 @@ poking the API) win by moving its fleet:
   last ship", ends the game right away with no result and END why=6, without waiting for
   a reveal a ship answering that way may never send.
 * END why=6 is a claim without evidence. A ship that gets one keeps a verified or counted
-  result. Otherwise it replays its own answers against its own committed field: a decided
-  result they support is kept, anything else ends with no result. Either way, nothing is
-  ever subtracted from the record and no empty [0, 0] record is left.
+  result, and a real resignation (either side's) keeps its result. Anything else ends with
+  no result, even after the final shot: this ship's own answers prove nothing about the
+  other field, and a winner that lied in its answers could send END why=6 instead of its
+  REVEAL. A later REVEAL can't revive the game. Nothing is ever subtracted from the record
+  and no empty [0, 0] record is left. The END path loads no layout rules.
 * The page states a mismatch the same way from both sides, without blaming either: "Your
   ship couldn't check Kim's field. No result." on the ship that found it, and "Kim's
   ship couldn't check your field." (plus "No result." if there's none) on the other.
@@ -161,7 +169,8 @@ no new fonts.
    turn it is and where the last move stands ("On its way", "Arrived 2 min ago").
    "Resign" sits at the bottom behind a confirm.
 5. **End**: "You sank their fleet in 14 shots" / "Kim sank your fleet"; both fields
-   revealed; the record; "Rematch".
+   revealed (a game that ended without a checked reveal labels the other field "not
+   revealed"); the record; "Rematch".
 
 Words: second person ("Your turn", "You sank..."), crewmates by name, never he/she/they
 pronouns in templated text; no story text, no ending names.
@@ -216,9 +225,11 @@ probes, not the former post-GC retained-heap figures.
   a game still finishing; long gaps (a day between moves: no expiry); SYNC repairs a lost
   ANSWER; a ship that moves its fleet mid-game is caught at the reveal; a broken layout;
   forged SYNCs (a deep rewind, a made-up shot for the other ship, a contradicting move);
-  END why=6 after a verified finish, mid-game and while revealing; a ship answering
+  END why=6 after a verified finish, mid-game, while revealing (a lying winner sending it
+  instead of its REVEAL records no loss) and after a resignation; a ship answering
   every shot with a miss, or six hits without a sink; days switched off counting toward
-  Call it, and Call it refused on your own turn;
+  Call it (also after a move heard with the clock unknown, without counting the uptime
+  before it), and Call it refused on your own turn;
   decline, resign, call it (not before 3 days), crossing invitations, too many games, an
   old (0.3.0) ship never answering; v mismatch; the turn light (switch off, quiet hours,
   allowance); fuzz: random duel items never raise.

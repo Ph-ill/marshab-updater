@@ -1,6 +1,6 @@
 # Invitation, reveal and recovery rules, not retained while scoring a shot.
 from lvduel import (ACTIVE, belongs, commit, emit, end, finish, fleet, fresh,
-                    gid, hexlify, history, keep, lvship, mine, now, rejected,
+                    gid, hexlify, history, keep, lvship, mine, moved, rejected,
                     repeat, result, reveal, room, sync, terminal, unhexlify, layout_call)
 
 
@@ -61,7 +61,7 @@ def take(lk, frm, kind, b, j):
         g["c"] = hexlify(b[3:11]).decode()
         if g["s"] == "wait":
             g["s"] = "active"
-        g["t"] = now(lk)
+        moved(lk, g)
     elif kind == 7:
         return layout_call("proof", lk, frm, b, j, g)
     elif kind == 8:
@@ -96,19 +96,19 @@ def take(lk, frm, kind, b, j):
                 g["verified"] = 1
                 finish(lk, j, g)
         elif why == 6:
-            # "Your answers didn't match" carries no evidence (review 0.3.1-4 #4). A
-            # verified or counted finish stands. Otherwise check this ship's own
-            # answers against its own committed field: a decided result they support
-            # is kept, anything else ends with no result. Either way the page says
-            # the other ship couldn't check this field, and blames nobody.
+            # "Your answers didn't match" carries no evidence (review 0.3.1-4 #4), and
+            # this ship's own answers are never proof of the other field (review
+            # 0.3.1-5 #1): a winner could lie in every answer, then send this instead
+            # of its REVEAL. A verified or counted finish stands. Before that, only a
+            # real resignation keeps its result; anything else ends with no result.
+            # Either way the page says the other ship couldn't check this field.
             if j["r"].get(str(frm)) == [0, 0]:
                 del j["r"][str(frm)]
             if g["s"] == "done" or g.get("counted"):
                 g["doubt"] = 1
             elif g["s"] in ACTIVE:
                 g["doubt"] = 1
-                if g.get("win") is not None and g.get("l") and layout_call(
-                        "replay", unhexlify(g["l"]), g["h"], g["i"] != lk.node.ship):
+                if g.get("why") == 2 and g.get("win") is not None:
                     g["verified"] = 1
                     finish(lk, j, g)
                 if g["s"] in ACTIVE:

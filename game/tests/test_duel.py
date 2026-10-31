@@ -1041,7 +1041,8 @@ D.store(b.live, j)
 D.take(b.live, 0, 8, D.gid(game(b)) + bytes((6,)) + bytes(8))
 check("mid-game END 6 ends with no result", game(b)["s"] == "cheat" and game(b).get("doubt") == 1)
 check("no [0, 0] record", D.box(b.live)["r"] == {})
-# After the final hit but before the reveal: this ship's own answers check out.
+# After the final hit but before the reveal: this ship's own answers are no proof of
+# the other field (review 0.3.1-5 #1). Only a verified REVEAL decides the result.
 w, a, b = fresh(52)
 start(w, a, b)
 for k, cell in enumerate((0, 1, 2, 12, 13)):
@@ -1056,9 +1057,73 @@ D.take(b.live, 0, 5, a.live.out[0][1][5:16])
 a.live.out[:] = []
 b.live.out[:] = []
 check("loser in reveal", game(b)["s"] == "reveal" and game(b)["win"] is False)
-D.take(b.live, 0, 8, D.gid(game(b)) + bytes((6,)) + bytes(8))
-check("END 6 in reveal keeps a result this ship's answers support", game(b)["s"] == "done"
-      and game(b)["win"] is False and D.box(b.live)["r"] == {"0": [0, 1]})
+import lvduellayout as real_layout
+calls = []
+
+
+class LayoutSpy:
+    def __getattr__(self, name):
+        calls.append(name)
+        return getattr(real_layout, name)
+
+
+sys.modules["lvduellayout"] = LayoutSpy()
+try:
+    D.take(b.live, 0, 8, D.gid(game(b)) + bytes((6,)) + bytes(8))
+finally:
+    lvship.drop("lvduellayout")
+check("END 6 in reveal ends with no result", game(b)["s"] == "cheat"
+      and game(b).get("doubt") == 1 and not game(b).get("verified") and D.box(b.live)["r"] == {})
+check("END 6 in reveal runs no layout rules (review 0.3.1-5 #2)", calls == [])
+D.take(b.live, 0, 7, D.gid(game(b)) + bytes.fromhex(game(a)["l"]) + bytes.fromhex(game(a)["salt"]))
+check("a REVEAL after END 6 can't revive a result", game(b)["s"] == "cheat" and D.box(b.live)["r"] == {})
+
+# Review 0.3.1-5 #1 repro: a winner answers "miss" to five real hits, sinks the
+# loser's fleet, then sends END 6 instead of its REVEAL. The honest loser records
+# nothing; with the honest REVEAL instead, the lie is caught the same way.
+for final in ("reveal", "end6"):
+    w, a, b = fresh(60)
+    start(w, a, b)
+    ident = D.gid(game(b))
+    a.live.out[:] = []
+    b.live.out[:] = []
+    for k, (mine_b, theirs) in enumerate(zip((0, 1, 2, 12, 13, 30), (0, 1, 2, 12, 13, 35))):
+        n = 2 * k + 1
+        check("lying winner: fire", act(b, "fire", cell=mine_b) == 200)
+        D.take(b.live, 0, 6, ident + bytes((n, mine_b, 0)) + bytes(6))
+        D.take(b.live, 0, 5, ident + bytes((n + 1, theirs)) + bytes(7))
+        b.live.out[:] = []
+    check("lying winner: loser in reveal", game(b)["s"] == "reveal" and game(b)["win"] is False)
+    if final == "reveal":
+        D.take(b.live, 0, 7, ident + bytes.fromhex(game(a)["l"]) + bytes.fromhex(game(a)["salt"]))
+        check("lying winner's REVEAL is caught", game(b)["s"] == "cheat"
+              and not game(b).get("doubt") and D.box(b.live)["r"] == {})
+    else:
+        D.take(b.live, 0, 8, ident + bytes((6,)) + bytes(8))
+        check("lying winner's END 6 records no loss", game(b)["s"] == "cheat"
+              and game(b).get("doubt") == 1 and D.box(b.live)["r"] == {})
+        x = D.view(b.live)[0]
+        check("lying winner: no field shown as revealed", x["their"] is None and x["s"] == "cheat")
+
+# A real resignation keeps its result through END 6, on either side.
+for side in ("loser", "winner"):
+    w, a, b = fresh(61)
+    start(w, a, b)
+    act(b, "fire", cell=20)
+    settled(w, a, b)
+    a.live.out[:] = []
+    b.live.out[:] = []
+    if side == "loser":
+        check("resign", act(b, "resign") == 200)
+    else:
+        D.take(b.live, 0, 8, D.gid(game(b)) + bytes((2,)) + bytes(8))
+    b.live.out[:] = []
+    g = game(b)
+    want = {"0": [0, 1]} if side == "loser" else {"0": [1, 0]}
+    if g["s"] != "done":
+        D.take(b.live, 0, 8, D.gid(game(b)) + bytes((6,)) + bytes(8))
+    check("END 6 after a real resignation (%s) keeps the result" % side, game(b)["s"] == "done"
+          and D.box(b.live)["r"] == want)
 
 # A ship that answers every shot impossibly is caught without a reveal (review 0.3.1-4 #5).
 for answer, shots in ((0, 31), (1, 6)):
@@ -1108,6 +1173,55 @@ for days, ok in ((4, True), (1, False)):
         b.clock.t -= 10 * 86400000
         D.maintain(b.live)
         check("backward jump after the gap keeps idle", 86400 <= D.maint_call("age", b.live, game(b)) < 86400 + 120)
+
+# A move received with the clock unknown (no phone since a boot) must not erase the
+# saved time (review 0.3.1-5 #3): switched-off days still count after the next boot.
+for unknown in (False, True):
+    w, a, b = fresh(70)
+    start(w, a, b)
+    act(b, "fire", cell=0)
+    if unknown:
+        b.clock.known = lambda: False
+        lvlivex.setup(b.live, b, b.data, b.live.cfg)
+        D.maintain(b.live)
+    settled(w, a, b)
+    check("answer with the clock %s keeps a stamp" % ("unknown" if unknown else "known"),
+          game(b)["n"] == 1 and game(b)["t"] is not None)
+    idle(b, 2 * 3600 * 1000)
+    D.maintain(b.live)
+    b.clock.known = lambda: False
+    lvlivex.setup(b.live, b, b.data, b.live.cfg)
+    D.maintain(b.live)
+    idle(b, 60000)
+    D.maintain(b.live)
+    b.clock.t += 4 * 86400000
+    b.clock.known = lambda: True
+    D.maintain(b.live)
+    check("switched-off days count after a move heard with the clock %s" % ("unknown" if unknown else "known"),
+          D.maint_call("age", b.live, game(b)) >= 3 * 86400 and act(b, "call") == 200)
+
+# ...and the stamp it keeps is a lower bound from this boot's uptime, so days of
+# play with no phone aren't counted as idle after the next boot.
+w, a, b = fresh(71)
+start(w, a, b)
+act(b, "fire", cell=0)
+b.clock.known = lambda: False
+lvlivex.setup(b.live, b, b.data, b.live.cfg)
+D.maintain(b.live)
+for hour in range(48):
+    idle(b, 3600000)
+    D.maintain(b.live)
+settled(w, a, b)
+check("answer after two days with no phone", game(b)["n"] == 1)
+idle(b, 3600000)
+D.maintain(b.live)
+lvlivex.setup(b.live, b, b.data, b.live.cfg)
+D.maintain(b.live)
+b.clock.t += 86400000
+b.clock.known = lambda: True
+D.maintain(b.live)
+age = D.maint_call("age", b.live, game(b))
+check("uptime before the move isn't idle", 86400 <= age < 86400 + 2 * 3600 and act(b, "call") == 409)
 
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

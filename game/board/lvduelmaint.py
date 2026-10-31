@@ -59,8 +59,11 @@ def timer(lk, g):
         age = max(0, min(3 * DAY, age))
         # z[6]: made with the clock unknown (after every boot: the Pico has no
         # RTC), the last activity's wall time as saved, until a phone sets the clock.
+        # z[7]: the same stamp, kept all boot: with z[1] it bounds a move's wall time
+        # from below while the clock is still unknown (lvduel.moved).
+        base = g.get("t") if epoch is None else None
         z = [t, 0, sig, -21600000 if g["s"] == "active" else 0, None, -age * 1000,
-             g.get("t") if epoch is None else None]
+             base, base]
         timers[key] = z
     else:
         dt = lvship.ticks_diff(t, z[0])

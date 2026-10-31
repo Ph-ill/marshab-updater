@@ -51,6 +51,21 @@ def now(lk):
     return int(c.epoch_ms()) // 1000 if c.known() else None
 
 
+def moved(lk, g):
+    # Stamp a move's wall time. With the clock unknown (every boot until a phone
+    # sets it) never erase the saved stamp (review 0.3.1-5 #3): keep a lower bound,
+    # the stamp this boot started from plus the uptime measured since, so time
+    # switched off still counts later and the gap isn't over-counted.
+    t = now(lk)
+    if t is None:
+        z = getattr(lk, "duel_times", {}).get((g["to"], g["id"]))
+        if z is not None and z[7] is not None:
+            t = max(g.get("t") or 0, z[7] + z[1] // 1000)
+        else:
+            t = g.get("t")
+    g["t"] = t
+
+
 def maint_call(name, *args):
     import sys
     loaded = "lvduelmaint" in sys.modules
