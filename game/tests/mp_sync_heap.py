@@ -52,7 +52,8 @@ SEED = LIVE and "--no-seed" not in sys.argv
 def seed_hails(p):
     # written a line at a time (the test's own garbage, gone before anything is measured);
     # its day unset, so the ship takes it as today's whatever the phones' clock says
-    e = 1792989200000
+    import os
+    e = 1792989200000 + int(os.getenv("LV_HEAP_CLOCK_SHIFT_MS") or 0)   # tests/phone_heap.py
     with open(p, "w") as f:
         f.write('{"d": null, "n": 12, "o": [')
         for k in range(12):

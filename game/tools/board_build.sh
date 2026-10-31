@@ -42,7 +42,7 @@ GLUE=$(python3 tools/fw/gen_lvfrozen.py --print-board)
 python3 tools/lvc.py > /dev/null
 python3 tools/lve.py > /dev/null
 python3 web/build.py > /dev/null
-rm -rf "$OUT" "$FW"
+rm -rf "$OUT" "$FW" build/board-src.stamp
 mkdir -p "$OUT/lv" "$OUT/www" "$FW/www"
 for f in lv/*.py; do
   "$MPY_CROSS" -o "$OUT/lv/$(basename "$f" .py).mpy" "$f"
@@ -100,6 +100,8 @@ else
 fi
 echo "built $OUT (stock MicroPython): $(ls "$OUT"/lv | wc -l) lv modules + $GLUE, main.py, pack, engage.bin, www/ = $total bytes of flash"
 echo "built $FW (game firmware): $(cd "$FW" && find . -type f | sed 's|^\./||' | sort | tr '\n' ' ')= $fwtotal bytes of flash"
+# What these trees were built from (tools/fw/src_stamp.py): the heap checks refuse stale ones.
+python3 tools/fw/src_stamp.py > build/board-src.stamp
 
 [ -z "$1" ] && exit 0
 if [ "$1" = auto ]; then C=""; else C="connect $1"; fi

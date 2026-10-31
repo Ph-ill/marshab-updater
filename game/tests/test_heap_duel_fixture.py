@@ -396,6 +396,9 @@ class WorstDuelHeap(unittest.TestCase):
             self.assertEqual([g["to"] for g in snapshot], [1, 2, 3, 4, 5, 6, 7])
             self.assertTrue(all("history" in g and "shots" not in g for g in snapshot[:3]))
             self.assertTrue(all(g["stub"] and g["pending"] and "history" not in g for g in snapshot[3:]))
+            # Exactly what tests/phone_heap.py's duel_phone insists on for these stubs.
+            self.assertEqual([(set(g), g["s"], g["record"]) for g in snapshot[3:]],
+                             [({"to", "id", "s", "stub", "pending", "record"}, "done", [123, 123])] * 4)
             # A later durable radio update cannot change a response already counted.
             before = "".join(lvliveapi.parts([], [], [], [], None, {"duel": snapshot, "on": True}))
             games[0]["h"] += "Ia"
@@ -533,7 +536,7 @@ class WorstDuelHeap(unittest.TestCase):
             self.assertEqual(I.load(path), new)  # never rename an unverified new file
 
     def test_phone_checks_all_three_and_waits_for_new_moves(self):
-        scope = functions(ROOT / "tests/phone_heap.py", {"duel_phone"}, {"json": json, "asyncio": asyncio, "time": time})
+        scope = functions(ROOT / "tests/phone_heap.py", {"duel_phone"}, {"json": json, "asyncio": asyncio, "time": time, "PHONE_TIME": "1793000000000"})
         games = [dict(to=to, n=n, p=None, s="active", shots=[], incoming=[], turn=False, pending=False)
                  for to, n in ((1, 68), (2, 70), (3, 70))]
         for g in games:
@@ -553,10 +556,78 @@ class WorstDuelHeap(unittest.TestCase):
             if len(polls) == 3:
                 games[0].update(n=0, s="draft", shots=[], incoming=[])
             return 200, {}, json.dumps({"duel": games}).encode()
+        # The page lists the seeded owed stubs of crewmates 4-7 after the games, as
+        # lvduelview.view does since review 0.3.1-9 #1. Fix round 11: the phone check
+        # still wanted exactly three entries, which a stale build/board-fw hid.
+        stubs = [dict(to=to, id="52%02x" % to, s="done", stub=1, pending=True, record=[123, 123])
+                 for to in (4, 5, 6, 7)]
+        asyncio.run(scope["duel_phone"](req, 4, False, failures.append, logs.append))
+        self.assertEqual(len(failures), 1)
+        self.assertIn("owed stubs", failures[0])
+        polls[:], failures[:], logs[:] = [], [], []
+        games += stubs
         asyncio.run(scope["duel_phone"](req, 4, False, failures.append, logs.append))
         self.assertEqual(failures, [])
         self.assertGreaterEqual(len(polls), 3)  # never stop at the seeded state or n=70
         self.assertTrue(logs)
+
+    def test_board_build_stamp_goes_stale_when_any_source_changes(self):
+        # Fix round 0.3.1-11: phone_heap.py measured a build/board-fw from before a
+        # lvduelview change for half an hour. Its stamp must follow every source.
+        import os
+        import tempfile
+        sys.path.insert(0, str(ROOT / "tools/fw"))
+        import src_stamp
+        with tempfile.TemporaryDirectory() as tmp:
+            for p in src_stamp.FILES + ("board/lvduelview.py", "lv/clock.py", "content/a.txt",
+                                        "web/duel.js", "tools/fw/gen_lvfrozen.py"):
+                os.makedirs(os.path.dirname(os.path.join(tmp, p)), exist_ok=True)
+                with open(os.path.join(tmp, p), "w") as f:
+                    f.write(p)
+            self.assertFalse(src_stamp.fresh(tmp))           # never built
+            os.makedirs(tmp + "/build")
+            with open(os.path.join(tmp, src_stamp.STAMP), "w") as f:
+                f.write(src_stamp.stamp(tmp) + "\n")
+            self.assertTrue(src_stamp.fresh(tmp))
+            os.makedirs(tmp + "/board/__pycache__")
+            with open(tmp + "/board/__pycache__/x.pyc", "w") as f:
+                f.write("bytecode")
+            self.assertTrue(src_stamp.fresh(tmp))            # caches are not sources
+            for p in ("board/lvduelview.py", "web/duel.js", "tools/board_build.sh"):
+                with open(os.path.join(tmp, p), "a") as f:
+                    f.write("#")
+                self.assertFalse(src_stamp.fresh(tmp), p)
+                with open(os.path.join(tmp, src_stamp.STAMP), "w") as f:
+                    f.write(src_stamp.stamp(tmp))
+            with open(tmp + "/board/lvnew.py", "w") as f:
+                f.write("")
+            self.assertFalse(src_stamp.fresh(tmp))           # a new module too
+
+    def test_phone_check_insists_on_exactly_the_owed_stubs(self):
+        scope = functions(ROOT / "tests/phone_heap.py", {"duel_phone"}, {"json": json, "asyncio": asyncio, "time": time, "PHONE_TIME": "1793000000000"})
+        def long_games():
+            out = [dict(to=to, n=n, p=None, s="active", shots=[], incoming=[], turn=False, pending=False)
+                   for to, n in ((1, 68), (2, 70), (3, 70))]
+            for g in out:
+                g["shots"] = [[n, 0, 0] for n in range(2, g["n"] + 1, 2)]
+                g["incoming"] = [[n, 0, 0] for n in range(1, g["n"] + 1, 2)]
+            return out
+        def stub(to, **kw):
+            return dict(dict(to=to, id="52%02x" % to, s="done", stub=1, pending=True, record=[123, 123]), **kw)
+        bad = ([stub(4), stub(5), stub(6)],                                   # one missing
+               [stub(1), stub(4), stub(5), stub(6), stub(7)],                 # a stub over a game
+               [stub(4), stub(5), stub(6), stub(7, pending=False)],
+               [stub(4), stub(5), stub(6), stub(7, record=[0, 0])],
+               [stub(4), stub(5), stub(6), stub(7, n=70)])
+        for extra in bad:
+            failures = []
+            async def req(method, path, body, headers, extra=extra):
+                if path == "/api/login":
+                    return 200, {}, b'{"token":"test"}'
+                return 200, {}, json.dumps({"duel": long_games() + extra}).encode()
+            asyncio.run(scope["duel_phone"](req, 4, False, failures.append, lambda s: None))
+            self.assertEqual(len(failures), 1, extra)
+            self.assertIn("owed stubs", failures[0])
 
     def test_measurement_requires_live_obligations_not_just_seeded_history(self):
         from unittest.mock import patch

@@ -28,6 +28,11 @@ ROOT = os.path.dirname(HERE)
 sys.path[:0] = [ROOT, HERE]
 os.chdir(ROOT)
 import phone_flow as F            # noqa: E402
+# Every phone's clock, shifted together by LV_HEAP_CLOCK_SHIFT_MS (default 0) so a run
+# can be pinned to another time of day or date; the board's other time is its uptime.
+CLOCK_SHIFT = int(os.environ.get("LV_HEAP_CLOCK_SHIFT_MS") or 0)
+PHONE_TIME = str(1793000000000 + CLOCK_SHIFT)
+F.PHONE_TIME = str(int(F.PHONE_TIME) + CLOCK_SHIFT)
 from lv import codes as K         # noqa: E402
 
 DATA = "build/heap-data"
@@ -146,7 +151,7 @@ async def funnel_hello(req, fail, log):
     loaded and dropped per request): a Safari tab, then an icon launch, then a tab again."""
     seen = []
     for q in ("ctx=ios", "ctx=standalone&m=icon", "ctx=ios"):
-        s, _, b = await req("GET", "/api/hello?" + q, None, {"X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"})
+        s, _, b = await req("GET", "/api/hello?" + q, None, {"X-Phone-Time": PHONE_TIME, "X-Phone-TZ": "-360"})
         if s != 200:
             return fail("funnel: hello %s: %d %s" % (q, s, b))
         seen.append(json.loads(b).get("installed"))
@@ -159,7 +164,7 @@ async def code_change(req, fail, log):
     """Change your code (board/lvcode.py, loaded and dropped per request) while the others
     play: crew 3 signs in, gets the current code wrong once, changes it, signs in with the
     new one, and changes it back (crew.json rewritten through crew.json.new each time)."""
-    H = {"User-Agent": "heapC", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+    H = {"User-Agent": "heapC", "X-Phone-Time": PHONE_TIME, "X-Phone-TZ": "-360"}
 
     async def call(path, obj, tok=None):
         h = dict(H)
@@ -199,7 +204,7 @@ async def led_test(req, fail, log, hail=False, uploaded=None):
     """Test light (board/lvledtest.py, loaded per request; its pattern a task for 10 s) while
     the others play: crew 4 taps it, taps again while it plays (429), waits it out, and
     taps once more; a tap with no session is 401. The board counts the pin's writes."""
-    H = {"User-Agent": "heapL", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+    H = {"User-Agent": "heapL", "X-Phone-Time": PHONE_TIME, "X-Phone-TZ": "-360"}
 
     async def call(path, obj, tok=None):
         h = dict(H)
@@ -287,7 +292,7 @@ async def live_hail(req, fail, log):
     able to take hails, hails it (POST /api/live/hail), and polls until the peer's ship has
     it ("Delivered"), taking the peer's hail meanwhile and marking it seen; /api/coex is asked
     too, without a session (401) and with one. lvliveapi loads per request through main.py's ota_route."""
-    H = {"User-Agent": "heapV", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+    H = {"User-Agent": "heapV", "X-Phone-Time": PHONE_TIME, "X-Phone-TZ": "-360"}
 
     async def call(method, path, obj=None, tok=None):
         h = dict(H)
@@ -364,7 +369,7 @@ async def live_hail(req, fail, log):
 async def duel_phone(req, who, fire, fail, log):
     """Two independent phones stream /api/live as a duel shot is taken and answered.
     This workload never signs an update; --ota remains a separate optional fixture."""
-    h = {"User-Agent": "duel-heap-%d" % who, "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+    h = {"User-Agent": "duel-heap-%d" % who, "X-Phone-Time": PHONE_TIME, "X-Phone-TZ": "-360"}
     s, _, raw = await req("POST", "/api/login", json.dumps({"crew": who, "pin": "1234"}).encode(), h)
     if s != 200:
         return fail("duel: sign-in %d" % s)
@@ -394,6 +399,10 @@ async def duel_phone(req, who, fire, fail, log):
         except ValueError:
             log("duel: malformed live response headers=%r body=%r" % (headers, raw))
             raise
+        # The page also lists the fixture's owed stubs for crewmates with no game here
+        # (lvduelview.view, review 0.3.1-9 #1): exactly crewmates 4-7, never 1-3.
+        stubs = [x for x in games if x.get("stub")]
+        games = [x for x in games if not x.get("stub")]
         g = next((g for g in games if g["to"] == 1), None)
         progress = (stage, g.get("s"), g.get("n"), g.get("pending")) if g else None
         if progress != observed:
@@ -405,6 +414,10 @@ async def duel_phone(req, who, fire, fail, log):
                 len(x["shots"]) + len(x["incoming"]) != x["n"] for x in games) or any(
                 x["n"] != 70 or x["s"] != "active" for x in games if x["to"] in (2, 3)):
             return fail("duel: missing or truncated worst-case histories")
+        if sorted(x["to"] for x in stubs) != [4, 5, 6, 7] or any(
+                x["s"] != "done" or x["pending"] is not True or x["record"] != [123, 123] or
+                set(x) != {"to", "id", "s", "stub", "pending", "record"} for x in stubs):
+            return fail("duel: owed stubs of crewmates 4-7 missing or changed: %r" % (stubs,))
         if not fire:
             if g["s"] == "draft" and g["n"] == 0:
                 log("duel: observer saw terminal/rematch flow with both other long histories intact")
@@ -446,7 +459,7 @@ async def duel_phone(req, who, fire, fail, log):
 async def safe_looks(req, fail, log):
     """--safe: another phone on the safe-mode ship meanwhile: the crew list, a reload's
     /api/me, the story's 503 {safe} once signed in, the version poll (board/lvsafe.py)."""
-    H = {"User-Agent": "heapS", "X-Phone-Time": "1793000000000", "X-Phone-TZ": "-360"}
+    H = {"User-Agent": "heapS", "X-Phone-Time": PHONE_TIME, "X-Phone-TZ": "-360"}
     s, _, b = await req("GET", "/api/crew", None, H)
     if s != 200 or not json.loads(b).get("safe"):
         return fail("safe: /api/crew %d %s" % (s, b))
@@ -513,8 +526,23 @@ def safe_main(mp, mode):
         sys.exit(1)
 
 
+def board_current():
+    """Measure today's board code, never a build/board-fw left from older sources
+    (fix round 0.3.1-11): rebuild it when tools/fw/src_stamp.py says it is stale."""
+    sys.path.insert(0, "tools/fw")
+    import src_stamp
+    if src_stamp.fresh():
+        return
+    print("build/board-fw is older than the sources: rebuilding (tools/board_build.sh)")
+    sys.stdout.flush()
+    subprocess.run(["sh", "tools/board_build.sh"], check=True, stdout=subprocess.DEVNULL)
+    if not src_stamp.fresh():
+        sys.exit("build/board-fw still does not match the sources after tools/board_build.sh")
+
+
 def main(argv):
     mp, mode = argv[0], argv[1:]
+    board_current()
     if "--safe" in mode:
         return safe_main(mp, mode)
     os.makedirs(DATA, exist_ok=True)
