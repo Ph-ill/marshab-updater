@@ -132,8 +132,10 @@ def action(lk, b, rules):
             g["verified"] = 1
             finish(lk, j, g)
     elif a == "call":
-        if rules["maint_call"]("age", lk, g) < 3 * DAY or (g["s"] == "active" and mine(lk, g, g["n"] + 1) and g.get("p") is None):
-            return 409, {"err": "Wait three days for the next move."}
+        if g["s"] == "active" and mine(lk, g, g["n"] + 1) and g.get("p") is None:
+            return 409, {"err": "It's your move. Fire, or resign to end the duel."}
+        if rules["maint_call"]("age", lk, g) < 3 * DAY:
+            return 409, {"err": "You can call it once three days pass without a move."}
         terminal(g, "called")
         end(lk, g, 3)
     else:

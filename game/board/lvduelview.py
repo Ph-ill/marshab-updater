@@ -36,7 +36,7 @@ def view(lk, j=None):
     out = []
     while j["g"]:
         g = j["g"].pop(0)
-        x = dict((k, g.get(k)) for k in ("id", "to", "s", "n", "p", "t", "win", "why", "update", "nl"))
+        x = dict((k, g.get(k)) for k in ("id", "to", "s", "n", "p", "t", "win", "why", "update", "nl", "doubt"))
         if g.get("mutual") and g["s"] in ("reveal", "done"):
             x["status"] = "Your game ended with both ships standing down. No result."
         x["layout"] = fleet(unhexlify(g["l"])) if g.get("l") else None

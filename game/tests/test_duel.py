@@ -1011,5 +1011,103 @@ try:
 finally:
     lvship.ticks_ms = old_tick
 
+# END 6 carries no evidence (review 0.3.1-4 #4). Reviewer's repro: ship 1 wins a
+# verified game, then ship 0 sends END 6.
+w, a, b = fresh(50)
+start(w, a, b)
+for k, cell in enumerate((0, 1, 2, 12, 13)):
+    act(b, "fire", cell=cell)
+    settled(w, a, b)
+    act(a, "fire", cell=20 + k)
+    settled(w, a, b)
+act(b, "fire", cell=35)
+settled(w, a, b)
+check("clean win recorded", game(b)["s"] == "done" and D.box(b.live)["r"] == {"0": [1, 0]})
+D.take(b.live, 0, 8, D.gid(game(b)) + bytes((6,)) + bytes(8))
+check("END 6 after a verified finish keeps the win", game(b)["s"] == "done" and game(b)["win"] is True
+      and D.box(b.live)["r"] == {"0": [1, 0]})
+check("END 6 after a finish is shown neutrally", D.view(b.live)[0]["doubt"] == 1)
+D.take(b.live, 0, 7, D.gid(game(a)) + bytes(9))
+check("REVEAL after a verified finish changes nothing", game(b)["s"] == "done"
+      and D.box(b.live)["r"] == {"0": [1, 0]})
+# Mid-game, with no result decided: no result, no empty record.
+w, a, b = fresh(51)
+start(w, a, b)
+act(b, "fire", cell=0)
+settled(w, a, b)
+j = D.box(b.live)
+j["r"]["0"] = [0, 0]
+D.store(b.live, j)
+D.take(b.live, 0, 8, D.gid(game(b)) + bytes((6,)) + bytes(8))
+check("mid-game END 6 ends with no result", game(b)["s"] == "cheat" and game(b).get("doubt") == 1)
+check("no [0, 0] record", D.box(b.live)["r"] == {})
+# After the final hit but before the reveal: this ship's own answers check out.
+w, a, b = fresh(52)
+start(w, a, b)
+for k, cell in enumerate((0, 1, 2, 12, 13)):
+    act(b, "fire", cell=20 + k)
+    settled(w, a, b)
+    act(a, "fire", cell=cell)
+    settled(w, a, b)
+act(b, "fire", cell=30)
+settled(w, a, b)
+act(a, "fire", cell=35)
+D.take(b.live, 0, 5, a.live.out[0][1][5:16])
+a.live.out[:] = []
+b.live.out[:] = []
+check("loser in reveal", game(b)["s"] == "reveal" and game(b)["win"] is False)
+D.take(b.live, 0, 8, D.gid(game(b)) + bytes((6,)) + bytes(8))
+check("END 6 in reveal keeps a result this ship's answers support", game(b)["s"] == "done"
+      and game(b)["win"] is False and D.box(b.live)["r"] == {"0": [0, 1]})
+
+# A ship that answers every shot impossibly is caught without a reveal (review 0.3.1-4 #5).
+for answer, shots in ((0, 31), (1, 6)):
+    w, a, b = fresh(53)
+    start(w, a, b)
+    ident = D.gid(game(b))
+    theirs = [c for c in range(36) if c not in (0, 1, 2, 12, 13, 35)]
+    for k in range(shots):
+        n = 2 * k + 1
+        check("liar fire", act(b, "fire", cell=k) == 200)
+        D.take(b.live, 0, 6, ident + bytes((n, k, answer)) + bytes(6))
+        if k < shots - 1:
+            check("liar game still open", game(b)["s"] == "active")
+            D.take(b.live, 0, 5, ident + bytes((n + 1, theirs[k])) + bytes(7))
+        b.live.out[:] = []
+    check("impossible answers end with no result", game(b)["s"] == "cheat"
+          and not game(b).get("doubt") and D.box(b.live)["r"] == {})
+
+# Call it is never for your own turn (review 0.3.1-4 #8).
+w, a, b = fresh(54)
+start(w, a, b)
+code, body = D.action(b.live, {"action": "call", "to": 0})
+check("own turn: It's your move", code == 409 and body["err"].startswith("It's your move."))
+act(b, "fire", cell=0)
+settled(w, a, b)
+code, body = D.action(b.live, {"action": "call", "to": 0})
+check("their turn: three days", code == 409 and "three days" in body["err"])
+
+# Time switched off counts once the clock is known again (review 0.3.1-4 #6), and
+# only as much as really passed.
+for days, ok in ((4, True), (1, False)):
+    w, a, b = fresh(55)
+    start(w, a, b)
+    act(b, "fire", cell=0)
+    settled(w, a, b)
+    b.clock.known = lambda: False
+    lvlivex.setup(b.live, b, b.data, b.live.cfg)
+    D.maintain(b.live)
+    idle(b, 60000)
+    D.maintain(b.live)
+    b.clock.t += days * 86400000
+    b.clock.known = lambda: True
+    D.maintain(b.live)
+    check("switched-off days count toward Call it", (act(b, "call") == 200) == ok)
+    if not ok:
+        # A backward clock jump afterwards still can't add or remove idle time.
+        b.clock.t -= 10 * 86400000
+        D.maintain(b.live)
+        check("backward jump after the gap keeps idle", 86400 <= D.maint_call("age", b.live, game(b)) < 86400 + 120)
+
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

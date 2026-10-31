@@ -51,3 +51,11 @@ for(const state of ['draft','invited']){
   assert.match(elements.v.innerHTML,/role=group aria-label="Your field"/,'placement field identifies your ownership');
 }
 console.log('duel labels: placement, waiting, both turns, pending, reveal and completion PASS');
+// Call it is for a crewmate who stopped moving, never on your own turn (review 0.3.1-4 #8).
+for(const turn of [true,false]){
+  c.LV={duel:[{id:'call',to:0,s:'active',turn,shots:[],incoming:[],record:[0,0]}]};
+  vm.runInContext('duScreen(0)',c);
+  assert.match(elements.v.innerHTML,/data-duact=resign/,'resign always offered in a live duel');
+  (turn?assert.doesNotMatch:assert.match)(elements.v.innerHTML,/data-duact=call/,`Call it ${turn?'hidden on':'offered off'} your turn`);
+}
+console.log('duel Call it: hidden on your own turn PASS');

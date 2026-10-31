@@ -55,6 +55,11 @@ def proof(lk, frm, b, j, g):
     from lvduel import commit, hexlify, sync, terminal, end, reveal, finish, probe
     if g["s"] not in ("reveal", "done", "cheat"):
         sync(lk, g)
+    elif g.get("verified") or g["s"] == "cheat":
+        # A checked field stays checked, and a game already ended over a mismatch
+        # stays ended: a later REVEAL can neither undo a result nor revive one
+        # (review 0.3.1-4 #4).
+        pass
     else:
         layout, salt = b[2:5], b[5:11]
         ok = False
@@ -65,10 +70,7 @@ def proof(lk, frm, b, j, g):
         except ValueError:
             ok = False
         if not ok:
-            # Undo a previously counted result after a contradictory reveal.
-            if g.get("counted"):
-                j["r"][str(frm)][0 if g["win"] else 1] -= 1
-                g["counted"] = 0
+            # Nothing is counted before a field checks out, so there's nothing to undo.
             terminal(g, "cheat")
             end(lk, g, 6)
         else:

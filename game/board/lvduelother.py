@@ -96,10 +96,23 @@ def take(lk, frm, kind, b, j):
                 g["verified"] = 1
                 finish(lk, j, g)
         elif why == 6:
-            if g.get("counted"):
-                j["r"][str(frm)][0 if g["win"] else 1] -= 1
-                g["counted"] = 0
-            terminal(g, "cheat")
+            # "Your answers didn't match" carries no evidence (review 0.3.1-4 #4). A
+            # verified or counted finish stands. Otherwise check this ship's own
+            # answers against its own committed field: a decided result they support
+            # is kept, anything else ends with no result. Either way the page says
+            # the other ship couldn't check this field, and blames nobody.
+            if j["r"].get(str(frm)) == [0, 0]:
+                del j["r"][str(frm)]
+            if g["s"] == "done" or g.get("counted"):
+                g["doubt"] = 1
+            elif g["s"] in ACTIVE:
+                g["doubt"] = 1
+                if g.get("win") is not None and g.get("l") and layout_call(
+                        "replay", unhexlify(g["l"]), g["h"], g["i"] != lk.node.ship):
+                    g["verified"] = 1
+                    finish(lk, j, g)
+                if g["s"] in ACTIVE:
+                    terminal(g, "cheat")
         elif g["s"] in ACTIVE:
             terminal(g, {1: "declined", 3: "called", 4: "version", 5: "busy"}.get(why, "called"))
     elif kind == 9:

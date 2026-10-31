@@ -1,5 +1,5 @@
 # Stop-and-wait shots and answers; other protocol phases load their own rules.
-from lvduel import gid, emit, history, lvship, mine, now, result, reveal, sync, unhexlify
+from lvduel import end, gid, emit, history, lvship, mine, now, result, reveal, sync, terminal, unhexlify
 
 
 def other(lk, frm, kind, b, j):
@@ -62,4 +62,14 @@ def take(lk, frm, kind, b, j):
             if r & 8:
                 g["win"], g["s"] = True, "reveal"
                 reveal(lk, g)
+            else:
+                # 30 cells are water and 6 are ships, and the sixth hit always ends
+                # the game: a 31st miss or a sixth hit without "+8" can't be true
+                # (review 0.3.1-4 #5). Don't wait for a reveal that a ship answering
+                # this way may never send: the game ends here, with no result.
+                got = [z[2] for z in history(g) if mine(lk, g, z[0])]
+                miss = got.count(0)
+                if miss > 30 or len(got) - miss >= 6:
+                    terminal(g, "cheat")
+                    end(lk, g, 6)
     return light, None

@@ -30,7 +30,11 @@ web/duel.js + web/duel.css (the screens).
   ("3-2 between you").
 * **Ending early:** "Resign" (any time, counts as a loss), "Decline" an invitation, and
   "Call it" once the other side hasn't moved for 3 days (the game is put away, no result).
-  An invitation not answered in 3 days is put away too.
+  It's offered only while you're waiting on the other side: on your own turn the page
+  doesn't show it, and the board answers "It's your move." An invitation not answered in
+  3 days is put away too. The 3 days are wall-clock time: once a phone has set the clock,
+  time a ship spent switched off counts (a gap of 0 to 30 days since the last saved move;
+  a clock that jumps backwards never takes idle time away).
 * **Limits:** one game at a time with each crewmate, at most 3 games going at once.
 
 ## 2. On the air
@@ -120,9 +124,20 @@ poking the API) win by moving its fleet:
 * Answers come from the ship, not the phone, and the API has no way to change a layout
   after lock-in.
 * At the end both ships REVEAL; each checks the revealed layout against the commit and
-  replays every answer it got against it. Any mismatch: the game is marked "Their answers
-  didn't match their field" (no win counted for them), END why=6 is sent. The page states
-  it plainly, without accusing anyone of anything.
+  replays every answer it got against it. Any mismatch: the game ends with no result and
+  END why=6 is sent. Nothing is counted before a field checks out, so nothing has to be
+  undone. A field that has checked out stays checked: a later REVEAL changes nothing.
+* Some answers are impossible on their own: 30 cells are water and 6 are ships, and the
+  sixth hit always ends the game. A 31st miss, or a sixth hit without "that sinks the
+  last ship", ends the game right away with no result and END why=6, without waiting for
+  a reveal a ship answering that way may never send.
+* END why=6 is a claim without evidence. A ship that gets one keeps a verified or counted
+  result. Otherwise it replays its own answers against its own committed field: a decided
+  result they support is kept, anything else ends with no result. Either way, nothing is
+  ever subtracted from the record and no empty [0, 0] record is left.
+* The page states a mismatch the same way from both sides, without blaming either: "Your
+  ship couldn't check Kim's field. No result." on the ship that found it, and "Kim's
+  ship couldn't check your field." (plus "No result." if there's none) on the other.
 * A layout that breaks the fleet rules (overlap, touching, off the field) fails the same
   way.
 * The 6-byte salt makes guessing the layout from the commit impractical (2^48 x the few
@@ -193,6 +208,10 @@ probes, not the former post-GC retained-heap figures.
   repeated cell, off the field; dropped links (the fake radio drops every Nth message) and
   a game still finishing; long gaps (a day between moves: no expiry); SYNC repairs a lost
   ANSWER; a ship that moves its fleet mid-game is caught at the reveal; a broken layout;
+  forged SYNCs (a deep rewind, a made-up shot for the other ship, a contradicting move);
+  END why=6 after a verified finish, mid-game and while revealing; a ship answering
+  every shot with a miss, or six hits without a sink; days switched off counting toward
+  Call it, and Call it refused on your own turn;
   decline, resign, call it (not before 3 days), crossing invitations, too many games, an
   old (0.3.0) ship never answering; v mismatch; the turn light (switch off, quiet hours,
   allowance); fuzz: random duel items never raise.

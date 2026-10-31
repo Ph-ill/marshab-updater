@@ -12,8 +12,10 @@ function duStatus(g){
   if(g.s==="invited")return name+" invited you";
   if(g.s==="wait")return "Waiting for "+name+" to join";
   if(g.s==="reveal")return "Checking both fields";
-  if(g.s==="cheat")return name+"'s answers didn't match the field";
-  if(g.s==="done")return g.why===2?(g.win?name+" resigned":"You resigned"):g.win?"You sank "+name+"'s fleet in "+g.shots.length+" shots":name+" sank your fleet";
+  // A mismatch is stated plainly, from whichever side found it, and blames nobody.
+  if(g.s==="cheat")return g.doubt?name+"'s ship couldn't check your field. No result.":"Your ship couldn't check "+name+"'s field. No result.";
+  const end=g.why===2?(g.win?name+" resigned":"You resigned"):g.win?"You sank "+name+"'s fleet in "+g.shots.length+" shots":name+" sank your fleet";
+  if(g.s==="done")return g.doubt?end+". "+name+"'s ship couldn't check your field.":end;
   if(g.s==="version")return name+"'s ship needs the duel update";
   if(g.s==="busy")return name+" already has three duels open";
   if(g.s==="declined")return "Invitation declined";
@@ -97,7 +99,8 @@ function duScreen(to){
     o+=`<p class=dim role=status>${h(duStatus(g))}</p>${g.update?`<p class=fine>${h(nm(to))}'s ship may need 0.3.1.</p>`:""}${g.nl?`<p class=fine>${h(nm(to))}'s light is off. Your move waits on ${h(nm(to))}'s page.</p>`:""}<section><div class=lab><span>${h(nm(to))}'s field</span><span>${ended?"revealed":"your shots"}</span></div>${duGrid(field,g.shots,"opponent",can?"fire":"view",DU_CELL,g.p)}<p class=fine>${g.pending||g.p!=null?"On its way":g.t?"Arrived "+lvAgo(g.t*1000):"Waiting for your ships to meet"}</p></section><section><div class=lab><span>Your field</span><span>${g.incoming.length} shots received</span></div>${duGrid(g.layout,g.incoming,"own","small")}</section>`;
     if(ended){o+=`<p class=dim>${g.record[0]}-${g.record[1]} between you and ${h(nm(to))}.</p>`;duDock(`<button class="btn sec" data-dunew=${to}><span>Rematch</span></button>`)}
     else{
-      o+=`<section><button class="btn sec" data-duact=resign><span>Resign</span></button><button class="btn sec" data-duact=call><span>Call it</span><i>after 3 days</i></button></section>`;
+      // Call it is for a crewmate who stopped moving: never on your own turn (review 0.3.1-4 #8).
+      o+=`<section><button class="btn sec" data-duact=resign><span>Resign</span></button>${g.turn?"":`<button class="btn sec" data-duact=call><span>Call it</span><i>after 3 days</i></button>`}</section>`;
       duDock(`<button class="btn pri" data-duact=fire ${can&&DU_CELL!=null?"":"disabled"}><span>${DU_CELL!=null?"Fire at "+duCoord(DU_CELL):"Pick a cell"}</span></button>`);
     }
   }

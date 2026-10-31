@@ -57,7 +57,10 @@ def timer(lk, g):
         if epoch is not None and g.get("t") is not None:
             age = max(age, epoch - g["t"])
         age = max(0, min(3 * DAY, age))
-        z = [t, 0, sig, -21600000 if g["s"] == "active" else 0, None, -age * 1000]
+        # z[6]: made with the clock unknown (after every boot: the Pico has no
+        # RTC), the last activity's wall time as saved, until a phone sets the clock.
+        z = [t, 0, sig, -21600000 if g["s"] == "active" else 0, None, -age * 1000,
+             g.get("t") if epoch is None else None]
         timers[key] = z
     else:
         dt = lvship.ticks_diff(t, z[0])
@@ -69,6 +72,18 @@ def timer(lk, g):
         if sig != z[2]:
             z[2], z[3] = sig, z[1]
             z[5] = z[1]
+            z[6] = None
+    if z[6] is not None:
+        # The first time the clock is known again, time spent switched off counts
+        # (review 0.3.1-4 #6): idle is at least the wall time since the saved
+        # activity, if that gap is plausible (0 to 30 days). Only once: from then on
+        # reconcile's same-boot rebasing keeps corrections, either way, monotonic.
+        epoch = now(lk)
+        if epoch is not None:
+            gap = epoch - z[6]
+            if 0 <= gap <= 30 * DAY:
+                z[5] = min(z[5], z[1] - min(3 * DAY, gap) * 1000)
+            z[6] = None
     return z
 
 
