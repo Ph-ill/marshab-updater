@@ -33,12 +33,19 @@ web/duel.js + web/duel.css (the screens).
   once the other side hasn't moved for 3 days (the game is put away, no result).
   Withdraw and resign are separate phone actions, and the board takes each only in its
   own state: withdraw only while your invitation is unanswered ("wait"; END 3, nothing
-  recorded on either ship), resign only in a game both ships joined ("active"). A page
-  that still showed "wait" when the ACCEPT landed gets "Your crewmate already joined.
-  Resign counts as a loss." and nothing changes; a withdraw never turns into a
-  resignation. The withdrawing page says "Invitation withdrawn", the invited page
-  "Kim withdrew the invitation" (any END 3 heard while still invited, including the
-  inviter's 3-day put-away), and a game put away otherwise says "Duel put away".
+  recorded on either ship), resign only in a game both ships joined ("active"). A stale
+  tap is refused, nothing changes, and the reason follows the game's actual state: a
+  withdraw after the ACCEPT landed gets "Your crewmate already joined. Resign counts as
+  a loss."; a withdraw or resign once the game is in its reveal (your crewmate resigned,
+  or a fleet was sunk) gets "That duel just ended. Checking both fields."; after the game
+  ended, "That duel already ended."; a resign on an unanswered invitation points at
+  Withdraw, on an invitation you got at Decline, on a draft at Discard. A withdraw never
+  turns into a resignation. The withdrawing page says "Invitation withdrawn". The
+  invited page says "Kim withdrew the invitation" only for an END 3 heard while the
+  invitation is clearly younger than its 3-day put-away (under 2.5 days idle on the
+  invited ship); nearer to 3 days the END may be the inviter's own sweep, so it says
+  "Duel put away", as a game put away otherwise does. (An invitation delivered late
+  can still read as withdrawn: the INVITE carries no send time.)
   Call it is offered only while you're waiting on the other side in a game both ships
   joined (or its reveal): on your own turn the page doesn't show it, and the board
   answers "It's your move." It isn't offered on an unanswered invitation, because an
@@ -63,8 +70,15 @@ web/duel.js + web/duel.css (the screens).
   duel's END and REVEAL have reached that crewmate's ship: the page says "Your last move
   in that duel is still on its way. Try again after your ships meet." Starting over
   replaces the old game, and dropping its unsent END or REVEAL would leave the other ship
-  waiting on it, or one ship counting a result the other never can.
+  waiting on it, or one ship counting a result the other never can. While that's so, the
+  ended screen shows "Your last move is still on its way to Kim. Rematch opens after your
+  ships meet." in place of the Rematch button.
 * **Limits:** one game at a time with each crewmate, at most 3 games going at once.
+  Opening a duel or taking an invitation with a fourth crewmate makes room by dropping a
+  finished game, never its delivery: a finished game whose END or REVEAL is still queued
+  moves to a small stub in the box's reply list (crewmate, game id, state, reason) that
+  keeps those items until they are acked, and blocks a rematch with that crewmate until
+  then. The other ship still gets the result it is waiting on.
 
 ## 2. On the air
 
@@ -139,9 +153,13 @@ one per hour to keep authenticated junk from filling the shared out-box.
   (END why=6); a decided or finished game ignores it. A SYNC is never sent more than once
   an hour per game.
 * The box file is /data/duel.json (atomic save through lvlivein.save, read back), at
-  most 3 games plus the record per crewmate and at most 7 pending rejection
-  records (one per other ship). Rejection records retire as soon as their reply
-  has been delivered and acknowledged, never before its durable obligation ends.
+  most 3 games plus the record per crewmate and at most 7 pending reply records (one
+  per other ship): rejection and unknown-game replies, and stubs of finished games whose
+  END/REVEAL is still queued. A stub keeps its crewmate's slot; a rejection or
+  unknown-game reply to that crewmate waits until the stub retires (the unanswered
+  invitation is put away on the other ship at 3 days). Reply records retire as soon as
+  their items have been delivered and acknowledged, never before their durable
+  obligation ends.
   The long-history heap fixture includes all seven pending replies and populated
   pair records. Do not treat the former 1.5 KB estimate as a maximum file size.
 
@@ -196,7 +214,8 @@ no new fonts.
    arrival line shows only while the game is open.
 5. **End**: "You sank their fleet in 14 shots" / "Kim sank your fleet"; both fields
    revealed (a game that ended without a checked reveal labels the other field "not
-   revealed"); the record; "Rematch".
+   revealed"); the record; "Rematch" (or, while this duel's END or REVEAL is still on
+   its way, why a rematch has to wait).
 
 Words: second person ("Your turn", "You sank..."), crewmates by name, never he/she/they
 pronouns in templated text; no story text, no ending names.
@@ -258,7 +277,10 @@ probes, not the former post-GC retained-heap figures.
   before it), and Call it refused on your own turn;
   decline, resign, call it (not before 3 days), withdraw (refused once the ACCEPT landed,
   resign refused before it), a withdrawal crossing an accept-then-resign (mutual
-  stand-down), a rematch waiting for the last REVEAL or END, crossing invitations, too many games, an
+  stand-down), a rematch waiting for the last REVEAL or END, a finished game with a
+  queued REVEAL making room for duels with other crewmates (by "new" and by incoming
+  INVITEs: kept as a stub until delivered), stale withdraw/resign messages by state,
+  crossing invitations, too many games, an
   old (0.3.0) ship never answering; v mismatch; the turn light (switch off, quiet hours,
   allowance); fuzz: random duel items never raise.
 * **Phone e2e** (web/shots_duel.mjs + shots_duel.sh, Playwright on the fake board): the

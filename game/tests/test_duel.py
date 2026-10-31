@@ -1405,5 +1405,108 @@ check("put-away crossing a resignation stands down", game(b)["s"] == "done" and 
 D.take(b.live, 0, 8, D.gid(j["g"][0]) + bytes((3,)) + bytes(8))
 check("repeat END keeps the stand-down", game(b)["s"] == "done" and D.box(b.live)["r"] == {})
 
+# Review 0.3.1-8 #1: making room for a duel with a *different* crewmate must not drop a
+# finished game whose END/REVEAL is still queued. It moves to a small j["e"] stub that
+# keeps those items until they are acked. First through "new" (rev8 room.py).
+def to_peer(src, dst):
+    items = [o for o in src.live.out if o[0] == dst.node.ship and 3 <= o[1][0] <= 9]
+    for o in items:
+        D.take(dst.live, src.node.ship, o[1][0], bytes(o[1][5:16]))
+    src.live.out[:] = [o for o in src.live.out if o not in items]
+    I.keep(src.live)
+
+
+def owed_reveal(seed):
+    w, a, b = fresh(seed)
+    start(w, a, b)
+    check("resign, END and REVEAL handed over", act(a, "resign") == 200)
+    to_peer(a, b)
+    check("winner counted, its REVEAL still queued", game(b)["s"] == "done" and D.box(b.live)["r"] == {"0": [1, 0]}
+          and any(o[0] == 0 and o[1][0] == 7 for o in b.live.out) and game(a)["s"] == "reveal")
+    return w, a, b
+
+
+def delivered(w, a, b, room_from):
+    jb = D.box(b.live)
+    check(room_from + ": done game retired to a stub", [g["to"] for g in jb["g"]] == [2, 3, 4]
+          and [(x["to"], x["s"], x.get("why"), x.get("o")) for x in jb.get("e", [])] == [(0, "done", 2, 1)])
+    D.maintain(b.live)
+    check(room_from + ": REVEAL survives the orphan sweep", any(o[0] == 0 and o[1][0] == 7 for o in b.live.out))
+    if room_from == "new":
+        # With a slot free, only the stub holds the rematch back.
+        check("free a slot", D.action(b.live, {"action": "discard", "to": 4})[0] == 200)
+        r = D.action(b.live, {"action": "new", "to": 0})
+        check(room_from + ": no rematch over the stub", r[0] == 409 and "still on its way" in r[1]["err"])
+    for k in range(2):
+        idle(a, 6 * 3600000 + 1000); idle(b, 6 * 3600000 + 1000); D.maintain(a.live); D.maintain(b.live)
+        run(w, a, b, lambda: not a.live.out and not b.live.out and a.ble.state == b.ble.state == "idle")
+    check(room_from + ": the resigner ends with the result", game(a)["s"] == "done" and game(a).get("counted")
+          and D.box(a.live)["r"] == {"1": [0, 1]} and D.box(b.live)["r"] == {"0": [1, 0]})
+    D.maintain(b.live)
+    check(room_from + ": stub retires once acked", not D.box(b.live).get("e") and not any(o[0] == 0 for o in b.live.out))
+
+
+w, a, b = owed_reveal(310)
+for to in (2, 3, 4):
+    check("new with another crewmate", D.action(b.live, {"action": "new", "to": to})[0] == 200)
+delivered(w, a, b, "new")
+check("rematch after delivery", act(a, "new") == 200 and act(a, "invite", layout=LAY) == 200)
+settled(w, a, b)
+check("rematch reaches the winner", next(g for g in D.box(b.live)["g"] if g["to"] == 0)["s"] == "invited")
+
+# The same through incoming INVITEs from three other ships.
+w, a, b = owed_reveal(311)
+for frm in (2, 3, 4):
+    D.take(b.live, frm, 3, bytes((1, frm, 77)) + bytes(8))
+check("three invitations taken", [g["s"] for g in D.box(b.live)["g"]] == ["invited"] * 3)
+# A busy reply to the crewmate with a stub never replaces it: still one j["e"] entry
+# per crewmate, and the stub's REVEAL decides a result there.
+D.take(b.live, 0, 3, bytes((1, 9, 9)) + bytes(8))
+D.take(b.live, 0, 5, bytes((9, 9, 1, 0)) + bytes(7))
+jb = D.box(b.live)
+check("stub outranks a reply", [(x["to"], x.get("o")) for x in jb["e"]] == [(0, 1)]
+      and not any(o[0] == 0 and o[1][0] == 8 for o in b.live.out))
+delivered(w, a, b, "invite")
+
+# Review 0.3.1-8 #2: a stale Withdraw or Resign says what actually happened.
+w, a, b = fresh(312)
+start(w, a, b)
+act(a, "resign")
+for o in [o for o in a.live.out if o[1][0] == 8]:
+    D.take(b.live, 0, 8, o[1][5:16])
+check("winner checking both fields", game(b)["s"] == "reveal" and game(b)["win"] is True)
+for x in ("withdraw", "resign"):
+    r = D.action(b.live, {"action": x, "to": 0})
+    check("stale %s in reveal says it just ended" % x, r[0] == 409 and r[1]["err"] == "That duel just ended. Checking both fields.")
+r = D.action(a.live, {"action": "withdraw", "to": 1})
+check("stale withdraw after resigning says it just ended", r[0] == 409 and "just ended" in r[1]["err"])
+settled(w, a, b)
+for x in ("withdraw", "resign"):
+    r = D.action(b.live, {"action": x, "to": 0})
+    check("stale %s after the end says so" % x, r[0] == 409 and r[1]["err"] == "That duel already ended.")
+w, a, b = fresh(313)
+act(a, "new")
+r = D.action(a.live, {"action": "resign", "to": 1})
+check("resign on a draft says discard", r[0] == 409 and "Discard your draft" in r[1]["err"])
+act(a, "invite", layout=LAY); settled(w, a, b)
+r = D.action(b.live, {"action": "withdraw", "to": 0})
+check("withdraw on an invitation says decline", r[0] == 409 and "Decline the invitation" in r[1]["err"])
+r = D.action(a.live, {"action": "resign", "to": 1})
+check("resign while waiting says withdraw", r[0] == 409 and "Withdraw the invitation" in r[1]["err"])
+check("stale taps record nothing", game(a)["s"] == "wait" and game(b)["s"] == "invited"
+      and D.box(a.live)["r"] == {} and D.box(b.live)["r"] == {})
+r = D.action(a.live, {"action": "resign", "to": 2})
+check("no duel with that crewmate", r[0] == 409 and r[1]["err"] == "No duel is open.")
+
+# Review 0.3.1-8 #3: an END 3 for an invitation near its 3-day put-away may be the
+# inviter's own sweep, so the page says "Duel put away", not "withdrew".
+for hours, wd in ((12, 2), (61, None)):
+    w, a, b = fresh(314)
+    act(a, "new"); act(a, "invite", layout=LAY); settled(w, a, b)
+    idle(b, hours * 3600000); D.maintain(b.live)
+    D.take(b.live, 0, 8, D.gid(game(b)) + bytes((3,)) + bytes(8))
+    check("END 3 after %d h idle: wd %s" % (hours, wd), game(b)["s"] == "called" and D.view(b.live)[0]["wd"] == wd
+          and D.box(b.live)["r"] == {})
+
 print("duel: %d checks passed" % COUNT[0])
 clean(TMP)

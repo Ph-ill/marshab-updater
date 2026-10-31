@@ -94,3 +94,13 @@ c.LV={duel:[{id:'tu',to:0,s:'active',n:1,t:null,turn:false,shots:[],incoming:[[1
 vm.runInContext('duScreen(0)',c);
 assert.doesNotMatch(elements.v.innerHTML,/Waiting for your ships to meet|Arrived/,'move with an unknown time shows no age');
 console.log('duel Resign: hidden in reveal, withdraw before joining, withdrawn and ended copy PASS');
+// The board refuses a rematch while the ended duel's END or REVEAL is still queued, so the
+// ended screen says why instead of offering a Rematch that would only be refused (review 0.3.1-8 #4).
+for(const pending of [false,true]){
+  c.LV={duel:[{id:'rematch',to:0,s:'done',why:2,win:true,pending,n:0,t:null,shots:[],incoming:[],record:[1,0]}]};
+  vm.runInContext('duScreen(0)',c);
+  (pending?assert.doesNotMatch:assert.match)(dockHtml,/data-dunew=0><span>Rematch</,`pending=${pending}: Rematch ${pending?'hidden':'offered'}`);
+  (pending?assert.match:assert.doesNotMatch)(elements.v.innerHTML,/Your last move is still on its way to Crew 0\. Rematch opens after your ships meet\./,`pending=${pending}: reason ${pending?'shown':'absent'}`);
+  assert.match(dockHtml,/data-go=home/,`pending=${pending}: Home stays`);
+}
+console.log('duel Rematch: waits for a queued END or REVEAL PASS');
