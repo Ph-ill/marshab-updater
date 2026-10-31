@@ -82,6 +82,12 @@ def take(lk, frm, kind, b, j):
                 g["counted"] = 0
             reveal(lk, g)
             finish(lk, j, g)
+        elif why in (1, 3) and g.get("why") == 2 and g.get("win") is False and g["s"] == "reveal" and not g.get("verified") and not g.get("counted"):
+            # A withdrawal or put-away crossed this ship's accept-then-resign (review
+            # 0.3.1-7 #2). The other ship gave up its own win and never sends REVEAL:
+            # both ships stood down, no result, so nothing waits on "Checking both fields".
+            g["mutual"] = 1
+            terminal(g, "done")
         elif why != 6 and g.get("win") is not None:
             # Fleet results and either resignation outcome already chose a side.
             # Other late END reasons must not replace that terminal decision.

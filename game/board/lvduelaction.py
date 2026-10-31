@@ -77,6 +77,11 @@ def action(lk, b, rules):
     if a == "new":
         if g or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
             return 409, {"err": "A duel is already going, or three duels are open."}
+        # The last duel's END or REVEAL still has to reach this crewmate. Dropping it
+        # with the old game would leave their ship waiting on it, or with a result
+        # this ship never sent (review 0.3.1-7 #2).
+        if any(x["to"] == to and pending(lk, x) for x in j["g"]):
+            return 409, {"err": "Your last move in that duel is still on its way. Try again after your ships meet."}
         j["g"] = [x for x in j["g"] if x["to"] != to]
         room(j)
         g = fresh(lk, to, os.urandom(2), lk.node.ship, "draft")
