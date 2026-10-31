@@ -32,8 +32,14 @@ def view(lk, j=None):
         j = load(lk.sh.data + "/duel.json") or {"g": [], "r": {}}
     # Rejection intents are not phone state. Release them before building views,
     # and consume this private parsed copy so old games do not overlap new views.
-    j.pop("e", None)
+    # A retired game still owed to a crewmate with no game here is shown as a
+    # stub, so the picker says why no new duel opens yet (review 0.3.1-9 #1).
     out = []
+    for x in j.pop("e", None) or ():
+        if x.get("o") and not any(g["to"] == x["to"] for g in j["g"] + out):
+            out.append({"to": x["to"], "id": x["id"], "s": x["s"], "stub": 1, "pending": True,
+                        "record": j["r"].get(str(x["to"]), [0, 0])})
+    stubs, out = out, []
     while j["g"]:
         g = j["g"].pop(0)
         x = dict((k, g.get(k)) for k in ("id", "to", "s", "n", "p", "t", "win", "why", "update", "nl", "doubt", "wd"))
@@ -52,13 +58,15 @@ def view(lk, j=None):
         out.append(x)
         g = None
         probe("view")
-    return out
+    return out + stubs
 
 
 def expanded(lk):
     # Object API for local callers; HTTP expands only one shot at a time.
     out = view(lk)
     for g in out:
+        if g.get("stub"):
+            continue
         h, even = g.pop("history"), g.pop("even")
         g["shots"], g["incoming"] = [], []
         for i in range(0, len(h), 2):

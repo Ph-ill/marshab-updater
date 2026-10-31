@@ -8,6 +8,8 @@ function duGame(to){return duGames().find(g=>g.to===to)}
 function duStatus(g){
   if(g.status)return g.status;
   const name=nm(g.to);
+  // A finished duel whose last move hasn't reached the crewmate yet (review 0.3.1-9 #1).
+  if(g.stub)return "Duel over. Your last move is still on its way";
   if(g.s==="draft")return "Hide your fleet";
   if(g.s==="invited")return name+" invited you";
   if(g.s==="wait")return "Waiting for "+name+" to join";
@@ -88,6 +90,7 @@ function duScreen(to){
     }
     o+=`</section>`;duDock();
   }else if(!g){o+=`<p class=dim>No duel is open with ${h(nm(to))}.</p>`;duDock(`<button class="btn sec" data-go=duel><span>Pick a crewmate</span></button>`)}
+  else if(g.stub){o+=`<p class=dim role=status>${h(duStatus(g))}.</p><p class=dim>${g.record[0]}-${g.record[1]} between you and ${h(nm(to))}.</p><p class=fine>A new duel with ${h(nm(to))} opens after your ships meet.</p>`;duDock(`<button class="btn sec" data-go=duel><span>Pick a crewmate</span></button>`)}
   else if(g.s==="draft"||g.s==="invited"){
     o+=`<p class=dim>Place your 3-cell, 2-cell and 1-cell ships. Keep an empty cell between ship edges. Tap a ship, then a cell. Tap the same cell to turn.</p><section><div class=lab><span>Your field</span><span>${h(nm(to))}</span></div><div class=du-tools>${[3,2,1].map((n,i)=>`<button class="btn sec" data-duship=${i} aria-pressed="${DU_SHIP===i}">${n} cell${n===1?"":"s"}</button>`).join("")}</div>${duGrid(duCells(DU_POS),[],"own","place")}<div class=du-tools><button class="btn sec" data-duturn=1>Turn</button><button class="btn sec" data-dushuffle=1>Shuffle</button></div><p class=fine>${duLegal(DU_POS)?"Your field is ready. Locking keeps it fixed for this duel.":"Place all three ships without overlap or touching edges."}</p></section>`;
     if(g.s==="invited")o+=`<button class="btn sec" data-duact=decline><span>Decline invitation</span></button>`;

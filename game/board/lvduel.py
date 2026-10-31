@@ -160,11 +160,21 @@ def owed(j, to):
     return any(x["to"] == to and x.get("o") for x in j.get("e", []))
 
 
+def defer(j, to, ident, why):
+    # A reply to a crewmate this ship still owes a stub waits on that stub ("rj",
+    # one per crewmate, why 0 for the unknown-game SYNC); flush sends it once the
+    # stub's items are acked (review 0.3.1-9 #3). An END outranks a SYNC.
+    x = [x for x in j["e"] if x["to"] == to and x.get("o")][-1]
+    if why or not x.get("rj"):
+        x["rj"] = [ident, why]
+
+
 def rejected(lk, j, g, why):
     # At most seven pending replies, one per sender. Retire after acknowledgement.
     # A retired game's stub outranks a reply: its END/REVEAL decides a result on
-    # the other ship (review 0.3.1-8 #1). The unanswered invitation is put away there.
+    # the other ship (review 0.3.1-8 #1). The reply waits on the stub (defer).
     if owed(j, g["to"]):
+        defer(j, g["to"], g["id"], why)
         return
     g = {"to": g["to"], "id": g["id"], "s": "called"}
     j["e"] = [x for x in j.get("e", []) if x["to"] != g["to"]]
@@ -277,7 +287,10 @@ def retire(lk, j, g):
     # Drop a finished game. If its END/REVEAL hasn't been delivered, keep a small
     # stub in j["e"] (crewmate, id, state, reason, intents): flush and cleanout keep
     # it, and its queued items, until they are acked (review 0.3.1-8 #1). Still one
-    # j["e"] entry per crewmate, so the box never holds more than seven.
+    # j["e"] entry per crewmate, except: a game opened by the INVITE that retired an
+    # owed game, itself finished before that stub's items were acked. The earlier
+    # stub is then kept beside it, never replaced (review 0.3.1-9 #5). An INVITE
+    # from a crewmate with a stub is refused (lvduelother), so never more than two.
     j["g"].remove(g)
     if pending(lk, g):
         x = {"to": g["to"], "id": g["id"], "s": g["s"], "o": 1}
@@ -285,7 +298,7 @@ def retire(lk, j, g):
             x["why"] = g["why"]
         if g.get("q"):
             x["q"] = g["q"]
-        j["e"] = [y for y in j.get("e", []) if y["to"] != g["to"]]
+        j["e"] = [y for y in j.get("e", []) if y["to"] != g["to"] or (y.get("o") and pending(lk, y))]
         j["e"].append(x)
 
 

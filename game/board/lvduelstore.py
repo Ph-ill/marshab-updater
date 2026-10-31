@@ -1,6 +1,6 @@
 # Durable duel publication, independent of receive-rule module lifetimes.
 import lvship
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 import lvlivein as I
 
 F = "/duel.json"
@@ -64,9 +64,29 @@ def flush(lk, j):
             changed = True
     if j.get("e"):
         retained = [g for g in j["e"] if pending(lk, g)]
-        if len(retained) != len(j["e"]):
+        due = False
+        for g in j["e"]:
+            z = g.get("rj")
+            if z and g not in retained:
+                # A reply that waited on this stub (lvduel.defer): hand it to the
+                # crewmate's other owed stub, or queue it now as its own reply.
+                x = [x for x in retained if x["to"] == g["to"] and x.get("o")]
+                if x:
+                    x[-1]["rj"] = z
+                    continue
+                b = unhexlify(z[0]) + (bytes((z[1],)) if z[1] else
+                    bytes((0, 255, 255, 4 if lk.cfg.get("dl", True) else 132)))
+                x = {"to": g["to"], "id": z[0], "s": "called",
+                     "q": [[8 if z[1] else 9, hexlify(b + bytes(11 - len(b))).decode()]]}
+                if not z[1]:
+                    x["unknown"] = True
+                retained.append(x)
+                due = True
+        if len(retained) != len(j["e"]) or due:
             j["e"] = retained
             changed = True
+        if due:
+            flush(lk, j)
     # The caller checkpoints only after releasing this helper's globals.
     return changed
 

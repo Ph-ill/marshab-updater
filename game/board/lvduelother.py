@@ -1,6 +1,6 @@
 # Invitation, reveal and recovery rules, not retained while scoring a shot.
 from lvduel import (ACTIVE, belongs, commit, emit, end, finish, fleet, fresh,
-                    gid, hexlify, history, keep, lvship, owed, mine, moved, rejected,
+                    defer, gid, hexlify, history, keep, lvship, owed, mine, moved, rejected,
                     repeat, result, retire, reveal, room, sync, terminal, unhexlify, layout_call,
                     maint_call, DAY)
 
@@ -40,6 +40,13 @@ def take(lk, frm, kind, b, j):
         if other or sum(x["s"] in ACTIVE for x in j["g"]) >= 3:
             rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 5)
             return False, None
+        # Still owing this crewmate a retired game's END/REVEAL, as "new" checks: put
+        # the invitation away (END 3) once those items are acked, so at most two stubs
+        # (one retired below) are ever owed to one crewmate (review 0.3.1-9 #5).
+        # Their ship can invite again then.
+        if owed(j, frm):
+            rejected(lk, j, fresh(lk, frm, ident, frm, "called"), 3)
+            return False, None
         # Keep one completed game per opponent, for the reveal screen and rematch.
         for x in [x for x in j["g"] if x["to"] == frm and x["s"] not in ACTIVE]:
             retire(lk, j, x)
@@ -52,8 +59,12 @@ def take(lk, frm, kind, b, j):
         tick = lvship.ticks_ms()
         previous = getattr(lk, "duel_unknown", None)
         elapsed = lvship.ticks_diff(tick, previous) if previous is not None else 3600000
-        # A retired game's stub keeps this crewmate's j["e"] slot (review 0.3.1-8 #1).
-        if kind not in (8, 9) and not owed(j, frm) and (elapsed >= 3600000 or elapsed < 0):
+        # A retired game's stub keeps this crewmate's j["e"] slot (review 0.3.1-8 #1);
+        # the reply waits on it (review 0.3.1-9 #3).
+        if kind not in (8, 9) and owed(j, frm):
+            defer(j, frm, hexlify(ident).decode(), 0)
+            return False, None
+        if kind not in (8, 9) and (elapsed >= 3600000 or elapsed < 0):
             temp = fresh(lk, frm, ident, frm, "called")
             temp["unknown"] = True
             sync(lk, temp)
