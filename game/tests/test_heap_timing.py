@@ -61,12 +61,14 @@ def notifier():
         lvled._t = old
 
 
-async def reset_response(raw, status):
+async def reset_response(raw, status, eof=False):
     class Reader:
         async def read(self, n):
             if self.raw:
                 b, self.raw = self.raw, b""
                 return b
+            if eof:
+                return b""
             raise ConnectionResetError(104, "reset")
 
     class Writer:
@@ -133,9 +135,13 @@ async def main():
     await reset_response(b'HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\n{}', 200)
     await reset_response(b'HTTP/1.0 200 OK\r\nContent-Length: 3\r\n\r\n{}', None)
     await reset_response(b"", None)
+    # A clean close with no reply, or half a reply head, is a reset too, not an
+    # IndexError that aborts every phone at once (review 0.3.1-5 #6).
+    await reset_response(b"", None, eof=True)
+    await reset_response(b"HTTP/1.0 200", None, eof=True)
     await sockets()
 
 
 notifier()
 asyncio.run(main())
-print("heap timing: notifier preemption, complete 503/reset, ambiguous resets, real socket admission: PASS")
+print("heap timing: notifier preemption, complete 503/reset, ambiguous resets, empty replies, real socket admission: PASS")

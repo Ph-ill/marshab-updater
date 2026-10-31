@@ -14,6 +14,11 @@ except ImportError:  # pragma: no cover
 
 PHONE_TIME = "1792843200000"
 
+try:
+    Reset = ConnectionResetError
+except NameError:  # MicroPython has only OSError
+    Reset = OSError
+
 
 def parse(raw):
     i = raw.find(b"\r\n\r\n")
@@ -57,6 +62,10 @@ def tcp(port, host="127.0.0.1"):
                 # EOF once HTTP framing proves the answer is complete.
                 if total is not None and len(raw) >= total:
                     break
+            if b"\r\n\r\n" not in raw:
+                # The board closed before a whole reply head (review 0.3.1-5 #6): a
+                # reset, which a GET's retry loop handles and a POST reports plainly.
+                raise Reset("connection closed after %d bytes of reply: %s %s" % (len(raw), method, path))
             if total is not None and len(raw) != total:
                 raise EOFError("incomplete HTTP response: %d of %d bytes" % (len(raw), total))
             return parse(raw)
