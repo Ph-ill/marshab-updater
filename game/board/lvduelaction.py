@@ -123,6 +123,13 @@ def action(lk, b, rules):
     elif a == "resign":
         if g["s"] not in ("wait", "invited", "active"):
             return 409, {"err": "No duel is playing."}
+        if g["s"] != "active":
+            # Nobody joined a game yet (review 0.3.1-6 #3): withdrawing an invitation
+            # or turning one down records nothing, on either ship.
+            terminal(g, "called" if g["s"] == "wait" else "declined")
+            end(lk, g, 3 if g["s"] == "called" else 1)
+            store(lk, j)
+            return 200, {"ok": True}
         terminal(g, "called")  # discard obsolete moves before the terminal exchange
         g["s"], g["win"] = "reveal", False
         g["why"] = 2

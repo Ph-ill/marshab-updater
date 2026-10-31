@@ -96,11 +96,12 @@ function duScreen(to){
   }else{
     const ended=!DU_OPEN.includes(g.s),can=g.turn&&!g.pending&&!DU_BUSY;
     const field=ended?g.their:null;
-    o+=`<p class=dim role=status>${h(duStatus(g))}</p>${g.update?`<p class=fine>${h(nm(to))}'s ship may need 0.3.1.</p>`:""}${g.nl?`<p class=fine>${h(nm(to))}'s light is off. Your move waits on ${h(nm(to))}'s page.</p>`:""}<section><div class=lab><span>${h(nm(to))}'s field</span><span>${field?"revealed":ended?"not revealed":"your shots"}</span></div>${duGrid(field,g.shots,"opponent",can?"fire":"view",DU_CELL,g.p)}<p class=fine>${g.pending||g.p!=null?"On its way":g.t?"Arrived "+lvAgo(g.t*1000):"Waiting for your ships to meet"}</p></section><section><div class=lab><span>Your field</span><span>${g.incoming.length} shots received</span></div>${duGrid(g.layout,g.incoming,"own","small")}</section>`;
+    o+=`<p class=dim role=status>${h(duStatus(g))}</p>${g.update?`<p class=fine>${h(nm(to))}'s ship may need 0.3.1.</p>`:""}${g.nl?`<p class=fine>${h(nm(to))}'s light is off. Your move waits on ${h(nm(to))}'s page.</p>`:""}<section><div class=lab><span>${h(nm(to))}'s field</span><span>${field?"revealed":ended?"not revealed":"your shots"}</span></div>${duGrid(field,g.shots,"opponent",can?"fire":"view",DU_CELL,g.p)}<p class=fine>${g.pending||g.p!=null?"On its way":g.t?"Arrived "+lvAgo(g.t*1000):g.n?"":"Waiting for your ships to meet"}</p></section><section><div class=lab><span>Your field</span><span>${g.incoming.length} shots received</span></div>${duGrid(g.layout,g.incoming,"own","small")}</section>`;
     if(ended){o+=`<p class=dim>${g.record[0]}-${g.record[1]} between you and ${h(nm(to))}.</p>`;duDock(`<button class="btn sec" data-dunew=${to}><span>Rematch</span></button>`)}
     else{
       // Call it is for a crewmate who stopped moving: never on your own turn (review 0.3.1-4 #8).
-      o+=`<section><button class="btn sec" data-duact=resign><span>Resign</span></button>${g.turn?"":`<button class="btn sec" data-duact=call><span>Call it</span><i>after 3 days</i></button>`}</section>`;
+      // Resign only where the board takes it: a game both ships joined; before that, withdraw (review 0.3.1-6 #2, #3).
+      o+=`<section>${g.s==="active"?`<button class="btn sec" data-duact=resign><span>Resign</span></button>`:g.s==="wait"?`<button class="btn sec" data-duact=resign><span>Withdraw invitation</span></button>`:""}${g.turn?"":`<button class="btn sec" data-duact=call><span>Call it</span><i>after 3 days</i></button>`}</section>`;
       duDock(`<button class="btn pri" data-duact=fire ${can&&DU_CELL!=null?"":"disabled"}><span>${DU_CELL!=null?"Fire at "+duCoord(DU_CELL):"Pick a cell"}</span></button>`);
     }
   }
@@ -120,7 +121,8 @@ document.addEventListener("click",async ev=>{
   if(d.duplace!=null){const c=+d.duplace,p=DU_POS[DU_SHIP];DU_POS[DU_SHIP]=[c,p?.[0]===c?p[1]^1:p?.[1]||0];return view()}
   if(d.ducell!=null){DU_CELL=+d.ducell;return view()}
   const action=d.dunew!=null?"new":d.duact,to=d.dunew!=null?+d.dunew:DU_TO;
-  if((action==="resign"||action==="call")&&!confirm(action==="resign"?"Resign this duel? This counts as a loss.":"Put this duel away without a result?"))return;
+  const wd=action==="resign"&&duGame(to)?.s==="wait";
+  if((action==="resign"||action==="call")&&!confirm(wd?"Withdraw your invitation? Nothing is recorded.":action==="resign"?"Resign this duel? This counts as a loss.":"Put this duel away without a result?"))return;
   DU_BUSY=true;DU_ERR="";view();
   try{await api("/api/live/duel",{action,to,layout:DU_POS,cell:DU_CELL});DU_CELL=null;if(["lock","invite","accept","discard"].includes(action)){DU_PLACEMENTS.delete(DU_KEY);DU_KEY=null;DU_POS=null}await lvLoad();if(action==="new"){DU_TO=null;go("duel/"+to)}if(action==="discard")go("duel")}
   catch(e){DU_ERR=e.message||"Your move did not go. Try again."}

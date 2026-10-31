@@ -86,7 +86,9 @@ def take(lk, frm, kind, b, j):
             # Fleet results and either resignation outcome already chose a side.
             # Other late END reasons must not replace that terminal decision.
             return
-        elif why == 2 and g["s"] in ACTIVE:
+        elif why == 2 and g["s"] in ACTIVE and g["s"] != "invited":
+            # (END 2 in "invited", from a 0.3.1 inviter that resigned before anyone
+            # joined, falls through to "called": no result, review 0.3.1-6 #3.)
             g["why"] = 2
             g["win"], g["s"] = True, "reveal"
             reveal(lk, g)

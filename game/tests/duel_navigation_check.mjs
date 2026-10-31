@@ -59,3 +59,17 @@ for(const turn of [true,false]){
   (turn?assert.doesNotMatch:assert.match)(elements.v.innerHTML,/data-duact=call/,`Call it ${turn?'hidden on':'offered off'} your turn`);
 }
 console.log('duel Call it: hidden on your own turn PASS');
+// Resign only where the board takes it (review 0.3.1-6 #2, #3): never on the reveal
+// screen; before anyone joined, the button withdraws the invitation instead.
+for(const [state,label] of [['active','Resign'],['wait','Withdraw invitation'],['reveal',null]]){
+  c.LV={duel:[{id:'resign',to:0,s:state,turn:false,shots:[],incoming:[],record:[0,0]}]};
+  vm.runInContext('duScreen(0)',c);
+  const m=elements.v.innerHTML.match(/data-duact=resign><span>([^<]*)</);
+  assert.equal(m?m[1]:null,label,`${state}: resign button ${label||'hidden'}`);
+  assert.match(elements.v.innerHTML,/data-duact=call/,`${state}: Call it still offered`);
+}
+// A stamp the board can't vouch for (t null after a move) never reads as waiting to meet.
+c.LV={duel:[{id:'tu',to:0,s:'active',n:1,t:null,turn:false,shots:[],incoming:[[1,0,0]],record:[0,0]}]};
+vm.runInContext('duScreen(0)',c);
+assert.doesNotMatch(elements.v.innerHTML,/Waiting for your ships to meet|Arrived/,'move with an unknown time shows no age');
+console.log('duel Resign: hidden in reveal, withdraw before joining PASS');
