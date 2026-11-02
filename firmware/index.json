@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.1",
+      "channel": "test",
+      "date": "2026-11-01",
+      "label": "Asteroid duel",
+      "path": "/firmware/releases/0.3.1/release.json",
+      "bytes": 263886,
+      "files": 49,
+      "frozen": "2661c2144844",
+      "notes": [
+        "Challenge a crewmate to an Asteroid duel: take turns firing at each other's field each time your ships meet."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.1-updater",
       "channel": "test",
       "date": "2026-10-30",
@@ -140,5 +155,9 @@
       "bytes": 27106,
       "files": 4
     }
-  ]
+  ],
+  "heads": {
+    "test": "0.3.1",
+    "bench": "0.0.2-coex"
+  }
 }
