@@ -1,5 +1,6 @@
 {
   "_about": "What's new in each release, for players: Settings > Ship software (the update notice) and Version history (web/ota.js). 1 to 3 short lines each, plain words, second person, no story spoilers, no technical terms. Checked by game/tools/ota/whatsnew.py; tools/build_release.py puts a release's lines in its index.json entry and release.json (never in version.json or the signed manifest: the ship's heap has no room for them while it updates); offline, the phone shows them from the page the ship serves (www/app.html.gz, signed with the release: web/build.py bakes this file into it). whatsnew.py --index fills older entries.",
+  "0.3.1": ["Challenge a crewmate to an Asteroid duel: take turns firing at each other's field each time your ships meet."],
   "0.3.1-updater": [
     "This update prepares your ship for the next one."
   ],
