@@ -448,12 +448,17 @@ def net_hooks(lvweb, web):
     answer = lvweb.dns_answer
 
     def dns_answer(q, ip):
-        # REFUSED for GitHub (where phones fetch updates), so no phone caches this board
-        # as github.com; every other name is still the board (the captive portal).
-        r = answer(q, ip)
-        if r and (b"\x06github\x03com\x00" in q or b"\x11githubusercontent\x03com\x00" in q):
-            return r[:2] + b"\x81\x85\x00\x01\x00\x00\x00\x00\x00\x00" + r[12:len(r) - 16 * r[7]]
-        return r
+        # No reply at all for GitHub (github.com, githubusercontent.com and their
+        # subdomains, in any letter case and for any query type: A, AAAA, HTTPS), where
+        # phones fetch updates; every other name is still the board (the captive portal). A REFUSED, SERVFAIL or empty answer is a
+        # quick, final "no" that the phone takes from the ship's Wi-Fi, so the check fails
+        # at once even with mobile data on. With no reply the lookup stays open, and iOS
+        # can answer it over mobile data once it marks the Wi-Fi as having no internet.
+        # The page's own timeout (ota.js OTA_WAIT, 8 s) bounds the wait. See docs/OTA.md 4.
+        n = q[12:].lower()
+        if b"\x06github\x03com\x00" in n or b"\x11githubusercontent\x03com\x00" in n:
+            return None
+        return answer(q, ip)
     lvweb.dns_answer = dns_answer
 
 

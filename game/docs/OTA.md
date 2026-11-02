@@ -271,10 +271,14 @@ member's `X-Crew-Token`, otherwise it gets 401.
 7. **`data/`** is never written or deleted by any of this (`status()` reads `ota_src` from
    `ship.json`, see 2).
 
-The ship's DNS answers `REFUSED` for `github.com` and `githubusercontent.com` (everything
-else still points at the ship, which is how the captive portal works). A phone on the
-hotspot then gets a fast failure instead of a redirect to the ship. If the phone has
-another route, it may try that one; see 5.
+The ship's DNS doesn't reply at all for `github.com`, `githubusercontent.com` and their
+subdomains, for any query type (everything else still points at the ship, which is how
+the captive portal works). Up to 0.3.1 it answered `REFUSED`, but that is a quick, final
+"no" from the Wi-Fi's DNS: right after a phone (re)joins, before iOS has marked the Wi-Fi
+"No Internet Connection", the check failed at once even with mobile data on. With no reply
+the lookup stays open, so iOS can still answer it over mobile data once it gives up on
+the Wi-Fi, and nothing is cached that points GitHub at the ship. The cost is a wait of up
+to 8 s (`OTA_WAIT`) before the page says the check timed out. **[NEEDS A REAL PHONE]**
 
 ## 5. Captive portal: what to expect
 
@@ -304,7 +308,8 @@ home-screen icon keeps its own copy, which isn't capped (section 6).
 - Even if it can't, a check at home, or anywhere else with internet, keeps the release in
   Safari for `192.168.4.1`, and the next visit to the ship offers it.
 - One more thing to test: whether iOS resolves `raw.githubusercontent.com` through the
-  ship's DNS (it would get `REFUSED`) or through cellular DNS. **[NEEDS A REAL PHONE]**
+  ship's DNS (it gets no reply) or through cellular DNS, right after joining the ship.
+  **[NEEDS A REAL PHONE]**
 
 **Android, the sign-in notification** (CaptivePortalLogin, a WebView). It's bound to the
 Wi-Fi network and its storage is its own, so it behaves like the iOS sheet. **[NEEDS A

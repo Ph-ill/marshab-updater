@@ -174,7 +174,7 @@ test('network error retries once after 1.5 s, serializes all triggers and paints
   assert.equal(p.run('otaChecking()'), false);
   assert.equal(p.timers.size, 0);
   const html = p.run('otaSect()');
-  assert.match(html, /Your phone couldn't reach GitHub on this network\./);
+  assert.match(html, /Your phone couldn't reach GitHub on this network\. Turn Wi-Fi off, check again, then turn Wi-Fi back on\./);
   assert.match(html, /Couldn't check/);
   assert.doesNotMatch(html, /Up to date|no internet/);
   assert.ok(html.indexOf('data-ota=check') < html.indexOf('Turn Wi-Fi off'));
@@ -186,7 +186,7 @@ test('index deadline covers the body, retries once and reports timeout separatel
   const pending = p.run('otaCheck(true)'); await flush();
   p.fire(8000); await flush(); p.fire(1500); await flush(); p.fire(8000); await pending;
   assert.equal(p.state().err, 'timeout');
-  assert.match(p.run('otaSect()'), /Your update check timed out\. You can try again\./);
+  assert.match(p.run('otaSect()'), /Your update check timed out\. Turn Wi-Fi off, check again, then turn Wi-Fi back on\./);
   assert.match(p.run('otaSect()'), /otasteps/);
   assert.equal(p.calls.length, 2);
   assert.equal(p.timers.size, 0);

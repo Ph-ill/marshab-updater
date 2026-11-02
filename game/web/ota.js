@@ -334,8 +334,8 @@ function otaScreen(){
 // An update already on this phone is shown either way.
 function otaChecking(){return OTA_CHECK}
 function otaFailure(b){
-  if(b.err==="timeout")return"Your update check timed out. You can try again.";
-  if(b.err==="network"||b.err==="offline")return"Your phone couldn't reach GitHub on this network.";
+  if(b.err==="timeout")return"Your update check timed out. Turn Wi-Fi off, check again, then turn Wi-Fi back on.";
+  if(b.err==="network"||b.err==="offline")return"Your phone couldn't reach GitHub on this network. Turn Wi-Fi off, check again, then turn Wi-Fi back on.";
   if(b.err==="http")return`You couldn't get the update from GitHub (HTTP ${b.http}). Try again later.`;
   if(b.err==="full")return"Your phone couldn't store the update. Free some phone storage, then try again.";
   return"Your update data is invalid or missing a signature. Try again later.";

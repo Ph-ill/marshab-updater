@@ -727,7 +727,7 @@ check("boot.py with nothing pending: lvboot not loaded", "lvboot" not in sys.mod
 import lvboot  # noqa: E402,F811
 lvboot._mv, lvboot._save = real_mv, real_save
 
-# -- main.py's hooks: /api/ota* to lvota (dropped after), GitHub refused by the DNS, every
+# -- main.py's hooks: /api/ota* to lvota (dropped after), GitHub unanswered by the DNS, every
 # other name still the board
 main_src = open(HERE + "/board/main.py").read()
 main_src = main_src[main_src.index("def http_admission"):main_src.index("\nasync def ota_ok")]
@@ -774,23 +774,27 @@ g["ota_hooks"](FakeLvweb, srv)
 check("MAX_BODY for the update pieces", FakeLvweb.MAX_BODY == lvota.CHUNK)
 
 
-def q(name):
+def q(name, qtype=1):
     out = b"\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00"
     for part in name.split("."):
         out += bytes([len(part)]) + part.encode()
-    return out + b"\x00\x00\x01\x00\x01"
+    return out + b"\x00" + bytes([0, qtype]) + b"\x00\x01"
 
 
-for name, refused in (("raw.githubusercontent.com", True), ("api.github.com", True), ("github.com", True),
+# GitHub gets no reply at all, whatever the query type (A, AAAA, HTTPS), so the phone's
+# lookup can still be answered over mobile data; everything else is the board.
+for name, dropped in (("raw.githubusercontent.com", True), ("api.github.com", True), ("github.com", True),
+                      ("objects.githubusercontent.com", True), ("githubusercontent.com", True),
+                      ("RAW.GitHubUserContent.COM", True),
                       ("captive.apple.com", False), ("connectivitycheck.gstatic.com", False),
-                      ("notgithub.company.com", False)):
-    r = FakeLvweb.dns_answer(q(name), [192, 168, 4, 1])
-    rc = r[3] & 15
-    if refused:
-        check("dns %s: REFUSED, no answer" % name, rc == 5 and r[6:8] == b"\x00\x00" and r[:2] == b"\x12\x34"
-              and r[12:] == q(name)[12:], r)
-    else:
-        check("dns %s: the board" % name, rc == 0 and r.endswith(bytes([192, 168, 4, 1])), r)
+                      ("notgithub.company.com", False), ("github.com.evil.example", False)):
+    for qtype in (1, 28, 65):
+        r = FakeLvweb.dns_answer(q(name, qtype), [192, 168, 4, 1])
+        if dropped:
+            check("dns %s type %d: no reply" % (name, qtype), r is None, r)
+        elif qtype == 1:
+            rc = r[3] & 15
+            check("dns %s: the board" % name, rc == 0 and r.endswith(bytes([192, 168, 4, 1])), r)
 
 # -- HTTP: GET is open, every write needs a signed-in crew member
 try:
