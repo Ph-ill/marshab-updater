@@ -784,7 +784,7 @@ becomes theirs once it's in):
    `python3 tools/build_release.py --version 0.3.1 --channel <ch> --frozen
    game/tools/fw/cores/lv-core-0.2.0-2661c2144844.json --source game/build/board-fw
    --exclude boot.py --exclude lvboot.mpy --needs 0.3.1-updater` (with the usual label and
-   date). Without `--needs` it refuses, since its 48 files are more than 0.3.0 takes.
+   date). Without `--needs` it refuses, since its 49 files are more than 0.3.0 takes.
    `build_release.py` moves `heads[ch]` to it and leaves `channels[ch]` on the stepping
    stone. Run `validate_firmware.py`.
 3. Never move `channels[ch]` to a release with `needs`, by hand or otherwise: a 0.3.0 page

@@ -210,7 +210,7 @@ class HailSes:
 # requests and the radio (printed at the end, so a cap overrun says what it coincided with)
 PER_USE = ("lvota", "lvotap", "lvotaq", "lvsig", "lvphone", "lvliveapi", "lvlivein", "lvlivex", "lvflick", "lvfunnel",
            "lvcode", "lvledtest", "lvbatt", "lvsafe", "lvcheck", "lvstateapi",
-           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel", "lvduelrx", "lvduelaction", "lvduelview", "lvduellayout", "lvlivecfg", "lvduelmaint", "lvliveops", "lvduelother", "lvduelstore")
+           "lvphoneapi", "lvphoneinit", "lvsetup", "lvlight", "lvduel", "lvduelrx", "lvduelaction", "lvduelview", "lvduellayout", "lvlivecfg", "lvduelmaint", "lvliveops", "lvduelother", "lvduelstore", "lvrgb")
 
 
 def mem():

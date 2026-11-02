@@ -43,17 +43,19 @@ function setScreen(){
   dock("","set");
 }
 // Test light (board/lvledtest.py, POST /api/led/test): the ship plays three blinks and three
-// slow pulses (10 s; 0.3.0, was ~4 s), on or off, then goes back to what its light was doing. The button says
+// slow pulses (10 s; 0.3.0, was ~4 s), or, on a ship with its own red, green and blue LEDs
+// (ship.json rgb_pins; the answer says rgb), each colour in turn then all three cycling, on or off, then goes back to what its light was doing. The button says
 // "Testing" with a thin bar for as long as the ship says it plays; repainted in place (never a
 // whole redraw: the code form keeps what's typed), and a tap meanwhile does nothing.
 let LEDT=0,LEDS=0,LEDE="",LEDK=0;   // test: ends at (Date.now ms), started at, last error, timer
 let LEDH=0;     // a hail's flicker has the light until (Date.now ms): Test light says so (review 3 m2)
 let LEDW="";    // the Ship light switch's last refusal (app.html's data-led click), shown under it
+let LEDC=0;     // the ship (its number) whose test answered rgb: its own red, green and blue LEDs (board/lvrgb.py)
 function ledtHTML(n){
-  const now=Date.now(),on=LEDT>now,ms=LEDT-LEDS;
+  const now=Date.now(),on=LEDT>now,ms=LEDT-LEDS,c=LEDC===n,pat=c?"red, green and blue in turn, then all three cycling colours":"three blinks, then three slow pulses";
   let o=`<div id=set-ledt><button class="btn sec ledt" data-ledt=1${on?" disabled aria-busy=true":""} aria-describedby=ledts><span>${on?"Testing\u2026":"Test light"}</span><i>${on?"watch LV-"+n:"10 s"}</i>${on?`<b class=ledbar style="animation-duration:${ms}ms;animation-delay:-${now-LEDS}ms" aria-hidden=true></b>`:""}</button>`;
   const hl=LEDH>now?Math.ceil((LEDH-now)/1000):0;
-  o+=`<p id=ledts class=${LEDE?"err":"fine"} role=status>${LEDE?h(LEDE):hl?`Your ship's light is showing a hail. Try again in ${hl} s.`:on?`Look at LV-${n} now: three blinks, then three slow pulses.`:LEDS?`Finished. The light is back to ${S.led?"on":"off"}.`:"Three blinks, then three slow pulses. Works with the light off too."}</p></div>`;
+  o+=`<p id=ledts class=${LEDE?"err":"fine"} role=status>${LEDE?h(LEDE):hl?`Your ship's light is showing a hail. Try again in ${hl} s.`:on?`Look at LV-${n} now: ${pat}.`:LEDS?(c?"Finished. The coloured lights are off again.":`Finished. The light is back to ${S.led?"on":"off"}.`):`${pat[0].toUpperCase()+pat.slice(1)}. Works with the light off too.`}</p></div>`;
   return o;
 }
 function ledtPaint(){
@@ -68,7 +70,7 @@ function ledtFor(ms){
 document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button[data-ledt]");if(!el||el.disabled||LEDT>Date.now())return;
   LEDE="";LEDH=0;ledtFor(10000);
-  try{const j=await api("/api/led/test",{});ledtFor(j.ms??10000)}
+  try{const j=await api("/api/led/test",{});LEDC=j.rgb?setNo():0;ledtFor(j.ms??10000)}
   catch(e){
     if(!tok)return;
     if(e.status===429&&e.j&&e.j.kind==="hail"){

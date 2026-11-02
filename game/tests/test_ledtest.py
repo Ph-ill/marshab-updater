@@ -8,7 +8,11 @@
 # blink while the radio or a request is busy; the event loop free throughout (a 100 ms
 # ticker, and main.py's own charger_watch catching the charger plugged in mid-test); no
 # light to drive (no machine.Pin) is a 500 that leaves nothing running; a pin that fails
-# mid-pattern ends the test cleanly; the module dropped after each request. Runs on CPython
+# mid-pattern ends the test cleanly; the module dropped after each request. (0.3.1) With
+# ship.json rgb_pins, on fake PWMs: the colour pattern, scaled, ending with every duty 0 and
+# every PWM deinit'd, also on a failing PWM, a cancel, an update starting and a stale test
+# taken over; refused pins (the battery's, too few, the radio chip's) fall back to the onboard
+# test; null is the default, lvrgb never loaded. Runs on CPython
 # and MicroPython (stock and the game firmware's unix build):
 #   python3 tests/test_ledtest.py && micropython tests/test_ledtest.py        (from game/)
 import sys
@@ -479,4 +483,195 @@ def no_task_case():
 
 
 no_task_case()
+
+
+# -- 6. (0.3.1) a test board's own red, green and blue LEDs (ship.json rgb_pins, board/lvrgb.py)
+class PWM:
+    def __init__(self, n, fail_at=None):
+        self.n, self.log, self.dead, self.fail_at = n, [], False, fail_at
+        self.duty = 0
+
+    def duty_u16(self, d):
+        if self.dead:
+            raise ValueError("deinit")
+        if self.fail_at is not None and len(self.log) >= self.fail_at:
+            raise OSError(5)
+        check("rgb: duty in 0-65535", 0 <= d <= 65535, d)
+        self.duty = d
+        self.log.append((diff(now(), T0[0]), d))
+
+    def deinit(self):
+        self.dead = True
+
+
+def rgb_ship(pins, **cfg):
+    pin = Pin()
+    made = {}
+    sh = Ship(Notifier(Clock(), False))
+    sh.led_pin = lambda: pin
+    sh.cfg["rgb_pins"] = pins
+    sh.cfg.update(cfg)
+
+    def mk(n):
+        made[n] = PWM(n, sh.fail_at)
+        return made[n]
+    sh.fail_at = None
+    sh.rgb_pwm = mk
+    return sh, pin, made
+
+
+def lit_d(log, a, b):
+    """the highest duty written between a and b ms, or the duty held from before."""
+    v, m = 0, 0
+    for (t, d) in log:
+        if t <= a:
+            v = d
+        elif t < b:
+            m = max(m, d)
+    return max(m, v)
+
+
+def all_off(sh, made, n=3):
+    return len(made) == n and all(p.dead and p.duty == 0 for p in made.values()) and getattr(sh, "rgb", None) is None
+
+
+async def wait_end(sh, cap=MS + 2000):
+    t = now()
+    while sh.ledtest is not None and diff(now(), t) < cap:
+        await lvship.sleep_ms(20)
+
+
+async def rgb_case():
+    import lvrgb
+    L3 = lvrgb.level
+    check("rgb: each colour breathes alone, in turn", L3(1000, 0) == 100 and L3(1000, 1) == 0 and L3(3000, 1) == 100 and L3(5000, 2) == 100 and L3(5000, 0) == 0)
+    check("rgb: the wheel has two colours at once", L3(6000 + 1800, 0) == 0 and L3(6000 + 1800, 1) > 0 and L3(6000 + 1800, 2) > 0)
+    check("rgb: dark at the end, over at TEST_MS", all(L3(t, k) == 0 for t in range(9600, MS, 10) for k in range(3)) and L3(MS, 0) == -1)
+    check("rgb: never out of range", all(0 <= L3(t, k) <= 100 for t in range(0, MS, 7) for k in range(3)))
+    cfg = {"rgb_pins": [16, 17, 18]}
+    check("rgb: GP16-18 accepted", lvrgb.pins(cfg) == (16, 17, 18))
+    check("rgb: default scale evens red down", lvrgb.scale(cfg) == (40, 70, 100) and lvrgb.scale({"rgb_scale": [50, 50, 50]}) == (50, 50, 50))
+    check("rgb: a bad scale falls back to the defaults", all(lvrgb.scale({"rgb_scale": v}) == (40, 70, 100) for v in ([0, 50, 50], [50, 50], "x", [True, 5, 5], [101, 1, 1])))
+    said = []
+    for v in ([4, 17, 18], [16, 17], [16, "x", 18], [16, 17, 17], [0, 16, 17], [16, 17, 23], [16, 17, 29], [-1, 16, 17], True, 16, [16, 17, True], {"r": 16}):
+        check("rgb: %r refused" % (v,), lvrgb.pins({"rgb_pins": v}, said.append) is None)
+    check("rgb: refusals said", len(said) == 12, said)
+    check("rgb: battery pins refused only while the battery can be on",
+          lvrgb.pins({"rgb_pins": [4, 5, 6], "battery": False}) == (4, 5, 6) and lvrgb.pins({"rgb_pins": [16, 17, 18], "bat_chg": 17}, said.append) is None)
+    check("rgb: null is the onboard light, nothing said", lvrgb.pins({"rgb_pins": None}, said.append) is None and len(said) == 13)
+    sys.modules.pop("lvrgb", None)
+    del lvrgb
+
+    # the whole pattern on fake PWMs
+    sh, pin, made = rgb_ship([16, 17, 18])
+    srv = hook(sh)
+    T0[0] = now()
+    s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+    check("rgb: started, 200 {ok, ms, rgb}", s == 200 and j.get("rgb") is True and j.get("ms") == MS, (s, j))
+    check("rgb: lvrgb and lvledtest dropped", "lvrgb" not in sys.modules and "lvledtest" not in sys.modules)
+    await lvship.sleep_ms(500)
+    s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+    check("rgb: a second tap meanwhile is 429, nothing new made", s == 429 and len(made) == 3, (s, j, len(made)))
+    await wait_end(sh)
+    end = diff(now(), T0[0])
+    r, g, b = made[16].log, made[17].log, made[18].log
+    check("rgb: over in about TEST_MS", MS - 50 <= end <= MS + 100, end)
+    check("rgb: the onboard LED untouched", pin.log == [], pin.log[:3])
+    check("rgb: red alone first", lit_d(r, 800, 1200) > 20000 and lit_d(g, 0, 2000) == 0 and lit_d(b, 0, 2000) == 0, (lit_d(r, 800, 1200), lit_d(g, 0, 2000)))
+    check("rgb: then green alone", lit_d(g, 2800, 3200) > 30000 and lit_d(r, 2100, 4000) == 0 and lit_d(b, 2000, 4000) == 0)
+    check("rgb: then blue alone", lit_d(b, 4800, 5200) > 60000 and lit_d(r, 4000, 6000) == 0 and lit_d(g, 4100, 6000) == 0)
+    check("rgb: red scaled down (40 %) under blue's full", 20000 < lit_d(r, 0, 2000) <= 65535 * 41 // 100 and lit_d(b, 4000, 6000) >= 65000, (lit_d(r, 0, 2000), lit_d(b, 4000, 6000)))
+    check("rgb: breaths swell and fade (many duty steps)", len([1 for t, _ in r if t < 2000]) > 50)
+    check("rgb: all three in the colour wheel", all(lit_d(x, 6400, 9200) > 5000 for x in (r, g, b)))
+    check("rgb: dark from 9.6 s", all(lit_d(x, 9620, MS) == 0 for x in (r, g, b)))
+    check("rgb: ends off: every duty 0, every PWM deinit'd", all_off(sh, made) and sh.ledtest is None)
+    T0[0] = now()
+    made.clear()
+    s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+    check("rgb: after it ends, a new test starts (fresh PWMs)", s == 200 and j.get("rgb") is True)
+    await lvship.sleep_ms(300)
+    check("rgb: ... and lights", made[16].duty > 0)
+    # an update's upload starting meanwhile (main.py's web.ota_busy): dark at once
+    srv.ota_busy = 1
+    await lvship.sleep_ms(60)
+    check("rgb: an update stops it, every pin off", all_off(sh, made) and sh.ledtest is None, [(p.dead, p.duty) for p in made.values()])
+    check("rgb: ... and said so", any("for an update" in x for x in SAID[-3:]), SAID[-3:])
+    srv.ota_busy = 0
+
+    # a PWM that fails mid-pattern: ends, all off, said
+    sh, pin, made = rgb_ship([16, 17, 18])
+    sh.fail_at = 20
+    srv = hook(sh)
+    del SAID[:]
+    T0[0] = now()
+    s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+    await lvship.sleep_ms(1500)
+    check("rgb: failing PWM: ended, not stuck", sh.ledtest is None)
+    check("rgb: failing PWM: said so", any("test stopped" in x for x in SAID), SAID)
+    check("rgb: failing PWM: every PWM deinit'd", len(made) == 3 and all(p.dead for p in made.values()))
+    # a PWM that can't be made: nothing left on
+    sh, pin, made = rgb_ship([16, 17, 18])
+
+    def bad(n):
+        if n == 18:
+            raise OSError("no PWM")
+        made[n] = PWM(n)
+        return made[n]
+    sh.rgb_pwm = bad
+    srv = hook(sh)
+    s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+    await lvship.sleep_ms(100)
+    check("rgb: a PWM that can't be made: ended, the others off", sh.ledtest is None and all_off(sh, made, 2), [(p.dead, p.duty) for p in made.values()])
+
+    # cancelled (lvship's loop returning, a restart): finally switches everything off
+    import lvrgb
+    sh, pin, made = rgb_ship([16, 17, 18])
+    sh.ledtest = now()
+    t = asyncio.create_task(lvrgb.play(sh, (16, 17, 18), (40, 70, 100)))
+    await lvship.sleep_ms(1000)
+    check("rgb: lit before the cancel", made[16].duty > 0)
+    t.cancel()
+    try:
+        await t
+    except BaseException:
+        pass
+    check("rgb: cancelled: every pin off, marks cleared", all_off(sh, made) and sh.ledtest is None)
+    # a stale test (its mark long past) taken over by a newer one: the old one's pins off
+    # first, the old task ends without touching the new one's
+    sh, pin, made = rgb_ship([16, 17, 18])
+    old = made
+    sh.ledtest = now()
+    t1 = asyncio.create_task(lvrgb.play(sh, (16, 17, 18), (40, 70, 100)))
+    await lvship.sleep_ms(500)
+    o16 = made[16]
+    sh.ledtest = now()
+    t2 = asyncio.create_task(lvrgb.play(sh, (16, 17, 18), (40, 70, 100)))
+    await lvship.sleep_ms(200)
+    check("rgb: takeover: the old PWMs off and deinit'd", o16.dead and o16.duty == 0)
+    check("rgb: takeover: the old task ended quietly", t1.done() and sh.ledtest is not None)
+    check("rgb: takeover: the new one plays", made[16] is not o16 and made[16].duty > 0)
+    await t2
+    check("rgb: takeover: then it too ends off", all_off(sh, old) and sh.ledtest is None)
+    sys.modules.pop("lvrgb", None)
+
+    # bad config: the onboard test, as before
+    for v in ([4, 5, 6], [16, 17], "16,17,18"):
+        sh, pin, made = rgb_ship(v)
+        srv = hook(sh)
+        del SAID[:]
+        T0[0] = now()
+        s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+        check("rgb: %r falls back to the onboard light" % (v,), s == 200 and "rgb" not in j and made == {}, (s, j))
+        check("rgb: %r said why" % (v,), any("rgb_pins" in x for x in SAID), SAID)
+        await wait_end(sh)
+        check("rgb: %r: the onboard pattern played, dark at the end" % (v,), writes(pin.log, 0, MS) >= 100 and pin.log[-1][1] == 0)
+    # null: the onboard test, lvrgb never loaded
+    sh, pin, made = rgb_ship(None)
+    srv = hook(sh)
+    s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+    check("rgb: null is the default: no rgb, lvrgb never loaded", s == 200 and "rgb" not in j and "lvrgb" not in sys.modules and made == {})
+    await wait_end(sh)
+
+
+asyncio.run(on_vclock(rgb_case))
 print("led test: %d checks ok" % ok[0])

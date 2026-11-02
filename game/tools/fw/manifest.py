@@ -74,3 +74,5 @@ module("lvduelmaint.py", base_path="../../board", opt=3)
 module("lvliveops.py", base_path="../../board", opt=3)
 module("lvduelother.py", base_path="../../board", opt=3)
 module("lvduelstore.py", base_path="../../board", opt=3)
+# Test light on a test board's own red, green and blue LEDs (0.3.1, ship.json rgb_pins).
+module("lvrgb.py", base_path="../../board", opt=3)

@@ -48,7 +48,7 @@ REPO = GAME.parent
 OLD_REF = "7b4188289d73368cb2f578e62d50a98cd367f5ac"     # 0.3.0 as the ships run it
 STEP_REF = "d45a333eaf2f321f73d3ca75c1e872baf6718d3f"     # the stepping stone as published (ota-030-updater)
 WORKTREE = "worktree"                                     # --duel-ref default: this tree as it is on disk
-DUEL_FILES = 48                                           # the duel's signed files (47 + version.json)
+DUEL_FILES = 49                                           # the duel's signed files (48 + version.json; 0.3.1 rgb-led: + lvrgb.mpy)
 DUEL_MAX_FILES = 64                                       # the updater it ships
 CORE = "2661c2144844"
 OLD, STEP, DUEL, LATER = "0.3.0", "0.3.1-updater", "0.3.1", "0.3.2"
@@ -188,7 +188,7 @@ def main():
         run(["sh", "tools/board_build.sh"], cwd=duel_tree / "game", env=env, stdout=subprocess.DEVNULL)
         duel_rel = build_release(duel_tree, DUEL, root / "duel-root", needs=STEP)
         # The duel tree's own tools refuse to publish it without "needs" (0.3.0 ships would
-        # be offered 48 files their updater turns down), and refuse a "needs" that is too old.
+        # be offered 49 files their updater turns down), and refuse a "needs" that is too old.
         for needs, what in ((None, "Add --needs"), (OLD, "takes at most 40")):
             listed = root / ("refused-%s" % needs) / "firmware"
             listed.mkdir(parents=True)
@@ -237,7 +237,7 @@ def main():
         bad = {"schema": 1, "channels": {"test": DUEL},
                "releases": [entry(DUEL, ota=kid), entry(STEP, ota=kid), entry(OLD)]}
         ota_files = {LATER: counts[LATER]["files"], DUEL: counts[DUEL]["files"], STEP: counts[STEP]["files"], OLD: 0}
-        for idx, want in ((good, []), (bad, ["0.3.1: 48 over-the-air files, more than the 40"])):
+        for idx, want in ((good, []), (bad, ["0.3.1: 49 over-the-air files, more than the 40"])):
             validate_firmware.errors[:] = []
             validate_firmware.check_needs(idx, {r["version"]: r for r in idx["releases"]}, ota_files)
             got = validate_firmware.errors

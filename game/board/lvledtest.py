@@ -21,7 +21,9 @@
 # One at a time: a tap while it plays gets 429 {ms: left} and changes nothing. A hail that
 # arrives meanwhile (lvflick.maybe) doesn't flicker and doesn't spend the day's allowance:
 # the person is already looking at the ship, and the hail waits on the phone as ever.
-#   200 {ok, ms}  started      401 no session      404 not POST (main.py)
+# With ship.json rgb_pins (a test board's own red, green and blue LEDs), board/lvrgb.py plays
+# its colour pattern on them instead, same 10 s, same busy mark and hold; the answer adds rgb.
+#   200 {ok, ms[, rgb]}  started      401 no session      404 not POST (main.py)
 #   429 {ms,kind} already playing ("test", or "hail": a hail's flicker has the light)
 #   500 no light to drive (no machine.Pin)
 try:
@@ -117,17 +119,31 @@ def start(web, req):
             hail = t == getattr(sh, "ledhail", None)    # a hail's flicker (review 3 m2)
             return 429, {"err": "The light is showing a hail." if hail else "The light is already testing.",
                          "ms": max(0, left), "kind": "hail" if hail else "test"}
-    try:
-        pin = _pin(sh)
-    except Exception as e:
-        sh.say("led: test, no light %r" % (e,))
-        return 500, {"err": "This ship's light can't be reached."}
+    # External red, green and blue LEDs (0.3.1, opt-in: ship.json rgb_pins; board/lvrgb.py,
+    # loaded only then and dropped here, its task keeping it for the 10 s). Absent, null or
+    # refused: the onboard LED below, as before.
+    rgb = None
+    if getattr(sh, "cfg", {}).get("rgb_pins") is not None:
+        import lvrgb
+        try:
+            ps = lvrgb.pins(sh.cfg, sh.say)
+            if ps:
+                rgb = lvrgb.play(sh, ps, lvrgb.scale(sh.cfg))
+        finally:
+            lvrgb = None
+            lvship.drop("lvrgb")
+    if rgb is None:
+        try:
+            pin = _pin(sh)
+        except Exception as e:
+            sh.say("led: test, no light %r" % (e,))
+            return 500, {"err": "This ship's light can't be reached."}
     # The coroutine and its task first, the busy mark after: a MemoryError building either
     # (the heap is tightest exactly when phones are busy) leaves nothing marked busy, so no
     # stale mark can hold Test light, an update's pieces or a hail off until a restart.
     # The mark is set before the task first runs (create_task only schedules it), and play()
     # clears it in its finally.
-    c = play(sh, pin)
+    c = rgb or play(sh, pin)
     try:
         asyncio.create_task(c)
     except BaseException:
@@ -136,4 +152,6 @@ def start(web, req):
         raise
     sh.ledtest = lvship.ticks_ms()
     sh.say("led: test from a phone")
+    if rgb:
+        return 200, {"ok": True, "ms": TEST_MS, "rgb": True}
     return 200, {"ok": True, "ms": TEST_MS}
