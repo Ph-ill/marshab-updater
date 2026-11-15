@@ -568,7 +568,7 @@ What it shows (most important first):
   the radio chip gets slow (over 2 ms a write) it plays plain blinks until the writes are
   fast again. The selftest's end line shows `write cost … us`.
 - **A test board's own red, green and blue LEDs**: `"rgb_pins": [16, 17, 18]` (and
-  optionally `"rgb_scale": [40, 70, 100]`) in `ship.json` moves Settings › Test light onto
+  optionally `"rgb_scale": [100, 100, 100]`) in `ship.json` moves Settings › Test light onto
   them; the notifier stays on the onboard LED. `docs/SETTINGS.md`, Test light.
 - STAT lines show it as `led=<state>/<pin writes>`: `off`, `idle`, `test`, `day`, `gift`,
   `waiting`, or why it is dark: `quiet`, `no clock`, `budget`.

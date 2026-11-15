@@ -108,13 +108,13 @@ and Test light plays on them instead of the onboard LED:
 
 ```json
 "rgb_pins": [16, 17, 18],
-"rgb_scale": [40, 70, 100]
+"rgb_scale": [100, 100, 100]
 ```
 
 | Key | Default | Meaning |
 |---|---|---|
 | `rgb_pins` | absent | `[red, green, blue]` GP numbers. Absent or `null`: the onboard LED, unchanged |
-| `rgb_scale` | `[40, 70, 100]` | each colour's brightness at full, 1–100 %, so red on its lower resistor doesn't outshine green and blue. Anything else: the defaults |
+| `rgb_scale` | `[100, 100, 100]` | each colour's brightness at full, 1–100 %. The default is full on every channel of a common-cathode RGB LED; turn one down if it outshines the others. Anything else: the defaults |
 
 The pattern is 18 s (`lvrgb.TEST_MS`; the onboard test stays 10 s): it starts on red, then
 fades linearly to the next colour over 1 s and holds that colour for 1 s, through orange,

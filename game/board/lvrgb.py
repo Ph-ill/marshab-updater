@@ -6,9 +6,9 @@
 # ship.json (both optional; rgb_pins absent or null: the onboard LED, unchanged):
 #   rgb_pins   [red, green, blue] RP2040 GPIO numbers, e.g. [16, 17, 18] (Pico pins 21, 22,
 #              24), each colour from its pin through a resistor to the common cathode on GND
-#   rgb_scale  [red, green, blue] brightness at full, 1-100 %, default [40, 70, 100]: red
-#              on a lower resistor (200 vs 100 ohm) draws more current, and green looks
-#              brighter than blue at the same current, so this evens the three out
+#   rgb_scale  [red, green, blue] brightness at full, 1-100 %, default [100, 100, 100]:
+#              full on each channel of a common-cathode RGB LED; turn one down if it
+#              outshines the others
 # Refused (said, and the onboard test plays instead): not three distinct whole numbers,
 # a pin outside GP0-22/26-28 (GP23-25 and 29 are the radio chip's on a Pico W), one of the
 # battery's pins (bat_sda/bat_scl/bat_chg, default 4/5/6) while the battery is not off, or
@@ -50,7 +50,7 @@ _PAL = (
 )
 TEST_MS = 9 * _STEP                     # 18000
 _FRAME = 20
-SCALE = (40, 70, 100)
+SCALE = (100, 100, 100)
 
 
 def pins(cfg, say=print):

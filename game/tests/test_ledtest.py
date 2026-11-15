@@ -556,11 +556,11 @@ async def rgb_case():
     check("rgb: duty is v squared over 65025 of full, then scale",
           D(255, 100) == 65535 and D(0, 100) == 0 and D(255, 40) == 255 * 255 * 40 * 257 // 25500)
     check("rgb: yellow mid-hold duties at default scale",
-          D(255, 40) == 255 * 255 * 40 * 257 // 25500 and D(160, 70) == 160 * 160 * 70 * 257 // 25500)
+          D(255, 100) == 65535 and D(160, 100) == 160 * 160 * 100 * 257 // 25500)
     cfg = {"rgb_pins": [16, 17, 18]}
     check("rgb: GP16-18 accepted", lvrgb.pins(cfg) == (16, 17, 18))
-    check("rgb: default scale evens red down", lvrgb.scale(cfg) == (40, 70, 100) and lvrgb.scale({"rgb_scale": [50, 50, 50]}) == (50, 50, 50))
-    check("rgb: a bad scale falls back to the defaults", all(lvrgb.scale({"rgb_scale": v}) == (40, 70, 100) for v in ([0, 50, 50], [50, 50], "x", [True, 5, 5], [101, 1, 1])))
+    check("rgb: default scale is full on every channel", lvrgb.scale(cfg) == (100, 100, 100) and lvrgb.scale({"rgb_scale": [50, 50, 50]}) == (50, 50, 50))
+    check("rgb: a bad scale falls back to the defaults", all(lvrgb.scale({"rgb_scale": v}) == (100, 100, 100) for v in ([0, 50, 50], [50, 50], "x", [True, 5, 5], [101, 1, 1])))
     said = []
     for v in ([4, 17, 18], [16, 17], [16, "x", 18], [16, 17, 17], [0, 16, 17], [16, 17, 23], [16, 17, 29], [-1, 16, 17], True, 16, [16, 17, True], {"r": 16}):
         check("rgb: %r refused" % (v,), lvrgb.pins({"rgb_pins": v}, said.append) is None)
@@ -610,9 +610,9 @@ async def rgb_case():
             else:
                 break
         return v
-    check("rgb: t=0 red duties, scale applied", held(r, 0) == D(255, 40) and held(g, 0) == 0 and held(b, 0) == 0, (held(r, 0), held(g, 0), held(b, 0)))
-    check("rgb: mid-hold of step 3 is yellow duties", held(r, 3500) == D(255, 40) and held(g, 3500) == D(160, 70) and held(b, 3500) == 0, (held(r, 3500), held(g, 3500), held(b, 3500)))
-    check("rgb: last hold is red again", held(r, 17500) == D(255, 40) and held(g, 17500) == 0 and held(b, 17500) == 0, (held(r, 17500), held(g, 17500), held(b, 17500)))
+    check("rgb: t=0 red duties, scale applied", held(r, 0) == D(255, 100) and held(g, 0) == 0 and held(b, 0) == 0, (held(r, 0), held(g, 0), held(b, 0)))
+    check("rgb: mid-hold of step 3 is yellow duties", held(r, 3500) == D(255, 100) and held(g, 3500) == D(160, 100) and held(b, 3500) == 0, (held(r, 3500), held(g, 3500), held(b, 3500)))
+    check("rgb: last hold is red again", held(r, 17500) == D(255, 100) and held(g, 17500) == 0 and held(b, 17500) == 0, (held(r, 17500), held(g, 17500), held(b, 17500)))
     check("rgb: fades take many duty steps", len(r) > 50)
     check("rgb: ends off: every duty 0, every PWM deinit'd", all_off(sh, made) and sh.ledtest is None and sh.ledtest_ms is None)
     T0[0] = now()
