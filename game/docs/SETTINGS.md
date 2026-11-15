@@ -70,7 +70,7 @@ no-light bit still describes hails only.
 So you can see a ship's LED works without opening the case, whether the Ship light is on
 or off.
 
-**On the phone.** Under the Ship light switch, a secondary button: **Test light · 10 s**,
+**On the phone.** Under the Ship light switch, a secondary button: **Test light · 10 s** (or **18 s** on a ship that has already answered `rgb`),
 with "Three blinks, then three slow pulses. Works with the light off too." under it. Tapping
 it shows **Testing… · watch LV-N** at once (disabled, `aria-busy`), "Look at LV-N now: three
 blinks, then three slow pulses.", and a thin rust bar along the button's foot that fills for
@@ -101,9 +101,10 @@ the test) and doesn't spend the day's hail-light allowance: the person is alread
 at the ship, and the hail waits on the phone as ever. While a BLE sync or an HTTP request is in progress, the breath plays as a
 plain blink through its bright middle, as `lvled.py` does.
 
-**Your own red, green and blue LEDs (0.3.1, opt-in, `board/lvrgb.py`).** A test board can
-have three plain LEDs on RP2040 GPIOs, each from its pin through a resistor to GND. Put
-them in `/data/ship.json` and Test light plays on them instead of the onboard LED:
+**Your own RGB LED (0.3.1, opt-in, `board/lvrgb.py`; the colour fade since 0.3.3).** A
+test board can have a common-cathode RGB LED (or three plain LEDs) on RP2040 GPIOs, each
+colour from its pin through a resistor to the common ground. Put them in `/data/ship.json`
+and Test light plays on them instead of the onboard LED:
 
 ```json
 "rgb_pins": [16, 17, 18],
@@ -115,15 +116,19 @@ them in `/data/ship.json` and Test light plays on them instead of the onboard LE
 | `rgb_pins` | absent | `[red, green, blue]` GP numbers. Absent or `null`: the onboard LED, unchanged |
 | `rgb_scale` | `[40, 70, 100]` | each colour's brightness at full, 1–100 %, so red on its lower resistor doesn't outshine green and blue. Anything else: the defaults |
 
-The pattern is 10 s as before: 0–6 s red, green, then blue, each fading up and down once
-(1 s each way); 6–9.6 s all three in a colour wheel (red to green to blue to red, faded in
-and out over 0.4 s); dark from 9.6 s. It uses hardware PWM (`machine.PWM`, 1 kHz), so it
-costs no CPU between duty writes and plays the same while a sync or a request is busy. The
-same busy mark, 429 and Ship light hold as above; the answer adds `"rgb": true` and the
-page then says "red, green and blue in turn, then all three cycling colours" for that ship.
-However it ends (10 s, an error, a cancel, an update's upload starting, a newer test taking
-over a stale one), every duty goes to 0, every PWM is deinit'd and the pins go back to
-inputs. Pins it refuses, saying so in the log and playing the onboard test instead: not
+The pattern is 18 s (`lvrgb.TEST_MS`; the onboard test stays 10 s): it starts on red, then
+fades linearly to the next colour over 1 s and holds that colour for 1 s, through orange,
+yellow, green, cyan, blue, purple, pink and warm white, then back to red. Each channel's
+0–255 value *v* is lit at (*v*²/65025) of full, then that channel's `rgb_scale` percentage.
+It uses hardware PWM (`machine.PWM`, 1 kHz), so it costs no CPU between duty writes and
+plays the same while a sync or a request is busy. The same busy mark, 429 and Ship light
+hold as above; the answer adds `"rgb": true` and `ms` 18000, and the page then says
+"colours fading into each other, then back to red" and **18 s** for that ship. The leftover
+on a 429, and the stale-mark window in `lvledtest`, `main.py`, `lvflick` and `lvotaq`, use
+the running test's length (`sh.ledtest_ms`) so an 18 s fade is not treated as over after
+10 s. However it ends (18 s, an error, a cancel, an update's upload starting, a newer test
+taking over a stale one), every duty goes to 0, every PWM is deinit'd and the pins go back
+to inputs. Pins it refuses, saying so in the log and playing the onboard test instead: not
 three distinct whole numbers, GP23–25 or GP29 (the radio chip's on a Pico W), the battery's
 `bat_sda`/`bat_scl`/`bat_chg` (default 4/5/6) unless `"battery": false`, or two pins on the
 same PWM slice and channel (GPn and GPn+16). Only a ship with `rgb_pins` ever loads

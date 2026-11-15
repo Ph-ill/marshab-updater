@@ -7,16 +7,18 @@ PIECE_MS = 3000           # any other piece waits this long at most for the othe
 
 
 def lit(sh, lvship):
-    """A light playback still running (sh.ledtest: its start, counted as Test light's 10 s)?
-    The same staleness rule as Test light's 429 (lvledtest.start, main.py): a mark more than
-    5 s past its end belongs to a task that never ran its finally, so it is cleared here
-    instead of making every piece wait QUIET_MS until a restart (0.3.0 review 2 M3)."""
+    """A light playback still running (sh.ledtest: its start, counted as the running test's
+    length, sh.ledtest_ms, or 10 s)? The same staleness rule as Test light's 429
+    (lvledtest.start, main.py): a mark more than 5 s past its end belongs to a task that
+    never ran its finally, so it is cleared here instead of making every piece wait
+    QUIET_MS until a restart (0.3.0 review 2 M3)."""
     t = getattr(sh, "ledtest", None)
     if t is None:
         return False
-    if 10000 - lvship.ticks_diff(lvship.ticks_ms(), t) > -5000:
+    if (getattr(sh, "ledtest_ms", None) or 10000) - lvship.ticks_diff(lvship.ticks_ms(), t) > -5000:
         return True
     sh.ledtest = None
+    sh.ledtest_ms = None
     return False
 
 

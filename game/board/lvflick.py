@@ -75,20 +75,23 @@ async def play(sh, pin, T, duel=False):
         except Exception:
             pass
         sh.ledtest = None
+        sh.ledtest_ms = None
         T._hold(sh, True)
 
 
 def led_busy(sh):
     """Is a light playback (Test light, or this flicker) still running? sh.ledtest holds its
-    start, counted as Test light's (TEST_MS long); like the 429 in lvledtest.start and
-    main.py, a mark more than 5 s past its end is stale (a task that never ran its finally)
-    and is cleared rather than holding the light off for good."""
+    start, counted as the running test's length (sh.ledtest_ms, or 10 s: the onboard test
+    and a hail's backdated mark); like the 429 in lvledtest.start and main.py, a mark more
+    than 5 s past its end is stale (a task that never ran its finally) and is cleared
+    rather than holding the light off for good."""
     t = getattr(sh, "ledtest", None)
     if t is None:
         return False
-    if 10000 - lvship.ticks_diff(lvship.ticks_ms(), t) > -5000:
+    if (getattr(sh, "ledtest_ms", None) or 10000) - lvship.ticks_diff(lvship.ticks_ms(), t) > -5000:
         return True
     sh.ledtest = None
+    sh.ledtest_ms = None
     return False
 
 
@@ -135,11 +138,13 @@ def start(sh, duel=False):
     except Exception as e:
         c = None
         sh.ledtest = None
+        sh.ledtest_ms = None
         sh.say("led: hail light, no task %r" % (e,))
         return False
     finally:
         lvship.drop("lvlight")           # the task holds only the shared helpers
     sh.ledtest = ticks_add(lvship.ticks_ms(), WAIT_MS + FLICK_MS - T.TEST_MS)
+    sh.ledtest_ms = T.TEST_MS            # the mark is backdated against this 10 s
     # Which playback owns the mark (review 3 m2): Test light's 429 says "kind": "hail" while
     # sh.ledhail is the same mark, so the page can say the light is showing a hail instead
     # of "three blinks" (any later mark, or none, isn't this one: nothing to clear).

@@ -13,7 +13,7 @@ function phone(api) {
     setTimeout(fn, ms) { timers.set(++next, { fn, ms }); return next; },
     clearTimeout(id) { timers.delete(id); },
     document: { addEventListener(type, fn) { if (type === 'click') listeners.push(fn); } },
-    $: () => null, S: { led: false }, h: String, tok: 'test-token', api,
+    $: () => null, S: { led: false, here: 0 }, h: String, tok: 'test-token', api,
     shipTop() {}, view() {},
   });
   vm.runInContext(source, c);
@@ -75,4 +75,16 @@ test('429 during a hail says the light is showing a hail, not "three blinks" (re
   assert.equal(timer.ms, 28400 + 250);
   timer.fn();
   assert.doesNotMatch(p.html(), /showing a hail/);
+});
+
+test('rgb ship uses the 18 s duration and says so once the ship has answered', async () => {
+  const p = phone(async () => ({ ms: 18000, rgb: true }));
+  await p.click();
+  assert.match(p.html(), /animation-duration:18000ms/);
+  assert.match(p.html(), /colours fading into each other, then back to red/);
+  assert.equal([...p.timers.values()][0].ms, 18000 + 250);
+  [...p.timers.values()][0].fn();
+  assert.match(p.html(), />18 s</);
+  assert.match(p.html(), /Finished\. The coloured lights are off again\./);
+  assert.doesNotMatch(p.html(), />10 s</);
 });

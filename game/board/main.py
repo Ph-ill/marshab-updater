@@ -246,7 +246,8 @@ def ota_hooks(lvweb, web):
             return await lvweb.send_json(w, s, j)
         if req.path == "/api/led/test":
             # "Test light" (board/lvledtest.py, web/settings.js): a signed-in crew member makes
-            # the light play 10 s of blinks and breaths, on or off. Loaded per request.
+            # the light play 10 s of blinks and breaths, or 18 s on a ship with rgb_pins
+            # (board/lvrgb.py). Loaded per request.
             if req.method != "POST":
                 return await lvweb.send_json(w, 404, {"err": "no such thing"})
             # Don't load a second copy of the playback module while its task owns
@@ -255,7 +256,7 @@ def ota_hooks(lvweb, web):
                 return await lvweb.send_json(w, 401, {"err": "signed out"})
             t = getattr(web.ship, "ledtest", None)
             if t is not None:
-                left = 10000 - lvship.ticks_diff(lvship.ticks_ms(), t)
+                left = (getattr(web.ship, "ledtest_ms", None) or 10000) - lvship.ticks_diff(lvship.ticks_ms(), t)
                 if left > -5000:
                     # a hail's flicker owns the light (review 3 m2): the page says so
                     hail = t == getattr(web.ship, "ledhail", None)

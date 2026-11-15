@@ -8,11 +8,12 @@
 # blink while the radio or a request is busy; the event loop free throughout (a 100 ms
 # ticker, and main.py's own charger_watch catching the charger plugged in mid-test); no
 # light to drive (no machine.Pin) is a 500 that leaves nothing running; a pin that fails
-# mid-pattern ends the test cleanly; the module dropped after each request. (0.3.1) With
-# ship.json rgb_pins, on fake PWMs: the colour pattern, scaled, ending with every duty 0 and
-# every PWM deinit'd, also on a failing PWM, a cancel, an update starting and a stale test
-# taken over; refused pins (the battery's, too few, the radio chip's) fall back to the onboard
-# test; null is the default, lvrgb never loaded. Runs on CPython
+# mid-pattern ends the test cleanly; the module dropped after each request. (0.3.1, the
+# colour fade since 0.3.3) With ship.json rgb_pins, on fake PWMs: the 18 s colour fade,
+# scaled, hold-point duties, ending dark after 18 s with every PWM deinit'd, also on a
+# failing PWM, a cancel, an update starting and a stale test taken over; a second tap is
+# still 429 past the old 10 s; refused pins (the battery's, too few, the radio chip's) fall
+# back to the onboard 10 s test; null is the default, lvrgb never loaded. Runs on CPython
 # and MicroPython (stock and the game firmware's unix build):
 #   python3 tests/test_ledtest.py && micropython tests/test_ledtest.py        (from game/)
 import sys
@@ -543,11 +544,19 @@ async def wait_end(sh, cap=MS + 2000):
 
 async def rgb_case():
     import lvrgb
-    L3 = lvrgb.level
-    check("rgb: each colour breathes alone, in turn", L3(1000, 0) == 100 and L3(1000, 1) == 0 and L3(3000, 1) == 100 and L3(5000, 2) == 100 and L3(5000, 0) == 0)
-    check("rgb: the wheel has two colours at once", L3(6000 + 1800, 0) == 0 and L3(6000 + 1800, 1) > 0 and L3(6000 + 1800, 2) > 0)
-    check("rgb: dark at the end, over at TEST_MS", all(L3(t, k) == 0 for t in range(9600, MS, 10) for k in range(3)) and L3(MS, 0) == -1)
-    check("rgb: never out of range", all(0 <= L3(t, k) <= 100 for t in range(0, MS, 7) for k in range(3)))
+    L3, D, RMS = lvrgb.level, lvrgb.duty, lvrgb.TEST_MS
+    check("rgb: 18 s (nine fades and holds)", RMS == 18000, RMS)
+    check("rgb: t=0 is red", L3(0, 0) == 255 and L3(0, 1) == 0 and L3(0, 2) == 0)
+    # step 3 is yellow (red, orange, yellow): fade 2000-3000, hold 3000-4000, mid-hold 3500
+    check("rgb: mid-hold of step 3 is yellow", L3(3500, 0) == 255 and L3(3500, 1) == 160 and L3(3500, 2) == 0)
+    check("rgb: mid-fade red to orange", L3(500, 0) == 255 and L3(500, 1) == 30 and L3(500, 2) == 0)
+    check("rgb: last hold is red again", L3(17500, 0) == 255 and L3(17500, 1) == 0 and L3(17500, 2) == 0)
+    check("rgb: over at TEST_MS, dark after", L3(RMS - 1, 0) >= 0 and L3(RMS, 0) == -1 and L3(RMS + 500, 0) == -1)
+    check("rgb: never out of range", all(0 <= L3(t, k) <= 255 for t in range(0, RMS, 7) for k in range(3)))
+    check("rgb: duty is v squared over 65025 of full, then scale",
+          D(255, 100) == 65535 and D(0, 100) == 0 and D(255, 40) == 255 * 255 * 40 * 257 // 25500)
+    check("rgb: yellow mid-hold duties at default scale",
+          D(255, 40) == 255 * 255 * 40 * 257 // 25500 and D(160, 70) == 160 * 160 * 70 * 257 // 25500)
     cfg = {"rgb_pins": [16, 17, 18]}
     check("rgb: GP16-18 accepted", lvrgb.pins(cfg) == (16, 17, 18))
     check("rgb: default scale evens red down", lvrgb.scale(cfg) == (40, 70, 100) and lvrgb.scale({"rgb_scale": [50, 50, 50]}) == (50, 50, 50))
@@ -562,29 +571,50 @@ async def rgb_case():
     sys.modules.pop("lvrgb", None)
     del lvrgb
 
+    import lvflick, lvotaq
+    mark = Ship(Notifier(Clock(), False))
+    mark.ledtest = now() - 16000
+    mark.ledtest_ms = RMS
+    check("rgb: an 18 s mark is still busy at 16 s", lvflick.led_busy(mark) and lvotaq.lit(mark, lvship))
+    mark.ledtest = now() - 16000
+    mark.ledtest_ms = None
+    check("rgb: a 10 s mark at 16 s is stale", not lvflick.led_busy(mark) and mark.ledtest is None)
+    for m in ("lvflick", "lvotaq"):
+        sys.modules.pop(m, None)
+
     # the whole pattern on fake PWMs
     sh, pin, made = rgb_ship([16, 17, 18])
     srv = hook(sh)
     T0[0] = now()
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
-    check("rgb: started, 200 {ok, ms, rgb}", s == 200 and j.get("rgb") is True and j.get("ms") == MS, (s, j))
+    check("rgb: started, 200 {ok, ms, rgb}", s == 200 and j.get("rgb") is True and j.get("ms") == RMS, (s, j))
     check("rgb: lvrgb and lvledtest dropped", "lvrgb" not in sys.modules and "lvledtest" not in sys.modules)
     await lvship.sleep_ms(500)
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
     check("rgb: a second tap meanwhile is 429, nothing new made", s == 429 and len(made) == 3, (s, j, len(made)))
-    await wait_end(sh)
+    check("rgb: 429 leftover is the 18 s pattern", 17000 <= j.get("ms", -1) <= 17600, j)
+    await lvship.sleep_ms(15500)
+    s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))
+    check("rgb: still 429 after 16 s (past the old 10 s)", s == 429 and 1500 <= j.get("ms", -1) <= 2500, (s, j))
+    await wait_end(sh, RMS + 2000)
     end = diff(now(), T0[0])
     r, g, b = made[16].log, made[17].log, made[18].log
-    check("rgb: over in about TEST_MS", MS - 50 <= end <= MS + 100, end)
+    check("rgb: over in about TEST_MS", RMS - 50 <= end <= RMS + 100, end)
     check("rgb: the onboard LED untouched", pin.log == [], pin.log[:3])
-    check("rgb: red alone first", lit_d(r, 800, 1200) > 20000 and lit_d(g, 0, 2000) == 0 and lit_d(b, 0, 2000) == 0, (lit_d(r, 800, 1200), lit_d(g, 0, 2000)))
-    check("rgb: then green alone", lit_d(g, 2800, 3200) > 30000 and lit_d(r, 2100, 4000) == 0 and lit_d(b, 2000, 4000) == 0)
-    check("rgb: then blue alone", lit_d(b, 4800, 5200) > 60000 and lit_d(r, 4000, 6000) == 0 and lit_d(g, 4100, 6000) == 0)
-    check("rgb: red scaled down (40 %) under blue's full", 20000 < lit_d(r, 0, 2000) <= 65535 * 41 // 100 and lit_d(b, 4000, 6000) >= 65000, (lit_d(r, 0, 2000), lit_d(b, 4000, 6000)))
-    check("rgb: breaths swell and fade (many duty steps)", len([1 for t, _ in r if t < 2000]) > 50)
-    check("rgb: all three in the colour wheel", all(lit_d(x, 6400, 9200) > 5000 for x in (r, g, b)))
-    check("rgb: dark from 9.6 s", all(lit_d(x, 9620, MS) == 0 for x in (r, g, b)))
-    check("rgb: ends off: every duty 0, every PWM deinit'd", all_off(sh, made) and sh.ledtest is None)
+
+    def held(log, at):
+        v = 0
+        for (tt, d) in log:
+            if tt <= at:
+                v = d
+            else:
+                break
+        return v
+    check("rgb: t=0 red duties, scale applied", held(r, 0) == D(255, 40) and held(g, 0) == 0 and held(b, 0) == 0, (held(r, 0), held(g, 0), held(b, 0)))
+    check("rgb: mid-hold of step 3 is yellow duties", held(r, 3500) == D(255, 40) and held(g, 3500) == D(160, 70) and held(b, 3500) == 0, (held(r, 3500), held(g, 3500), held(b, 3500)))
+    check("rgb: last hold is red again", held(r, 17500) == D(255, 40) and held(g, 17500) == 0 and held(b, 17500) == 0, (held(r, 17500), held(g, 17500), held(b, 17500)))
+    check("rgb: fades take many duty steps", len(r) > 50)
+    check("rgb: ends off: every duty 0, every PWM deinit'd", all_off(sh, made) and sh.ledtest is None and sh.ledtest_ms is None)
     T0[0] = now()
     made.clear()
     s, j = await ask(srv, Req("POST", "/api/led/test", "tok"))

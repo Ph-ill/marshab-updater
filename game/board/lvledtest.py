@@ -1,7 +1,8 @@
 # "Test light" (Settings > Ship light, web/settings.js; POST /api/led/test from board/main.py's
 # ota_route): a signed-in crew member makes the ship's light play a short, unmistakable
 # pattern, so they can see it works without opening the case. Loaded per request and dropped
-# (lvship.drop); the pattern's task keeps this module's code alive for its 10 s, then it goes.
+# (lvship.drop); the pattern's task keeps this module's code alive for its 10 s (18 s on a
+# ship with rgb_pins, board/lvrgb.py), then it goes.
 # Shipped over the air: the frozen core (lvled, lvledcfg, lvweb, lvphone) is unchanged.
 #
 # The pattern, TEST_MS = 10000 ms from the tap (0.3.0: was 4 s, one breath; long enough now
@@ -21,8 +22,10 @@
 # One at a time: a tap while it plays gets 429 {ms: left} and changes nothing. A hail that
 # arrives meanwhile (lvflick.maybe) doesn't flicker and doesn't spend the day's allowance:
 # the person is already looking at the ship, and the hail waits on the phone as ever.
-# With ship.json rgb_pins (a test board's own red, green and blue LEDs), board/lvrgb.py plays
-# its colour pattern on them instead, same 10 s, same busy mark and hold; the answer adds rgb.
+# With ship.json rgb_pins (a test board's own RGB LED), board/lvrgb.py plays its colour fade
+# on them instead, 18 s (lvrgb.TEST_MS), same busy mark and hold; the answer adds rgb and that
+# duration. The leftover on a 429, and the stale-mark window, use the running test's length
+# (sh.ledtest_ms), so an 18 s fade is not treated as over after 10 s.
 #   200 {ok, ms[, rgb]}  started      401 no session      404 not POST (main.py)
 #   429 {ms,kind} already playing ("test", or "hail": a hail's flicker has the light)
 #   500 no light to drive (no machine.Pin)
@@ -104,6 +107,7 @@ async def play(sh, pin):
         except Exception:
             pass
         sh.ledtest = None
+        sh.ledtest_ms = None
         _hold(sh, True)
 
 
@@ -114,21 +118,23 @@ def start(web, req):
     sh = web.ship
     t = getattr(sh, "ledtest", None)
     if t is not None:
-        left = TEST_MS - lvship.ticks_diff(lvship.ticks_ms(), t)
+        left = (getattr(sh, "ledtest_ms", None) or TEST_MS) - lvship.ticks_diff(lvship.ticks_ms(), t)
         if left > -5000:                # (a test that never finished can't block for good)
             hail = t == getattr(sh, "ledhail", None)    # a hail's flicker (review 3 m2)
             return 429, {"err": "The light is showing a hail." if hail else "The light is already testing.",
                          "ms": max(0, left), "kind": "hail" if hail else "test"}
-    # External red, green and blue LEDs (0.3.1, opt-in: ship.json rgb_pins; board/lvrgb.py,
-    # loaded only then and dropped here, its task keeping it for the 10 s). Absent, null or
-    # refused: the onboard LED below, as before.
+    # External RGB LED (0.3.1, opt-in: ship.json rgb_pins; board/lvrgb.py, loaded only then
+    # and dropped here, its task keeping it for the 18 s). Absent, null or refused: the
+    # onboard LED below, as before (10 s).
     rgb = None
+    ms = TEST_MS
     if getattr(sh, "cfg", {}).get("rgb_pins") is not None:
         import lvrgb
         try:
             ps = lvrgb.pins(sh.cfg, sh.say)
             if ps:
                 rgb = lvrgb.play(sh, ps, lvrgb.scale(sh.cfg))
+                ms = lvrgb.TEST_MS
         finally:
             lvrgb = None
             lvship.drop("lvrgb")
@@ -149,9 +155,11 @@ def start(web, req):
     except BaseException:
         c = None
         sh.ledtest = None
+        sh.ledtest_ms = None
         raise
     sh.ledtest = lvship.ticks_ms()
+    sh.ledtest_ms = ms
     sh.say("led: test from a phone")
     if rgb:
-        return 200, {"ok": True, "ms": TEST_MS, "rgb": True}
-    return 200, {"ok": True, "ms": TEST_MS}
+        return 200, {"ok": True, "ms": ms, "rgb": True}
+    return 200, {"ok": True, "ms": ms}

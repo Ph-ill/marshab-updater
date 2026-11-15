@@ -1,31 +1,31 @@
-# Test light on external red, green and blue LEDs (0.3.1, opt-in). Only a ship whose
-# /data/ship.json has "rgb_pins" loads this module: lvledtest.start imports it for the
-# request and drops it again; the pattern's task keeps it alive for its 10 s, then it goes.
-# Every other ship never loads it and keeps the onboard LED's test exactly as before.
+# Test light on an external RGB LED (0.3.1, opt-in; the colour fade since 0.3.3). Only a ship
+# whose /data/ship.json has "rgb_pins" loads this module: lvledtest.start imports it for the
+# request and drops it again; the pattern's task keeps it alive for its 18 s, then it goes.
+# Every other ship never loads it and keeps the onboard LED's test exactly as before (10 s).
 #
 # ship.json (both optional; rgb_pins absent or null: the onboard LED, unchanged):
 #   rgb_pins   [red, green, blue] RP2040 GPIO numbers, e.g. [16, 17, 18] (Pico pins 21, 22,
-#              24), each LED from its pin through a resistor to GND
+#              24), each colour from its pin through a resistor to the common cathode on GND
 #   rgb_scale  [red, green, blue] brightness at full, 1-100 %, default [40, 70, 100]: red
-#              on a lower resistor (200 vs 150 ohm) draws more current, and green looks
+#              on a lower resistor (200 vs 100 ohm) draws more current, and green looks
 #              brighter than blue at the same current, so this evens the three out
 # Refused (said, and the onboard test plays instead): not three distinct whole numbers,
 # a pin outside GP0-22/26-28 (GP23-25 and 29 are the radio chip's on a Pico W), one of the
 # battery's pins (bat_sda/bat_scl/bat_chg, default 4/5/6) while the battery is not off, or
 # two pins on the same PWM slice and channel (GPn and GPn+16 would mirror each other).
 #
-# The pattern, TEST_MS = 10000 ms as the onboard test (lvledtest.level):
-#   0-6000      red, then green, then blue: one breath each (1 s up, 1 s down)
-#   6000-9600   all three: a colour wheel (red to green to blue to red, 1.2 s a step),
-#               faded in over its first 0.4 s and out over its last 0.4 s
-#   9600-10000  dark
+# The pattern, TEST_MS = 18000 ms (the onboard test stays 10 s: lvledtest.TEST_MS):
+#   start on red; nine steps, each a 1 s linear fade to the next colour and a 1 s hold:
+#   red, orange, yellow, green, cyan, blue, purple, pink, warm white, then back to red
+#   at 18000 the test ends dark (every duty 0, as the cleanup always does)
 # Real hardware PWM (machine.PWM, 1 kHz): these are RP2040 GPIOs, not the radio chip's LED,
 # so a frame is three duty writes when the level changes and nothing in between; no
 # busy-wait, and nothing to fall back to while a sync or a request is busy. Every frame
-# (20 ms) is an await. Brightness follows a squared ramp, as lvled.py's breaths do.
-# No tables and no allocation per frame: level() returns one small int per colour.
-# The end, however it comes (10 s up, an error, a cancel, an update starting, a newer test
-# taking over a stale one): every duty 0, every PWM deinit'd and the pins back to inputs.
+# (20 ms) is an await. Per-channel 0-255 value v is v²/65025 of full, then that channel's
+# rgb_scale percentage. No tables and no allocation per frame: the palette is a module-level
+# tuple; level() returns one small int per colour. The end, however it comes (18 s up, an
+# error, a cancel, an update starting, a newer test taking over a stale one): every duty 0,
+# every PWM deinit'd and the pins back to inputs.
 try:
     import asyncio
 except ImportError:  # pragma: no cover
@@ -33,7 +33,22 @@ except ImportError:  # pragma: no cover
 import lvship
 from lvlight import _hold
 
-TEST_MS = 10000
+_FADE, _HOLD = 1000, 1000
+_STEP = _FADE + _HOLD                   # 2000 ms a colour: fade, then hold
+# red, orange, yellow, green, cyan, blue, purple, pink, warm white, then red again
+_PAL = (
+    255, 0, 0,
+    255, 60, 0,
+    255, 160, 0,
+    0, 255, 0,
+    0, 255, 200,
+    0, 0, 255,
+    150, 0, 255,
+    255, 40, 120,
+    255, 200, 180,
+    255, 0, 0,
+)
+TEST_MS = 9 * _STEP                     # 18000
 _FRAME = 20
 SCALE = (40, 70, 100)
 
@@ -75,21 +90,24 @@ def scale(cfg):
 
 
 def level(t, k):
-    """Colour k's (0 red, 1 green, 2 blue) brightness 0-100 at t ms; -1 once it's over."""
+    """Colour k's (0 red, 1 green, 2 blue) 0-255 at t ms; -1 once it's over."""
     if t >= TEST_MS:
         return -1
-    if t < 6000:                        # one breath each, in turn
-        if t // 2000 != k:
-            return 0
-        t %= 2000
-        return t // 10 if t < 1000 else (2000 - t) // 10
-    u = t - 6000
-    if u >= 3600:
+    s = t // _STEP
+    u = t - s * _STEP
+    a = _PAL[s * 3 + k]
+    b = _PAL[(s + 1) * 3 + k]
+    if u >= _FADE:
+        return b
+    return a + (b - a) * u // _FADE
+
+
+def duty(v, sc):
+    """PWM duty 0-65535 for a 0-255 channel at scale sc (1-100 %): v²/65025 of full, then sc%."""
+    if v <= 0:
         return 0
-    s, f = u // 1200, (u % 1200) * 100 // 1200
-    x = 100 - f if s == k else f if (s + 1) % 3 == k else 0
-    e = min(100, u // 4, (3600 - u) // 4)   # fade in and out, 400 ms each
-    return x * e // 100
+    d = v * v * sc * 257 // 25500       # 255*257 = 65535; 255*255*100*257/25500 = 65535
+    return 65535 if d > 65535 else d
 
 
 def _pwm(sh, n):
@@ -140,8 +158,8 @@ def _open(sh, ps):
 
 
 async def play(sh, ps, sc):
-    """The 10 s pattern on GPIOs ps (pins()) at brightness sc (scale()). The PWMs are made
-    here, in the task, so a coroutine that never runs holds no pin."""
+    """The 18 s colour fade on GPIOs ps (pins()) at brightness sc (scale()). The PWMs are
+    made here, in the task, so a coroutine that never runs holds no pin."""
     sleep_ms, ticks_ms, ticks_diff = lvship.sleep_ms, lvship.ticks_ms, lvship.ticks_diff
     pw = None
     t0 = ticks_ms()
@@ -162,8 +180,7 @@ async def play(sh, ps, sc):
             while k < 3:                # (not range(): no object a frame)
                 x = level(t, k)
                 if x != was[k]:
-                    d = x * x * sc[k] * 21 // 320      # 0-65535 (100*100*100*21/320 = 65625)
-                    pw[k][1].duty_u16(65535 if d > 65535 else d)
+                    pw[k][1].duty_u16(duty(x, sc[k]))
                     was[k] = x
                 k += 1
             await sleep_ms(_FRAME)
@@ -175,4 +192,5 @@ async def play(sh, ps, sc):
                 _off(sh, pw)
             sh.rgb = None
             sh.ledtest = None
+            sh.ledtest_ms = None
             _hold(sh, True)
