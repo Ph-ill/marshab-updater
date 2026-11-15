@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.3",
+      "channel": "test",
+      "date": "2026-11-15",
+      "label": "Colour fade",
+      "path": "/firmware/releases/0.3.3/release.json",
+      "bytes": 264751,
+      "files": 49,
+      "frozen": "2661c2144844",
+      "notes": [
+        "Your ship's Test light now fades through the colours, then back to red."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.2",
       "channel": "test",
       "date": "2026-11-01",
@@ -172,7 +187,7 @@
     }
   ],
   "heads": {
-    "test": "0.3.2",
+    "test": "0.3.3",
     "bench": "0.0.2-coex"
   }
 }
