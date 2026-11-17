@@ -740,6 +740,28 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
             b[2] = v
             b[6], b[7] = lvship.ticks_ms(), CHG_GAUGE_MS
 
+def launch(ship):
+    # The launch light (0.3.4, board/lvlaunch.py): about 8 s on a ship with ship.json
+    # rgb_pins, once a boot, as its own task (create_task only schedules it), so the web
+    # server, the captive DNS and the BLE sync start meanwhile. Every other ship never loads
+    # it. Nothing here can stop the boot: a failure is said and the game starts as ever.
+    try:
+        if ship.cfg.get("rgb_pins") is None:
+            return
+    except Exception:
+        return
+    try:
+        import lvlaunch
+        lvlaunch.start(ship)
+    except Exception as e:
+        print("led: no launch light %r" % (e,))
+    finally:
+        lvlaunch = None                 # (the task keeps what it needs)
+        lvship.drop("lvlaunch")
+        lvship.drop("lvrgb")
+        lvship.drop("lvlight")
+
+
 def no_setup(e, waited=False):
     # lvsetup.mpy (0.3.0: the boot steps moved out of main.py) damaged or missing, outside an
     # update's trial (a trial's lvboot count rolls back by itself): safe mode, the way a
@@ -789,6 +811,7 @@ def main():
         nonlocal web
         MAIN[:] = [asyncio.current_task()]
         asyncio.get_event_loop().set_exception_handler(task_error)
+        launch(ship)                    # (0.3.4: the launch light, alongside the rest)
         if game:
             import lvweb
             web = lvweb.Server(ship, ip=ip)

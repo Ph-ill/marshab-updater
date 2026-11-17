@@ -76,3 +76,5 @@ module("lvduelother.py", base_path="../../board", opt=3)
 module("lvduelstore.py", base_path="../../board", opt=3)
 # Test light on a test board's own red, green and blue LEDs (0.3.1, ship.json rgb_pins).
 module("lvrgb.py", base_path="../../board", opt=3)
+# The launch light at power-on on that RGB LED (0.3.4, ship.json rgb_pins).
+module("lvlaunch.py", base_path="../../board", opt=3)

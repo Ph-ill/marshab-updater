@@ -134,6 +134,20 @@ three distinct whole numbers, GP23–25 or GP29 (the radio chip's on a Pico W), 
 same PWM slice and channel (GPn and GPn+16). Only a ship with `rgb_pins` ever loads
 `lvrgb`, so no other ship's heap changes.
 
+**The launch light at power-on (0.3.4, `board/lvlaunch.py`).** On a ship with usable
+`rgb_pins`, the RGB LED plays a Starship launch once each time the ship starts (8 s,
+`lvlaunch.LAUNCH_MS`), then goes dark and leaves the light to everything else as before:
+a faint cool blue flickering on three times (power on), one slow breath up to a pale
+white-blue (tanking), a sudden deep orange that stutters (ignition), a bright orange-yellow
+whose brightness jitters every 60 ms (full thrust), then white, a dimming blue and dark
+(liftoff). Same curve and `rgb_scale` as Test light. `main.py`'s `run()` starts it as its own
+task before the web server, so the web server, the captive DNS and the BLE sync start while
+it plays; any failure is said in the log and never reaches the boot. It never sets the busy
+mark, so a Test light tap meanwhile is not a 429: the test takes the LED over (the launch's
+PWMs are switched off first). An update's upload starting, or any light playback's mark
+(Test light, a hail's flicker), ends it at once with every duty 0, every PWM deinit'd and
+the pins back to inputs, as does an error or a cancel. Ships without `rgb_pins` never load it.
+
 With the Ship light on, `lvled.Led` is held dark for the test: its pattern dropped and its
 next look pushed past the test, refreshed every frame, so only one of them ever writes the
 pin. At the end it's let go and looks again at once. Its gift, new-day and waiting flags,
