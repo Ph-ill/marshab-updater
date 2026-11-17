@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.4",
+      "channel": "test",
+      "date": "2026-11-16",
+      "label": "Launch light",
+      "path": "/firmware/releases/0.3.4/release.json",
+      "bytes": 267296,
+      "files": 50,
+      "frozen": "2661c2144844",
+      "notes": [
+        "Your ship now lights its engines when you switch it on."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.3",
       "channel": "test",
       "date": "2026-11-15",
@@ -187,7 +202,7 @@
     }
   ],
   "heads": {
-    "test": "0.3.3",
+    "test": "0.3.4",
     "bench": "0.0.2-coex"
   }
 }
