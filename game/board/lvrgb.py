@@ -103,10 +103,12 @@ def level(t, k):
 
 
 def duty(v, sc):
-    """PWM duty 0-65535 for a 0-255 channel at scale sc (1-100 %): v²/65025 of full, then sc%."""
+    """PWM duty 0-65535 for a 0-255 channel at scale sc (1-100 %): v²/65025 of full, then sc%.
+    Same numbers as before, without a product over 2**30 (v*v*sc*257 can reach 1.67e9)."""
     if v <= 0:
         return 0
-    d = v * v * sc * 257 // 25500       # 255*257 = 65535; 255*255*100*257/25500 = 65535
+    q = v * v * sc                      # at most 6,502,500
+    d = q // 25500 * 257 + q % 25500 * 257 // 25500
     return 65535 if d > 65535 else d
 
 

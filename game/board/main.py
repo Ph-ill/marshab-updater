@@ -8,6 +8,9 @@
 #   * /data/safe (an empty file): skip the game on every boot until it is removed
 # Ctrl-C works later too (any point in the Python code); the window is for a board whose
 # game would otherwise lock up straight away.
+# The launch light (board/lvlaunch.py, ship.json rgb_pins) starts on a machine.Timer before
+# that window and before the hotspot, so it plays while those run; it is skipped in safe
+# mode and when /data/safe or /data/maint is present, and stopped on Ctrl-C.
 # Over-the-air updates (lvota.py, lvboot.py): /api/ota* goes to lvota, loaded per request;
 # the captive DNS leaves GitHub's names unanswered so a phone with another route can still
 # fetch an update; and after an update this file reports in (lvota.good()) once the game
@@ -740,11 +743,96 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
             b[2] = v
             b[6], b[7] = lvship.ticks_ms(), CHG_GAUGE_MS
 
+# ---- the launch light
+# 0.3.5: start as soon as ship.json names rgb_pins, on a machine.Timer, so the sequence
+# plays through the 2 s boot window and the hotspot and BLE coming up. run()'s launch()
+# is the fallback if the Timer never began (no Timer, or the peek missed a restored file).
+LAUNCH_STOP = []                    # lvlaunch.stop, while a Timer play is running
+
+
+def peek_rgb(path="/data/ship.json"):
+    """rgb_pins and rgb_scale only, or None. Never logs the file (it may hold the
+    hotspot password and the fleet key). Never prints the rest of the file."""
+    try:
+        import json
+        with open(path) as f:
+            c = json.load(f)
+        if not isinstance(c, dict) or c.get("rgb_pins") is None:
+            return None
+        cfg = {"rgb_pins": c["rgb_pins"]}
+        if "rgb_scale" in c:
+            cfg["rgb_scale"] = c["rgb_scale"]
+        return cfg
+    except Exception:
+        return None
+
+
+def start_launch(cfg, say=print, host=None):
+    # A Timer play, if the board has machine.Timer and cfg names usable rgb_pins.
+    # Returns at once. A failure is said and the boot goes on. Once a boot.
+    # The module stays in sys.modules while it plays, so attach_launch() and run()'s
+    # launch() see the same play (dropping it here would import a fresh, empty module).
+    # on_end drops it when the play ends.
+    try:
+        if not cfg or cfg.get("rgb_pins") is None:
+            return
+        import lvlaunch
+        if lvlaunch.busy() or lvlaunch.played():
+            if host is not None and lvlaunch.busy():
+                lvlaunch.attach(host)
+            return                      # already started this boot (the peek, or it has ended)
+        if not lvlaunch.begin(cfg, say=say, host=host):
+            lvship.drop("lvlaunch")
+            lvship.drop("lvrgb")
+            lvship.drop("lvlight")
+            return
+        def forget():
+            LAUNCH_STOP[:] = []
+            lvship.drop("lvlaunch")
+            lvship.drop("lvrgb")
+            lvship.drop("lvlight")
+        if lvlaunch.busy():
+            lvlaunch.on_end(forget)
+            LAUNCH_STOP.append(lvlaunch.stop)
+        else:
+            forget()
+    except Exception as e:
+        print("led: no launch light %r" % (e,))
+        LAUNCH_STOP[:] = []
+        lvship.drop("lvlaunch")
+        lvship.drop("lvrgb")
+        lvship.drop("lvlight")
+
+
+def attach_launch(ship):
+    # The real ship is up: the running Timer play must hold sh.rgb, so a Test light
+    # tap can take it over. No ship yet when begin() first ran. Leaves the module
+    # loaded: run()'s launch() still has to see busy() / played().
+    try:
+        if not LAUNCH_STOP:
+            return
+        import lvlaunch
+        lvlaunch.attach(ship)
+    except Exception:
+        pass
+
+
+def stop_launch():
+    # Safe mode, /data/safe, /data/maint, Ctrl-C, or a crash: abort and let the pins go.
+    while LAUNCH_STOP:
+        try:
+            LAUNCH_STOP.pop()()
+        except Exception:
+            pass
+
+
 def launch(ship):
-    # The launch light (0.3.4, board/lvlaunch.py): about 8 s on a ship with ship.json
-    # rgb_pins, once a boot, as its own task (create_task only schedules it), so the web
-    # server, the captive DNS and the BLE sync start meanwhile. Every other ship never loads
-    # it. Nothing here can stop the boot: a failure is said and the game starts as ever.
+    # The launch light (0.3.4, board/lvlaunch.py; 0.3.5 may already be playing on a Timer).
+    # If a Timer play is running, attach it to this ship. If begin() already ran and
+    # finished this boot, do nothing (once a boot). Otherwise start() schedules an asyncio
+    # task (create_task only schedules it), so the web server, the captive DNS and the BLE
+    # sync start meanwhile. Every other ship never loads it. Nothing here can stop the boot:
+    # a failure is said and the game starts as ever.
     try:
         if ship.cfg.get("rgb_pins") is None:
             return
@@ -752,11 +840,14 @@ def launch(ship):
         return
     try:
         import lvlaunch
-        lvlaunch.start(ship)
+        if lvlaunch.busy():
+            lvlaunch.attach(ship)
+        elif not lvlaunch.played():
+            lvlaunch.start(ship)
     except Exception as e:
         print("led: no launch light %r" % (e,))
     finally:
-        lvlaunch = None                 # (the task keeps what it needs)
+        lvlaunch = None                 # (the task or Timer keeps what it needs)
         lvship.drop("lvlaunch")
         lvship.drop("lvrgb")
         lvship.drop("lvlight")
@@ -780,9 +871,18 @@ def no_setup(e, waited=False):
 
 
 def main():
+    # 0.3.5: the launch light starts here, before the 2 s window and the hotspot, when
+    # ship.json already names rgb_pins. /data/safe and /data/maint skip it; so does safe
+    # mode, after a stop if a peek had already begun it.
+    try:
+        if not (flag("/data/safe") or flag("/data/maint")):
+            start_launch(peek_rgb())
+    except Exception as e:
+        print("led: no launch light %r" % (e,))
     try:
         import lvsetup
     except Exception as e:
+        stop_launch()
         return no_setup(e)
     bad = None
     try:
@@ -793,15 +893,20 @@ def main():
         lvsetup = None
         lvship.drop("lvsetup")
     if bad is not None:
+        stop_launch()
         return no_setup(bad, True)
     if setup is None:
+        stop_launch()
         return
     if setup[0] is None:            # safe mode: lvsafe.check's reason, lvsetup dropped first
+        stop_launch()
         return safe_mode(setup[1], setup[2])
     cfg, trial = setup
     try:
+        start_launch(cfg)           # if the peek missed it (a backup lvsafe has just restored)
         import lvsetup
         ship, ap, ip, game = lvsetup.prepare(cfg)
+        attach_launch(ship)
     finally:
         lvsetup = None
         lvship.drop("lvsetup")
@@ -811,7 +916,7 @@ def main():
         nonlocal web
         MAIN[:] = [asyncio.current_task()]
         asyncio.get_event_loop().set_exception_handler(task_error)
-        launch(ship)                    # (0.3.4: the launch light, alongside the rest)
+        launch(ship)                    # (0.3.5: attach a Timer play, or start if it hasn't)
         if game:
             import lvweb
             web = lvweb.Server(ship, ip=ip)
@@ -858,6 +963,8 @@ T0 = time.ticks_ms()
 try:
     main()
 except KeyboardInterrupt:
+    stop_launch()
     print("stopped (Ctrl-C)")
 except BaseException as e:      # (a cancelled run() is a CancelledError: CRASH says why)
+    stop_launch()
     crashed(CRASH[0] if CRASH else e, T0)
