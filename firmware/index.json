@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.7",
+      "channel": "test",
+      "date": "2026-11-18",
+      "label": "Brighter charge light, and a glow while it updates",
+      "path": "/firmware/releases/0.3.7/release.json",
+      "bytes": 279760,
+      "files": 52,
+      "frozen": "2661c2144844",
+      "notes": [
+        "Your ship's charge light is a little brighter, and your ship now glows blue while it updates."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.6",
       "channel": "test",
       "date": "2026-11-18",
@@ -232,7 +247,7 @@
     }
   ],
   "heads": {
-    "test": "0.3.6",
+    "test": "0.3.7",
     "bench": "0.0.2-coex"
   }
 }
