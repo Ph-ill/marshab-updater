@@ -152,6 +152,21 @@ light playback's mark (Test light, a hail's flicker), ends it at once with every
 every PWM deinit'd and the pins back to inputs, as does an error or a cancel. Ships
 without `rgb_pins` never load it.
 
+**The charge light (0.3.6, `board/lvcharge.py`).** On a ship with usable `rgb_pins`, the
+RGB LED breathes slowly the whole time the UPS-Lite's charger is plugged in. The colour
+follows the cell's level when the gauge has one (amber/orange when low, through yellow,
+to green near full); a soft cyan-blue if the percent is not yet known; and a much slower,
+shallower green breath around a dim glow once the gauge reads 100% and the cable is still
+in. Same curve and `rgb_scale` as Test light, at a lower peak so it stays a quiet status
+light. It uses the charger watch's already-debounced plug-detect line and the gauge's
+percent (no extra I2C). The Pico's own USB socket does not charge the cell and does not
+light it. It never sets the busy mark, so a Test light tap is never a 429: the test takes
+the LED over and the breath resumes afterwards if the ship is still charging. An update's
+upload, a hail's flicker, or the boot launch, all take the LED first the same way; the
+charge light parks dark and comes back when they have finished. It is skipped without
+`rgb_pins` (the onboard LED is unchanged) and in safe mode (the charger watch never
+starts there). Ships without `rgb_pins` never load it.
+
 With the Ship light on, `lvled.Led` is held dark for the test: its pattern dropped and its
 next look pushed past the test, refreshed every frame, so only one of them ever writes the
 pin. At the end it's let go and looks again at once. Its gift, new-day and waiting flags,

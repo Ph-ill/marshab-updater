@@ -78,3 +78,5 @@ module("lvduelstore.py", base_path="../../board", opt=3)
 module("lvrgb.py", base_path="../../board", opt=3)
 # The launch light at power-on on that RGB LED (0.3.4, ship.json rgb_pins).
 module("lvlaunch.py", base_path="../../board", opt=3)
+# The charge breath on that RGB LED (0.3.6, ship.json rgb_pins).
+module("lvcharge.py", base_path="../../board", opt=3)

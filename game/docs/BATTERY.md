@@ -312,6 +312,13 @@ rework the table in section 2 before soldering.
   every 5 s while the page is showing (`GET /api/bat`), so the bolt appears or goes within
   about 5 s of the cable. The gauge is read 2 s after a change, then once a minute as
   before.
+- **The RGB LED breathes while it charges (0.3.6).** On a ship with `rgb_pins`, that
+  light follows the same plug-detect line as the bolt (so a loose plug doesn't flicker
+  it either) and the gauge's percent when there is one: amber/orange when low, through
+  yellow, to green near full; a calm, slower green breath once the gauge reads 100% and
+  the cable is still in. The Pico's USB socket does not charge the cell and does not
+  start this light. Test light, an update, a hail and the boot launch all take the LED
+  first; the breath resumes afterwards if the charger is still in.
 - **The percent itself rises slowly.** It's the gauge's estimate of the charge in the
   cell, so at the UPS-Lite's 400 mA it climbs about 1% every 1–2 minutes (a 1000 mAh
   cell: 400 mA is about 40% an hour at best, less near full). Plugging in moves the bolt

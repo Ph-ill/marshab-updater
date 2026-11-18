@@ -682,6 +682,9 @@ def config(got):
 # in its socket doesn't flicker the bolt). On a flip: ship.bat[2] at once, and the gauge
 # read CHG_GAUGE_MS later (lvship's loop does it when bat[7] ms have passed since bat[6]),
 # so the percent and voltage follow without reading the gauge any more often otherwise.
+# On a ship with rgb_pins, charge_light() also starts the charge breath (board/lvcharge.py)
+# when the taken level is plugged in, and stops it when the cable is out; safe mode never
+# reaches this watch, so that light never starts there either.
 CHG_EVERY_MS = 100
 CHG_STEADY_MS = 300
 CHG_GAUGE_MS = 2000
@@ -723,15 +726,40 @@ def charger(ship):
     return lambda: bool(pin.value())
 
 
+def charge_light(ship, on=None):
+    """The RGB charge breath (0.3.6, board/lvcharge.py). Never raises. No-op
+    without rgb_pins (the module is never loaded then; the onboard LED is
+    unchanged). on True starts it, False stops it; omitted: follow ship.bat[2]."""
+    try:
+        if getattr(ship, "cfg", {}).get("rgb_pins") is None:
+            return
+        if on is None:
+            b = getattr(ship, "bat", None)
+            on = b is not None and b[2] is True
+        if not on:
+            import sys
+            if "lvcharge" not in sys.modules:
+                return                  # never started this boot: don't load it just to stop
+        import lvcharge
+        if on:
+            lvcharge.start(ship)
+        else:
+            lvcharge.stop(ship)
+    except Exception:
+        pass
+
+
 async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
     rd = rd or charger(ship)
     if ship.bat is None or rd is None:
         return
     d = Debounce(ship.bat[2])
+    charge_light(ship)          # already plugged in at boot (after the launch, if any)
     while not (stop and stop()):
         await lvship.sleep_ms(every)
         b = ship.bat
         if b is None:
+            charge_light(ship, False)
             return
         if d.new is None:
             d.v = b[2]          # lvbatt's own reading may have moved it
@@ -742,6 +770,7 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
         if d.step(v, lvship.ticks_ms()):
             b[2] = v
             b[6], b[7] = lvship.ticks_ms(), CHG_GAUGE_MS
+            charge_light(ship, v)
 
 # ---- the launch light
 # 0.3.5: start as soon as ship.json names rgb_pins, on a machine.Timer, so the sequence
