@@ -157,15 +157,31 @@ RGB LED breathes slowly the whole time the UPS-Lite's charger is plugged in. The
 follows the cell's level when the gauge has one (amber/orange when low, through yellow,
 to green near full); a soft cyan-blue if the percent is not yet known; and a much slower,
 shallower green breath around a dim glow once the gauge reads 100% and the cable is still
-in. Same curve and `rgb_scale` as Test light, at a lower peak so it stays a quiet status
-light. It uses the charger watch's already-debounced plug-detect line and the gauge's
-percent (no extra I2C). The Pico's own USB socket does not charge the cell and does not
-light it. It never sets the busy mark, so a Test light tap is never a 429: the test takes
-the LED over and the breath resumes afterwards if the ship is still charging. An update's
-upload, a hail's flicker, or the boot launch, all take the LED first the same way; the
-charge light parks dark and comes back when they have finished. It is skipped without
-`rgb_pins` (the onboard LED is unchanged) and in safe mode (the charger watch never
-starts there). Ships without `rgb_pins` never load it.
+in. Same curve and `rgb_scale` as Test light, at a modest peak so it stays a quiet status
+light (a little brighter since 0.3.7). It uses the charger watch's already-debounced
+plug-detect line and the gauge's percent (no extra I2C). The Pico's own USB socket does
+not charge the cell and does not light it. It never sets the busy mark, so a Test light
+tap is never a 429: the test takes the LED over and the breath resumes afterwards if the
+ship is still charging. An update's glow (0.3.7), a hail's flicker, or the boot launch,
+all take the LED first the same way; the charge light parks dark and comes back when they
+have finished. It is skipped without `rgb_pins` (the onboard LED is unchanged) and in
+safe mode (the charger watch never starts there). Ships without `rgb_pins` never load it.
+
+**The update light (0.3.7, `board/lvotaled.py`).** On a ship with usable `rgb_pins`, the
+RGB LED glows blue the whole time an update is coming in over the air, so you can see
+the ship is busy and should not be switched off. While the phone is sending the files
+it pulses a violet-blue about once a second; once the update is ready and the ship is
+about to restart, the glow becomes a slower, paler white-blue breath. It stays lit
+between pieces (the upload's busy flag drops in those gaps). A refused signature, a
+cancelled update, or a long pause with no piece, all turn it off and let the charge
+light resume if the charger is still in. It never sets the busy mark that would hold
+update pieces off; a Test light tap meanwhile gets 429 "The ship is updating." and a
+hail's flicker waits. Ships without `rgb_pins` never load it and keep the onboard LED
+as before. This is the running set's light, so it shows on later updates once this
+release is installed; it cannot show while an older set is still running, during the
+0.3.1-updater stepping stone, or during the file swap just after the restart (`boot.py`
+and `lvboot.py` are not in the over-the-air set). The new set's launch light then plays
+as usual.
 
 With the Ship light on, `lvled.Led` is held dark for the test: its pattern dropped and its
 next look pushed past the test, refreshed every frame, so only one of them ever writes the

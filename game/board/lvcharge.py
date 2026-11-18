@@ -25,7 +25,8 @@
 # and never sets sh.ledtest, so a Test light tap is never a 429: the test takes
 # the LED over (lvrgb._open switches these PWMs off and this play parks without
 # touching the new ones). It also parks, all off, when an update's upload starts
-# (web.ota_busy) or any light playback is marked (sh.ledtest: a Test light, a
+# (web.ota_busy), an update's glow (sh.otaled, 0.3.7), or any light playback is marked
+# (sh.ledtest: a Test light, a
 # hail's flicker), and while someone else holds sh.rgb (the boot launch). When
 # that has ended and the ship is still charging, the breath starts again from
 # dark. It doesn't start at all without usable rgb_pins; safe mode never starts
@@ -47,9 +48,9 @@ PERIOD = 3000
 PERIOD_FULL = 8000
 _FRAME = 40
 _WAIT = 100                 # ms between looks while parked for a higher-priority light
-PEAK = 72                   # 0-255 peak of the charging breath (subtle)
-FULL_BASE = 18              # 0-255 dim green floor when full and still plugged in
-FULL_SWING = 22             # plus this at the top of the slow full breath
+PEAK = 116                  # 0-255 peak of the charging breath (0.3.7: a bit brighter; was 72)
+FULL_BASE = 29              # 0-255 dim green floor when full (lifted with PEAK from 18)
+FULL_SWING = 35             # plus this at the top of the slow full breath (was 22)
 # soft cyan-blue when the gauge has no percent yet (not a fake level)
 UNKNOWN = (0, 90, 160)
 # percent, red, green, blue: amber/orange at low, through yellow, to green
@@ -119,6 +120,8 @@ def _say(sh, s):
 def _taken(sh):
     """Another light playback holds a light, or an update is uploading."""
     if getattr(sh, "ledtest", None) is not None:
+        return True
+    if getattr(sh, "otaled", None) is not None:     # an update's glow (0.3.7)
         return True
     w = getattr(sh, "web", None)
     return w is not None and getattr(w, "ota_busy", 0)

@@ -312,7 +312,7 @@ rework the table in section 2 before soldering.
   every 5 s while the page is showing (`GET /api/bat`), so the bolt appears or goes within
   about 5 s of the cable. The gauge is read 2 s after a change, then once a minute as
   before.
-- **The RGB LED breathes while it charges (0.3.6).** On a ship with `rgb_pins`, that
+- **The RGB LED breathes while it charges (0.3.6, a little brighter since 0.3.7).** On a ship with `rgb_pins`, that
   light follows the same plug-detect line as the bolt (so a loose plug doesn't flicker
   it either) and the gauge's percent when there is one: amber/orange when low, through
   yellow, to green near full; a calm, slower green breath once the gauge reads 100% and

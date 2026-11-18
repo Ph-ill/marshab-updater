@@ -139,6 +139,8 @@ def _taken(sh):
     """Another light playback holds a light, or an update is uploading."""
     if getattr(sh, "ledtest", None) is not None:
         return True
+    if getattr(sh, "otaled", None) is not None:     # an update's glow (0.3.7)
+        return True
     w = getattr(sh, "web", None)
     return w is not None and getattr(w, "ota_busy", 0)
 

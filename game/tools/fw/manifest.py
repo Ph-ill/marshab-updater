@@ -80,3 +80,5 @@ module("lvrgb.py", base_path="../../board", opt=3)
 module("lvlaunch.py", base_path="../../board", opt=3)
 # The charge breath on that RGB LED (0.3.6, ship.json rgb_pins).
 module("lvcharge.py", base_path="../../board", opt=3)
+# The update-in-progress glow on that RGB LED (0.3.7, ship.json rgb_pins).
+module("lvotaled.py", base_path="../../board", opt=3)

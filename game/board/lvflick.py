@@ -85,6 +85,8 @@ def led_busy(sh):
     and a hail's backdated mark); like the 429 in lvledtest.start and main.py, a mark more
     than 5 s past its end is stale (a task that never ran its finally) and is cleared
     rather than holding the light off for good."""
+    if getattr(sh, "otaled", None):
+        return True
     t = getattr(sh, "ledtest", None)
     if t is None:
         return False

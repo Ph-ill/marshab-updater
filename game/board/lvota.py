@@ -467,6 +467,22 @@ def apply():
     return 200, {"ok": True, "v": m["version"], "restart_ms": 1500}
 
 
+def _led(web, phase):
+    """RGB update glow (0.3.7). Never raises. No-op without rgb_pins or a ship."""
+    try:
+        sh = getattr(web, "ship", None)
+        if sh is None or getattr(sh, "cfg", {}).get("rgb_pins") is None:
+            return
+        if phase is None:
+            import sys
+            if "lvotaled" not in sys.modules:
+                return
+        import lvotaled
+        lvotaled.hook(sh, phase)
+    except Exception:
+        pass
+
+
 async def api(web, req, w):
     """main.py routes /api/ota* here."""
     import lvweb
@@ -489,11 +505,16 @@ async def api(web, req, w):
         else:
             rmtree(NEW)
             code, obj = 200, {"ok": True}
+            _led(web, None)
     elif p == "/api/ota/apply":
         code, obj = apply()
         if code == 200:
+            _led(web, "apply")
             await lvweb.send_json(w, code, obj)
             return restart(web)
+        if code == 403:
+            # the staged set was refused; don't keep glowing
+            _led(web, None)
     else:
         code, obj = 404, {"err": "no such thing"}
     return await lvweb.send_json(w, code, obj)

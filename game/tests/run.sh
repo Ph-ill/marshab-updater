@@ -96,6 +96,7 @@ python3 tests/test_charger.py
 python3 tests/test_ledtest.py
 python3 tests/test_launch.py
 python3 tests/test_chargelight.py
+python3 tests/test_otaled.py
 python3 tests/test_ships8.py
 python3 tests/phone_check.py 9
 python3 tests/phone_check.py 42
@@ -128,6 +129,8 @@ if [ -n "$MP" ]; then
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_launch.py; fi
   "$MP" tests/test_chargelight.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_chargelight.py; fi
+  "$MP" tests/test_otaled.py
+  if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" tests/test_otaled.py; fi
   # every ship id boots with a launch date (ship 2, 2026-10-25)
   "$MP" -X heapsize=512k tests/test_ships8.py
   if [ -n "$LV_FROZEN_MP" ]; then "$LV_FROZEN_MP" -X heapsize=512k tests/test_ships8.py; fi

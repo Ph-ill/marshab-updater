@@ -116,6 +116,8 @@ def start(web, req):
     if web.get_phone().who(req) is None:
         return 401, {"err": "signed out"}
     sh = web.ship
+    if getattr(sh, "otaled", None):
+        return 429, {"err": "The ship is updating.", "kind": "update"}
     t = getattr(sh, "ledtest", None)
     if t is not None:
         left = (getattr(sh, "ledtest_ms", None) or TEST_MS) - lvship.ticks_diff(lvship.ticks_ms(), t)

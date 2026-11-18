@@ -44,7 +44,7 @@ P, PF, PEAK = lvcharge.PERIOD, lvcharge.PERIOD_FULL, lvcharge.PEAK
 
 # -- 1. the sequence itself
 check("3 s breath, 8 s when full", P == 3000 and PF == 8000)
-check("subtle peak", 40 <= PEAK <= 100, PEAK)
+check("0.3.7 peak a bit brighter (110-120)", 110 <= PEAK <= 120, PEAK)
 check("env: dark at the ends, full at mid", E(0, P) == 0 and E(P, P) == 0 and E(P // 2, P) == 100)
 check("env: squared (dim stays dim)", E(P // 8, P) < 10 and E(P // 4, P) <= 26 and E(3 * P // 8, P) > E(P // 4, P))
 up = [E(t, P) for t in range(0, P // 2 + 1, 20)]
@@ -470,6 +470,12 @@ async def ship_case():
     check("ota: stays dark while the upload runs", getattr(sh, "rgb", None) is None)
     srv.ota_busy = 0
     check("resumes after the update", await wait_lit(sh))
+    # 0.3.7: an update's glow (sh.otaled) also parks it, including between pieces
+    # when ota_busy is 0, and it resumes when the glow ends
+    sh.otaled = "recv"
+    check("an update's glow parks it", await wait_off(sh) or (getattr(sh, "rgb", None) is None and all(p.dead and p.duty == 0 for p in sh.made.values())))
+    sh.otaled = None
+    check("resumes after the update's glow", await wait_lit(sh))
     await halt(sh)
 
     # -- a hail's mark (sh.ledtest) parks it, then resumes

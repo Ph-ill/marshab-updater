@@ -257,6 +257,8 @@ def ota_hooks(lvweb, web):
             # the pin (the first copy remains alive through that task's globals).
             if web.get_phone().who(req) is None:
                 return await lvweb.send_json(w, 401, {"err": "signed out"})
+            if getattr(web.ship, "otaled", None):
+                return await lvweb.send_json(w, 429, {"err": "The ship is updating.", "kind": "update"})
             t = getattr(web.ship, "ledtest", None)
             if t is not None:
                 left = (getattr(web.ship, "ledtest_ms", None) or 10000) - lvship.ticks_diff(lvship.ticks_ms(), t)
@@ -373,9 +375,19 @@ def ota_hooks(lvweb, web):
                 # The upload itself (board/lvotap.py, 0.3.0): ~3 KB of code, with lvota loaded
                 # only for the envelope and dropped through its signature check. It waits for
                 # a quiet moment first (lvotaq.py, ~0.5 KB) before lvotap is even loaded.
+                # The RGB update glow (0.3.7) starts here for a mid-upload piece, but not
+                # on the last envelope piece: that request's signature check is the tightest
+                # heap, and lvotap starts the light once it has returned 200.
                 web.ota_busy += 1
                 try:
                     if req.method == "POST" and web.get_phone().who(req) is not None:
+                        try:
+                            q, body = req.q, req.body or b""
+                            last_env = q.get("f") == "0" and int(q.get("o", "-1")) + len(body) >= int(q.get("n", "0"))
+                        except ValueError:
+                            last_env = False
+                        if not last_env:
+                            update_light(web.ship, "recv")
                         import lvotaq
                         try:
                             # Do not occupy the single HTTP owner while a light
@@ -724,6 +736,23 @@ def charger(ship):
     u = c.get("bat_chg_pull", "none")   # as lvbatt: R2 pulls it low (PAD1)
     pin = Pin(p, Pin.IN, Pin.PULL_DOWN if u == "down" else Pin.PULL_UP if u == "up" else None)
     return lambda: bool(pin.value())
+
+
+def update_light(ship, phase=None):
+    """The RGB update glow (0.3.7, board/lvotaled.py). phase 'recv', 'apply', or
+    None to stop. Never raises. No-op without rgb_pins (the module is never
+    loaded then; the onboard LED is unchanged)."""
+    try:
+        if getattr(ship, "cfg", {}).get("rgb_pins") is None:
+            return
+        if phase is None:
+            import sys
+            if "lvotaled" not in sys.modules:
+                return
+        import lvotaled
+        lvotaled.hook(ship, phase)
+    except Exception:
+        pass
 
 
 def charge_light(ship, on=None):

@@ -49,6 +49,21 @@ def _drop(name):
         pass
 
 
+def _led(web, phase):
+    """RGB update glow (0.3.7). Never raises. No-op without rgb_pins or a ship."""
+    try:
+        sh = getattr(web, "ship", None)
+        if sh is None or getattr(sh, "cfg", {}).get("rgb_pins") is None:
+            return
+        if phase is None:
+            if "lvotaled" not in sys.modules:
+                return
+        import lvotaled
+        lvotaled.hook(sh, phase)
+    except Exception:
+        pass
+
+
 def ix_line(path, size, sha):
     """The ix line for one manifest file (lvota writes them, in manifest order). The path is
     only for an error message: one that isn't plain ASCII (a line is a fixed number of
@@ -248,4 +263,11 @@ async def api(web, req, w, waited=False):
             _drop("lvotaq")
     # Pass ownership, not a second bytes reference in this coroutine/put frame.
     code, obj = put(req.q, None, req)
+    # After the answer is known (including a signature check): start or keep the
+    # recv glow on 200; a 403 refused the set, so go dark. Other codes (409, 503,
+    # 400 a checksum the phone will retry) leave it as it is.
+    if code == 200:
+        _led(web, "recv")
+    elif code == 403:
+        _led(web, None)
     return await lvweb.send_json(w, code, obj)
