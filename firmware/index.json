@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.10",
+      "channel": "test",
+      "date": "2026-11-19",
+      "label": "The start-up light shows again when you switch on",
+      "path": "/firmware/releases/0.3.10/release.json",
+      "bytes": 289004,
+      "files": 53,
+      "frozen": "2661c2144844",
+      "notes": [
+        "Your ship's start-up light shows again every time you switch it on."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.9",
       "channel": "test",
       "date": "2026-11-19",
@@ -277,7 +292,7 @@
     }
   ],
   "heads": {
-    "test": "0.3.9",
+    "test": "0.3.10",
     "bench": "0.0.2-coex"
   }
 }
