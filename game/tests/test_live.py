@@ -11,6 +11,9 @@
   * fair use: one undelivered hail per crewmate, the 2 min gap, 20 a day; hail back.
   * the radio: one hail dial per 20 s across peers, only to ships heard in the last 30 s.
   * the light: quiet hours, the clock, the switch, 12 a day, never two at once.
+  * cancel (0.3.8): take back an outgoing hail, clear it on the other ship, out of
+    range, an accept/cancel race, an older-firmware peer, a duel item in the out-box,
+    repeated taps, and the hail light stopping.
   * a fault in a hook: hooks off, live.json says why, the sync carries on.
   * fuzz: random and mutated trailers never raise and never take a bad item; well-signed
     items with random kinds and bodies (a later release, a buggy ship) never upset the page.
@@ -348,7 +351,7 @@ for live in ((True, False), (True, True)):
     fill(b, (1, 4, 7))
     if live[1]:
         for k in range(8):                       # more than fit one HELLO
-            api(a, "/api/live/hail", "POST", {"to": 1}) if k == 0 else lvlivein.send(a.live, 10, 1, bytes((5, k)))
+            api(a, "/api/live/hail", "POST", {"to": 1}) if k == 0 else lvlivein.send(a.live, 11, 1, bytes((5, k)))
     t = run(w, [a, b], 400000, lambda: a.node.digest() == b.node.digest() and not a.live.out
             and a.ble.state == "idle" and b.ble.state == "idle")
     check("sync with %s ship" % ("a new" if live[1] else "an old"), t is not None, (a.ble.n, a.live.n))
@@ -579,10 +582,10 @@ check("signed junk: the page still answers", ok, j)
 check("signed junk: inbox bounded", len(L.inb) == 0 and len(j["in"]) <= lvliveapi.SHOW and j["ni"] <= lvliveapi.HIN, len(j["in"]))
 check("signed junk: flickers capped", L.lc[1] <= lvlive.LIGHTS, L.lc)
 
-# a later release's kind travels and is acked: it never sticks in the sender's queue
+# a later release's kind (11+, past hail cancel 10 and the duel) travels and is acked
 w, (a, b) = fresh(141)
 run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
-lvlivein.send(a.live, 10, 1, b"\x01\x02")
+lvlivein.send(a.live, 11, 1, b"\x01\x02")
 t = run(w, [a, b], 10000, lambda: not a.live.out and a.ble.state == "idle")
 check("later kind acked", t is not None and not b.live.inb, (t, b.live.inb))
 
@@ -1461,6 +1464,246 @@ _gg["clock_gate"](gw2)
 gw2.ship.clock.learn_headers(_hd(T0))
 check("f2 gate: signed in before a restart (no phone list yet): it moves",
       gw2.ship.clock.learn_headers(_hd(T0 + 86400000, "good")) and gw2.made == 1)
+
+
+# ---- cancel a hail (0.3.8): take it back here and on their ship
+from binascii import unhexlify
+
+w, (a, b) = fresh(38)
+t = run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+check("cancel: heard", t is not None)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 3})
+check("cancel: hail queued", st == 200, (st, j))
+hid = j["id"]
+st, j = api(a, "/api/live/cancel", "POST", {"id": hid})
+check("cancel: local while sending", st == 200 and j.get("ok"), (st, j))
+check("cancel: hail left the out-box", not any(o[1][0] == 1 for o in a.live.out), a.live.out)
+check("cancel: a cancel item is queued",
+      any(o[1][0] == 10 and o[1][5:8] == unhexlify(hid) for o in a.live.out),
+      [(o[1][0], o[1][5:8]) for o in a.live.out])
+st, j = api(a, "/api/live")
+check("cancel: listed as cancelled", j["out"] and j["out"][-1]["st"] == 5 and j["out"][-1]["id"] == hid, j["out"])
+n10 = sum(1 for o in a.live.out if o[1][0] == 10)
+st2, j2 = api(a, "/api/live/cancel", "POST", {"id": hid})
+check("cancel: second tap is idempotent", st2 == 200 and sum(1 for o in a.live.out if o[1][0] == 10) == n10)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 4})
+check("cancel: can hail again at once", st == 200, (st, j))
+
+# out of range: cancel locally, the cancel waits, the remote never had the hail
+w, (a, b) = fresh(39)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 1})
+check("oor: hail queued", st == 200)
+hid = j["id"]
+st, j = api(a, "/api/live/cancel", "POST", {"id": hid})
+check("oor: cancelled locally", st == 200)
+st, j = api(a, "/api/live")
+check("oor: cancelled, cancel still waiting", j["out"][-1]["st"] == 5 and any(o[1][0] == 10 for o in a.live.out))
+t = run(w, [a, b], 300000, lambda: not a.live.out and a.ble.state == "idle" and 0 in b.ble.peers)
+check("oor: cancel delivered when they next meet", t is not None and not a.live.out, (t, a.live.out))
+st, j = api(b, "/api/live")
+check("oor: remote inbox empty (hail never arrived)", j["in"] == [], j["in"])
+
+# delivered, then cancelled: remote inbox clears; they cannot mark it seen; light stops
+w, (a, b) = fresh(40)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 2})
+hid = j["id"]
+t = run(w, [a, b], 10000, lambda: not a.live.out and a.ble.state == "idle")
+check("delivered-then-cancel: hail arrived", t is not None)
+st, j = api(b, "/api/live")
+check("delivered-then-cancel: b has it unseen", len(j["in"]) == 1 and not j["in"][0]["seen"], j["in"])
+it = lvlivein.item(a.live, 10, 1, unhexlify(hid))
+b.ledtest = b.ledhail = 42
+b.live.take(FakeSess(), b"D\x00\x00" + bytes((lvlive.MARK, 1)) + it, 3)
+check("delivered-then-cancel: light stopped", b.ledtest is None and b.ledhail is None)
+st, j = api(b, "/api/live")
+check("delivered-then-cancel: b's inbox cleared", j["in"] == [], j["in"])
+st, j = api(b, "/api/live/seen", "POST", {"id": hid})
+check("delivered-then-cancel: seen after cancel is a no-op", st == 200 and not any(o[1][0] == 2 for o in b.live.out), b.live.out)
+import lvflick
+b.ledhail = b.ledtest = 42
+b._hail_stop = False
+lvflick.stop(b)
+check("light: stop clears a hail flicker mark", b.ledtest is None and b.ledhail is None and b._hail_stop)
+b.ledtest, b.ledhail = 99, None
+lvflick.stop(b)
+check("light: stop leaves a Test light alone", b.ledtest == 99)
+
+# accept/cancel race A: seen is already queued, then cancel is taken — seen is dropped
+w, (a, b) = fresh(41)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 5})
+hid = j["id"]
+t = run(w, [a, b], 10000, lambda: not a.live.out and a.ble.state == "idle")
+check("race A: hail delivered", t is not None)
+st, j = api(b, "/api/live")
+check("race A: b has hail", len(j["in"]) == 1)
+st, j = api(b, "/api/live/seen", "POST", {"id": hid})
+check("race A: seen queued", st == 200 and any(o[1][0] == 2 for o in b.live.out))
+it = lvlivein.item(a.live, 10, 1, unhexlify(hid))
+b.live.take(FakeSess(), b"D\x00\x00" + bytes((lvlive.MARK, 1)) + it, 3)
+check("race A: seen dropped after cancel", not any(o[1][0] == 2 for o in b.live.out), b.live.out)
+st, j = api(b, "/api/live")
+check("race A: inbox cleared", j["in"] == [], j["in"])
+# a late seen arriving at a after a has cancelled must not resurrect the hail
+st, j = api(a, "/api/live/cancel", "POST", {"id": hid})
+check("race A: a cancels (or already did if we also cancel via API)", st in (200, 409), st)
+# force cancelled then inject a seen receipt
+st, j = api(a, "/api/live")
+# if still delivered (we haven't cancelled via API if 409? we just cancelled). mark 5 if needed
+if j["out"][-1]["st"] != 5:
+    st, _ = api(a, "/api/live/cancel", "POST", {"id": hid})
+# inject seen
+seen_it = lvlivein.item(b.live, 2, 0, unhexlify(hid))
+# FakeSess.to is 0; take on a.live should use sess.to == 1 (from b)
+class SessFromB:
+    def __init__(self):
+        self.to = 1
+        self.acks = []
+a.live.take(SessFromB(), b"D\x00\x00" + bytes((lvlive.MARK, 1)) + seen_it, 3)
+st, j = api(a, "/api/live")
+check("race A: a late seen does not overwrite cancelled", j["out"][-1]["id"] == hid and j["out"][-1]["st"] == 5, j["out"])
+
+# accept/cancel race B: they already saw it, then cancel is too late
+w, (a, b) = fresh(42)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 6})
+hid = j["id"]
+t = run(w, [a, b], 10000, lambda: not a.live.out and a.ble.state == "idle")
+api(b, "/api/live")
+api(b, "/api/live/seen", "POST", {"id": hid})
+t = run(w, [a, b], 10000, lambda: not b.live.out and b.ble.state == "idle")
+st, j = api(a, "/api/live")
+check("race B: a sees they saw it", j["out"][-1]["st"] == 3, j["out"])
+st, j = api(a, "/api/live/cancel", "POST", {"id": hid})
+check("race B: too late once seen", st == 409, (st, j))
+
+# older firmware (0.3.7): kind 10 is acked and dropped; a hail already there stays
+w, (a, b) = fresh(43)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 1})
+hid = j["id"]
+t = run(w, [a, b], 10000, lambda: not a.live.out and a.ble.state == "idle")
+api(b, "/api/live")
+real_in = lvlivein._in
+def old_in(lk, frm, body):
+    if body[0] == 10:
+        return None
+    return real_in(lk, frm, body)
+lvlivein._in = old_in
+try:
+    sess = FakeSess()
+    it = lvlivein.item(a.live, 10, 1, unhexlify(hid))
+    # Call this module's take, not Link.take (which drop()s and may reload a fresh lvlivein).
+    lvlivein.take(b.live, sess, b"D\x00\x00" + bytes((lvlive.MARK, 1)) + it, 3)
+    check("old fw: cancel is still acked", len(sess.acks) == 1, sess.acks)
+    st, j = api(b, "/api/live")
+    check("old fw: hail already there stays", len(j["in"]) == 1 and j["in"][0]["id"] == hid, j["in"])
+    check("old fw: no cancel ref recorded", not getattr(b.live, "cx", None), getattr(b.live, "cx", None))
+finally:
+    lvlivein._in = real_in
+
+# a duel item in the out-box survives cancelling a hail
+w, (a, b) = fresh(44)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+lvlivein.send(a.live, 3, 1, b"\x01" + b"\x00" * 10)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 2})
+hid = j["id"]
+st, j = api(a, "/api/live/cancel", "POST", {"id": hid})
+check("duel-in-progress: cancel ok", st == 200)
+check("duel-in-progress: the duel item is still queued", any(o[1][0] == 3 for o in a.live.out),
+      [o[1][0] for o in a.live.out])
+
+# same trailer: cancel before the hail, and hail before the cancel — neither leaves a hail
+w, (a, b) = fresh(45)
+run(w, [a, b], 300000, lambda: 0 in b.ble.peers and 1 in a.ble.peers)
+hitem = lvlivein.item(a.live, 1, 1, b"\x02\x00\x00\xff\xff")
+citem = lvlivein.item(a.live, 10, 1, hitem[2:5])
+in0 = b.live.n["in"]
+lc0 = b.live.lc[1]
+b.live.take(FakeSess(), b"D\x00\x00" + bytes((lvlive.MARK, 2)) + citem + hitem, 3)
+st, j = api(b, "/api/live")
+check("same trailer (cancel then hail): no inbox, no light", j["in"] == [] and b.live.lc[1] == lc0, (j["in"], b.live.lc))
+hitem = lvlivein.item(a.live, 1, 1, b"\x03\x00\x00\xff\xff")
+citem = lvlivein.item(a.live, 10, 1, hitem[2:5])
+lc0 = b.live.lc[1]
+b.live.take(FakeSess(), b"D\x00\x00" + bytes((lvlive.MARK, 2)) + hitem + citem, 3)
+st, j = api(b, "/api/live")
+check("same trailer (hail then cancel): no inbox, no light", j["in"] == [] and b.live.lc[1] == lc0, (j["in"], b.live.lc))
+
+# a cancel still waiting when the day turns stays queued, so the next meeting
+# still clears their inbox (unlike a hail, which becomes "Didn't go")
+w, (a, b) = fresh(46)
+w.separate(a.radio, b.radio)
+st, j = api(a, "/api/live/hail", "POST", {"to": 1, "ph": 0})
+hid = j["id"]
+st, j = api(a, "/api/live/cancel", "POST", {"id": hid})
+check("day-turn cancel: queued", st == 200 and any(o[1][0] == 10 for o in a.live.out))
+for o in a.live.out:
+    if o[1][0] == 10:
+        o[2] = a.clock.date() - 1
+lvlivein.expire(a.live)
+check("day-turn cancel: kind 10 survives expire", any(o[1][0] == 10 and o[1][5:8] == unhexlify(hid) for o in a.live.out),
+      [o[1][0] for o in a.live.out])
+
+# start(duel=True) must not set ledhail, or Cancel hail would stop a duel light
+class _Pin2:
+    def __init__(self):
+        self.w = []
+    def value(self, v):
+        self.w.append(v)
+
+b.led_pin = lambda: _Pin2()
+class _NoTask:
+    def create_task(self, c):
+        try:
+            c.close()
+        except Exception:
+            pass
+        return None
+_real_aio = lvflick.asyncio
+lvflick.asyncio = _NoTask()
+try:
+    b.ledtest = b.ledhail = None
+    r = lvflick.start(b, False)
+    check("start hail sets ledhail", r and b.ledhail is not None and b.ledhail is b.ledtest)
+    b.ledtest = b.ledhail = None
+    r = lvflick.start(b, True)
+    check("start duel does not set ledhail", r and b.ledtest is not None and b.ledhail is None)
+    lvflick.stop(b)
+    check("stop leaves a duel mark (ledhail unset)", b.ledtest is not None and b.ledhail is None)
+finally:
+    lvflick.asyncio = _real_aio
+    b.ledtest = b.ledhail = None
+
+# play() finally must not clear a later Test/charge mark after stop() dropped ours
+_FL0 = lvflick.FLICK_MS
+lvflick.FLICK_MS = 800
+
+async def _stop_then_later():
+    pin = _Pin2()
+    b.led_pin = lambda: pin
+    b._hail_stop = False
+    check("later-mark: start hail", lvflick.start(b))
+    lvflick.stop(b)
+    check("later-mark: stop mid-play", b.ledtest is None and b._hail_stop)
+    b.ledtest = 12345
+    b.ledtest_ms = 10000
+    b.ledhail = None
+    await lvship.sleep_ms(200)
+    check("later-mark: play finally leaves it", b.ledtest == 12345)
+
+asyncio.run(_stop_then_later())
+lvflick.FLICK_MS = _FL0
+
+# refusals
+w, (a, b) = fresh(47)
+st, j = api(a, "/api/live/cancel", "POST", {"id": "00ffee"})
+check("cancel: unknown id is 404", st == 404, (st, j))
+st, j = api(a, "/api/live/cancel", "POST", {})
+check("cancel: missing id is 400", st == 400, (st, j))
+st, j = lvliveapi.api(Web(a), Req("/api/live/cancel", "POST", {"id": "00ffee"}, None))
+check("cancel: signed out is 401", st == 401, (st, j))
 
 rm_tree(TMP)
 print("test_live: %d checks passed" % n[0])

@@ -19,11 +19,14 @@ def forget(sh):
     if L is not None:
         del L.inb[:]
         del L.out[:]
+        if getattr(L, "cx", None):
+            del L.cx[:]
     p = sh.data + "/livebox.json"
     b = load(p)
-    if b and (b.get("i") or b.get("o")):
+    if b and (b.get("i") or b.get("o") or b.get("x")):
         b["i"] = []
         b["o"] = []
+        b["x"] = []
         save(p, b)
 
 
@@ -33,7 +36,7 @@ def expire(lk):
     d = lk.sh.clock.date()
     k = []
     for o in lk.out:
-        if o[1][0] > 2:                # duels survive the day turning
+        if 3 <= o[1][0] <= 10:         # duels, and a hail cancel, survive the day turning
             continue
         if d and not isinstance(o[2], int):
             o[2] = d                    # queued before the clock was known: today's
@@ -158,6 +161,11 @@ def setup(lk, ship, data, cfg):
     for k, v in b.get("h", {}).items():
         lk.hw[int(k)] = v
     lk.lc = b.get("l") or [0, 0]
+    # cancelled hail refs [from, hex id]; a late copy of the same hail is dropped (0.3.8)
+    lk.cx = []
+    for row in b.get("x") or ():
+        if isinstance(row, list) and len(row) >= 2 and isinstance(row[0], int) and isinstance(row[1], str):
+            lk.cx.append([row[0], row[1]])
 
 
 def fault(lk, e):

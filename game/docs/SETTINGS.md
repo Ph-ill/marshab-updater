@@ -65,6 +65,10 @@ waits until the link is over, stays dark during quiet hours, and shares Hail's
 SYNC reports this independent setting to the opponent's page; the Hail advert's
 no-light bit still describes hails only.
 
+## Cancel a hail (0.3.8)
+
+Once you've sent a hail, the hail menu (and the hails on your home screen) offer **Cancel hail** until the other person has seen it. Your ship takes it back at once, and asks theirs to clear it the next time the two meet (or straight away if they're in range). That request stays waiting if you don't meet until the next day; it doesn't lapse overnight. If their ship is still on older software, a hail that has already arrived there stays until they see it or the day ends; one that hasn't left yet is pulled back and never arrives.
+
 ## Test light
 
 So you can see a ship's LED works without opening the case, whether the Ship light is on

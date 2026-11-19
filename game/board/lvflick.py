@@ -27,7 +27,7 @@ HALF = 167              # ms on, then ms off: 3 Hz
 WAIT_MS = 30000
 
 
-async def play(sh, pin, T, duel=False):
+async def play(sh, pin, T, duel=False, mark=None):
     sleep_ms, ticks_ms, ticks_diff = lvship.sleep_ms, lvship.ticks_ms, lvship.ticks_diff
     t0 = ticks_ms()
     lit = 0
@@ -40,6 +40,12 @@ async def play(sh, pin, T, duel=False):
         t0 = ticks_ms()
         dark = -1
         while True:
+            # A later playback or stop() may have claimed the light before we
+            # first ran (create_task only schedules us). Leave their mark alone.
+            if mark is not None and getattr(sh, "ledtest", None) is not mark:
+                break
+            if not duel and getattr(sh, "_hail_stop", False):
+                break
             T._hold(sh)
             t = ticks_diff(ticks_ms(), t0)
             if t >= (8000 if duel else FLICK_MS):
@@ -74,8 +80,25 @@ async def play(sh, pin, T, duel=False):
             pin.value(0)
         except Exception:
             pass
-        sh.ledtest = None
-        sh.ledtest_ms = None
+        if mark is not None:
+            if getattr(sh, "ledtest", None) is mark:
+                sh.ledtest = None
+                sh.ledtest_ms = None
+                try:
+                    sh._hail_stop = False
+                except Exception:
+                    pass
+            if getattr(sh, "ledhail", None) is mark:
+                sh.ledhail = None
+        else:
+            # Called without start()'s mark (tests): same cleanup as before.
+            sh.ledtest = None
+            sh.ledtest_ms = None
+            try:
+                sh._hail_stop = False
+            except Exception:
+                pass
+            sh.ledhail = None
         T._hold(sh, True)
 
 
@@ -95,6 +118,26 @@ def led_busy(sh):
     sh.ledtest = None
     sh.ledtest_ms = None
     return False
+
+
+def stop(sh):
+    """End a hail flicker at once (a cancelled hail). Leaves a Test light or an
+    update glow alone. Never raises. The play task goes dark on its next tick."""
+    try:
+        mark = getattr(sh, "ledhail", None)
+        if mark is None or getattr(sh, "ledtest", None) is not mark:
+            return
+        sh._hail_stop = True
+        sh.ledtest = None
+        sh.ledtest_ms = None
+        sh.ledhail = None
+        try:
+            import lvlight as T
+            T._pin(sh).value(0)
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 
 def maybe(lk, duel=False):
@@ -134,8 +177,9 @@ def start(sh, duel=False):
     # or the task fails (a MemoryError with the heap at its tightest), nothing is left
     # marked busy. The mark is set before the task first runs (create_task only schedules
     # it); play() clears it in its finally.
+    mark = ticks_add(lvship.ticks_ms(), WAIT_MS + FLICK_MS - T.TEST_MS)
     try:
-        c = play(sh, pin, T, duel)
+        c = play(sh, pin, T, duel, mark)
         asyncio.create_task(c)
     except Exception as e:
         c = None
@@ -145,10 +189,17 @@ def start(sh, duel=False):
         return False
     finally:
         lvship.drop("lvlight")           # the task holds only the shared helpers
-    sh.ledtest = ticks_add(lvship.ticks_ms(), WAIT_MS + FLICK_MS - T.TEST_MS)
+    sh.ledtest = mark
     sh.ledtest_ms = T.TEST_MS            # the mark is backdated against this 10 s
     # Which playback owns the mark (review 3 m2): Test light's 429 says "kind": "hail" while
     # sh.ledhail is the same mark, so the page can say the light is showing a hail instead
     # of "three blinks" (any later mark, or none, isn't this one: nothing to clear).
-    sh.ledhail = sh.ledtest
+    # A hail playback only: the page says the light is a hail while ledhail is
+    # this mark (Test light's 429 "kind": "hail"). A duel pulse must not claim
+    # it, or Cancel hail would stop the duel light.
+    sh.ledhail = None if duel else mark
+    try:
+        sh._hail_stop = False
+    except Exception:
+        pass
     return True

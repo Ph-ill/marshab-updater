@@ -6,7 +6,7 @@ from lvliveapi import _in, light, PING_KB, wdrain
 
 def api(web, req):
     """Non-stream live requests, kept out of the response encoder's working set."""
-    from lvliveapi import state, hail, seen
+    from lvliveapi import state, hail, seen, cancel
     sh = web.ship
     p = req.path
     if p == "/api/live/duel":
@@ -37,6 +37,8 @@ def api(web, req):
         return hail(sh, you, b)
     if p == "/api/live/seen":
         return seen(sh, b)
+    if p == "/api/live/cancel":
+        return cancel(sh, b)
     if p == "/api/live/set":
         return setting(sh, b)
     return 404, {"err": "no such thing"}

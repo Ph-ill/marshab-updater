@@ -10,6 +10,8 @@
 #                             whole list or a string built up by copies (FIXREVIEW2 B1)
 #   POST /api/live/hail       {to, ph, back}   hail crewmate `to` (0-based) with phrase ph
 #   POST /api/live/seen       {id}             "X saw it": tell the hailer it was seen
+#   POST /api/live/cancel     {id}             take back an outgoing hail not yet seen
+#                             (0.3.8): drops it here and asks their ship to clear it
 #   POST /api/live/set        {on, light}
 #   GET  /api/coex            the radio check: Bluetooth sync and Wi-Fi side by side
 #   GET  /api/coex/ping?kb=N  the radio test's probe (main.py streams it: N KB, at most
@@ -204,6 +206,10 @@ def hail(sh, you, b):
 
 def seen(sh, b):
     return _call("seen", sh, b)
+
+
+def cancel(sh, b):
+    return _call("cancel", sh, b)
 
 
 def setting(sh, b):

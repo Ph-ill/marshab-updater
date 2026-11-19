@@ -42,8 +42,13 @@
 #     set back a day expires nothing (FIXREVIEW3 f2).
 #   * Item kinds: 0 ack, 1 hail (body: phrase, back, from crew, the sender's clock when sent
 #     as minutes since 1970 mod 65536, big-endian, 0xFFFF unknown), 2 "seen" (body: the
-#     hail's epoch and seq). Any other kind (a later release's) is acked and dropped, so a newer
-#     ship's items never stick in an older ship's queue.
+#     hail's epoch and seq), 10 cancel (0.3.8, body: the hail's epoch and seq, same as
+#     "seen"). Kinds 3-9 are the duel (0.3.1). Any other kind (a later release's) is acked
+#     and dropped, so a newer ship's items never stick in an older ship's queue. A cancel
+#     stays in the sender's out-box until the other ship acks it (it does not lapse when
+#     the day turns, so a meeting the next day still clears their inbox). A 0.3.0–
+#     0.3.7 ship acks a cancel and does not clear a hail already in its inbox; a hail still
+#     in the sender's out-box is pulled back and never arrives.
 #   * Advert ship byte: bit 5 = this ship reads live items (capability gating: nothing is
 #     queued for, dialled to or sent to a ship without it). Bit 6 = this ship has Hail but
 #     it is paused (turned off, after a crash in Hail's own code, the fleet switch): its
@@ -189,7 +194,8 @@ class Link:
             # what taking changes in RAM, to put back if it fails part way (a MemoryError
             # saving livebox.json, say): then nothing is acked, nothing counts as taken
             # (no "repeat" when the peer sends it again) and no light (FIXREVIEW2 J3)
-            z = (dict(self.hw), self.inb[:], self.out[:], dict(self.n))
+            z = (dict(self.hw), self.inb[:], self.out[:], dict(self.n),
+                 [row[:] for row in getattr(self, "cx", None) or []])
             import lvlivein          # (only when a trailer came: items are rare)
             lvlivein.take(self, s, m, off)
         except Exception as e:
@@ -199,6 +205,7 @@ class Link:
                 self.inb[:] = z[1]
                 self.out[:] = z[2]
                 self.n = z[3]
+                self.cx = [row[:] for row in z[4]]
                 # Duel's write-ahead transaction may already have committed a
                 # reply before the trailer's final save failed. Recover that
                 # durable outbox, not a snapshot predating its publication.

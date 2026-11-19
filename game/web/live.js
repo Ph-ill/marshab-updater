@@ -3,11 +3,11 @@
 // Bluetooth: their ship's light flashes for a few seconds and the hail waits on
 // their home screen; you see "Sending", "Will deliver" (their ship is out of range: yours
 // keeps trying while they're about), "Delivered", then "<name> saw it" once they open the
-// game. Hail back within 10 minutes. One on its way per crewmate, one every 2 minutes to
-// the same one, 20 a day. Each player stays on their own ship's Wi-Fi; only ships talk.
+// game. Hail back within 10 minutes. You can cancel a hail you have sent until they have seen it.
+// One on its way per crewmate, one every 2 minutes to the same one, 20 a day. Each player stays on their own ship's Wi-Fi; only ships talk.
 // Hooked onto app.html's home/crew/setScreen/view/pollV from here, loaded after settings.js.
 const LV_PH=["Hello from my ship","Good morning","Coffee?","Lunch?","Come take a look","Nice work","Need a hand?","Heading out"];
-let LV=null,LVV=-1,LVK=0,LVT=null,LVP=null,LVB=0,LVE="",LVS=0;   // state, its version, fast-poll timer; the hail form: to, phrase, back, error, sending
+let LV=null,LVV=-1,LVK=0,LVT=null,LVP=null,LVB=0,LVE="",LVS=0,LVCX=0;   // state, its version, fast-poll timer; the hail form: to, phrase, back, error, sending, cancelling id
 let LVREAD=null,LVSTOP="";
 function lvLoad(){
   if(!tok||tok===LVSTOP)return Promise.resolve();
@@ -41,7 +41,7 @@ function lvPaint(){
 function lvAgo(t){if(!t)return "earlier";const s=Math.max(0,(Date.now()-t)/1000|0);return s<60?"just now":s<3600?Math.round(s/60)+" min ago":Math.round(s/3600)+" h ago"}
 function lvPeer(j){return LV&&LV.peers.find((p)=>p.s===j)}
 function lvNear(j){const p=lvPeer(j);if(!p||p.ago==null)return "Not in range lately";if(p.ago<=180)return "<b class=near>Nearby</b>";const s=p.ago;return "In range "+(s<3600?Math.round(s/60)+" min":Math.round(s/3600)+" h")+" ago"}
-function lvSt(o){return ["Sending\u2026","Will deliver · when your ships meet","Delivered",h(nm(o.to))+" saw it","Didn't go · ships never met"][o.st]}
+function lvSt(o){return ["Sending\u2026","Will deliver · when your ships meet","Delivered",h(nm(o.to))+" saw it","Didn't go · ships never met","You cancelled it"][o.st]}
 function lvOnWay(j){return LV&&LV.out.some((o)=>o.to===j&&o.st<2)}
 // a crewmate's ship: "old" (heard without Hail: needs the update), "off" (has Hail, paused),
 // "nl" (its hail light is switched off: a hail lands there as a note only)
@@ -71,7 +71,7 @@ function lvHomeCard(){
   const inn=LV.in.slice().reverse(),out=LV.out.slice().reverse().slice(0,4);
   let o=`<section id=lv-home><div class=lab><span>Hails</span><span>${inn.length?inn.length+" today":"ship to ship"}</span></div>`;
   for(const x of inn.slice(0,4))o+=`<div class="row lvin${x.seen?"":" nw"}"><span class=pt>${portrait(x.by)}</span><span class=t><b>${h(nm(x.by))}${x.back?" hailed you back":""}</b><small class=lvq>\u201c${h(LV_PH[x.ph])}\u201d</small><small>${h(ship(x.from))} · ${lvAgo(x.t)}</small></span>${x.can&&!x.back?`<button class="btn sec lvbk" data-lvbk=${x.from}><span>Hail back</span></button>`:""}</div>`;
-  for(const x of out)o+=`<div class="row lvout"><span class=t>To ${h(nm(x.to))} · \u201c${h(LV_PH[x.ph])}\u201d<small class="lvs s${x.st}">${lvSt(x)}</small></span></div>`;
+  for(const x of out)o+=`<div class="row lvout"><span class=t>To ${h(nm(x.to))} · \u201c${h(LV_PH[x.ph])}\u201d<small class="lvs s${x.st}">${lvSt(x)}</small></span>${x.st<3?`<button class="btn sec lvbk" data-lvcx="${h(x.id)}"${LVCX===x.id?" disabled":""}><span>${LVCX===x.id?"Taking it back\u2026":"Cancel hail"}</span></button>`:""}</div>`;
   if(!inn.length&&!out.length)o+=`<p class=dim>Send a crewmate a few words. They wait on their screen even if you're far apart, and their ship's light flickers when one lands (not in quiet hours).</p>`;
   const r=lvRest();if(r)o+=`<p class="fine lvrest">${r}</p>`;
   return o+`<button class="btn sec" data-go=hail style="margin-top:var(--s3)"><span>Hail a crewmate</span><i>${Math.max(0,LV.max-LV.today)} left today</i></button></section>`;
@@ -107,6 +107,12 @@ function hailScreen(to){
   if(to!=null&&LVT==null)LVT=to;
   const c=[...Array(N).keys()].filter((j)=>j!==S.here&&S.cond[j]!==2);
   let o=`<div class=kick><div class=lab>Hail · from ${h(ship(S.here))}</div><h1>${LVB?"Hail back":"Hail a crewmate"}</h1><p class=dim>${LVT!=null&&lvNl(lvPeer(LVT))?`${h(nm(LVT))}'s ship has its hail light off, so your words wait on their screen as a note.`:"Your words wait on their screen, and their ship's light flickers for a few seconds (not in quiet hours)."} Out of range? Your ship keeps trying while they're around.</p></div>`;
+  const pend=(LV&&LV.out||[]).filter((x)=>x.st<3).slice().reverse();
+  if(pend.length){
+    o+=`<section><div class=lab><span>On its way</span><span>you can take it back</span></div>`;
+    for(const x of pend)o+=`<div class="row lvout"><span class=t>To ${h(nm(x.to))} · \u201c${h(LV_PH[x.ph])}\u201d<small class="lvs s${x.st}">${lvSt(x)}</small></span><button class="btn sec lvbk" data-lvcx="${h(x.id)}"${LVCX===x.id?" disabled":""}><span>${LVCX===x.id?"Taking it back\u2026":"Cancel hail"}</span></button></div>`;
+    o+=`</section>`;
+  }
   o+=`<section><div class=lab><span>To</span><span>their ship</span></div>`+c.map((j)=>{const p=lvPeer(j),old=lvOld(p),off=lvOff(p),w=lvOnWay(j);return `<button class=row data-lvto=${j} aria-pressed="${LVT===j}"${old||off||w?" disabled":""}><span class=pt>${portrait(j)}</span><span class=t>${h(nm(j))}<small>${old?"Needs the latest ship software":off?"Their ship isn't taking hails right now":w?"Your last hail is on its way":lvNear(j)}</small></span><span class=lvck aria-hidden=true></span></button>`}).join("")+`</section>`;
   o+=`<section><div class=lab><span>Say</span><span>one line</span></div><div class=lvph role=radiogroup aria-label="What to say">${LV_PH.map((p,i)=>`<button role=radio data-lvph=${i} aria-checked="${LVP===i}">${h(p)}</button>`).join("")}</div><p id=lv-e class=err role=alert>${h(LVE)}</p></section>`;
   $("v").innerHTML=o;
@@ -223,12 +229,18 @@ const pollV_lv=pollV;pollV=async function(){
   return j;
 };
 document.addEventListener("click",async(ev)=>{
-  const t=ev.target.closest("[data-lvto],[data-lvph],[data-lvsend],[data-lvbk],[data-lvset],[data-lvtest]");if(!t||t.disabled)return;
+  const t=ev.target.closest("[data-lvto],[data-lvph],[data-lvsend],[data-lvbk],[data-lvcx],[data-lvset],[data-lvtest]");if(!t||t.disabled)return;
   const d=t.dataset;
   if(d.lvtest!=null)return lvTest();
   if(d.lvto!=null){LVT=+d.lvto;LVE="";return view()}
   if(d.lvph!=null){LVP=+d.lvph;LVE="";view();return document.querySelector(`[data-lvph="${LVP}"]`)?.focus()}
   if(d.lvbk!=null){LVT=+d.lvbk;LVB=1;LVP=null;return go("hail")}
+  if(d.lvcx!=null){
+    if(LVCX)return;
+    LVCX=d.lvcx;LVE="";view();
+    try{await api("/api/live/cancel",{id:d.lvcx});LVCX=0;await lvLoad();return view()}
+    catch(e){LVCX=0;if(!tok)return;LVE=e.message||"That didn't go. Try again.";return view()}
+  }
   if(d.lvsend!=null){
     LVS=1;LVE="";view();
     try{await api("/api/live/hail",{to:LVT,ph:LVP,back:LVB});LVS=0;LVT=LVP=null;LVB=0;await lvLoad();return go("home")}

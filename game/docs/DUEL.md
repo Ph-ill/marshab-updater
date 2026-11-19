@@ -124,7 +124,7 @@ one per hour to keep authenticated junk from filling the shared out-box.
   (os.urandom) made when the layout locks. The commit goes out in INVITE/ACCEPT; the layout
   and salt only in REVEAL, at the end.
 * **Versioning:** v in INVITE/ACCEPT. A ship that gets a v it doesn't speak answers
-  END why=4 and the page says the crewmate needs to update. Higher kinds (10+) from a later
+  END why=4 and the page says the crewmate needs to update. Kind 10 is a hail cancel (0.3.8). Higher kinds (11+) from a later
   release are acked and dropped. A later protocol may add kinds; it keeps these meanings.
 * **Ships that can't duel:** Hail's capability bit says a ship reads items, not which
   kinds. A 0.3.0 ship acks an INVITE and never answers, so an invitation acked with no

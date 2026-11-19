@@ -44,11 +44,35 @@ def _hl(sh):
 
 
 
+def _apply_cx(L, j):
+    """Drop inbox rows whose hail was cancelled (kind 10), including ones already
+    marked seen. Receipts after a local cancel do not overwrite state 5
+    (drain already refuses 5 < 2 or 5 < 3)."""
+    cx = getattr(L, "cx", None) or ()
+    if not cx or not j.get("i"):
+        return False
+    kept, n = [], len(j["i"])
+    for h in j["i"]:
+        gone = False
+        for row in cx:
+            if row[0] == h[1] and row[1] == h[0]:
+                gone = True
+                break
+        if not gone:
+            kept.append(h)
+    if len(kept) == n:
+        return False
+    j["i"] = kept
+    return True
+
+
 def drain(sh, j, rc=False):
     """Move what lvlive took off the air into hail.json (rc: only the receipts)."""
     L = sh.live
-    if L is None or not L.inb:
+    if L is None:
         return False
+    if not L.inb:
+        return _apply_cx(L, j)
     now = _ep(sh)
     left = []
     for z in L.inb:
@@ -78,6 +102,7 @@ def drain(sh, j, rc=False):
             j["i"].append([hexlify(b[2:5]).decode(), frm, b[5] % PHRASES, a, 0, b[6] & 1,
                            b[7] if b[7] < 16 else frm, sm])
     L.inb[:] = left
+    _apply_cx(L, j)
     j["i"] = j["i"][-HIN:]
     _in().keep(L)
     return True
@@ -205,7 +230,7 @@ def hail(sh, you, b):
     if len(L.out) >= 18:
         return 429, {"err": "Your out-box is full. Waiting moves stay until delivered."}
     for h in j["o"]:
-        if h[4] == 4:
+        if h[4] >= 4:                 # didn't go, or cancelled (0.3.8): you can hail again
             continue
         if h[1] == to and h[4] < 2:
             return 429, {"err": "Your last hail is still on its way."}
@@ -246,3 +271,59 @@ def seen(sh, b):
 
 
 
+
+def cancel(sh, b):
+    """POST /api/live/cancel {id}: take back an outgoing hail that has not been
+    seen. Drops it from the out-box if it is still waiting, and queues a kind-10
+    item so the other ship clears it when you next meet (or at once if in range).
+    Idempotent: a second tap is 200 and does not queue another item."""
+    hid = b.get("id")
+    if not isinstance(hid, str) or not hid:
+        return 400, {"err": "Pick a hail."}
+    L = sh.live
+    j = _hl(sh)
+    drain(sh, j)
+    found = None
+    for h in j["o"]:
+        if h[0] == hid:
+            found = h
+            break
+    if found is None:
+        return 404, {"err": "That hail isn't here."}
+    if found[4] == 5:
+        return 200, {"ok": True, "id": hid}
+    if found[4] >= 3:          # seen, or didn't go
+        return 409, {"err": "It's too late to take that hail back."}
+    to = found[1]
+    delivered = found[4] >= 2
+    if L is not None:
+        from binascii import unhexlify
+        try:
+            ref = unhexlify(hid)
+        except (ValueError, TypeError):
+            return 400, {"err": "Pick a hail."}
+        if len(ref) != 3:
+            return 400, {"err": "Pick a hail."}
+        # pull the hail itself back so it cannot go out after this cancel
+        out, i = L.out, len(L.out)
+        while i:
+            i -= 1
+            o = out[i]
+            if o[0] == to and o[1][0] == 1 and o[1][2:5] == ref:
+                del out[i]
+        already = any(o[0] == to and o[1][0] == 10 and o[1][5:8] == ref for o in L.out)
+        if not already and len(L.out) < 24:
+            _in().send(L, 10, to, ref)
+        elif not already and delivered:
+            # they may already have it; don't pretend the cancel went
+            return 429, {"err": "Your out-box is full. Try again after delivery."}
+        else:
+            # hail pulled back, or a cancel is already queued: persist the out-box
+            try:
+                _in().keep(L)
+            except Exception:
+                pass
+    found[4] = 5
+    _in().save(sh.data + F, j)
+    sh.say("live: cancelled hail to ship %d" % (to + 1))
+    return 200, {"ok": True, "id": hid}

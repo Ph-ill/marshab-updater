@@ -97,6 +97,7 @@ def load(path):
 
 
 EPOCHS = 4              # a sender's past epochs kept (lk.hw: [epoch, seq, older epochs...])
+CX_MAX = 16             # cancelled hail refs kept (lk.cx): a late copy of the same hail is dropped
 
 
 def forget(sh):
@@ -131,7 +132,8 @@ def boxparts(lk):
             yield (", " if i else "") + json.dumps((o[0], hexlify(o[1]).decode(), o[2]))
         yield "]"
     yield ', "h": ' + json.dumps(dict((str(k), v) for k, v in lk.hw.items()))
-    yield ', "l": ' + json.dumps(lk.lc) + "}"
+    yield ', "l": ' + json.dumps(lk.lc)
+    yield ', "x": ' + json.dumps(getattr(lk, "cx", None) or []) + "}"
 
 
 def mac(lk, frm, b):
@@ -211,9 +213,14 @@ def take(lk, s, m, off):
         lk.hw[frm] = q                      # between the two and the repeat still goes in)
         lk.n["in"] += 1
         ch = 1
-        if b[0] == 1 and not od:        # a hail: the light (a "seen" is quiet)
+        if b[0] == 1 and not od and dl == 1:    # a hail that was kept: the light (a "seen" is quiet)
             fl = 1
-        elif dl:
+        elif b[0] == 10 and dl == 2:
+            # a cancel that took back an unseen hail: stop a flicker already playing,
+            # and don't start one if the hail was also in this trailer
+            _halt_flick(lk)
+            fl = 0
+        elif dl is True:
             fl = 2
     if ch:
         keep(lk)                        # (raises: Link.take puts RAM back, nothing acked)
@@ -228,16 +235,101 @@ def take(lk, s, m, off):
                 pass
 
 
+def _cx_has(lk, frm, ref):
+    x = getattr(lk, "cx", None) or ()
+    r = hexlify(bytes(ref)).decode()
+    for row in x:
+        if row[0] == frm and row[1] == r:
+            return True
+    return False
+
+
+def _cx_add(lk, frm, ref):
+    r = hexlify(bytes(ref)).decode()
+    x = getattr(lk, "cx", None)
+    if x is None:
+        x = lk.cx = []
+    for row in x:
+        if row[0] == frm and row[1] == r:
+            return
+    x.append([frm, r])
+    if len(x) > CX_MAX:
+        del x[0:len(x) - CX_MAX]
+
+
+def _halt_flick(lk):
+    try:
+        import lvflick
+        lvflick.stop(lk.sh)
+    except Exception:
+        pass
+    finally:
+        import lvship
+        lvship.drop("lvflick")
+
+
+def take_cancel(lk, frm, b):
+    """Kind 10: take back the hail whose ref is body[:3]. Returns 2 if an unseen
+    copy was removed (inb or already drained to hail.json), else None. Never keeps
+    the cancel item itself (older firmware already acks and drops kinds 10+)."""
+    ref = bytes(b[5:8])
+    _cx_add(lk, frm, ref)
+    unseen = False
+    q = lk.inb
+    i = len(q)
+    while i:
+        i -= 1
+        z = q[i]
+        if z[0] == frm and z[1][0] == 1 and z[1][2:5] == ref:
+            unseen = True
+            del q[i]
+    # a "seen" queued for this hail must not go out after a cancel (same-session race)
+    out = lk.out
+    i = len(out)
+    while i:
+        i -= 1
+        o = out[i]
+        if o[0] == frm and o[1][0] == 2 and o[1][5:8] == ref:
+            del out[i]
+    # hail.json may already hold a drained copy (the phone has been opened)
+    try:
+        import json
+        p = lk.sh.data + L.F
+        j = load(p)
+        if j and j.get("i"):
+            hid = hexlify(ref).decode()
+            kept, dropped = [], False
+            for h in j["i"]:
+                if h[1] == frm and h[0] == hid:
+                    dropped = True
+                    if not h[4]:
+                        unseen = True
+                else:
+                    kept.append(h)
+            if dropped:
+                j["i"] = kept
+                save(p, j)
+    except Exception:
+        pass
+    return 2 if unseen else None
+
+
 def _in(lk, frm, b):
+    if b[0] == 10:
+        return take_cancel(lk, frm, b)
     if 3 <= b[0] <= 9:
         return duel_take(lk, frm, b[0], b[5:16])
     if b[0] > 9:                        # a later release's kind: acked, not kept
+        return
+    if b[0] == 1 and _cx_has(lk, frm, b[2:5]):
+        # cancelled first (or a late copy after a cancel): acked, not kept
         return
     q = lk.inb
     if len(q) >= L.MAXIN:               # full (nobody's opened the game): the oldest goes
         q.pop(0)
     c = lk.sh.clock                     # when it came: the phone's clock if known, and the
     q.append([frm, b, int(c.epoch_ms()) if c.known() else None, lk.now])    # loop's ms
+    return 1 if b[0] == 1 else None
 
 
 def duel_take(lk, frm, kind, b):
