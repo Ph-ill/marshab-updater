@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.8",
+      "channel": "test",
+      "date": "2026-11-18",
+      "label": "Cancel a hail you've sent",
+      "path": "/firmware/releases/0.3.8/release.json",
+      "bytes": 282075,
+      "files": 52,
+      "frozen": "2661c2144844",
+      "notes": [
+        "You can now cancel a hail you've sent."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.7",
       "channel": "test",
       "date": "2026-11-18",
@@ -247,7 +262,7 @@
     }
   ],
   "heads": {
-    "test": "0.3.7",
+    "test": "0.3.8",
     "bench": "0.0.2-coex"
   }
 }
