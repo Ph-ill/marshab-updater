@@ -155,8 +155,9 @@ class Split(unittest.TestCase):
             # ...and the frozen ones fixed since (lvbatt: the VCELL-not-ready fix on ota-hwfix,
             # and the charger pin read with no pull by default; lvledcfg: ship.json written
             # whole, temp file + read back + rename, since 0.2.7; lvphone: authentication
-            # independent of story/launch, allowing authorized clock recovery, review1 R2)
-            fixed = ("lvbatt", "lvledcfg", "lvphone")
+            # independent of story/launch, allowing authorized clock recovery, review1 R2;
+            # lvcal: start the voyage again from today, since 0.3.11)
+            fixed = ("lvbatt", "lvledcfg", "lvphone", "lvcal")
             new = [b + ".mpy" for b in G.BOARD if b not in core["board"] or b in fixed]
             self.assertEqual(CM.changed_files(core, d),
                              [b + ".mpy" for b in G.BOARD if b not in core["board"] or b in fixed or b == "lvweb"]

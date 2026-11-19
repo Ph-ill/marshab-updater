@@ -147,24 +147,77 @@ def change(phone, req):
 # "Reset this ship" (the page's Settings, POST /api/reset from main.py's ota_route): the players' progress goes, the ship's setup stays.
 # Deleted from /data: log.bin (every record this ship holds: taps, votes, gifts; other ships
 # in range sync theirs back), days.bin (the days told), clock.json (the saved flight day and
-# time; the launch date in ship.json brings the day back once a phone tells the time),
-# local.bin (what phones opened and saw), and funnel.bin (the phones the home-screen funnel
-# has seen, and which opened the game from the icon: board/lvfunnel.py). Sign-ins and
-# sessions live in RAM, so the restart forgets them.
+# time; without a new launch date, the one in ship.json brings the day back once a phone
+# tells the time), local.bin (what phones opened and saw), funnel.bin (the phones the
+# home-screen funnel has seen, and which opened the game from the icon: board/lvfunnel.py),
+# hail.json, and duel.json (the asteroid duel: game progress, so a reset starts it over too).
+# Sign-ins and sessions live in RAM, so the restart forgets them.
 # fault.json (board/lvsafe.py: the crash count) goes too: a reset ship starts with a clean count.
-# Kept: ship.json (identity, hotspot password, ota_src, the Ship light), crew.json (the crew
-# codes, including any changed in Settings: board/lvcode.py), their backups ship.json.bak and
-# crew.json.bak (lvsafe), the installed software and ota/ (the update state and rollback
-# copy), maint/safe.
-RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin", "fault.json", "hail.json")
+# Kept: ship.json (identity, hotspot password, ota_src, the Ship light; launch_date and day
+# stay as they were unless the request starts the voyage again from today), crew.json (the
+# crew codes, including any changed in Settings: board/lvcode.py), their backups
+# ship.json.bak and crew.json.bak (lvsafe; a from-today reset rewrites both ship.json and
+# its .bak with the new launch date, atomically), the installed software and ota/ (the
+# update state and rollback copy), maint/safe.
+# Starting from today: POST /api/reset {"confirm": N, "from_today": true, "date":
+# "YYYY-MM-DD"} with the phone's clock in X-Phone-Time / X-Phone-TZ. The date is the
+# phone's local calendar day; the ship checks the format and that it matches the clock,
+# then sets launch_date so Day 1 is now (yesterday if the local time is still before
+# day_start, default 06:00). ship.json is written first (tmp+rename, then .bak), then
+# the 200; a failed write is 400/500 and nothing is deleted. The file is never printed.
+RESET = ("log.bin", "days.bin", "clock.json", "local.bin", "funnel.bin", "fault.json", "hail.json", "duel.json")
+
+
+
+def _launch_today(sh, body, req):
+    """The YYYY-MM-DD to write, or None (bad date, missing/unusable phone time)."""
+    import lvcal
+    return lvcal.launch_today(
+        body.get("date"),
+        req.header("x-phone-time"),
+        req.header("x-phone-tz"),
+        lvcal.parse_hm(sh.cfg.get("day_start")),
+    )
+
+
+def _set_launch(sh, launch):
+    """Atomically set ship.json launch_date and day=1, then the .bak. True, or False
+    (the file as it was). Never prints or logs the file (it holds the hotspot password
+    and the fleet key)."""
+    import json
+    import lvledcfg
+    path = sh.data + "/ship.json"
+    try:
+        _hit("open")
+        with open(path) as f:
+            c = json.load(f)
+    except Exception:
+        return False
+    if not lvledcfg.valid(c):
+        return False
+    c["launch_date"] = launch
+    c["day"] = 1
+    if not lvledcfg.save(path, c):
+        return False
+    # .bak gets the file as it was written (not a second dumps: key order can
+    # differ on MicroPython), so a lost ship.json can't bring the old start date back.
+    try:
+        with open(path) as f:
+            text = f.read()
+    except OSError:
+        return True
+    bak(path, text)
+    return True
 
 
 async def reset(lvweb, web, req, w, reboot=None):
     # POST /api/reset {confirm: this ship's number} with a signed-in X-Crew-Token, else
-    # 401/403 and nothing changes. 200 (-> True), then the files go and the board restarts (reboot:
-    # main.py's, for the tests; else machine.reset). Moved here from main.py in 0.3.0 so
-    # its code is only in RAM for the request (main.py imports this module per request and
-    # drops it; the restart task below keeps what it needs).
+    # 401/403 and nothing changes. Optional from_today (JSON true) plus date (the phone's
+    # local YYYY-MM-DD) and the phone-time headers: write the new launch_date first, or
+    # 400/500 and nothing changes. 200 (-> True), then the files go and the board restarts
+    # (reboot: main.py's, for the tests; else machine.reset). Moved here from main.py in
+    # 0.3.0 so its code is only in RAM for the request (main.py imports this module per
+    # request and drops it; the restart task below keeps what it needs).
     try:
         import asyncio
     except ImportError:  # pragma: no cover
@@ -176,11 +229,29 @@ async def reset(lvweb, web, req, w, reboot=None):
     sh = web.ship
     try:
         import json
-        ok = int(json.loads(req.body or b"{}")["confirm"]) == sh.cfg["ship_id"]
+        body = json.loads(req.body or b"{}")
+        if not isinstance(body, dict):
+            body, ok = {}, False
+        else:
+            ok = int(body["confirm"]) == sh.cfg["ship_id"]
     except Exception:
-        ok = False
+        body, ok = {}, False
     if not ok:
         return await lvweb.send_json(w, 403, {"err": "Type this ship's number to confirm."})
+    if body.get("from_today") is True:
+        launch = _launch_today(sh, body, req)
+        if not launch:
+            return await lvweb.send_json(w, 400, {
+                "err": "The ship needs a date and the time from your phone to start today."
+            })
+        if not _set_launch(sh, launch):
+            return await lvweb.send_json(w, 500, {
+                "err": "The ship couldn't start the voyage from today. Nothing has changed."
+            })
+    elif "from_today" in body:
+        return await lvweb.send_json(w, 400, {
+            "err": "The ship needs a date and the time from your phone to start today."
+        })
     await lvweb.send_json(w, 200, {"ok": True, "restart_ms": 1500})
 
     async def later():

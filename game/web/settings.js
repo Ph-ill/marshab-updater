@@ -4,10 +4,12 @@
 // (web/batt.js; only on a ship that has one), signing this phone out, and resetting the ship.
 // The crew page is only about the crew; the four tabs stay as they are. Hooked onto
 // app.html's shipTop/view from here, like the others; loaded last, so it sees their hooks.
-// Reset this ship (board/main.py reset_ship, POST /api/reset): only for a signed-in crew
+// Reset this ship (board/lvcode.py reset, POST /api/reset): only for a signed-in crew
 // member who also types this ship's number; the ship deletes the players' progress and
-// restarts (keeps its settings, crew codes and software), then this page forgets everything
-// it kept in this browser and starts again at the sign-in.
+// restarts (keeps its name, Wi-Fi, crew codes and software). A checked "Start the voyage
+// again from today" (on by default) also sends from_today and this phone's local date, so
+// the ship sets launch_date and you begin on day 1 after the restart. Then this page
+// forgets everything it kept in this browser and starts again at the sign-in.
 // Change your code (board/lvcode.py, POST /api/code {old, new}): under Sign out, above
 // Reset. Your code now, then the new one twice, 4 digits each (the sign-in's own rule). The
 // page checks the format and that the two new ones match before asking; the ship checks the
@@ -16,6 +18,7 @@
 // Test light, under the Ship light switch: see ledtHTML below.
 const SET_GEAR="M15.9 8L18 8.4v3.2l-2.1.4-.4.8 1.3 1.7-2.3 2.3-1.7-1.3-.8.4-.4 2.1H8.4L8 15.9l-.8-.4-1.7 1.3-2.3-2.3 1.3-1.7-.4-.8L2 11.6V8.4L4.1 8l.4-.8-1.3-1.7 2.3-2.3 1.7 1.3.8-.4.4-2.1h3.2l.4 2.1.8.4 1.7-1.3 2.3 2.3-1.3 1.7ZM7 10a3 3 0 1 0 6 0a3 3 0 1 0-6 0Z";
 let RST=null;   // the reset row: null, "ask" (typing the number), "send", or an error message
+let RSTF=true;  // start the voyage again from today: default on (the no-spoiler choice)
 let CHG=null;   // the code row: null, "ask" (the form), "send", "done", or {err, f: the field to fix}
 let CHGV=null;  // what was typed, kept across a redraw while the form is open
 const shipTop1=shipTop;shipTop=function(){
@@ -25,6 +28,8 @@ const shipTop1=shipTop;shipTop=function(){
   s.insertAdjacentHTML("beforeend",`<button class="gear${dot?" dot":""}" data-go=set aria-label="Settings${dot?", update ready":""}"${route==="set"?" aria-current=page":""}><svg viewBox="0 0 20 20" aria-hidden=true><path d="${SET_GEAR}"/></svg></button>`);
 };
 function setNo(){return S.here+1}
+function rstDate(){const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function rstBody(n){const b={confirm:+n};if(RSTF){b.from_today=true;b.date=rstDate()}return b}
 function setScreen(){
   shipTop();
   const k=a2Kind(),b=S.bat,n=setNo();
@@ -37,7 +42,7 @@ function setScreen(){
   o+=chgSect(n);
   o+=`<section id=set-rst class=rst><div class="lab r"><span>Reset this ship</span><span>can't be undone</span></div><p class=dim>Starts LV-${n} over: everyone's progress on it goes (the log, votes, gifts, hails, sign-ins) and it restarts. Its name, Wi-Fi password and software stay. Ships in range may sync their records back.</p>`;
   if(RST==null)o+=`<button class="btn dgr" data-rst=ask><span>Reset this ship</span><i>LV-${n}</i></button>`;
-  else o+=`<label class=rstl for=rstn>Type <b class=m>${n}</b>, this ship's number, to confirm</label><input id=rstn class=m inputmode=numeric autocomplete=off maxlength=2 aria-describedby=rste><p id=rste class=err role=alert>${RST!=="ask"&&RST!=="send"?h(RST):""}</p><div class=rstb><button class="btn dgr" data-rst=go disabled><span>${RST==="send"?"Resetting":"Reset"}</span><i>restarts</i></button><button class="btn sec" data-rst=no><span>Cancel</span></button></div>`;
+  else o+=`<label class=rstl for=rstn>Type <b class=m>${n}</b>, this ship's number, to confirm</label><input id=rstn class=m inputmode=numeric autocomplete=off maxlength=2 aria-describedby=rste><p id=rste class=err role=alert>${RST!=="ask"&&RST!=="send"?h(RST):""}</p><label class=rstf><input type=checkbox id=rstf${RSTF?" checked":""}${RST==="send"?" disabled":""}> Start the voyage again from today</label><p class=rsth>You'll be on day 1 after the restart. Leave this off to clear progress but keep the original start date.</p><div class=rstb><button class="btn dgr" data-rst=go disabled><span>${RST==="send"?"Resetting":"Reset"}</span><i>restarts</i></button><button class="btn sec" data-rst=no><span>Cancel</span></button></div>`;
   o+=`</section>`;
   $("v").innerHTML=o;
   dock("","set");
@@ -148,6 +153,7 @@ document.addEventListener("input",(ev)=>{
   if(t.id!=="rstn")return;
   const b=document.querySelector("[data-rst=go]");if(b)b.disabled=RST==="send"||ev.target.value.trim()!==String(setNo());
 });
+document.addEventListener("change",(ev)=>{if(ev.target.id==="rstf")RSTF=!!ev.target.checked});
 document.addEventListener("keydown",(ev)=>{if(ev.key==="Enter"&&/^chg[012]$/.test(ev.target.id)){ev.preventDefault();if(ev.target.id==="chg2")chgGo();else $("chg"+(+ev.target.id[3]+1))?.focus()}});
 document.addEventListener("click",(ev)=>{
   const el=ev.target.closest("button[data-chg]");if(!el||el.disabled)return;
@@ -159,10 +165,10 @@ document.addEventListener("click",(ev)=>{
 document.addEventListener("click",async(ev)=>{
   const el=ev.target.closest("button[data-rst]");if(!el||el.disabled)return;
   const k=el.dataset.rst;
-  if(k==="ask"){RST="ask";view();return $("rstn")?.focus()}
-  if(k==="no"){RST=null;return view()}
+  if(k==="ask"){RST="ask";RSTF=true;view();return $("rstn")?.focus()}
+  if(k==="no"){RST=null;RSTF=true;return view()}
   const v=$("rstn").value.trim();if(v!==String(setNo()))return;
   RST="send";el.disabled=true;el.querySelector("span").textContent="Resetting";
-  try{const j=await api("/api/reset",{confirm:+v});return setDone(j.restart_ms)}
-  catch(e){if(!tok)return;RST=e.message||"That didn't work. Try again.";view();const i=$("rstn");if(i){i.value=v;i.focus();i.dispatchEvent(new Event("input",{bubbles:true}))}}
+  try{const j=await api("/api/reset",rstBody(v));return setDone(j.restart_ms)}
+  catch(e){if(!tok)return;RST=e.message||"That didn't work. Try again.";view();const i=$("rstn");if(i){i.value=v;i.focus();i.dispatchEvent(new Event("input",{bubbles:true}))}const f=$("rstf");if(f)f.checked=RSTF}
 });

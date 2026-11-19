@@ -307,11 +307,16 @@ logs or prints a code.
 ## Reset this ship
 
 It's for starting a ship over, for example to try the first-time flow again, without
-opening the case or a USB cable.
+opening the case or a USB cable. From 0.3.11 you can also start the voyage again from
+today, so the calendar begins at day 1 instead of jumping back to today's later day.
 
 **On the phone.** Tap **Reset this ship**, then type the ship's number (the N in its Wi-Fi
-name, LV-N). **Reset** stays off until the number matches. The page sends
-`POST /api/reset {"confirm": N}` with its crew token. When the ship says yes, the page:
+name, LV-N). **Reset** stays off until the number matches. **Start the voyage again from
+today** is on by default: you'll be on day 1 after the restart. Leave it off to clear
+progress but keep the original start date. With it on, the page sends
+`POST /api/reset {"confirm": N, "from_today": true, "date": "YYYY-MM-DD"}` (the phone's
+local date) with its crew token and the phone's clock headers. With it off, only
+`{"confirm": N}`. When the ship says yes, the page:
 
 - clears this browser's storage for the ship's address (`localStorage.clear()` and
   `sessionStorage.clear()`: `lv.a2hs`, `lv.ota` with any downloaded update, `lv-briefed`,
@@ -327,34 +332,50 @@ is. There's no other way in:
 - not POST: 404;
 - no signed-in crew token: 401;
 - no `confirm`, a `confirm` that isn't this ship's `ship_id`, or a body that isn't JSON:
-  403.
+  403;
+- `from_today` set but not JSON true, or true without a usable `date` and phone-time
+  headers (the date must be `YYYY-MM-DD`, a real day, in range, and the same local day as
+  the clock): 400. Nothing changes.
 
-Nothing changes on a refusal. On success the ship answers 200 `{ok, restart_ms}`. A second
-later it deletes the files and restarts (`machine.reset()`). There's no await between the
-deletes and the restart, so nothing can write a file back in between.
+Nothing changes on a refusal. On a from-today request the ship writes `launch_date` (and
+`day` 1) to `ship.json` first, whole (temp file, read back, rename), then the `.bak`, so
+an old start date can't come back if `ship.json` is lost before the next boot. A write
+that fails is 500 and nothing is deleted; `ship.json` is never logged. On success the
+ship answers 200 `{ok, restart_ms}`. A second later it deletes the files and restarts
+(`machine.reset()`). There's no await between the deletes and the restart, so nothing can
+write a file back in between.
 
-**Deleted from `/data`** (`main.RESET`):
+If the phone's local time is still before the day's start (06:00 by default, or
+`day_start` in `ship.json`), the launch date written is yesterday, so you are already on
+day 1 rather than waiting until 06:00. Deleting `clock.json` and `days.bin` (and changing
+the launch date, which is part of `clock.json`'s key) means a phone telling the time
+afterwards yields day 1; the saved day can't come back.
+
+**Deleted from `/data`** (`lvcode.RESET`):
 
 | File | What it is |
 |---|---|
 | `log.bin` | every record this ship holds: taps, votes, answers, gifts (other ships in Bluetooth range sync their own records back) |
 | `days.bin` | the days told so far |
-| `clock.json` | the saved time and flight day (the launch date in `ship.json` brings the day back as soon as a phone tells the time) |
+| `clock.json` | the saved time and flight day |
 | `local.bin` | what phones opened and saw (daily drops) |
+| `funnel.bin` | phones the home-screen funnel has seen |
+| `fault.json` | the crash count (a reset ship starts with a clean count; `fault.last.json` stays) |
+| `hail.json` | hails waiting on this ship |
+| `duel.json` | the asteroid duel (game progress) |
 
 Sign-ins and sessions (crew tokens, remembered phones, who has signed in since boot) live
-in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
-`main.RESET` once it exists.
+in RAM only, so the restart forgets them.
 
 **Kept:**
 
-- `/data/ship.json`: identity, hotspot password, `ota_src`, launch date, the Ship light;
+- `/data/ship.json`: identity, hotspot password, `ota_src`, the Ship light; the launch
+  date and `day` stay as they were unless you start the voyage again from today;
 - `/data/crew.json`: the crew codes;
 - `/data/ship.json.bak` and `/data/crew.json.bak`: the boot check's last good copies
-  (0.2.7, `board/lvsafe.py`), rewritten only when the file really changed;
-- `/data/fault.json` and `/data/fault.last.json`: crash counts and boot notes
-  (`fault.json` is set aside as `fault.last.json` once the ship has run 10 minutes or an
-  update is kept);
+  (0.2.7, `board/lvsafe.py`), rewritten only when the file really changed (a from-today
+  reset updates `ship.json.bak` at once);
+- `/data/fault.last.json`: the last crash-count note set aside after a healthy run;
 - `/data/maint` and `/data/safe`;
 - the installed software;
 - `ota/`: the update state and the rollback copy.
@@ -408,9 +429,19 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
   - a confirm that isn't a number, or a body that isn't JSON;
   - a GET.
 
-  On success it answers before deleting anything, then deletes exactly the four files and
-  restarts. `ship.json`, `crew.json`, `main.py`, the page and `ota/` stay untouched. A second
-  reset is fine too, and other paths still reach the game.
+  On success it answers before deleting anything, then deletes exactly the progress files
+  in `lvcode.RESET` (including `duel.json`) and restarts. `crew.json`, `main.py`, the page
+  and `ota/` stay untouched; `ship.json` stays untouched unless the request starts the
+  voyage from today. A second reset is fine too, and other paths still reach the game.
+
+  Starting from today (`from_today` true, a valid `date`, and phone-time headers): the
+  ship writes `launch_date` and `day` 1 atomically (and the `.bak`) before the 200; a
+  bad date, a date that doesn't match the clock, missing headers, or a non-true
+  `from_today` is 400 and nothing changes; a failed write is 500, `ship.json` as it was,
+  no `.new` left. Before 06:00 (or `day_start`) the launch date is yesterday, otherwise
+  today; after the deletes, `Calendar` with the same phone time yields day 1.
+  Auth still requires the crew token and the ship number when `from_today` is set. The
+  file is never printed.
 - **`tests/app_e2e.mjs`**, against the board's own server on CPython and the frozen build:
   - the gear;
   - the section order;
@@ -425,7 +456,8 @@ in RAM only, so the restart forgets them. The funnel's seen-phones store goes in
   - the gear's label, size and place;
   - every section;
   - the Ship light from Settings, and the battery facts;
-  - the refusals, and the typed confirm (off for a wrong number);
+  - the refusals, and the typed confirm (off for a wrong number), with **Start the voyage
+    again from today** on by default;
   - after a reset: storage empty, the old token refused, back at the sign-in, and the
     first-time flow on the next sign-in;
   - Sign out;

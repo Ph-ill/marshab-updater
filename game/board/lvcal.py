@@ -74,6 +74,64 @@ def flight_day(lm, launch, season, start=START):
     return 0 if d < 1 else season if d > season else d
 
 
+def civil_from_days(z):
+    """Year, month, day for days since 1970-01-01 (inverse of days_from_civil)."""
+    z += 719468
+    era = z // 146097
+    doe = z - era * 146097
+    yoe = (doe - doe // 1460 + doe // 36524 - doe // 146096) // 365
+    y = yoe + era * 400
+    doy = doe - (365 * yoe + yoe // 4 - yoe // 100)
+    mp = (5 * doy + 2) // 153
+    d = doy - (153 * mp + 2) // 5 + 1
+    m = mp + 3 if mp < 10 else mp - 9
+    if m <= 2:
+        y += 1
+    return y, m, d
+
+
+def date_str(z):
+    """YYYY-MM-DD for days since 1970-01-01."""
+    y, m, d = civil_from_days(z)
+    return "%04d-%02d-%02d" % (y, m, d)
+
+
+def launch_today(date, epoch_ms, tz_min, start=START):
+    """The launch_date that makes this phone-local instant Day 1.
+
+    date is the phone's local calendar day (YYYY-MM-DD). epoch_ms and tz_min are
+    the same phone's clock (X-Phone-Time, X-Phone-TZ: ms since 1970 UTC, minutes
+    east of UTC). Day 1 starts at start minutes after midnight (default 06:00).
+    Before that, yesterday is the launch date, so the day is already 1. The date
+    must be a real day in 2000-2100 and must match the local day of the clock.
+    Returns the YYYY-MM-DD string, or None if any input is unusable. Never
+    prints the inputs (a caller may have loaded them next to ship.json).
+    """
+    z = parse_date(date)
+    if z is None:
+        return None
+    if isinstance(epoch_ms, bool) or isinstance(tz_min, bool):
+        return None
+    try:
+        epoch_ms = int(epoch_ms)
+        tz_min = int(tz_min)
+    except (TypeError, ValueError):
+        return None
+    from lv.clock import EPOCH_MIN, EPOCH_MAX
+    if not (EPOCH_MIN <= epoch_ms <= EPOCH_MAX) or not (-720 <= tz_min <= 840):
+        return None
+    lm = epoch_ms // 60000 + tz_min
+    if lm // 1440 != z:
+        return None
+    start = parse_hm(start)
+    if (lm % 1440) < start:
+        z -= 1
+    y, m, d = civil_from_days(z)
+    if not (2000 <= y <= 2100):
+        return None
+    return "%04d-%02d-%02d" % (y, m, d)
+
+
 class Calendar:
     def __init__(self, cfg, clock, season, data="/data", say=print):
         self.clock = clock

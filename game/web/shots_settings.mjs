@@ -262,6 +262,8 @@ await p.fill("#rstn", String(no + 1));
 ok("reset: a wrong number keeps it off", await p.$eval("[data-rst=go]", (e) => e.disabled));
 await p.fill("#rstn", String(no));
 ok("reset: the right number turns it on", await p.$eval("[data-rst=go]", (e) => !e.disabled));
+ok("reset: start-from-today is on by default", await p.$eval("#rstf", (e) => e.checked && e.closest("label").textContent.includes("Start the voyage again from today")));
+ok("reset: the from-today help is second person and mentions day 1", await p.$eval(".rsth", (e) => /You'll be on day 1 after the restart/.test(e.textContent)));
 await center(p, "#set-rst");
 await shot(p, "set-05-reset-confirm");
 await p.evaluate(() => { localStorage.setItem("lv.a2hs", "1"); localStorage.setItem("lv-briefed", "1"); });
