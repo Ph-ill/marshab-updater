@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.11",
+      "channel": "test",
+      "date": "2026-11-19",
+      "label": "Start your voyage again from today in Settings",
+      "path": "/firmware/releases/0.3.11/release.json",
+      "bytes": 292442,
+      "files": 54,
+      "frozen": "2661c2144844",
+      "notes": [
+        "You can now start your voyage again from today in Settings."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.10",
       "channel": "test",
       "date": "2026-11-19",
@@ -292,7 +307,7 @@
     }
   ],
   "heads": {
-    "test": "0.3.10",
+    "test": "0.3.11",
     "bench": "0.0.2-coex"
   }
 }
