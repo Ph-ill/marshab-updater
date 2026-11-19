@@ -1,5 +1,6 @@
 {
   "_about": "What's new in each release, for players: Settings > Ship software (the update notice) and Version history (web/ota.js). 1 to 3 short lines each, plain words, second person, no story spoilers, no technical terms. Checked by game/tools/ota/whatsnew.py; tools/build_release.py puts a release's lines in its index.json entry and release.json (never in version.json or the signed manifest: the ship's heap has no room for them while it updates); offline, the phone shows them from the page the ship serves (www/app.html.gz, signed with the release: web/build.py bakes this file into it). whatsnew.py --index fills older entries.",
+  "0.3.10": ["Your ship's start-up light shows again every time you switch it on."],
   "0.3.9": ["Your ship now flickers to life like an engine flame, then pulses blue until its Wi-Fi is ready and flashes green."],
   "0.3.8": ["You can now cancel a hail you've sent."],
   "0.3.7": ["Your ship's charge light is a little brighter, and your ship now glows blue while it updates."],
