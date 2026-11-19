@@ -138,17 +138,23 @@ three distinct whole numbers, GP23–25 or GP29 (the radio chip's on a Pico W), 
 same PWM slice and channel (GPn and GPn+16). Only a ship with `rgb_pins` ever loads
 `lvrgb`, so no other ship's heap changes.
 
-**The launch light at power-on (0.3.4, earlier since 0.3.5, `board/lvlaunch.py`).** On a
-ship with usable `rgb_pins`, the RGB LED plays a Starship launch once each time the ship
-starts (8 s, `lvlaunch.LAUNCH_MS`), then goes dark and leaves the light to everything else
-as before: a faint cool blue flickering on three times (power on), one slow breath up to a
-pale white-blue (tanking), a sudden deep orange that stutters (ignition), a bright
-orange-yellow whose brightness jitters every 60 ms (full thrust), then white, a dimming
-blue and dark (liftoff). Same curve and `rgb_scale` as Test light. Since 0.3.5 it starts
+**The launch light at power-on (0.3.4, earlier since 0.3.5, a flame and a Wi-Fi
+indication since 0.3.9, `board/lvlaunch.py`).** On a ship with usable `rgb_pins`, the RGB
+LED plays once each time the chip really starts (power-on, a `machine.reset()`, a
+watchdog or a brownout — not again on a soft reset in the same power cycle, such as
+Ctrl-D or an `mpremote` command). Since 0.3.9 that opening is a 5.6 s engine flame
+(`lvlaunch.LAUNCH_MS`): red, orange and yellow, flickering as it builds and then dies
+down. Same curve and `rgb_scale` as Test light. When the flame ends, if the ship's
+hotspot is not up yet, the LED pulses a slow blue breath (about once a second) until it
+is, then two short green flashes, and goes dark (the charge light may resume if the
+cable is in). If the hotspot was already up, the green flashes come straight after the
+flame. If the hotspot never comes, the blue wait stops after 30 s with two dim amber
+blinks. If no hotspot is configured, the flame just goes dark. Since 0.3.5 it starts
 on a `machine.Timer` as soon as the ship can read `rgb_pins` from `ship.json`, before the
-2 s boot window and before the hotspot and BLE come up, so you see it almost as soon as
-you switch the ship on; `main.py`'s `run()` only starts an asyncio task if that Timer play
-never began. Any failure is said in the log and never reaches the boot. It is skipped in
+2 s boot window and before the hotspot and BLE come up, so you see the flame almost as
+soon as you switch the ship on; `main.py`'s `run()` only starts an asyncio task if that
+Timer play never began. The boot log notes `reset_cause` so a brownout is visible.
+Any failure is said in the log and never reaches the boot. It is skipped in
 safe mode and when `/data/safe` or `/data/maint` is present, and stopped on Ctrl-C. It
 never sets the busy mark, so a Test light tap meanwhile is not a 429: the test takes the
 LED over (the launch's PWMs are switched off first). An update's upload starting, or any

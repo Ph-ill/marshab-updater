@@ -9,8 +9,11 @@
 # Ctrl-C works later too (any point in the Python code); the window is for a board whose
 # game would otherwise lock up straight away.
 # The launch light (board/lvlaunch.py, ship.json rgb_pins) starts on a machine.Timer before
-# that window and before the hotspot, so it plays while those run; it is skipped in safe
-# mode and when /data/safe or /data/maint is present, and stopped on Ctrl-C.
+# that window and before the hotspot, so the flame plays while those run; after the flame
+# a blue breath waits for the hotspot, then a short green flash. It is skipped in safe
+# mode and when /data/safe or /data/maint is present, and stopped on Ctrl-C. It plays once
+# per real chip start (power-on, machine.reset(), watchdog, brownout), not again on a
+# soft reset in the same power cycle.
 # Over-the-air updates (lvota.py, lvboot.py): /api/ota* goes to lvota, loaded per request;
 # the captive DNS leaves GitHub's names unanswered so a phone with another route can still
 # fetch an update; and after an update this file reports in (lvota.good()) once the game
@@ -805,7 +808,62 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
 # 0.3.5: start as soon as ship.json names rgb_pins, on a machine.Timer, so the sequence
 # plays through the 2 s boot window and the hotspot and BLE coming up. run()'s launch()
 # is the fallback if the Timer never began (no Timer, or the peek missed a restored file).
+# 0.3.9: LAUNCH_DONE survives lvship.drop("lvlaunch"). start_launch() used to drop the
+# module from sys.modules when the Timer play ended (on_end(forget)); run()'s launch()
+# then imported a fresh lvlaunch with _played False and started the 8 s sequence again.
+# That is the double play seen on a ship whose boot (2 s window + hotspot + BLE) lasted
+# longer than the sequence. LAUNCH_DONE is set when this process begins or skips the
+# play, and launch() / start_launch() honour it even after the name is dropped.
 LAUNCH_STOP = []                    # lvlaunch.stop, while a Timer play is running
+LAUNCH_DONE = False                 # this process already began (or skipped) the launch
+WIFI_HINT = 0                       # 0 still waiting, 1 hotspot up, 2 none configured
+
+
+def _is_soft():
+    """True if this boot is a soft reset of a chip that was already running.
+    Same rule as lvboot.soft(): the chip's uptime is already past 400 ms.
+    Tests may replace this."""
+    try:
+        import sys
+        if sys.platform != "rp2":
+            return False
+        return lvship.ticks_ms() > 400
+    except Exception:
+        return False
+
+
+def _log_reset_cause():
+    """One cheap line for the ship log, so a brownout or watchdog reset is visible.
+    Never raises. Names the constant when the port has it, else the number."""
+    try:
+        import machine
+        c = machine.reset_cause()
+        for n in ("PWRON_RESET", "HARD_RESET", "WDT_RESET", "SOFT_RESET",
+                  "DEEPSLEEP_RESET", "BROWNOUT_RESET"):
+            if getattr(machine, n, None) == c:
+                print("boot: reset_cause %s (%d)" % (n, c))
+                return
+        print("boot: reset_cause %d" % c)
+    except Exception:
+        pass
+
+
+def tell_wifi(st):
+    """Record whether the hotspot is up (1), not configured (2), or still
+    waiting (0). If lvlaunch is already loaded, tell that play now."""
+    global WIFI_HINT
+    WIFI_HINT = st
+    try:
+        import sys
+        if "lvlaunch" not in sys.modules:
+            return
+        import lvlaunch
+        if st == 1:
+            lvlaunch.wifi_up()
+        elif st == 2:
+            lvlaunch.wifi_none()
+    except Exception:
+        pass
 
 
 def peek_rgb(path="/data/ship.json"):
@@ -827,15 +885,30 @@ def peek_rgb(path="/data/ship.json"):
 
 def start_launch(cfg, say=print, host=None):
     # A Timer play, if the board has machine.Timer and cfg names usable rgb_pins.
-    # Returns at once. A failure is said and the boot goes on. Once a boot.
-    # The module stays in sys.modules while it plays, so attach_launch() and run()'s
-    # launch() see the same play (dropping it here would import a fresh, empty module).
-    # on_end drops it when the play ends.
+    # Returns at once. A failure is said and the boot goes on. Once a boot
+    # (LAUNCH_DONE, which survives the module being dropped when the play ends).
+    # The module stays in sys.modules while it plays, so attach_launch(), wifi_up()
+    # and run()'s launch() see the same play.
+    global LAUNCH_DONE
     try:
+        if LAUNCH_DONE:
+            if host is not None:
+                try:
+                    import lvlaunch
+                    if lvlaunch.busy():
+                        lvlaunch.attach(host)
+                except Exception:
+                    pass
+            return
         if not cfg or cfg.get("rgb_pins") is None:
+            return
+        if _is_soft():
+            # Same power cycle: the flame already had its chance on the real start.
+            LAUNCH_DONE = True
             return
         import lvlaunch
         if lvlaunch.busy() or lvlaunch.played():
+            LAUNCH_DONE = True
             if host is not None and lvlaunch.busy():
                 lvlaunch.attach(host)
             return                      # already started this boot (the peek, or it has ended)
@@ -844,6 +917,7 @@ def start_launch(cfg, say=print, host=None):
             lvship.drop("lvrgb")
             lvship.drop("lvlight")
             return
+        LAUNCH_DONE = True
         def forget():
             LAUNCH_STOP[:] = []
             lvship.drop("lvlaunch")
@@ -886,29 +960,66 @@ def stop_launch():
 
 def launch(ship):
     # The launch light (0.3.4, board/lvlaunch.py; 0.3.5 may already be playing on a Timer).
-    # If a Timer play is running, attach it to this ship. If begin() already ran and
-    # finished this boot, do nothing (once a boot). Otherwise start() schedules an asyncio
-    # task (create_task only schedules it), so the web server, the captive DNS and the BLE
-    # sync start meanwhile. Every other ship never loads it. Nothing here can stop the boot:
-    # a failure is said and the game starts as ever.
+    # If a Timer play is running, attach it to this ship. If this process already began
+    # (or skipped) a play — including a Timer play whose module has since been dropped —
+    # do nothing. Otherwise start() schedules an asyncio task (create_task only schedules
+    # it), so the web server, the captive DNS and the BLE sync start meanwhile. Every
+    # other ship never loads it. Nothing here can stop the boot: a failure is said and
+    # the game starts as ever.
+    global LAUNCH_DONE
     try:
         if ship.cfg.get("rgb_pins") is None:
             return
     except Exception:
         return
     try:
+        if LAUNCH_DONE:
+            import lvlaunch
+            if lvlaunch.busy():
+                lvlaunch.attach(ship)
+            if WIFI_HINT == 1:
+                lvlaunch.wifi_up()
+            elif WIFI_HINT == 2:
+                lvlaunch.wifi_none()
+            return
+        if _is_soft():
+            LAUNCH_DONE = True
+            return
         import lvlaunch
         if lvlaunch.busy():
+            LAUNCH_DONE = True
             lvlaunch.attach(ship)
         elif not lvlaunch.played():
-            lvlaunch.start(ship)
+            if lvlaunch.start(ship):
+                LAUNCH_DONE = True
+        else:
+            LAUNCH_DONE = True
+        if WIFI_HINT == 1:
+            lvlaunch.wifi_up()
+        elif WIFI_HINT == 2:
+            lvlaunch.wifi_none()
     except Exception as e:
         print("led: no launch light %r" % (e,))
     finally:
         lvlaunch = None                 # (the task or Timer keeps what it needs)
-        lvship.drop("lvlaunch")
-        lvship.drop("lvrgb")
-        lvship.drop("lvlight")
+        # Leave the module loaded while a Timer play is still running (attach / wifi_up
+        # need the same play). An asyncio fallback holds its own reference; on_end
+        # forget() drops it when the Timer play ends.
+        try:
+            import sys
+            if "lvlaunch" in sys.modules:
+                import lvlaunch as _ll
+                if not _ll.busy():
+                    lvship.drop("lvlaunch")
+                    lvship.drop("lvrgb")
+                    lvship.drop("lvlight")
+            else:
+                lvship.drop("lvrgb")
+                lvship.drop("lvlight")
+        except Exception:
+            lvship.drop("lvlaunch")
+            lvship.drop("lvrgb")
+            lvship.drop("lvlight")
 
 
 def no_setup(e, waited=False):
@@ -932,6 +1043,10 @@ def main():
     # 0.3.5: the launch light starts here, before the 2 s window and the hotspot, when
     # ship.json already names rgb_pins. /data/safe and /data/maint skip it; so does safe
     # mode, after a stop if a peek had already begun it.
+    try:
+        _log_reset_cause()
+    except Exception:
+        pass
     try:
         if not (flag("/data/safe") or flag("/data/maint")):
             start_launch(peek_rgb())
@@ -965,6 +1080,15 @@ def main():
         import lvsetup
         ship, ap, ip, game = lvsetup.prepare(cfg)
         attach_launch(ship)
+        # Tell the running play the hotspot is up (or that none was wanted), so the
+        # blue wait can end or be skipped. Only touch lvlaunch if it is already
+        # loaded (a Timer play is running, or start_launch left it); otherwise
+        # stash the result for run()'s asyncio fallback, and do not import the
+        # module on a ship that skipped the light (no rgb_pins, or a soft reset).
+        try:
+            tell_wifi(1 if ap is not None else (2 if not cfg.get("hotspot") else 0))
+        except Exception:
+            pass
     finally:
         lvsetup = None
         lvship.drop("lvsetup")

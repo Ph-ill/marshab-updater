@@ -1,17 +1,14 @@
-# The launch light at power-on (0.3.4, earlier since 0.3.5, board/lvlaunch.py): started by
-# board/main.py's start_launch() as soon as ship.json names rgb_pins, on a machine.Timer, so
-# it plays through the 2 s boot window and the hotspot; run()'s launch() is the fallback if
-# that Timer never began. On fake PWMs and the virtual clock test_ledtest.py uses: the colour
-# at key times in each phase (power-on blue flickers, the tanking breath, the orange ignition
-# and its stutter, the jittering orange-yellow thrust, white at liftoff, the blue fade), dark
-# and over at 8 s with every PWM off and deinit'd; skipped (lvlaunch never loaded) without
-# rgb_pins or with refused ones; never marks the light busy (a Test light tap is never 429);
-# a Test light tap takes over (the launch's PWMs off, the test plays its 18 s); an update
-# starting (web.ota_busy) or a hail's mark (sh.ledtest) stops it, all off; a failing or
-# unmakeable PWM, a cancel, a broken module and a full heap at create_task never escape and
-# leave nothing driven; the event loop keeps turning meanwhile; the Timer path (begin /
-# attach / stop) plays the same sequence, gives way after attach, stops with pins released,
-# and does not restart this boot. Runs on CPython and MicroPython:
+# The launch light at power-on (0.3.4, earlier since 0.3.5, a flame and a Wi-Fi
+# indication since 0.3.9, board/lvlaunch.py): started by board/main.py's
+# start_launch() as soon as ship.json names rgb_pins, on a machine.Timer, so the
+# flame plays through the 2 s boot window and the hotspot; after the flame a blue
+# breath waits for the hotspot, then a short green flash. run()'s launch() is the
+# fallback if that Timer never began, and must not start a second play if the
+# Timer play already ended and the module was dropped (0.3.9: LAUNCH_DONE).
+# On fake PWMs and the virtual clock test_ledtest.py uses: flame colour bounds
+# (red/orange/yellow, builds then dies, flickers), the Wi-Fi pulse / green flash /
+# timeout, once per boot including after the module is dropped, and the usual
+# give-way, skip, and Timer path. Runs on CPython and MicroPython:
 #   python3 tests/test_launch.py && micropython tests/test_launch.py  (from game/)
 import sys
 import os
@@ -43,52 +40,50 @@ def check(name, cond, extra=""):
 
 
 L, D, MS = lvlaunch.level, lvlaunch.duty, lvlaunch.LAUNCH_MS
+ENV = lvlaunch.envelope
+AFTER = lvlaunch.after
 
 
 def rgb(t):
     return (L(t, 0), L(t, 1), L(t, 2))
 
 
-# -- 1. the sequence itself
-check("8 s", MS == 8000)
+# -- 1. the flame itself
+check("flame is 5-6 s", 5000 <= MS <= 6000, MS)
 check("never out of range", all(0 <= L(t, k) <= 255 for t in range(0, MS, 3) for k in range(3)))
-check("over at 8 s", L(MS - 1, 0) >= 0 and rgb(MS) == (-1, -1, -1) and L(MS + 500, 2) == -1 and L(-1, 0) == -1)
-# power on: faint cool blue (blue most, no red), on/off flickers
-B = rgb(0)
-check("power on: faint cool blue", B[0] == 0 and 0 < B[1] < B[2] <= 140, B)
-check("power on: flicker 1 on", rgb(60) == B and rgb(119) == B)
-check("power on: dark between flickers", rgb(120) == (0, 0, 0) and rgb(300) == (0, 0, 0) and rgb(449) == (0, 0, 0) and rgb(600) == (0, 0, 0) and rgb(899) == (0, 0, 0))
-check("power on: flicker 2 and 3", rgb(450) == B and rgb(599) == B and rgb(900) == B and rgb(1499) == B)
-on = [t for t in range(1, 1600) if L(t, 2) > 0 and L(t - 1, 2) == 0]
-check("power on: 2 more onsets, never more than 3 in any second", on == [450, 900], on)
-# tanking: a breath up to pale white-blue and back
-P = rgb(2250)
-check("tanking: pale white-blue at the top", P[2] >= P[1] >= P[0] >= 100 and P[2] >= 200, P)
-up = [L(t, 0) for t in range(1500, 2251, 10)]
-dn = [L(t, 0) for t in range(2250, 3000, 10)]
-check("tanking: swells, then settles back", up == sorted(up) and dn == sorted(dn, reverse=True) and rgb(2999)[0] < 10)
-# ignition: a sudden deep orange, stuttering
-O = rgb(3000)
-check("ignition: sudden deep orange", O[0] == 255 and 20 <= O[1] <= 80 and O[2] == 0 and rgb(2999)[2] > 0, (O, rgb(2999)))
-check("ignition: stutters (dims twice)", rgb(3050) == O and rgb(3140)[0] < 128 and rgb(3200) == O and rgb(3330)[0] < 128 and rgb(3500) == O)
-# full thrust: orange-yellow, jittering
-th = [rgb(t) for t in range(4400, 6000, 20)]
-check("thrust: orange-yellow, no blue", all(r >= g > 0 and b == 0 for (r, g, b) in th), th[:3])
-rs = [r for (r, g, b) in th]
-check("thrust: bright (at least 60 % of full red)", min(rs) >= 150 and max(rs) >= 240, (min(rs), max(rs)))
-check("thrust: flickers (many levels, steps both ways)", len(set(rs)) >= 15 and any(rs[i + 1] > rs[i] for i in range(len(rs) - 1)) and any(rs[i + 1] < rs[i] for i in range(len(rs) - 1)))
-check("thrust: same 60 ms step, same level", rgb(4980) == rgb(5039))
-check("jitter 160-255", all(160 <= lvlaunch.jitter(t) <= 255 for t in range(0, 9000, 7)))
-check("thrust ramps from orange to yellow", rgb(4400)[1] * 255 // max(1, rgb(4400)[0]) > rgb(3600)[1] * 255 // max(1, rgb(3600)[0]))
-# liftoff: white, then a dimming blue, then dark
-W = rgb(7000)
-check("liftoff: white", min(W) >= 200, W)
-m = rgb(6500)
-check("liftoff: on the way from yellow to white", m[0] >= 200 and 0 < m[2] < W[2], m)
-Bl = rgb(7500)
-check("liftoff: then blue", Bl[2] > Bl[1] > Bl[0] == 0, Bl)
-fade = [sum(rgb(t)) for t in range(7500, 8000, 10)]
-check("liftoff: fades to dark", fade == sorted(fade, reverse=True) and rgb(7999) == (0, 0, 0))
+check("over at the end of the flame", L(MS - 1, 0) >= 0 and rgb(MS) == (-1, -1, -1) and L(MS + 500, 2) == -1 and L(-1, 0) == -1)
+check("envelope: a dim ember at the start, 0 at the end", 8 <= ENV(0) <= 40 and ENV(MS - 1) >= 0 and ENV(MS) == -1)
+# builds up, then dies down
+es = [ENV(t) for t in range(0, MS, 20)]
+peak_i = max(range(len(es)), key=lambda i: es[i])
+check("envelope: builds, then dies", peak_i > 10 and peak_i < len(es) - 10 and es[peak_i] >= 200 and es[0] < es[peak_i] // 3 and es[-1] < es[peak_i] // 4, (peak_i, es[peak_i], es[-1]))
+# red/orange/yellow family: red leads, blue is a spark only
+samples = [rgb(t) for t in range(400, 5000, 40)]
+check("flame: red leads, blue is a spark", all(r >= g and r >= b and b <= 40 for (r, g, b) in samples if r + g + b > 20), samples[::20])
+check("flame: orange/yellow in the middle (green is up)", max(g for (r, g, b) in samples) >= 80)
+# flicker: many levels, steps both ways, around a 40 ms step
+mid = [rgb(t)[0] for t in range(2000, 3600, 20)]
+check("flame: flickers (many red levels, steps both ways)",
+      len(set(mid)) >= 8 and any(mid[i + 1] > mid[i] for i in range(len(mid) - 1)) and any(mid[i + 1] < mid[i] for i in range(len(mid) - 1)))
+check("jitter 180-255", all(180 <= lvlaunch.jitter(t) <= 255 for t in range(0, 9000, 7)))
+check("same 40 ms step, same jitter", lvlaunch.jitter(80) == lvlaunch.jitter(119))
+# early is dimmer than the peak, late is dying
+check("flame: early is dim, peak is bright, late is dying",
+      sum(rgb(200)) < sum(rgb(3200)) and rgb(3200)[0] >= 150 and sum(rgb(5200)) < sum(rgb(3200)))
+# Wi-Fi after-phase, as a pure function
+check("after: no hotspot configured is already over", AFTER(0, 2) is None)
+g0 = AFTER(0, 1)
+g1 = AFTER(200, 1)
+g2 = AFTER(300, 1)
+check("after: two green flashes, dark between, then over",
+      g0 == (0, 220, 40) and AFTER(150, 1) == (0, 0, 0) and g2 == (0, 220, 40) and AFTER(400, 1) is None, (g0, g1, g2))
+b0 = AFTER(0, 0, 800)
+b1 = AFTER(500, 0, 800)
+check("after: blue breath (blue leads, not dark at the top)",
+      b0[2] >= b0[1] >= b0[0] == 0 and b1[2] > b0[2] and b1[2] >= 200, (b0, b1))
+check("after: timeout is two dim amber blinks, then over",
+      AFTER(800, 0, 800) == (160, 40, 0) and AFTER(920, 0, 800) == (0, 0, 0) and AFTER(1040, 0, 800) == (160, 40, 0) and AFTER(1120, 0, 800) is None)
+check("WIFI_WAIT is 30 s", lvlaunch.WIFI_WAIT == 30000)
 # the Test light's curve, exactly, in small ints (the original v*v*sc*257 product, which
 # CPython can compute, and both duty() functions since 0.3.5 split so it stays under 2**30)
 def ref_duty(v, sc):
@@ -102,6 +97,7 @@ sys.modules.pop("lvlaunch", None)
 sys.modules.pop("lvrgb", None)
 sys.modules.pop("lvlight", None)
 del lvlaunch, lvrgb
+
 
 
 # -- 2. on the ship: fakes, main.py's own launch() and Test light route, the virtual clock
@@ -231,12 +227,25 @@ check("main.py: a skipped boot (/data/safe or /data/maint) stops it too",
       "stop_launch()" in src[src.index("if setup is None:"):src.index("if setup[0] is None:")])
 check("main.py: /data/safe and /data/maint never start it",
       'flag("/data/safe") or flag("/data/maint")' in src)
+check("main.py: LAUNCH_DONE survives dropping the module", "LAUNCH_DONE" in src and "global LAUNCH_DONE" in src)
+check("main.py: logs reset_cause at the start of main()",
+      0 < src.index("_log_reset_cause()") < src.index("start_launch(peek_rgb())"))
+check("main.py: tells the play when the hotspot is up, before the event loop",
+      0 < src.index("tell_wifi(") < src.index("asyncio.run(run())") and "lvlaunch.wifi_up()" in src)
+check("main.py: a soft reset of the same power cycle does not replay",
+      "_is_soft()" in src and "LAUNCH_DONE = True" in src)
 src = None
 launch = g["launch"]
 peek_rgb = g["peek_rgb"]
 start_launch = g["start_launch"]
 attach_launch = g["attach_launch"]
 stop_launch = g["stop_launch"]
+
+
+def fresh_boot():
+    """A new process as far as the launch is concerned (tests, not a real reset)."""
+    g["LAUNCH_DONE"] = False
+    g["WIFI_HINT"] = 0
 
 
 def hook(ship):
@@ -334,9 +343,13 @@ async def ship_case():
     check("refused pins: nothing made, said why, modules dropped", sh.made == {} and any("rgb_pins" in x for x in SAID) and dropped(), SAID)
 
     # the whole launch, started by main.py's launch(), the loop free meanwhile
+    # wifi_none(): just the flame, so settle() is ~5.6 s not a 30 s blue wait
     sh = Ship([16, 17, 18])
     srv = hook(sh)
     T0[0] = now()
+    fresh_boot()
+    import lvlaunch as _L
+    _L.wifi_none()
     gaps = [0, 0, True]                 # the longest gap between ticker turns; running
 
     async def ticker():
@@ -347,6 +360,7 @@ async def ship_case():
             last = now()
             gaps[1] += 1
     tt = asyncio.create_task(ticker())
+    T0[0] = now()
     launch(sh)
     check("launch(): returns at once, modules dropped (the task keeps its code)", dropped() and sh.made == {})
     check("launch(): never marks the light busy", sh.ledtest is None)
@@ -358,26 +372,25 @@ async def ship_case():
     gaps[2] = False
     await tt
     r, gr, b = sh.made[16].log, sh.made[17].log, sh.made[18].log
-    check("over in about 8 s", LMS - 20 <= end <= LMS + 100, end)
+    check("over in about 5.6 s", LMS - 20 <= end <= LMS + 100, end)
     check("ends dark: every duty 0, every PWM deinit'd", all_off(sh))
     check("the loop kept turning (no gap over 30 ms)", gaps[0] <= 30 and gaps[1] > 1000, gaps)
-    for at in (60, 300, 460, 2250, 3050, 3140, 5000, 7000, 7500):
+    for at in (80, 400, 1500, 2800, 3200, 4500, 5300):
         # the task's t is a frame or so behind T0: compare where the level holds still
         want = tuple(DU(LV(at, k), 100) for k in range(3))
         got = (held(r, at + 25), held(gr, at + 25), held(b, at + 25))
-        if at in (2250, 5000, 7000, 7500):
-            ok_ = all(abs(got[k] - want[k]) <= max(2500, want[k] // 6) for k in range(3))
-        else:
-            ok_ = got == want
+        ok_ = all(abs(got[k] - want[k]) <= max(8000, want[k] // 2 + 1) for k in range(3))
         check("held colour at %d ms" % at, ok_, (got, want))
-    check("power on is dark between flickers", held(b, 300) == 0 and held(b, 700) == 0)
-    check("thrust flickers: many red duty writes 3.6-6 s", len([1 for (t, d) in r if 3700 <= t < 6000]) >= 25)
+    check("flame flickers: many red duty writes 2-4 s", len([1 for (t, d) in r if 2000 <= t < 4000]) >= 20)
     check("no error reached the loop", ERRS == [], ERRS)
 
     # a Test light tap meanwhile: never 429, it takes over; the launch's PWMs off first
     sh = Ship([16, 17, 18])
     srv = hook(sh)
     T0[0] = now()
+    fresh_boot()
+    import lvlaunch as _L
+    _L.wifi_none()
     launch(sh)
     await lvship.sleep_ms(2000)
     old = dict(sh.made)
@@ -399,6 +412,9 @@ async def ship_case():
     # the launch is asleep in its 20 ms frame): only sh.rgb changes hands, no mark yet
     import lvrgb as RG
     sh = Ship([16, 17, 18])
+    fresh_boot()
+    import lvlaunch as _L
+    _L.wifi_none()
     launch(sh)
     await lvship.sleep_ms(1000)
     old = dict(sh.made)
@@ -417,6 +433,9 @@ async def ship_case():
     # an update starting: dark at once, said
     sh = Ship([16, 17, 18])
     srv = hook(sh)
+    fresh_boot()
+    import lvlaunch as _L
+    _L.wifi_none()
     launch(sh)
     await lvship.sleep_ms(4000)
     check("lit in thrust", sh.made[16].duty > 0)
@@ -429,12 +448,16 @@ async def ship_case():
     sh = Ship([16, 17, 18])
     srv = hook(sh)
     srv.ota_busy = 1
+    fresh_boot()
     launch(sh)
     await lvship.sleep_ms(200)
     check("update busy at the start: nothing made", sh.made == {})
 
     # a hail's flicker (or any playback mark) during the launch: gives way, mark untouched
     sh = Ship([16, 17, 18])
+    fresh_boot()
+    import lvlaunch as _L
+    _L.wifi_none()
     launch(sh)
     await lvship.sleep_ms(1500)
     m = sh.ledtest = now()
@@ -442,6 +465,7 @@ async def ship_case():
     check("a playback mark stops it, all off, the mark left alone", all_off(sh) and sh.ledtest == m)
     sh = Ship([16, 17, 18])
     sh.ledtest = now()
+    fresh_boot()
     launch(sh)
     await lvship.sleep_ms(200)
     check("a playback already running: no launch, nothing made", sh.made == {})
@@ -450,6 +474,9 @@ async def ship_case():
     sh = Ship([16, 17, 18])
     sh.fail_at = 15
     del SAID[:]
+    fresh_boot()
+    import lvlaunch as _L
+    _L.wifi_none()
     launch(sh)
     await lvship.sleep_ms(3000)
     check("failing PWM: ended, every PWM deinit'd", getattr(sh, "rgb", None) is None and all(p.dead for p in sh.made.values()))
@@ -463,6 +490,7 @@ async def ship_case():
         sh.made[n] = PWM(n)
         return sh.made[n]
     sh.rgb_pwm = bad
+    fresh_boot()
     launch(sh)
     await lvship.sleep_ms(200)
     check("unmakeable PWM: the others off, nothing held", all_off(sh, 2))
@@ -507,10 +535,12 @@ async def ship_case():
     sys.modules["lvlaunch"] = Broken()
     sh = Ship([16, 17, 18])
     del SAID[:]
+    fresh_boot()
     launch(sh)
     check("broken module: launch() returns, said, dropped", any("no launch light" in x for x in SAID) and dropped(), SAID)
     sh = Ship([16, 17, 18])
     sh.cfg = None
+    fresh_boot()
     launch(sh)
     check("launch(): a ship with no cfg returns quietly", sh.made == {})
     await lvship.sleep_ms(100)
@@ -529,6 +559,10 @@ def reset_ll(LL):
     LL._busy = False
     LL._END[:] = []
     LL._t0 = 0
+    LL._wifi = 0
+    LL._up_t = 0
+    LL._tw = 0
+    fresh_boot()
     # launch() / forget() drop the name; put this same module back so the next begin()
     # (and start_launch's import) is still the one with FakeTimer, not a fresh copy.
     sys.modules["lvlaunch"] = LL
@@ -624,30 +658,28 @@ async def timer_case():
     check("begin(): a playback already running is False, nothing made",
           LL.begin(sh.cfg, say=sh.say, host=sh) is False and sh.made == {})
 
-    # the whole launch on the Timer, first frame at once, over at 8 s
+    # the whole flame on the Timer, first frame at once, over at 5.6 s (no Wi-Fi wait)
     reset_ll(LL)
     del TIMERS[:]
     sh = Ship([16, 17, 18])
     T0[0] = now()
     r = LL.begin(sh.cfg, say=sh.say, host=sh)
+    LL.wifi_none()
     check("begin(): True, busy, first frame already on the pins",
-          r is True and LL.busy() and LL.played() and len(sh.made) == 3 and sh.made[18].duty > 0, (r, sh.made))
+          r is True and LL.busy() and LL.played() and len(sh.made) == 3 and sh.made[16].duty > 0, (r, sh.made))
     check("begin(): never marks the light busy", sh.ledtest is None)
     check("begin(): the timer is 20 ms periodic", TIMERS and TIMERS[0].period == 20 and not TIMERS[0].dead)
     await pump(MS + 200)
     end = diff(now(), T0[0])
-    check("Timer: over in about 8 s", MS - 20 <= end <= MS + 200, end)
+    check("Timer: over in about 5.6 s", MS - 20 <= end <= MS + 200, end)
     check("Timer: ends dark, every PWM deinit'd, timer deinit'd", all_off(sh) and TIMERS[0].dead)
     check("Timer: not busy, but played this boot", LL.busy() is False and LL.played() is True)
     r, gr, b = sh.made[16].log, sh.made[17].log, sh.made[18].log
     LV, DU = LL.level, LL.duty
-    for at in (60, 300, 460, 2250, 3050, 3140, 5000, 7000, 7500):
+    for at in (80, 400, 1500, 2800, 3200, 4500, 5300):
         want = tuple(DU(LV(at, k), 100) for k in range(3))
         got = (held(r, at + 25), held(gr, at + 25), held(b, at + 25))
-        if at in (2250, 5000, 7000, 7500):
-            ok_ = all(abs(got[k] - want[k]) <= max(2500, want[k] // 6) for k in range(3))
-        else:
-            ok_ = got == want
+        ok_ = all(abs(got[k] - want[k]) <= max(8000, want[k] // 2 + 1) for k in range(3))
         check("Timer: held colour at %d ms" % at, ok_, (got, want))
     check("Timer: no error reached the loop", ERRS == [], ERRS)
 
@@ -673,7 +705,7 @@ async def timer_case():
     check("attach() to a new ship moves sh.rgb",
           LL.attach(sh2) is True and getattr(sh, "rgb", None) is None and getattr(sh2, "rgb", None) is not None)
     await pump(100)
-    check("after attach: still lit on the same PWMs", sh.made[18].duty > 0 and sh2.made == {})
+    check("after attach: still lit on the same PWMs", sh.made[16].duty > 0 and sh2.made == {})
 
     # give way after attach: a hail mark, then an update
     m = sh2.ledtest = now()
@@ -688,10 +720,10 @@ async def timer_case():
     T0[0] = now()
     start_launch(sh.cfg, say=sh.say, host=sh)
     check("start_launch(): busy, first frame on, module kept (attach still needs it)",
-          LL.busy() and len(sh.made) == 3 and sh.made[18].duty > 0 and "lvlaunch" in sys.modules)
+          LL.busy() and len(sh.made) == 3 and sh.made[16].duty > 0 and "lvlaunch" in sys.modules)
     attach_launch(sh)
     await pump(2000)
-    check("start_launch + attach: still lit, never busy-marked", sh.made[18].duty > 0 and sh.ledtest is None)
+    check("start_launch + attach: still lit, never busy-marked", sh.made[16].duty > 0 and sh.ledtest is None)
     del SAID[:]
     srv.ota_busy = 1
     await pump(40)
@@ -750,6 +782,96 @@ async def timer_case():
     check("attach(): nothing playing is False", LL.attach(sh) is False)
     LL.stop()
     check("stop(): nothing playing is fine", True)
+
+    # Wi-Fi already up before the flame ends: green flashes, then dark, no blue wait
+    reset_ll(LL)
+    del TIMERS[:]
+    sh = Ship([16, 17, 18])
+    T0[0] = now()
+    LL.begin(sh.cfg, say=sh.say, host=sh)
+    LL.wifi_up()
+    await pump(MS + 50)
+    check("wifi already up: still in the flame just before it ends", LL.busy() and sh.made[16].duty >= 0)
+    await pump(500)
+    end = diff(now(), T0[0])
+    check("wifi already up: over after the green flashes",
+          not LL.busy() and all_off(sh) and MS + 350 <= end <= MS + 600, end)
+    # a green duty was written after the flame
+    greens = [d for (tt, d) in sh.made[17].log if tt >= MS]
+    blues = [d for (tt, d) in sh.made[18].log if tt >= MS]
+    check("wifi already up: a green flash, not a blue breath",
+          greens and max(greens) > 0 and (not blues or max(greens) > max(blues)), (greens[:5], blues[:5]))
+
+    # Wi-Fi comes up during the blue wait: pulse first, then green, then dark
+    reset_ll(LL)
+    del TIMERS[:]
+    sh = Ship([16, 17, 18])
+    T0[0] = now()
+    LL.begin(sh.cfg, say=sh.say, host=sh)
+    await pump(MS + 400)
+    check("wifi wait: still busy after the flame, a blue breath",
+          LL.busy() and sh.made[18].duty > sh.made[16].duty, (sh.made[16].duty, sh.made[18].duty))
+    LL.wifi_up()
+    await pump(500)
+    check("wifi wait: green then dark once the hotspot is up", not LL.busy() and all_off(sh))
+    after_b = [d for (tt, d) in sh.made[18].log if MS <= tt < MS + 400]
+    check("wifi wait: it was pulsing blue before wifi_up", after_b and max(after_b) > 0, after_b[:8])
+
+    # Hotspot never comes: 30 s is shortened for the test; two amber blinks, then dark
+    reset_ll(LL)
+    del TIMERS[:]
+    sh = Ship([16, 17, 18])
+    T0[0] = now()
+    hold, LL.WIFI_WAIT = LL.WIFI_WAIT, 800
+    try:
+        LL.begin(sh.cfg, say=sh.say, host=sh)
+        await pump(MS + 800 + 400)
+        check("wifi timeout: ended after the wait and the amber blinks", not LL.busy() and all_off(sh))
+        end = diff(now(), T0[0])
+        check("wifi timeout: about the flame plus the wait", MS + 800 + 250 <= end <= MS + 800 + 500, end)
+        ambers = [d for (tt, d) in sh.made[16].log if tt >= MS + 800]
+        check("wifi timeout: a dim amber blink (red leads)", ambers and max(ambers) > 0, ambers[:6])
+    finally:
+        LL.WIFI_WAIT = hold
+
+    # Regression (0.3.9): when the Timer play ends, start_launch's on_end drops
+    # lvlaunch from sys.modules. run()'s launch() used to import a fresh module
+    # with _played False and start the sequence again. LAUNCH_DONE must stop that.
+    reset_ll(LL)
+    del TIMERS[:]
+    g["LAUNCH_STOP"][:] = []
+    sh = Ship([16, 17, 18])
+    T0[0] = now()
+    start_launch(sh.cfg, say=sh.say, host=sh)
+    LL.wifi_none()
+    check("regression setup: Timer play running, module kept",
+          LL.busy() and "lvlaunch" in sys.modules and g["LAUNCH_DONE"] is True)
+    await pump(MS + 200)
+    check("regression: play ended and start_launch dropped the module",
+          dropped() and not LL.busy() and g["LAUNCH_DONE"] is True, (dropped(), LL.busy(), g["LAUNCH_DONE"]))
+    sh2 = Ship([16, 17, 18])
+    launch(sh2)
+    await lvship.sleep_ms(200)
+    check("regression: launch() after a dropped Timer play does not start again",
+          sh2.made == {} and getattr(sh2, "rgb", None) is None)
+    # and start_launch must not begin a new Timer play either
+    start_launch(sh2.cfg, say=sh2.say, host=sh2)
+    check("regression: start_launch after a dropped play does not begin again", sh2.made == {})
+
+    # a soft reset of a chip already running: no play (same power cycle)
+    fresh_boot()
+    real_soft = g["_is_soft"]
+    g["_is_soft"] = lambda: True
+    try:
+        sh = Ship([16, 17, 18])
+        start_launch(sh.cfg, say=sh.say, host=sh)
+        check("soft reset: start_launch does not begin, marks the boot done",
+              sh.made == {} and g["LAUNCH_DONE"] is True)
+        launch(sh)
+        await lvship.sleep_ms(200)
+        check("soft reset: launch() does not fall back to a second play", sh.made == {})
+    finally:
+        g["_is_soft"] = real_soft
 
     # a failing PWM on the Timer path: ended, said, nothing escapes
     reset_ll(LL)
