@@ -528,6 +528,11 @@ def restart(web):
 
     async def later():
         await asyncio.sleep(1)
+        try:
+            import lvmark
+            lvmark.clear()
+        except Exception:
+            pass
         if reset:
             return reset()
         try:

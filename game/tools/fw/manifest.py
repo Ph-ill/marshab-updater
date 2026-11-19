@@ -82,3 +82,5 @@ module("lvlaunch.py", base_path="../../board", opt=3)
 module("lvcharge.py", base_path="../../board", opt=3)
 # The update-in-progress glow on that RGB LED (0.3.7, ship.json rgb_pins).
 module("lvotaled.py", base_path="../../board", opt=3)
+# A watchdog-scratch marker: the launch light plays once per power cycle (0.3.10).
+module("lvmark.py", base_path="../../board", opt=3)

@@ -13,7 +13,9 @@
 # a blue breath waits for the hotspot, then a short green flash. It is skipped in safe
 # mode and when /data/safe or /data/maint is present, and stopped on Ctrl-C. It plays once
 # per real chip start (power-on, machine.reset(), watchdog, brownout), not again on a
-# soft reset in the same power cycle.
+# soft reset in the same power cycle. 0.3.10: a watchdog-scratch marker (lvmark) says
+# this power cycle has already had its start; 0.3.9 used ticks_ms() > 400 at main(),
+# which is already past 400 ms on a real power-on (that rule is only true in boot.py).
 # Over-the-air updates (lvota.py, lvboot.py): /api/ota* goes to lvota, loaded per request;
 # the captive DNS leaves GitHub's names unanswered so a phone with another route can still
 # fetch an update; and after an update this file reports in (lvota.good()) once the game
@@ -542,6 +544,11 @@ async def kept(web):
 
 
 def restart():
+    try:
+        import lvmark
+        lvmark.clear()
+    except Exception:
+        pass
     if reboot:
         return reboot()
     import machine
@@ -814,22 +821,30 @@ async def charger_watch(ship, rd=None, every=CHG_EVERY_MS, stop=None):
 # That is the double play seen on a ship whose boot (2 s window + hotspot + BLE) lasted
 # longer than the sequence. LAUNCH_DONE is set when this process begins or skips the
 # play, and launch() / start_launch() honour it even after the name is dropped.
+# 0.3.10: a soft reset is detected by lvmark (watchdog scratch), not by ticks_ms.
+# lvboot.soft() (ticks_ms > 400) is only true in boot.py (~25 ms after a real start).
 LAUNCH_STOP = []                    # lvlaunch.stop, while a Timer play is running
 LAUNCH_DONE = False                 # this process already began (or skipped) the launch
 WIFI_HINT = 0                       # 0 still waiting, 1 hotspot up, 2 none configured
 
 
 def _is_soft():
-    """True if this boot is a soft reset of a chip that was already running.
-    Same rule as lvboot.soft(): the chip's uptime is already past 400 ms.
+    """True only when a previous boot in this power cycle left the launch
+    marker (lvmark). A failed read or a missing marker means play the light.
     Tests may replace this."""
     try:
-        import sys
-        if sys.platform != "rp2":
-            return False
-        return lvship.ticks_ms() > 400
+        import lvmark
+        return lvmark.present()
     except Exception:
         return False
+
+
+def _mark_launch():
+    try:
+        import lvmark
+        lvmark.mark()
+    except Exception:
+        pass
 
 
 def _log_reset_cause():
@@ -905,10 +920,12 @@ def start_launch(cfg, say=print, host=None):
         if _is_soft():
             # Same power cycle: the flame already had its chance on the real start.
             LAUNCH_DONE = True
+            print("led: launch skipped (soft reset)")
             return
         import lvlaunch
         if lvlaunch.busy() or lvlaunch.played():
             LAUNCH_DONE = True
+            _mark_launch()
             if host is not None and lvlaunch.busy():
                 lvlaunch.attach(host)
             return                      # already started this boot (the peek, or it has ended)
@@ -918,6 +935,7 @@ def start_launch(cfg, say=print, host=None):
             lvship.drop("lvlight")
             return
         LAUNCH_DONE = True
+        _mark_launch()
         def forget():
             LAUNCH_STOP[:] = []
             lvship.drop("lvlaunch")
@@ -988,12 +1006,15 @@ def launch(ship):
         import lvlaunch
         if lvlaunch.busy():
             LAUNCH_DONE = True
+            _mark_launch()
             lvlaunch.attach(ship)
         elif not lvlaunch.played():
             if lvlaunch.start(ship):
                 LAUNCH_DONE = True
+                _mark_launch()
         else:
             LAUNCH_DONE = True
+            _mark_launch()
         if WIFI_HINT == 1:
             lvlaunch.wifi_up()
         elif WIFI_HINT == 2:

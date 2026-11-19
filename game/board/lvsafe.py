@@ -372,6 +372,11 @@ async def auto_retry(sh, ms, reboot=None):
     await asyncio.sleep_ms(ms) if hasattr(asyncio, "sleep_ms") else await asyncio.sleep(ms / 1000)
     retry(sh.data, True)
     print("safe: trying the game again (on its own)")
+    try:
+        import lvmark
+        lvmark.clear()
+    except Exception:
+        pass
     if reboot:
         return reboot()
     import machine
@@ -617,6 +622,11 @@ def server(lvweb, cfg, why, ip, reboot=None, data=D, root=""):
 
                 async def later():
                     await asyncio.sleep(1)
+                    try:
+                        import lvmark
+                        lvmark.clear()
+                    except Exception:
+                        pass
                     if reboot:
                         return reboot()
                     import machine

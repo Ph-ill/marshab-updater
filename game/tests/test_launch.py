@@ -5,6 +5,8 @@
 # breath waits for the hotspot, then a short green flash. run()'s launch() is the
 # fallback if that Timer never began, and must not start a second play if the
 # Timer play already ended and the module was dropped (0.3.9: LAUNCH_DONE).
+# 0.3.10: a soft reset is a watchdog-scratch marker (lvmark), not ticks_ms > 400
+# at main() — a cold boot whose imports already ran past 400 ms still plays.
 # On fake PWMs and the virtual clock test_ledtest.py uses: flame colour bounds
 # (red/orange/yellow, builds then dies, flickers), the Wi-Fi pulse / green flash /
 # timeout, once per boot including after the module is dropped, and the usual
@@ -208,6 +210,58 @@ class Wr:
         pass
 
 
+# -- lvmark: a scratch marker, not uptime, decides a soft reset
+import lvmark  # noqa: E402
+
+
+class Mem32:
+    """machine.mem32 returns a signed 32-bit int; high-bit words come back negative."""
+
+    def __init__(self):
+        self.d = {}
+
+    def __getitem__(self, a):
+        v = self.d.get(a, 0)
+        if v >= 0x80000000:
+            v -= 0x100000000
+        return v
+
+    def __setitem__(self, a, v):
+        self.d[a] = int(v) & 0xFFFFFFFF
+
+
+check("detect_base: Pico W is RP2040",
+      lvmark.detect_base("Raspberry Pi Pico W with RP2040") == lvmark.RP2040)
+check("detect_base: Pico 2 W is RP2350, not mistaken for a Pico W",
+      lvmark.detect_base("Raspberry Pi Pico 2 W with RP2350") == lvmark.RP2350)
+check("detect_base: Pico2 spelling is RP2350",
+      lvmark.detect_base("PICO2_W") == lvmark.RP2350)
+check("detect_base: unknown chip is None (do not poke an address)",
+      lvmark.detect_base("x86_64") is None)
+lvmark.mem32 = Mem32()
+lvmark.BASE = None
+check("present: empty scratch is not a soft reset (the light plays)", not lvmark.present())
+lvmark.mark()
+check("mark: both words, complement inclusive, readable as signed mem32", lvmark.present())
+# the complement has the high bit set: Mem32 returns it negative; present() must still match
+w0, w1 = lvmark.RP2040 + lvmark.SCRATCH0, lvmark.RP2040 + lvmark.SCRATCH1
+check("mark: stored as magic + complement",
+      lvmark.mem32.d[w0] == lvmark.MAGIC and lvmark.mem32.d[w1] == (lvmark.MAGIC ^ lvmark.MASK))
+lvmark.clear()
+check("clear: both words 0, no longer present",
+      not lvmark.present() and lvmark.mem32.d[w0] == 0 and lvmark.mem32.d[w1] == 0)
+lvmark.mem32.d[w0] = lvmark.MAGIC
+lvmark.mem32.d[w1] = 0
+check("partial write is not a marker (the light plays)", not lvmark.present())
+lvmark.mem32.d[w0] = 0xDEAD
+lvmark.mem32.d[w1] = 0xBEEF
+check("garbage in scratch is not a marker", not lvmark.present())
+lvmark.mem32 = None
+# a failed read / no hardware: play, never skip
+check("no mem32 on this host: present is False (the light plays)", not lvmark.present())
+# put the fake back for start_launch tests (fresh_boot clears it)
+lvmark.mem32 = Mem32()
+
 src = open(HERE + "/board/main.py").read()
 g = {"lvship": lvship, "asyncio": asyncio, "print": lambda *a: SAID.append(" ".join([str(x) for x in a]))}
 exec(src[src.index("def http_admission"):src.index("\nasync def ota_ok")], g)
@@ -234,6 +288,26 @@ check("main.py: tells the play when the hotspot is up, before the event loop",
       0 < src.index("tell_wifi(") < src.index("asyncio.run(run())") and "lvlaunch.wifi_up()" in src)
 check("main.py: a soft reset of the same power cycle does not replay",
       "_is_soft()" in src and "LAUNCH_DONE = True" in src)
+check("main.py: soft reset is a scratch marker, not ticks_ms at main()",
+      "lvmark.present()" in src and "ticks_ms() > 400" not in src[src.index("def _is_soft"):src.index("def _log_reset_cause")])
+check("main.py: marks the boot after a real start", "_mark_launch()" in src)
+rst = src[src.index("def restart():"):src.index("\ndef note(")]
+check("main.py: restart() clears the marker before it resets",
+      "lvmark.clear()" in rst and rst.index("lvmark.clear()") < rst.index("machine.reset()"))
+for fname, needle in (("lvota.py", "def restart"), ("lvsafe.py", "machine.reset()"),
+                      ("lvcode.py", "machine.reset()")):
+    body = open(HERE + "/board/" + fname).read()
+    calls = [ln for ln in body.splitlines() if ln.strip() == "machine.reset()"]
+    clears = [ln for ln in body.splitlines() if "lvmark.clear()" in ln]
+    check("board/%s clears the marker before every machine.reset()" % fname,
+          len(clears) == len(calls) and len(calls) >= 1)
+try:
+    import lvota
+    check("0.3.10 is newer than 0.3.9 and 0.3.1-updater",
+          lvota.vcmp("0.3.10", "0.3.9") > 0 and lvota.vcmp("0.3.10", "0.3.1-updater") > 0
+          and lvota.vcmp("0.3.9", "0.3.10") < 0)
+except Exception as e:
+    check("0.3.10 is newer than 0.3.9 (lvota import)", False, e)
 src = None
 launch = g["launch"]
 peek_rgb = g["peek_rgb"]
@@ -242,10 +316,16 @@ attach_launch = g["attach_launch"]
 stop_launch = g["stop_launch"]
 
 
-def fresh_boot():
-    """A new process as far as the launch is concerned (tests, not a real reset)."""
+def fresh_boot(soft=False):
+    """A new process as far as the launch is concerned (tests, not a real reset).
+    soft=True keeps the scratch marker, as a Ctrl-D / mpremote would."""
     g["LAUNCH_DONE"] = False
     g["WIFI_HINT"] = 0
+    if not soft:
+        try:
+            lvmark.clear()
+        except Exception:
+            pass
 
 
 def hook(ship):
@@ -859,6 +939,7 @@ async def timer_case():
     check("regression: start_launch after a dropped play does not begin again", sh2.made == {})
 
     # a soft reset of a chip already running: no play (same power cycle)
+    # Tests may still replace _is_soft; the stub path stays.
     fresh_boot()
     real_soft = g["_is_soft"]
     g["_is_soft"] = lambda: True
@@ -872,6 +953,54 @@ async def timer_case():
         check("soft reset: launch() does not fall back to a second play", sh.made == {})
     finally:
         g["_is_soft"] = real_soft
+
+    # Regression (0.3.10): a cold boot whose imports already ran past 400 ms
+    # (lvboot.soft()'s threshold, valid only in boot.py) must still play.
+    reset_ll(LL)
+    del TIMERS[:]
+    fresh_boot()
+    real_ticks = lvship.ticks_ms
+    lvship.ticks_ms = lambda: 2500
+    try:
+        sh = Ship([16, 17, 18])
+        start_launch(sh.cfg, say=sh.say, host=sh)
+        check("cold boot with slow imports: start_launch still begins",
+              LL.busy() and g["LAUNCH_DONE"] is True and 16 in sh.made, (g["LAUNCH_DONE"], sh.made.keys() if hasattr(sh.made, "keys") else sh.made))
+        check("cold boot with slow imports: the marker is now set", lvmark.present())
+    finally:
+        lvship.ticks_ms = real_ticks
+    LL.stop()
+
+    # Same power cycle, new process (LAUNCH_DONE is gone, ticks still late): marker skips
+    fresh_boot(soft=True)
+    lvship.ticks_ms = lambda: 2500
+    try:
+        sh = Ship([16, 17, 18])
+        start_launch(sh.cfg, say=sh.say, host=sh)
+        check("soft reset after a marked boot: no play, even with late ticks",
+              sh.made == {} and g["LAUNCH_DONE"] is True and lvmark.present())
+        launch(sh)
+        await lvship.sleep_ms(200)
+        check("soft reset after a marked boot: launch() does not fall back", sh.made == {})
+    finally:
+        lvship.ticks_ms = real_ticks
+
+    # machine.reset() after an update must play: the reset path clears the marker
+    # (restart() / lvota / lvsafe / lvcode; checked by source) then the next start
+    # sees no marker.
+    lvmark.mark()
+    check("pre-restart marker is set", lvmark.present())
+    lvmark.clear()
+    check("clear leaves no marker", not lvmark.present())
+    reset_ll(LL)
+    del TIMERS[:]
+    sh = Ship([16, 17, 18])
+    start_launch(sh.cfg, say=sh.say, host=sh)
+    check("after a cleared marker, the next start plays (update reboot)",
+          LL.busy() and 16 in sh.made)
+    LL.stop()
+    reset_ll(LL)
+    del TIMERS[:]
 
     # a failing PWM on the Timer path: ended, said, nothing escapes
     reset_ll(LL)

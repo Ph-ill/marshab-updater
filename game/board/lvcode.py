@@ -200,6 +200,11 @@ async def reset(lvweb, web, req, w, reboot=None):
         except Exception:
             pass
         # (nothing printed here: lvcode never prints, test_code.py; main.py says it)
+        try:
+            import lvmark
+            lvmark.clear()
+        except Exception:
+            pass
         if reboot:
             return reboot()
         import machine

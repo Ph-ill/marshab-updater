@@ -139,10 +139,18 @@ same PWM slice and channel (GPn and GPn+16). Only a ship with `rgb_pins` ever lo
 `lvrgb`, so no other ship's heap changes.
 
 **The launch light at power-on (0.3.4, earlier since 0.3.5, a flame and a Wi-Fi
-indication since 0.3.9, `board/lvlaunch.py`).** On a ship with usable `rgb_pins`, the RGB
-LED plays once each time the chip really starts (power-on, a `machine.reset()`, a
-watchdog or a brownout — not again on a soft reset in the same power cycle, such as
-Ctrl-D or an `mpremote` command). Since 0.3.9 that opening is a 5.6 s engine flame
+indication since 0.3.9, `board/lvlaunch.py`; 0.3.10 restores it on a real power-on).**
+On a ship with usable `rgb_pins`, the RGB LED plays once each time the chip really
+starts (power-on, a `machine.reset()`, a watchdog or a brownout — not again on a soft
+reset in the same power cycle, such as Ctrl-D or an `mpremote` command). Since 0.3.10
+that "already started this power cycle" fact is a marker in the chip's watchdog
+scratch registers (`board/lvmark.py`), which survive a soft reset and a watchdog
+reboot and are cleared when you switch the ship off and on. (0.3.9 used the chip's
+uptime at `main()`, the same 400 ms rule `lvboot.soft()` uses in `boot.py`; by the
+time `main()` runs, a real power-on is already past 400 ms, so the flame and the
+Wi-Fi indication were skipped.) A `machine.reset()` after an update clears the
+marker first, so the new set's light still plays. Since 0.3.9 that opening is a 5.6 s
+engine flame
 (`lvlaunch.LAUNCH_MS`): red, orange and yellow, flickering as it builds and then dies
 down. Same curve and `rgb_scale` as Test light. When the flame ends, if the ship's
 hotspot is not up yet, the LED pulses a slow blue breath (about once a second) until it
