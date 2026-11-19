@@ -8,6 +8,21 @@
   },
   "releases": [
     {
+      "version": "0.3.9",
+      "channel": "test",
+      "date": "2026-11-19",
+      "label": "A flame at start-up, then a blue pulse and a green flash",
+      "path": "/firmware/releases/0.3.9/release.json",
+      "bytes": 287362,
+      "files": 52,
+      "frozen": "2661c2144844",
+      "notes": [
+        "Your ship now flickers to life like an engine flame, then pulses blue until its Wi-Fi is ready and flashes green."
+      ],
+      "needs": "0.3.1-updater",
+      "ota": "2111b2e9"
+    },
+    {
       "version": "0.3.8",
       "channel": "test",
       "date": "2026-11-18",
@@ -262,7 +277,7 @@
     }
   ],
   "heads": {
-    "test": "0.3.8",
+    "test": "0.3.9",
     "bench": "0.0.2-coex"
   }
 }
